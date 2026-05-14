@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EventType {
+  roda_samba
+  pagode
+  gafieira
+  samba_rock
+  feijoada_sambista
+}
+
+enum UserRole {
+  admin
+  producer
+  venue_manager
+  attendee
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  username     String   @unique
+  firstName    String
+  lastName     String
+  passwordHash String
+  role         UserRole @default(attendee)
+
+  markedEvents  MarkedEvent[]
+  achievements  UserAchievement[]
+  createdVenues Venue[]        @relation("VenueCreatedBy")
+  managedVenues Venue[]        @relation("VenueManagedBy")
+  venueAccesses VenueManagerAccess[]
+  createdArtists Artist[]      @relation("ArtistCreatedBy")
+  createdEvents Event[]        @relation("EventCreatedBy")
+  refreshTokens RefreshToken[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Venue {
+  id           String  @id @default(uuid())
+  name         String
+  slug         String  @unique
+  description  String?
+  address      String
+  neighborhood String
+  region       String
+  city         String
+  state        String
+  imageUrl     String?
+  createdByUserId String?
+  managerUserId   String?
+
+  events Event[]
+  createdBy User? @relation("VenueCreatedBy", fields: [createdByUserId], references: [id])
+  manager   User? @relation("VenueManagedBy", fields: [managerUserId], references: [id])
+  managerAccesses VenueManagerAccess[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VenueManagerAccess {
+  id       String @id @default(uuid())
+  userId   String
+  venueId  String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  venue Venue @relation(fields: [venueId], references: [id])
+
+  @@unique([userId, venueId])
+  @@index([userId])
+  @@index([venueId])
+}
+
+model Event {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  imageUrl    String?
+  type        EventType
+  tags        String[]
+  startDate   DateTime
+  endDate     DateTime
+  ticketType  String
+  ticketUrl   String?
+  priceMin    Float?
+  priceMax    Float?
+  status      String    @default("confirmed")
+  createdByUserId String?
+
+  venueId String
+  venue   Venue @relation(fields: [venueId], references: [id])
+  createdBy User? @relation("EventCreatedBy", fields: [createdByUserId], references: [id])
+
+  artists   EventArtist[]
+  markedBy  MarkedEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Artist {
+  id           String   @id @default(uuid())
+  name         String
+  slug         String   @unique
+  bio          String?
+  imageUrl     String?
+  genres       String[]
+  spotifyUrl   String?
+  youtubeUrl   String?
+  instagramUrl String?
+  createdByUserId String?
+
+  events EventArtist[]
+  createdBy User? @relation("ArtistCreatedBy", fields: [createdByUserId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EventArtist {
+  eventId String
+  artistId String
+  order Int @default(0)
+
+  event  Event  @relation(fields: [eventId], references: [id])
+  artist Artist @relation(fields: [artistId], references: [id])
+
+  @@id([eventId, artistId])
+}
+
+model MarkedEvent {
+  id      String @id @default(uuid())
+  userId  String
+  eventId String
+
+  user  User  @relation(fields: [userId], references: [id])
+  event Event @relation(fields: [eventId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, eventId])
+}
+
+model Achievement {
+  id          String @id @default(uuid())
+  key         String @unique
+  name        String
+  description String
+  icon        String
+  points      Int
+  requirement Json
+
+  users UserAchievement[]
+}
+
+model UserAchievement {
+  id            String @id @default(uuid())
+  userId        String
+  achievementId String
+
+  user        User        @relation(fields: [userId], references: [id])
+  achievement Achievement @relation(fields: [achievementId], references: [id])
+
+  unlockedAt DateTime @default(now())
+
+  @@unique([userId, achievementId])
+}
