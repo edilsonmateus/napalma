@@ -1,0 +1,16 @@
+﻿{
+  "base": {
+    "fontFamily": "Segoe UI, Inter, Arial, sans-serif",
+    "radius": 3,
+    "colors": {
+      "bg": "#111821",
+      "surface": "#19242f",
+      "surface2": "#1e2b38",
+      "text": "#cfd9e4",
+      "textMuted": "#8c9cab",
+      "success": "#3ea06b",
+      "warning": "#d28b42",
+      "danger": "#d04a4a"
+    }
+  }
+}

@@ -1,39 +1,254 @@
-import { useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { CalendarClock, MapPin, Star } from "lucide-react";
-import { useEventsQuery } from "../hooks/useEventsQuery";
-import { useUserStore } from "../store/userStore";
+import { useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { CalendarClock, Copy, MapPin, Send, Share2, Star } from "lucide-react";
+import {
+  useEventsQuery,
+  useMyRadarQuery,
+  useToggleRadarMutation
+} from "../hooks/useEventsQuery";
+import { useAuthStore } from "../store/authStore";
+import { buildGoogleMapsLink, buildUberLink, buildWazeLink, getVenueAddressString } from "../utils/maps";
+import VerifiedBadge from "../components/common/VerifiedBadge";
+
+function formatDate(value) {
+  return new Date(value).toLocaleString("pt-BR");
+}
+
+function formatDayMonth(value) {
+  return new Date(value).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+}
+
+function formatHour(value) {
+  return new Date(value).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function normalizePriceForShare(priceLabel) {
+  if (!priceLabel) return "";
+  if (priceLabel.toLowerCase().includes("gratuito")) return "grátis";
+  return priceLabel;
+}
+
+function formatCalendarDate(value) {
+  const date = new Date(value);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
+}
+
+function stripBrazilZipCode(value) {
+  return String(value || "")
+    .replace(/\s*[-,]\s*\d{5}-\d{3}\s*$/u, "")
+    .trim();
+}
 
 export default function EventDetailPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
-  const toggleRadar = useUserStore((state) => state.toggleRadar);
-  const radarIds = useUserStore((state) => state.radarIds);
+  const user = useAuthStore((state) => state.user);
   const { data: events = [], isLoading } = useEventsQuery();
+  const { data: radarEvents = [] } = useMyRadarQuery(Boolean(user));
+  const toggleRadar = useToggleRadarMutation();
+  const [actionFeedback, setActionFeedback] = useState("");
+  const [shareNote, setShareNote] = useState("");
+  const [showRouteModal, setShowRouteModal] = useState(false);
 
   const event = useMemo(() => events.find((item) => item.id === eventId), [eventId, events]);
+  const marked = useMemo(() => radarEvents.some((item) => item.id === eventId), [eventId, radarEvents]);
 
-  if (isLoading) {
-    return <p className="empty">Carregando evento...</p>;
+  if (isLoading) return <p className="empty">Carregando evento...</p>;
+  if (!event) return <p>Evento nao encontrado.</p>;
+
+  const shareTitle = `${event.title} | NaPalma`;
+  const showArtistLine = Boolean(event.artist && event.artist !== "Artista NaPalma" && event.artist !== event.title);
+  const venueAddress = getVenueAddressString(event);
+  const venueAddressDisplay = stripBrazilZipCode(venueAddress);
+  const googleMapsUrl = buildGoogleMapsLink(event);
+  const wazeUrl = buildWazeLink(event);
+  const uberUrl = buildUberLink(event);
+  const baseShareText = `Vai ter ${event.title}. Onde? ${event.venue}, dia ${formatDayMonth(event.startsAt)} às ${formatHour(event.startsAt)} (${normalizePriceForShare(event.priceLabel)}). Bora? Olha no app que tem todos os sambas em um lugar só:`;
+  const shareText = shareNote?.trim()
+    ? `${shareNote.trim()} ${baseShareText}`
+    : baseShareText;
+  const shareUrl = window.location.href;
+  const encodedText = encodeURIComponent(`${shareText}\n${shareUrl}`);
+  const whatsappUrl = `https://wa.me/?text=${encodedText}`;
+  const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+  const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+  const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${formatCalendarDate(event.startsAt)}/${formatCalendarDate(event.endsAt)}&details=${encodeURIComponent(`${event.artist} | ${event.priceLabel}`)}&location=${encodeURIComponent(`${event.venue} - ${event.region}`)}`;
+
+  async function handleNativeShare() {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+        setActionFeedback("Compartilhado com sucesso.");
+        return;
+      }
+      await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+      setActionFeedback("Link copiado para compartilhar.");
+    } catch (_error) {
+      setActionFeedback("Nao foi possivel compartilhar agora.");
+    }
   }
 
-  if (!event) {
-    return <p>Evento nao encontrado.</p>;
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+      setActionFeedback("Link copiado para compartilhar.");
+    } catch (_error) {
+      setActionFeedback("Nao foi possivel copiar o link.");
+    }
   }
 
-  const marked = radarIds.includes(event.id);
+  function handleDownloadIcs() {
+    const ics = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//NaPalma//Samba Agenda//PT-BR",
+      "BEGIN:VEVENT",
+      `UID:${event.id}@napalma.app`,
+      `DTSTAMP:${formatCalendarDate(new Date().toISOString())}`,
+      `DTSTART:${formatCalendarDate(event.startsAt)}`,
+      `DTEND:${formatCalendarDate(event.endsAt)}`,
+      `SUMMARY:${event.title}`,
+      `DESCRIPTION:${event.artist} | ${event.priceLabel}`,
+      `LOCATION:${venueAddress || `${event.venue} - ${event.region}`}`,
+      "END:VEVENT",
+      "END:VCALENDAR"
+    ].join("\r\n");
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${event.title.replace(/\s+/g, "-").toLowerCase()}.ics`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+    setActionFeedback("Arquivo de agenda baixado (.ics).");
+  }
+
+  async function handleToggleRadar() {
+    try {
+      setActionFeedback("");
+      const result = await toggleRadar.mutateAsync({ eventId: event.id, currentlyMarked: marked });
+      const unlocked = result?.unlockedAchievements || [];
+      if (unlocked.length > 0) {
+        const first = unlocked[0];
+        setActionFeedback(`Conquista desbloqueada: ${first.icon || "trofeu"} ${first.name}`);
+        return;
+      }
+      setActionFeedback(marked ? "Evento removido do seu Radar." : "Evento salvo no seu Radar.");
+    } catch (_error) {
+      setActionFeedback("Nao foi possivel atualizar o Radar agora.");
+    }
+  }
 
   return (
-    <section>
+    <section className="screen screen-decision event-decision">
       <button className="btn-link" onClick={() => navigate(-1)}>Voltar</button>
+
       <div className="event-detail-cover" style={{ backgroundImage: `url(${event.imageUrl})` }} />
-      <h2>{event.title}</h2>
-      <p>{event.artist}</p>
-      <div className="meta-line"><MapPin size={14} /> {event.venue} - {event.region}</div>
-      <div className="meta-line"><CalendarClock size={14} /> {new Date(event.startsAt).toLocaleString("pt-BR")}</div>
-      <button className="btn-primary" onClick={() => toggleRadar(event.id)}>
-        <Star size={14} /> {marked ? "Marcado no seu Radar" : "Acho que eu vou"}
-      </button>
+
+      <div className="decision-card">
+        <div className="event-title-row">
+          <h2 className="event-title-with-badge">
+            <span>{event.title}</span>
+            {event.artistVerified ? <VerifiedBadge className="artist-verified-dot" title="Artista verificado" /> : null}
+          </h2>
+          {event.artistId ? <Link to={`/artists/${event.artistId}`} className="btn-link artist-page-link">pagina do artista</Link> : null}
+        </div>
+        {showArtistLine ? (
+          <div className="decision-artist-wrap">
+            <p className="decision-artist">
+              <span>{event.artist}</span>
+            </p>
+          </div>
+        ) : null}
+        <p className="decision-price">{event.priceLabel}</p>
+        {event.priceSecondaryLabel ? <p className="meta-line">{event.priceSecondaryLabel}</p> : null}
+
+        <div className="decision-meta">
+          <div className="meta-line"><MapPin size={14} /> {event.venue} - {event.region}</div>
+          {venueAddressDisplay ? <div className="meta-line">{venueAddressDisplay}</div> : null}
+          <div className="meta-line"><CalendarClock size={14} /> {formatDate(event.startsAt)}</div>
+          {Array.isArray(event.venueOpenDays) && event.venueOpenDays.length > 0 ? (
+            <div className="meta-line">Funciona: {event.venueOpenDays.join(", ")}</div>
+          ) : null}
+          <div className="share-actions">
+            <button type="button" className="chip" onClick={() => setShowRouteModal(true)}>Como chegar</button>
+          </div>
+        </div>
+
+        {!user ? (
+          <div className="empty login-gate">
+            <p>Quer salvar no Radar? Entre na sua conta.</p>
+            <Link to="/settings" className="chip">Entrar agora</Link>
+          </div>
+        ) : null}
+        {user ? (
+          <div className="decision-actions">
+            <button className="btn-primary" onClick={handleToggleRadar} disabled={toggleRadar.isPending}>
+              <Star size={14} />
+              {toggleRadar.isPending ? "Atualizando..." : marked ? "Marcado no seu Radar" : "Acho que eu vou"}
+            </button>
+          </div>
+        ) : null}
+
+        <div className="share-panel">
+          <strong>Compartilhe com uma mensagem</strong>
+          <input
+            className="search-input share-input"
+            value={shareNote}
+            onChange={(e) => setShareNote(e.target.value)}
+            placeholder="Desentoca, Carolina. Vamos pro samba! Olha o que eu achei."
+            maxLength={90}
+          />
+          <div className="share-actions">
+            <button className="chip share-action share-action-primary" onClick={handleNativeShare}>
+              <Share2 size={14} /> Chamar a galera
+            </button>
+            <button className="chip share-action" onClick={handleCopyLink}>
+              <Copy size={14} /> Copiar link
+            </button>
+          </div>
+          <div className="share-links share-links-primary">
+            <a href={whatsappUrl} target="_blank" rel="noreferrer" className="chip share-link"><Send size={14} /> WhatsApp</a>
+            <a href={telegramUrl} target="_blank" rel="noreferrer" className="chip share-link"><Send size={14} /> Telegram</a>
+            <a href={facebookUrl} target="_blank" rel="noreferrer" className="chip share-link"><Share2 size={14} /> Facebook</a>
+          </div>
+          <details className="share-more">
+            <summary>Mais opcoes</summary>
+            <div className="share-links">
+              <a href={googleCalendarUrl} target="_blank" rel="noreferrer" className="chip share-link"><CalendarClock size={14} /> Google Agenda</a>
+              <button className="chip share-action" onClick={handleDownloadIcs}>
+                <CalendarClock size={14} /> Apple/Outlook (.ics)
+              </button>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      {actionFeedback ? <p className="feedback">{actionFeedback}</p> : null}
+      {showRouteModal ? (
+        <div className="modal-backdrop" onClick={() => setShowRouteModal(false)}>
+          <article className="modal-card route-mini-modal" onClick={(event) => event.stopPropagation()}>
+            <h3>Como chegar</h3>
+            <p className="meta-line">Escolha o app para rota:</p>
+            <div className="route-mini-layout">
+              <div className="route-mini-actions share-actions">
+                <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="chip route-mini-chip route-chip-maps">Maps</a>
+                <a href={wazeUrl} target="_blank" rel="noreferrer" className="chip route-mini-chip route-chip-waze">Waze</a>
+                <a href={uberUrl} target="_blank" rel="noreferrer" className="chip route-mini-chip route-chip-uber">Uber</a>
+                <button type="button" className="chip route-mini-chip route-chip-close" onClick={() => setShowRouteModal(false)}>Fechar</button>
+              </div>
+              <div className="route-mini-track" aria-hidden="true">
+                <span className="route-mini-dot route-mini-dot-start" />
+                <span className="route-mini-line" />
+                <span className="route-mini-dot route-mini-dot-end" />
+              </div>
+            </div>
+          </article>
+        </div>
+      ) : null}
     </section>
   );
 }

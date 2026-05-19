@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canManageArtist, canManageEvent, canManageVenue, isAdmin } from "../src/utils/ownership.js";
+import { canManageArtist, canManageEvent, canManageVenue, isAdmin } from "../src/lib/access.control.js";
 
 describe("ownership utils", () => {
   const admin = { id: "u-admin", role: "admin" };

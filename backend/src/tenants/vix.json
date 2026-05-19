@@ -1,0 +1,24 @@
+﻿{
+    "tenantId":  "vix",
+    "city":  "Vitoria",
+    "state":  "ES",
+    "country":  "BR",
+    "timezone":  "America/Sao_Paulo",
+    "brand":  {
+                  "name":  "NaPalma ES",
+                  "tagline":  "O ritmo da cidade, na palma da sua mao"
+              },
+    "defaultVertical":  "samba",
+    "enabledVerticals":  [
+                             "samba"
+                         ],
+    "regions":  [
+                    "Centro",
+                    "Praia do Canto",
+                    "Jardim da Penha",
+                    "Santo Antonio",
+                    "Jucutuquara"
+                ],
+    "currency":  "BRL",
+    "locale":  "pt-BR"
+}

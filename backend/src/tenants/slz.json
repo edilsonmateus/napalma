@@ -1,0 +1,24 @@
+﻿{
+    "tenantId":  "slz",
+    "city":  "Sao Luis",
+    "state":  "MA",
+    "country":  "BR",
+    "timezone":  "America/Sao_Paulo",
+    "brand":  {
+                  "name":  "NaPalma MA",
+                  "tagline":  "O ritmo da cidade, na palma da sua mao"
+              },
+    "defaultVertical":  "samba",
+    "enabledVerticals":  [
+                             "samba"
+                         ],
+    "regions":  [
+                    "Centro",
+                    "Cohama",
+                    "Turu",
+                    "Renascenca",
+                    "Cidade Operaria"
+                ],
+    "currency":  "BRL",
+    "locale":  "pt-BR"
+}

@@ -1,0 +1,24 @@
+﻿{
+    "tenantId":  "rec",
+    "city":  "Recife",
+    "state":  "PE",
+    "country":  "BR",
+    "timezone":  "America/Sao_Paulo",
+    "brand":  {
+                  "name":  "NaPalma PE",
+                  "tagline":  "O ritmo da cidade, na palma da sua mao"
+              },
+    "defaultVertical":  "samba",
+    "enabledVerticals":  [
+                             "samba"
+                         ],
+    "regions":  [
+                    "Centro",
+                    "Zona Norte",
+                    "Zona Sul",
+                    "Boa Viagem",
+                    "Casa Amarela"
+                ],
+    "currency":  "BRL",
+    "locale":  "pt-BR"
+}

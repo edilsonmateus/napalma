@@ -12,6 +12,8 @@ const registerSchema = z.object({
   username: z.string().trim().min(3),
   firstName: z.string().trim().min(2),
   lastName: z.string().trim().min(2),
+  phone: z.string().trim().min(8).optional(),
+  instagramHandle: z.string().trim().min(2).optional(),
   password: z.string().min(6),
   role: roleSchema.optional()
 });
@@ -57,6 +59,8 @@ function sanitizeUser(user) {
     username: user.username,
     firstName: user.firstName,
     lastName: user.lastName,
+    phone: user.phone ?? "",
+    instagramHandle: user.instagramHandle ?? "",
     role: user.role
   };
 }
@@ -86,6 +90,8 @@ export async function register(req, res, next) {
         username: data.username,
         firstName: data.firstName,
         lastName: data.lastName,
+        phone: data.phone,
+        instagramHandle: data.instagramHandle,
         passwordHash,
         role: data.role || "attendee"
       }

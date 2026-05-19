@@ -1,0 +1,16 @@
+﻿{
+  "tenantId": "rj",
+  "city": "Rio de Janeiro",
+  "state": "RJ",
+  "country": "BR",
+  "timezone": "America/Sao_Paulo",
+  "brand": {
+    "name": "NaPalma RJ",
+    "tagline": "O ritmo da cidade, na palma da sua mao"
+  },
+  "defaultVertical": "samba",
+  "enabledVerticals": ["samba"],
+  "regions": ["Centro", "Zona Norte", "Zona Sul", "Zona Oeste", "Grande Rio"],
+  "currency": "BRL",
+  "locale": "pt-BR"
+}

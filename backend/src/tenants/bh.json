@@ -1,0 +1,24 @@
+﻿{
+    "tenantId":  "bh",
+    "city":  "Belo Horizonte",
+    "state":  "MG",
+    "country":  "BR",
+    "timezone":  "America/Sao_Paulo",
+    "brand":  {
+                  "name":  "NaPalma MG",
+                  "tagline":  "O ritmo da cidade, na palma da sua mao"
+              },
+    "defaultVertical":  "samba",
+    "enabledVerticals":  [
+                             "samba"
+                         ],
+    "regions":  [
+                    "Centro-Sul",
+                    "Pampulha",
+                    "Noroeste",
+                    "Venda Nova",
+                    "Barreiro"
+                ],
+    "currency":  "BRL",
+    "locale":  "pt-BR"
+}

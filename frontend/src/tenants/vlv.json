@@ -1,0 +1,24 @@
+﻿{
+    "tenantId":  "vlv",
+    "city":  "Vila Velha",
+    "state":  "ES",
+    "country":  "BR",
+    "timezone":  "America/Sao_Paulo",
+    "brand":  {
+                  "name":  "NaPalma ES",
+                  "tagline":  "O ritmo da cidade, na palma da sua mao"
+              },
+    "defaultVertical":  "samba",
+    "enabledVerticals":  [
+                             "samba"
+                         ],
+    "regions":  [
+                    "Centro",
+                    "Itapoa",
+                    "Praia da Costa",
+                    "Coqueiral de Itaparica",
+                    "Gloria"
+                ],
+    "currency":  "BRL",
+    "locale":  "pt-BR"
+}

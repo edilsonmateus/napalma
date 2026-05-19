@@ -1,0 +1,16 @@
+﻿{
+  "tenantId": "sp",
+  "city": "Sao Paulo",
+  "state": "SP",
+  "country": "BR",
+  "timezone": "America/Sao_Paulo",
+  "brand": {
+    "name": "NaPalma SP",
+    "tagline": "O samba da sua cidade, na palma da sua mao"
+  },
+  "defaultVertical": "samba",
+  "enabledVerticals": ["samba"],
+  "regions": ["Centro", "Zona Norte", "Zona Sul", "Zona Leste", "Zona Oeste", "Grande Sao Paulo"],
+  "currency": "BRL",
+  "locale": "pt-BR"
+}

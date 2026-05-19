@@ -1,0 +1,10 @@
+﻿{
+  "tenantId": "rj",
+  "seed": {
+    "adminEmail": "admin.rj@napalma.app",
+    "defaultPassword": "change-me",
+    "sampleVenues": 3,
+    "sampleArtists": 4,
+    "sampleEvents": 6
+  }
+}

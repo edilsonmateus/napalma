@@ -22,16 +22,48 @@ enum UserRole {
   attendee
 }
 
+enum AdCampaignStatus {
+  draft
+  active
+  paused
+  ended
+}
+
+enum AdSlot {
+  explore_feed_large
+  venue_detail_inline
+  radar_header
+}
+
+enum AdEventType {
+  impression
+  click
+}
+
+enum ClaimTargetType {
+  venue
+  artist
+}
+
+enum ClaimStatus {
+  pending
+  approved
+  rejected
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
   username     String   @unique
   firstName    String
   lastName     String
+  phone        String?
+  instagramHandle String?
   passwordHash String
   role         UserRole @default(attendee)
 
   markedEvents  MarkedEvent[]
+  historyEntries UserEventHistory[]
   achievements  UserAchievement[]
   createdVenues Venue[]        @relation("VenueCreatedBy")
   managedVenues Venue[]        @relation("VenueManagedBy")
@@ -39,9 +71,137 @@ model User {
   createdArtists Artist[]      @relation("ArtistCreatedBy")
   createdEvents Event[]        @relation("EventCreatedBy")
   refreshTokens RefreshToken[]
+  adCampaigns   AdCampaign[]
+  adEvents      AdEventLog[]
+  itineraries   Itinerary[]
+  audienceVisits AudienceVisitor[]
+  producerVenueAccesses ProducerVenueAccess[]
+  producerArtistAccesses ProducerArtistAccess[]
+  artistFollows ArtistFollow[]
+  claims ClaimRequest[] @relation("ClaimRequestedBy")
+  claimsReviewed ClaimRequest[] @relation("ClaimReviewedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model AudienceVisitor {
+  id          String   @id @default(uuid())
+  visitorId   String   @unique
+  userId      String?
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+  hits        Int      @default(1)
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([lastSeenAt])
+  @@index([userId])
+}
+
+model Itinerary {
+  id          String   @id @default(uuid())
+  userId      String
+  title       String
+  date        DateTime
+  mode        String   @default("manual") // manual | automatic
+  status      String   @default("draft")  // draft | active | completed
+  totalTransitMinutes Int @default(0)
+  riskScore   Int      @default(0)
+
+  user  User @relation(fields: [userId], references: [id])
+  items ItineraryItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
+}
+
+model ItineraryItem {
+  id          String   @id @default(uuid())
+  itineraryId String
+  eventId     String
+  position    Int
+  transitMinutesFromPrev Int @default(0)
+  riskLevel   String   @default("ok") // ok | tight | risky
+
+  itinerary Itinerary @relation(fields: [itineraryId], references: [id])
+  event     Event     @relation(fields: [eventId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([itineraryId, eventId])
+  @@unique([itineraryId, position])
+  @@index([eventId])
+}
+
+model AdCampaign {
+  id            String           @id @default(uuid())
+  advertiser    String
+  name          String
+  status        AdCampaignStatus @default(draft)
+  startsAt      DateTime?
+  endsAt        DateTime?
+  priority      Int              @default(1)
+  frequencyCapDaily Int          @default(3)
+  runInAllSlots Boolean          @default(false)
+  isEnabled     Boolean          @default(true)
+  targeting     Json?
+  createdByUserId String?
+
+  createdBy User? @relation(fields: [createdByUserId], references: [id])
+  creatives AdCreative[]
+  events    AdEventLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AdCreative {
+  id            String   @id @default(uuid())
+  campaignId    String
+  slot          AdSlot
+  title         String?
+  imageUrl      String
+  destinationUrl String?
+  altText       String?
+  width         Int?
+  height        Int?
+  isEnabled     Boolean  @default(true)
+
+  campaign AdCampaign @relation(fields: [campaignId], references: [id])
+  events   AdEventLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slot, isEnabled])
+}
+
+model AdEventLog {
+  id         String      @id @default(uuid())
+  type       AdEventType
+  slot       AdSlot
+  campaignId String
+  creativeId String
+  venueId    String?
+  userId     String?
+  sessionId  String?
+  userAgent  String?
+  ipHash     String?
+  createdAt  DateTime    @default(now())
+
+  campaign AdCampaign @relation(fields: [campaignId], references: [id])
+  creative AdCreative @relation(fields: [creativeId], references: [id])
+  venue    Venue?     @relation(fields: [venueId], references: [id])
+  user     User?      @relation(fields: [userId], references: [id])
+
+  @@index([campaignId, type, createdAt])
+  @@index([creativeId, type, createdAt])
+  @@index([userId, type, createdAt])
+  @@index([venueId, type, createdAt])
 }
 
 model RefreshToken {
@@ -62,12 +222,16 @@ model Venue {
   name         String
   slug         String  @unique
   description  String?
+  contactName  String?
+  contactPhone String?
+  instagramUrl String?
   address      String
   neighborhood String
   region       String
   city         String
   state        String
   imageUrl     String?
+  openDays     String[]
   createdByUserId String?
   managerUserId   String?
 
@@ -75,9 +239,26 @@ model Venue {
   createdBy User? @relation("VenueCreatedBy", fields: [createdByUserId], references: [id])
   manager   User? @relation("VenueManagedBy", fields: [managerUserId], references: [id])
   managerAccesses VenueManagerAccess[]
+  producerAccesses ProducerVenueAccess[]
+  claimRequests ClaimRequest[] @relation("ClaimVenue")
+  adEvents AdEventLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ProducerVenueAccess {
+  id         String   @id @default(uuid())
+  producerId String
+  venueId    String
+  createdAt  DateTime @default(now())
+
+  producer User  @relation(fields: [producerId], references: [id])
+  venue    Venue @relation(fields: [venueId], references: [id])
+
+  @@unique([producerId, venueId])
+  @@index([producerId])
+  @@index([venueId])
 }
 
 model VenueManagerAccess {
@@ -103,10 +284,19 @@ model Event {
   tags        String[]
   startDate   DateTime
   endDate     DateTime
+  isRecurring Boolean   @default(false)
+  recurrenceDays String[] @default([])
+  recurrenceStartTime String?
+  recurrenceEndTime String?
+  recurrenceUntil DateTime?
+  recurrenceExceptions DateTime[] @default([])
   ticketType  String
   ticketUrl   String?
   priceMin    Float?
   priceMax    Float?
+  consumacaoValue Float?
+  couvertArtistico Float?
+  pricingPolicy Json?
   status      String    @default("confirmed")
   createdByUserId String?
 
@@ -116,6 +306,8 @@ model Event {
 
   artists   EventArtist[]
   markedBy  MarkedEvent[]
+  historyBy UserEventHistory[]
+  itineraryItems ItineraryItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -126,8 +318,11 @@ model Artist {
   name         String
   slug         String   @unique
   bio          String?
+  contactName  String?
+  contactPhone String?
   imageUrl     String?
   genres       String[]
+  isVerified   Boolean  @default(false)
   spotifyUrl   String?
   youtubeUrl   String?
   instagramUrl String?
@@ -135,9 +330,39 @@ model Artist {
 
   events EventArtist[]
   createdBy User? @relation("ArtistCreatedBy", fields: [createdByUserId], references: [id])
+  producerAccesses ProducerArtistAccess[]
+  claimRequests ClaimRequest[] @relation("ClaimArtist")
+  followers ArtistFollow[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ArtistFollow {
+  id        String   @id @default(uuid())
+  userId    String
+  artistId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  artist Artist @relation(fields: [artistId], references: [id])
+
+  @@unique([userId, artistId])
+  @@index([artistId, createdAt])
+}
+
+model ProducerArtistAccess {
+  id         String   @id @default(uuid())
+  producerId String
+  artistId   String
+  createdAt  DateTime @default(now())
+
+  producer User   @relation(fields: [producerId], references: [id])
+  artist   Artist @relation(fields: [artistId], references: [id])
+
+  @@unique([producerId, artistId])
+  @@index([producerId])
+  @@index([artistId])
 }
 
 model EventArtist {
@@ -164,6 +389,19 @@ model MarkedEvent {
   @@unique([userId, eventId])
 }
 
+model UserEventHistory {
+  id      String @id @default(uuid())
+  userId  String
+  eventId String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  event Event @relation(fields: [eventId], references: [id])
+
+  @@unique([userId, eventId])
+  @@index([userId, createdAt])
+}
+
 model Achievement {
   id          String @id @default(uuid())
   key         String @unique
@@ -187,4 +425,29 @@ model UserAchievement {
   unlockedAt DateTime @default(now())
 
   @@unique([userId, achievementId])
+}
+
+model ClaimRequest {
+  id             String          @id @default(uuid())
+  requestedById  String
+  targetType     ClaimTargetType
+  venueId        String?
+  artistId       String?
+  justification  String?
+  requestType    String          @default("ownership")
+  requestedChanges Json?
+  status         ClaimStatus     @default(pending)
+  reviewedById   String?
+  reviewedAt     DateTime?
+  decisionNote   String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  requestedBy User @relation("ClaimRequestedBy", fields: [requestedById], references: [id])
+  reviewedBy  User? @relation("ClaimReviewedBy", fields: [reviewedById], references: [id])
+  venue       Venue? @relation("ClaimVenue", fields: [venueId], references: [id])
+  artist      Artist? @relation("ClaimArtist", fields: [artistId], references: [id])
+
+  @@index([requestedById, status])
+  @@index([targetType, status])
 }

@@ -1,0 +1,24 @@
+﻿{
+    "tenantId":  "poa",
+    "city":  "Porto Alegre",
+    "state":  "RS",
+    "country":  "BR",
+    "timezone":  "America/Sao_Paulo",
+    "brand":  {
+                  "name":  "NaPalma RS",
+                  "tagline":  "O ritmo da cidade, na palma da sua mao"
+              },
+    "defaultVertical":  "samba",
+    "enabledVerticals":  [
+                             "samba"
+                         ],
+    "regions":  [
+                    "Centro Historico",
+                    "Zona Norte",
+                    "Zona Sul",
+                    "Cidade Baixa",
+                    "Moinhos"
+                ],
+    "currency":  "BRL",
+    "locale":  "pt-BR"
+}

@@ -1,0 +1,9 @@
+﻿{
+  "tenantId": "rj",
+  "brand": {
+    "logoText": "NaPalma",
+    "primary": "#ffb81c",
+    "secondary": "#c8102e",
+    "accent": "#6b3fa0"
+  }
+}

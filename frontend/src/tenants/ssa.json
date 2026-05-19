@@ -1,0 +1,24 @@
+﻿{
+    "tenantId":  "ssa",
+    "city":  "Salvador",
+    "state":  "BA",
+    "country":  "BR",
+    "timezone":  "America/Sao_Paulo",
+    "brand":  {
+                  "name":  "NaPalma BA",
+                  "tagline":  "O ritmo da cidade, na palma da sua mao"
+              },
+    "defaultVertical":  "samba",
+    "enabledVerticals":  [
+                             "samba"
+                         ],
+    "regions":  [
+                    "Centro",
+                    "Barra",
+                    "Rio Vermelho",
+                    "Itapua",
+                    "Suburbio"
+                ],
+    "currency":  "BRL",
+    "locale":  "pt-BR"
+}

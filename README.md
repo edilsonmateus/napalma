@@ -1,93 +1,73 @@
-﻿# NaPalma - Base do Projeto
+# NaPalma
 
-Base inicial do app **NaPalma** (web mobile-first) em stack React + Node, com foco exclusivo em samba.
+Aplicativo web mobile-first focado em eventos de samba.
 
-## Frontend
+## Inicio rapido
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-App local: `http://localhost:5173`
-
-## Backend
-
+1. Backend
 ```bash
 cd backend
-npm install
+npm.cmd install
 copy .env.example .env
-npm run prisma:generate
-npm run prisma:migrate -- --name auth_refresh_ownership_multi_manager
-npm run prisma:seed
-npm run dev
+npm.cmd run prisma:generate
+npm.cmd run prisma:migrate -- --name init
+npm.cmd run prisma:seed
+npm.cmd run dev
 ```
 
-API local: `http://localhost:3333`
+2. Frontend
+```bash
+cd frontend
+npm.cmd install
+npm.cmd run dev
+```
 
-## Autenticacao JWT + Refresh
+3. URLs locais
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:3333`
 
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/refresh`
-- `POST /api/auth/logout`
-- `GET /api/auth/me` (token obrigatorio)
+## Contas demo
 
-Fluxo:
+Senha para todas: `123456`
 
-- `login` retorna `accessToken` (curto) + `refreshToken`.
-- Frontend envia `Authorization: Bearer` automaticamente.
-- Em `401`, frontend tenta `refresh` uma vez e repete a request.
-- `logout` revoga o refresh token atual.
+- `admin@napalma.app` (admin)
+- `produtor@napalma.app` (produtor)
+- `casa@napalma.app` (casa)
+- `lia@napalma.app` (publico)
 
-Usuarios seed (senha `123456`):
+## Operacao e qualidade
 
-- `admin@napalma.app` (`admin`)
-- `produtor@napalma.app` (`producer`)
-- `casa@napalma.app` (`venue_manager`)
-- `lia@napalma.app` (`attendee`)
+- Guia operacional: `docs/OPERACAO.md`
+- Checklist QA manual: `docs/QA_CHECKLIST.md`
+- Troubleshooting: `docs/TROUBLESHOOTING.md`
+- Versionamento e release: `docs/VERSIONAMENTO.md`
+- Fechamento de release v1: `docs/LAUNCH_CHECKLIST_V1.md`
 
-## RBAC + Ownership
+## Recursos implementados
 
-Permissoes por perfil:
+- Auth JWT + refresh token
+- RBAC por perfil
+- Ownership de dados no backend
+- Gestao de casas/artistas/eventos
+- Gestao de vinculos de gestores por casa
+- Radar, historico e conquistas
+- Plano do Dia (Pela Hora) com sugestao/manual e timeline
+- Publicidade (slots, placeholders, tracking e relatorios)
+- Paineis por perfil (produtor, casa, publico)
 
-- Eventos (`POST/PATCH/DELETE /events`): `admin`, `producer`, `venue_manager`
-- Casas (`POST/PATCH/DELETE /venues`): `admin`, `producer`
-- Artistas (`POST/PATCH/DELETE /artists`): `admin`, `producer`
+## Comandos uteis
 
-Ownership aplicado:
+Backend:
+```bash
+cd backend
+npm.cmd run test
+npm.cmd run prisma:seed:achievements
+```
 
-- `admin`: acesso total.
-- `producer`: so edita/deleta casas, artistas e eventos que criou.
-- `venue_manager`: so cria/edita/deleta eventos das casas que gerencia (suporte a multiplas casas via vinculos).
-- `attendee`: apenas leitura.
+Frontend:
+```bash
+cd frontend
+npm.cmd run build
+npm.cmd run preview
+```
 
-## Endpoints principais
-
-- Auth: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me`
-- Eventos: `GET /api/events`, `GET /api/events/:id`, `POST/PATCH/DELETE /api/events/:id`
-- Casas: `GET /api/venues`, `GET /api/venues/:id`, `POST/PATCH/DELETE /api/venues/:id`
-- Vinculos de gestores de casa:
-- `GET /api/venues/:id/managers`
-- `POST /api/venues/:id/managers` (body: `{ "userId": "..." }` ou `{ "email": "..." }`)
-- `DELETE /api/venues/:id/managers/:userId`
-- Artistas: `GET /api/artists`, `GET /api/artists/:id`, `POST/PATCH/DELETE /api/artists/:id`
-- Regioes: `GET /api/regions`
-
-## Gestao no frontend
-
-A rota `/settings/venues` permite:
-
-- CRUD de casas
-- Vincular/remover gestores por casa
-- Busca/autocomplete de gestores (`venue_manager`) para vinculo
-- CRUD de artistas
-- CRUD de eventos
-- Autocomplete de artista no formulario de eventos
-
-## Proximos passos sugeridos
-
-1. Implementar upload real de imagens (S3/Cloudinary).
-2. Criar testes de integracao de API (auth + refresh + RBAC + ownership + vinculos).
-3. Adicionar CI para executar `npm run test` no backend.

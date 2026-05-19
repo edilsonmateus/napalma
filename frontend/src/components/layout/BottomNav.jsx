@@ -1,14 +1,35 @@
-import { Compass, Clock3, Settings, Star } from "lucide-react";
+import { Compass, Clock3, Settings, Star, CalendarRange } from "lucide-react";
 import { NavLink } from "react-router-dom";
-
-const items = [
-  { to: "/explore", label: "Explorar", icon: Compass },
-  { to: "/radar", label: "Meu Radar", icon: Star },
-  { to: "/history", label: "Historico", icon: Clock3 },
-  { to: "/settings", label: "Config", icon: Settings }
-];
+import { useAuthStore } from "../../store/authStore";
+import { isProducerRole, isVenueRole } from "../../utils/roles";
 
 export default function BottomNav() {
+  const user = useAuthStore((state) => state.user);
+  const isProducer = isProducerRole(user?.role);
+  const isVenue = isVenueRole(user?.role);
+
+  const items = isProducer
+    ? [
+      { to: "/workspace/produtor", label: "Painel", icon: Compass },
+      { to: "/settings/venues", label: "Gestao", icon: Star },
+      { to: "/history", label: "Historico", icon: Clock3 },
+      { to: "/settings", label: "Config", icon: Settings }
+    ]
+    : isVenue
+      ? [
+        { to: "/workspace/casa", label: "Painel", icon: Compass },
+        { to: "/settings/venues", label: "Agenda", icon: Star },
+        { to: "/history", label: "Historico", icon: Clock3 },
+        { to: "/settings", label: "Config", icon: Settings }
+      ]
+      : [
+        { to: "/explore", label: "Explorar", icon: Compass },
+        { to: "/pela-hora", label: "Pela Hora", icon: CalendarRange },
+        { to: "/radar", label: "Meu Radar", icon: Star },
+        { to: "/history", label: "Historico", icon: Clock3 },
+        { to: "/settings", label: "Config", icon: Settings }
+      ];
+
   return (
     <nav className="bottom-nav">
       {items.map(({ to, label, icon: Icon }) => (
