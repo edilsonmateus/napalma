@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manual de Uso — 77Gira</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --bg-soft: #121b31;
+        --card: #17253d;
+        --text: #e7edf8;
+        --muted: #9fb0c9;
+        --line: #263553;
+        --accent: #ffb020;
+        --accent-2: #8b5cf6;
+        --ok: #2ad16f;
+        --warn: #f59e0b;
+        --danger: #ef4444;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", Roboto, Arial, sans-serif; }
+      a { color: #a7c7ff; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 290px 1fr;
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 20px 16px;
+        background: linear-gradient(180deg, #101a31 0%, #0d1528 100%);
+        border-right: 1px solid var(--line);
+      }
+
+      .brand {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .brand h1 {
+        margin: 0;
+        font-size: 22px;
+        line-height: 1.1;
+        font-weight: 700;
+        letter-spacing: .2px;
+      }
+      .brand p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid #2f446d;
+        border-radius: 999px;
+        padding: 6px 10px;
+        color: #cde0ff;
+        font-size: 12px;
+        width: fit-content;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--ok);
+        box-shadow: 0 0 0 rgba(42, 209, 111, 0.6);
+        animation: pulse 1.5s infinite;
+      }
+      @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(42, 209, 111, 0.6); }
+        70% { box-shadow: 0 0 0 9px rgba(42, 209, 111, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(42, 209, 111, 0); }
+      }
+
+      nav {
+        margin-top: 16px;
+        display: grid;
+        gap: 6px;
+      }
+      nav a {
+        border: 1px solid transparent;
+        border-radius: 8px;
+        padding: 9px 10px;
+        color: #d5e1f5;
+        font-size: 14px;
+      }
+      nav a:hover {
+        background: #16233b;
+        border-color: #2b3d60;
+        text-decoration: none;
+      }
+      nav small {
+        color: var(--muted);
+        margin: 12px 6px 4px;
+        display: inline-block;
+        font-size: 12px;
+      }
+
+      .content {
+        padding: 28px clamp(16px, 3vw, 42px) 42px;
+      }
+
+      .hero {
+        background: radial-gradient(circle at 10% 20%, #2a1f50 0%, #1a2242 35%, #121a34 100%);
+        border: 1px solid #2a3558;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 20px;
+      }
+      .hero h2 {
+        margin: 0 0 10px;
+        font-size: clamp(24px, 3vw, 34px);
+      }
+      .hero p {
+        margin: 0;
+        color: #c8d4ea;
+        max-width: 900px;
+        line-height: 1.5;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        margin: 14px 0 22px;
+      }
+      .kpi {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 14px;
+      }
+      .kpi strong {
+        display: block;
+        font-size: 24px;
+        margin-top: 6px;
+      }
+      .kpi span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .section {
+        margin: 28px 0;
+        scroll-margin-top: 24px;
+      }
+      .section h3 {
+        margin: 0 0 10px;
+        font-size: 24px;
+      }
+      .section > p {
+        margin: 0 0 12px;
+        color: var(--muted);
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 14px;
+      }
+      .card + .card { margin-top: 10px; }
+
+      .steps {
+        margin: 8px 0 0;
+        padding-left: 18px;
+      }
+      .steps li {
+        margin: 7px 0;
+        line-height: 1.45;
+      }
+
+      .badge {
+        display: inline-block;
+        font-size: 12px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid #3d5079;
+        color: #d6e2f7;
+      }
+      .badge.ok { border-color: #296943; color: #9bf0bc; background: rgba(41, 105, 67, 0.22); }
+      .badge.warn { border-color: #7b4e11; color: #f7cd7a; background: rgba(123, 78, 17, 0.22); }
+      .badge.danger { border-color: #6e1f2a; color: #f8adb8; background: rgba(110, 31, 42, 0.22); }
+
+      details {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #132038;
+        padding: 10px 12px;
+      }
+      details + details { margin-top: 8px; }
+      summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      summary::marker { color: var(--accent); }
+
+      .img-placeholder {
+        margin-top: 10px;
+        border: 1px dashed #4f648f;
+        border-radius: 8px;
+        min-height: 160px;
+        display: grid;
+        place-items: center;
+        color: #8ea7cb;
+        font-size: 13px;
+        text-align: center;
+        padding: 10px;
+        background: rgba(17, 27, 47, 0.45);
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+      }
+      .table th, .table td {
+        text-align: left;
+        font-size: 14px;
+        padding: 10px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      .table th {
+        background: #13243f;
+      }
+      .table tr:last-child td { border-bottom: none; }
+
+      .code {
+        background: #0e1528;
+        border: 1px solid #27395f;
+        border-radius: 8px;
+        padding: 10px;
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: 13px;
+        overflow-x: auto;
+      }
+
+      .footer {
+        color: #8ea3c3;
+        font-size: 12px;
+        border-top: 1px solid var(--line);
+        margin-top: 26px;
+        padding-top: 12px;
+      }
+
+      @media (max-width: 980px) {
+        .layout { grid-template-columns: 1fr; }
+        .sidebar {
+          position: static;
+          height: auto;
+          border-right: none;
+          border-bottom: 1px solid var(--line);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="brand">
+          <h1>Manual 77Gira</h1>
+          <p>Operação e uso completo da plataforma</p>
+          <span class="pill"><span class="dot"></span> Documento vivo</span>
+        </div>
+        <nav>
+          <small>Visão geral</small>
+          <a href="#intro">1. Introdução</a>
+          <a href="#fluxo">2. Fluxo principal do app</a>
+          <a href="#publico">3. Perfil público (usuário final)</a>
+          <a href="#pela-hora">4. Função Pela Hora</a>
+          <a href="#radar-historico">5. Radar e Histórico</a>
+          <a href="#compartilhamento">6. Compartilhamento</a>
+          <small>Backoffice</small>
+          <a href="#admin">7. Perfil Admin</a>
+          <a href="#casa">8. Perfil Casa</a>
+          <a href="#produtor">9. Perfil Produtor</a>
+          <a href="#regioes">10. Regiões</a>
+          <a href="#claims">11. Reivindicações e aprovações</a>
+          <a href="#uploads">12. Upload de imagens</a>
+          <a href="#ads">13. Publicidade (visão resumida)</a>
+          <small>Suporte</small>
+          <a href="#checklist">14. Checklist operacional diário</a>
+          <a href="#faq">15. FAQ e troubleshooting</a>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <section class="hero" id="intro">
+          <h2>77Gira — Manual de uso</h2>
+          <p>
+            Este manual foi estruturado para operação real do app: uso público, gestão administrativa, casa, produtor,
+            curadoria de regiões, uploads, recorrência, fluxo de claims e organização da agenda.
+            O objetivo é permitir que qualquer operador consiga tocar o produto sem fricção.
+          </p>
+        </section>
+
+        <div class="grid">
+          <article class="kpi"><span>Perfis principais</span><strong>4</strong><span>Admin, Casa, Produtor, Público</span></article>
+          <article class="kpi"><span>Áreas centrais</span><strong>Explorar</strong><span>Descoberta e decisão em tempo real</span></article>
+          <article class="kpi"><span>Motor inteligente</span><strong>Pela Hora</strong><span>Planejamento de rolê com sequência</span></article>
+          <article class="kpi"><span>Chave operacional</span><strong>Regiões</strong><span>Base que alimenta filtros e cadastros</span></article>
+        </div>
+
+        <section class="section" id="fluxo">
+          <h3>2) Fluxo principal do app (resumo executivo)</h3>
+          <p>O ciclo ideal de uso do produto para o usuário final:</p>
+          <ol class="steps card">
+            <li>Acessa <strong>Explorar</strong> para ver o que está rolando agora e próximos eventos.</li>
+            <li>Filtra por <strong>região</strong>, busca por nome da casa, data/hora ou usa chip <strong>Ao vivo</strong>.</li>
+            <li>Abre detalhes do evento/casa, avalia rota e marca no <strong>Radar</strong>.</li>
+            <li>Monta sequência de rolês no <strong>Pela Hora</strong>.</li>
+            <li>Após evento, confirma presença via fluxo de Radar para alimentar o <strong>Histórico</strong> e gamificação.</li>
+          </ol>
+        </section>
+
+        <section class="section" id="publico">
+          <h3>3) Perfil público (usuário final)</h3>
+          <div class="card">
+            <p><strong>Telas-chave:</strong> Explorar, Detalhe de casa, Detalhe de evento, Meu Radar, Histórico, Pela Hora.</p>
+            <ul class="steps">
+              <li><span class="badge ok">Explorar</span> Mostra cards da agenda por data e permite decisão rápida de destino.</li>
+              <li><span class="badge ok">Ao vivo</span> Chip dedicado para ver apenas eventos em execução.</li>
+              <li><span class="badge ok">Partiu Agora</span> Acesso rápido para rotas em Maps/Waze/Uber.</li>
+            </ul>
+            <div class="img-placeholder">
+              Placeholder de screenshot: Explorar (desktop/mobile)<br />
+              Exemplo de substituição:<br />
+              <span class="code">&lt;img src="CAMINHO_DA_IMAGEM" alt="Explorar" /&gt;</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="pela-hora">
+          <h3>4) Função Pela Hora</h3>
+          <p>Planejamento de roteiro com inteligência e humor.</p>
+          <div class="card">
+            <ol class="steps">
+              <li>Define nome e data do plano.</li>
+              <li>Seleciona manualmente ou usa sugestão automática.</li>
+              <li>Organiza sequência de eventos (com visual de deslocamento).</li>
+              <li>Salva plano e usa ações de rota por evento.</li>
+              <li>Pode excluir plano salvo com botão discreto.</li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="section" id="radar-historico">
+          <h3>5) Meu Radar e Histórico</h3>
+          <div class="card">
+            <ul class="steps">
+              <li>No <strong>Radar</strong>, usuário guarda intenção de presença.</li>
+              <li>Após o horário do evento, aparecem ações: <strong>Eu Fui!</strong> e <strong>Não fui</strong>.</li>
+              <li><strong>Eu Fui!</strong> move para histórico e alimenta conquistas.</li>
+              <li><strong>Não fui</strong> limpa o evento do radar sem premiar gamificação.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="section" id="compartilhamento">
+          <h3>6) Compartilhamento</h3>
+          <div class="card">
+            <p>
+              O evento possui mensagem base humanizada para WhatsApp/Telegram/Facebook e links diretos.
+              A copy padrão atual segue o modelo:
+            </p>
+            <div class="code">
+Vai ter &lt;NOME_DO_EVENTO&gt;. Onde? &lt;CASA&gt;, dia &lt;DD/MM&gt; às &lt;HH:MM&gt; (&lt;PREÇO&gt;). Bora? 
+Olha no app que tem todos os sambas em um lugar só: &lt;LINK&gt;
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="admin">
+          <h3>7) Perfil Admin</h3>
+          <p>Admin é o controle mestre da plataforma.</p>
+          <div class="card">
+            <table class="table">
+              <thead>
+                <tr><th>Área</th><th>Função</th><th>Nível de risco</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Casas</td><td>Criar, editar, remover casas (com validações)</td><td><span class="badge warn">Médio</span></td></tr>
+                <tr><td>Artistas</td><td>Criar catálogo, verificar perfil oficial</td><td><span class="badge warn">Médio</span></td></tr>
+                <tr><td>Eventos</td><td>CRUD completo + recorrência + exceções</td><td><span class="badge warn">Médio</span></td></tr>
+                <tr><td>Reivindicações</td><td>Aprovar/rejeitar ownership e update claims</td><td><span class="badge danger">Alto</span></td></tr>
+                <tr><td>Regiões</td><td>Gerir base oficial de filtros/cadastro</td><td><span class="badge warn">Médio</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section" id="casa">
+          <h3>8) Perfil Casa</h3>
+          <div class="card">
+            <ul class="steps">
+              <li>Visão geral da unidade ativa.</li>
+              <li>Menu lateral: Eventos, Dados da casa, Produtores, Solicitar acesso.</li>
+              <li>Pode criar/editar eventos da própria casa.</li>
+              <li>Pode abrir mão de filial na Zona de Perigo.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="section" id="produtor">
+          <h3>9) Perfil Produtor</h3>
+          <div class="card">
+            <ul class="steps">
+              <li>Opera carteira aprovada (casas/artistas/eventos sob acesso).</li>
+              <li>Submete reivindicações de portfólio (claim de casa/artista).</li>
+              <li>Não remove entidade da plataforma: remove vínculo próprio.</li>
+              <li>Fluxo de edição sensível pode exigir aprovação admin.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="section" id="regioes">
+          <h3>10) Regiões — regra de ouro</h3>
+          <div class="card">
+            <p>Modelo aplicado para consistência:</p>
+            <ol class="steps">
+              <li><strong>Base padrão</strong> da cidade (somente leitura).</li>
+              <li><strong>Regiões oficiais</strong> criadas no admin.</li>
+              <li><strong>Legado</strong> vindo de casas antigas (somente leitura até normalizar).</li>
+              <li>Filtro do Explorar usa lista unificada e deduplicada.</li>
+            </ol>
+            <p>
+              Regiões com casas vinculadas não devem ser excluídas. Hover vermelho existe apenas para regiões realmente deletáveis.
+            </p>
+          </div>
+        </section>
+
+        <section class="section" id="claims">
+          <h3>11) Claims (reivindicações) e aprovações</h3>
+          <details open>
+            <summary>Claim de propriedade de casa</summary>
+            <ol class="steps">
+              <li>Casa/Produtor solicita com justificativa e evidências.</li>
+              <li>Admin revisa dados críticos (responsável, telefone, documento, vínculos).</li>
+              <li>Ao aprovar, acesso entra na carteira do solicitante.</li>
+            </ol>
+          </details>
+          <details>
+            <summary>Claim de alteração de dados</summary>
+            <ol class="steps">
+              <li>Operador submete pedido de alteração com justificativa.</li>
+              <li>Admin recebe alerta e resumo de campos alterados.</li>
+              <li>Aprovação aplica patch com rastreabilidade.</li>
+            </ol>
+          </details>
+        </section>
+
+        <section class="section" id="uploads">
+          <h3>12) Upload de imagens (MVP já ativo)</h3>
+          <div class="card">
+            <ul class="steps">
+              <li>Suporta JPG, PNG e WebP.</li>
+              <li>Limite de 5MB por arquivo.</li>
+              <li>Disponível nos formulários de Casa, Artista e Evento.</li>
+              <li>Preenche URL automaticamente no campo da imagem.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="section" id="ads">
+          <h3>13) Publicidade (resumo)</h3>
+          <div class="card">
+            <p>
+              A operação de Ads deve ser validada em missão dedicada (criação, criativo por slot, métricas, atividade e export CSV).
+              Este manual deixa o bloco como “resumo”, até finalizar validações de ponta a ponta.
+            </p>
+          </div>
+        </section>
+
+        <section class="section" id="checklist">
+          <h3>14) Checklist operacional diário</h3>
+          <div class="card">
+            <ol class="steps">
+              <li>Conferir eventos ao vivo e próximos 14 dias.</li>
+              <li>Validar claims pendentes com SLA definido.</li>
+              <li>Checar erros de upload e links quebrados de mídia.</li>
+              <li>Revisar regiões novas e consistência de filtros.</li>
+              <li>Monitorar eventos sem artista vinculado.</li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="section" id="faq">
+          <h3>15) FAQ e troubleshooting</h3>
+
+          <details open>
+            <summary>Evento não aparece no Explorar</summary>
+            <ul class="steps">
+              <li>Verifique status do evento: precisa estar <strong>confirmed</strong>.</li>
+              <li>Cheque start/end e recorrência (dias/exceções).</li>
+              <li>Confirme se a região da casa está consistente com filtro ativo.</li>
+            </ul>
+          </details>
+
+          <details>
+            <summary>Artista não aparece em Admin &gt; Artistas</summary>
+            <ul class="steps">
+              <li>Checar se está cadastrado em <strong>Artist</strong> e não só como título do evento.</li>
+              <li>No evento, preencher campo <strong>Artista principal</strong>.</li>
+            </ul>
+          </details>
+
+          <details>
+            <summary>Região sumiu ao criar a primeira região oficial</summary>
+            <ul class="steps">
+              <li>Reiniciar backend para aplicar merge de oficiais + legado + base padrão.</li>
+              <li>Confirmar retorno de <span class="code">/api/admin/regions</span>.</li>
+            </ul>
+          </details>
+        </section>
+
+        <p class="footer">
+          Manual gerado para operação do app 77Gira. Atualize este documento sempre que regras de negócio,
+          claims, regiões, perfis ou fluxos mudarem.
+        </p>
+      </main>
+    </div>
+  </body>
+  </html>

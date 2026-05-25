@@ -4,6 +4,8 @@ import { useAdDeliveryQuery, useMyHistoryQuery, useMyRadarQuery, useToggleHistor
 import { useAuthStore } from "../store/authStore";
 import AdSlotCard from "../components/ads/AdSlotCard";
 import VerifiedBadge from "../components/common/VerifiedBadge";
+import { getAudienceBadges } from "../utils/eventAudienceBadges";
+import AppToast from "../components/common/AppToast";
 
 const RADAR_PREFS_KEY = "napalma:radar:prefs";
 
@@ -31,7 +33,7 @@ function formatDate(value) {
 
 export default function RadarPage() {
   const [regionFilter, setRegionFilter] = useState(loadRadarPrefs().regionFilter);
-  const [actionFeedback, setActionFeedback] = useState("");
+  const [toast, setToast] = useState({ text: "", type: "info" });
   const user = useAuthStore((state) => state.user);
   const { data: radarEvents = [], isLoading, isError } = useMyRadarQuery(Boolean(user));
   const { data: historyEvents = [] } = useMyHistoryQuery(Boolean(user));
@@ -76,28 +78,28 @@ export default function RadarPage() {
 
   async function handleConfirmAttendance(event) {
     try {
-      setActionFeedback("");
+      setToast({ text: "", type: "info" });
       const result = await toggleHistory.mutateAsync({ eventId: event.id, currentlyMarked: false });
       const unlocked = result?.unlockedAchievements || [];
       if (unlocked.length > 0) {
         const first = unlocked[0];
-        setActionFeedback(`Conquista desbloqueada: ${first.icon || "trofeu"} ${first.name}`);
+        setToast({ text: `Conquista desbloqueada: ${first.icon || "trofeu"} ${first.name}`, type: "success" });
         return;
       }
-      setActionFeedback("Presenca confirmada no Historico. Voce tem ate 24h apos o fim para confirmar.");
+      setToast({ text: "Presenca confirmada no Historico. Voce tem ate 24h apos o fim para confirmar.", type: "success" });
     } catch (error) {
       const apiMessage = error?.response?.data?.message;
-      setActionFeedback(apiMessage || "Nao foi possivel confirmar esse samba agora.");
+      setToast({ text: apiMessage || "Nao foi possivel confirmar esse samba agora.", type: "error" });
     }
   }
 
   async function handleNotAttended(event) {
     try {
-      setActionFeedback("");
+      setToast({ text: "", type: "info" });
       await toggleRadar.mutateAsync({ eventId: event.id, currentlyMarked: true });
-      setActionFeedback("Removido do Radar.");
+      setToast({ text: "Removido do Radar.", type: "success" });
     } catch (_error) {
-      setActionFeedback("Nao foi possivel remover esse samba do Radar agora.");
+      setToast({ text: "Nao foi possivel remover esse samba do Radar agora.", type: "error" });
     }
   }
 
@@ -117,7 +119,16 @@ export default function RadarPage() {
       {user ? <AdSlotCard ad={adToRender} slot="radar_header" compact /> : null}
       {user && isLoading ? <p className="empty">Carregando seu radar...</p> : null}
       {user && isError ? <p className="empty">Nao foi possivel carregar seu Radar agora.</p> : null}
-      {user && !isLoading && !isError && !hasEvents ? <p className="empty">Nenhum samba marcado ainda.</p> : null}
+      {user && !isLoading && !isError && !hasEvents ? (
+        <div className="empty empty-highlight">
+          <p>Nenhum samba marcado ainda.</p>
+          <small className="meta-line">Salve eventos no Explorar para montar seu Radar.</small>
+          <div className="chip-row">
+            <Link to="/explore" className="chip">Ir para Explorar</Link>
+            <Link to="/pela-hora" className="chip">Montar plano no Pela Hora</Link>
+          </div>
+        </div>
+      ) : null}
 
       {user && regions.length > 1 ? (
         <div className="chip-row">
@@ -132,7 +143,7 @@ export default function RadarPage() {
           ))}
         </div>
       ) : null}
-      {user && actionFeedback ? <p className="feedback">{actionFeedback}</p> : null}
+      {user ? <AppToast toast={toast} onClose={() => setToast({ text: "", type: "info" })} /> : null}
 
       <div className="radar-list">
         {filteredEvents.map((event) => (
@@ -149,17 +160,16 @@ export default function RadarPage() {
                   </strong>
                   <span>{event.priceLabel}</span>
                 </div>
-                {event.artist && event.artist !== event.title ? (
-                  <div className="radar-artist-wrap">
-                    <p className="radar-artist-main">
-                      <span>{event.artist}</span>
-                    </p>
-                    {event.artistId ? <Link to={`/artists/${event.artistId}`} className="btn-link artist-page-link">pagina do artista</Link> : null}
-                  </div>
-                ) : null}
                 <small>{event.venue} - {event.region}</small>
                 {event.priceSecondaryLabel ? <small>{event.priceSecondaryLabel}</small> : null}
                 <small className="radar-date">{formatDate(event.startsAt)}</small>
+                {getAudienceBadges(event).length > 0 ? (
+                  <div className="event-audience-row">
+                    {getAudienceBadges(event).map((badge) => (
+                      <span key={badge} className="event-audience-badge">{badge}</span>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </Link>
             {canResolveAttendance(event) ? (

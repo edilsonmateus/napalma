@@ -12,14 +12,12 @@ export default function BottomNav() {
     ? [
       { to: "/workspace/produtor", label: "Painel", icon: Compass },
       { to: "/settings/venues", label: "Gestao", icon: Star },
-      { to: "/history", label: "Historico", icon: Clock3 },
       { to: "/settings", label: "Config", icon: Settings }
     ]
     : isVenue
       ? [
         { to: "/workspace/casa", label: "Painel", icon: Compass },
-        { to: "/settings/venues", label: "Agenda", icon: Star },
-        { to: "/history", label: "Historico", icon: Clock3 },
+        { to: "/settings/venues?section=events&layout=clean", label: "Programacao", icon: Star },
         { to: "/settings", label: "Config", icon: Settings }
       ]
       : [

@@ -29,11 +29,11 @@ const idSchema = z.object({
   id: z.string().uuid()
 });
 
-const managerLinkSchema = z.object({
+const producerLinkSchema = z.object({
   userId: z.string().uuid().optional(),
   email: z.string().email().optional()
 }).refine((data) => data.userId || data.email, {
-  message: "Informe userId ou email para vincular gestor."
+  message: "Informe userId ou email para vincular produtor."
 });
 
 function slugify(value) {
@@ -320,7 +320,7 @@ export async function deleteVenue(req, res, next) {
     if (req.user?.role === "venue_manager") {
       return res.status(403).json({
         error: "forbidden",
-        message: "Gestor nao pode excluir casa da plataforma."
+        message: "Perfil casa nao pode excluir casa da plataforma."
       });
     }
 
@@ -338,7 +338,7 @@ export async function deleteVenue(req, res, next) {
   }
 }
 
-export async function listVenueManagers(req, res, next) {
+export async function listVenueProducers(req, res, next) {
   try {
     const { id } = idSchema.parse(req.params);
     const venue = await prisma.venue.findUnique({
@@ -347,9 +347,9 @@ export async function listVenueManagers(req, res, next) {
         producerAccesses: {
           select: { producerId: true }
         },
-        managerAccesses: {
+        producerAccesses: {
           include: {
-            user: {
+            producer: {
               select: {
                 id: true,
                 email: true,
@@ -364,46 +364,6 @@ export async function listVenueManagers(req, res, next) {
           orderBy: {
             createdAt: "asc"
           }
-        }
-      }
-    });
-
-    if (!venue) {
-      return res.status(404).json({
-        error: "venue_not_found",
-        message: "Casa de samba nao encontrada."
-      });
-    }
-
-    if (!canManageVenue(req.user, venue)) {
-      return res.status(403).json({
-        error: "forbidden",
-        message: "Voce nao pode gerenciar vinculos desta casa."
-      });
-    }
-
-    const items = venue.managerAccesses.map((entry) => ({
-      id: entry.id,
-      user: entry.user,
-      createdAt: entry.createdAt
-    }));
-
-    res.json({ items });
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function addVenueManager(req, res, next) {
-  try {
-    const { id } = idSchema.parse(req.params);
-    const data = managerLinkSchema.parse(req.body);
-
-    const venue = await prisma.venue.findUnique({
-      where: { id },
-      include: {
-        producerAccesses: {
-          select: { producerId: true }
         },
         managerAccesses: {
           select: { userId: true }
@@ -421,47 +381,90 @@ export async function addVenueManager(req, res, next) {
     if (!canManageVenue(req.user, venue)) {
       return res.status(403).json({
         error: "forbidden",
-        message: "Voce nao pode gerenciar vinculos desta casa."
+        message: "Voce nao pode gerenciar produtores desta casa."
       });
     }
 
-    const managerUser = data.userId
+    const items = venue.producerAccesses.map((entry) => ({
+      id: entry.id,
+      user: entry.producer,
+      createdAt: entry.createdAt
+    }));
+
+    res.json({ items });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function addVenueProducer(req, res, next) {
+  try {
+    const { id } = idSchema.parse(req.params);
+    const data = producerLinkSchema.parse(req.body);
+
+    const venue = await prisma.venue.findUnique({
+      where: { id },
+      include: {
+        producerAccesses: {
+          select: { producerId: true }
+        },
+        managerAccesses: {
+          select: { userId: true }
+        },
+      }
+    });
+
+    if (!venue) {
+      return res.status(404).json({
+        error: "venue_not_found",
+        message: "Casa de samba nao encontrada."
+      });
+    }
+
+    if (!canManageVenue(req.user, venue)) {
+      return res.status(403).json({
+        error: "forbidden",
+        message: "Voce nao pode gerenciar produtores desta casa."
+      });
+    }
+
+    const producerUser = data.userId
       ? await prisma.user.findUnique({ where: { id: data.userId } })
       : await prisma.user.findUnique({ where: { email: data.email.toLowerCase() } });
 
-    if (!managerUser) {
+    if (!producerUser) {
       return res.status(404).json({
         error: "user_not_found",
         message: "Usuario nao encontrado."
       });
     }
 
-    if (managerUser.role !== "venue_manager") {
+    if (producerUser.role !== "producer") {
       return res.status(409).json({
         error: "invalid_role",
-        message: "Somente usuarios com role venue_manager podem ser vinculados."
+        message: "Somente usuarios com role producer podem ser vinculados."
       });
     }
 
-    const existing = await prisma.venueManagerAccess.findFirst({
-      where: { venueId: id, userId: managerUser.id },
+    const existing = await prisma.producerVenueAccess.findFirst({
+      where: { venueId: id, producerId: producerUser.id },
       select: { id: true }
     });
 
     if (existing) {
       return res.status(409).json({
-        error: "manager_already_linked",
-        message: "Gestor ja vinculado a esta casa."
+        error: "producer_already_linked",
+        message: "Produtor ja vinculado a esta casa."
       });
     }
 
-    const link = await prisma.venueManagerAccess.create({
+    const link = await prisma.producerVenueAccess.create({
       data: {
         venueId: id,
-        userId: managerUser.id
+        producerId: producerUser.id
       },
       include: {
-        user: {
+        producer: {
           select: {
             id: true,
             email: true,
@@ -478,10 +481,63 @@ export async function addVenueManager(req, res, next) {
     res.status(201).json({
       item: {
         id: link.id,
-        user: link.user,
+        user: link.producer,
         createdAt: link.createdAt
       }
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function removeVenueProducer(req, res, next) {
+  try {
+    const venueId = z.string().uuid().parse(req.params.id);
+    const userId = z.string().uuid().parse(req.params.userId);
+
+    const venue = await prisma.venue.findUnique({
+      where: { id: venueId },
+      include: {
+        producerAccesses: {
+          select: { producerId: true }
+        },
+        managerAccesses: {
+          select: { userId: true }
+        },
+      }
+    });
+
+    if (!venue) {
+      return res.status(404).json({
+        error: "venue_not_found",
+        message: "Casa de samba nao encontrada."
+      });
+    }
+
+    if (!canManageVenue(req.user, venue)) {
+      return res.status(403).json({
+        error: "forbidden",
+        message: "Voce nao pode gerenciar produtores desta casa."
+      });
+    }
+
+    const existing = await prisma.producerVenueAccess.findFirst({
+      where: { venueId, producerId: userId },
+      select: { id: true }
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        error: "producer_link_not_found",
+        message: "Vinculo de produtor nao encontrado."
+      });
+    }
+
+    await prisma.producerVenueAccess.delete({
+      where: { id: existing.id }
+    });
+
+    res.status(204).send();
   } catch (error) {
     next(error);
   }
@@ -514,7 +570,7 @@ export async function removeVenueManager(req, res, next) {
     if (!canManageVenue(req.user, venue)) {
       return res.status(403).json({
         error: "forbidden",
-        message: "Voce nao pode gerenciar vinculos desta casa."
+        message: "Voce nao pode gerenciar gestores desta casa."
       });
     }
 
@@ -539,3 +595,35 @@ export async function removeVenueManager(req, res, next) {
     next(error);
   }
 }
+
+export async function revokeMyVenueAccess(req, res, next) {
+  try {
+    const venueId = z.string().uuid().parse(req.params.id);
+
+    const existing = await prisma.venueManagerAccess.findFirst({
+      where: {
+        venueId,
+        userId: req.user.id
+      },
+      select: { id: true }
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        error: "manager_link_not_found",
+        message: "Seu acesso a esta filial ja foi removido."
+      });
+    }
+
+    await prisma.venueManagerAccess.delete({
+      where: { id: existing.id }
+    });
+
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}
+
+export const listVenueManagers = listVenueProducers;
+export const addVenueManager = addVenueProducer;

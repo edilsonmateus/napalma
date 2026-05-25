@@ -1,40 +1,11 @@
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { refreshUserAchievements } from "../utils/achievements.js";
+import { formatPriceLabel, formatPriceSecondaryLabel } from "../utils/price.js";
 
 const eventIdSchema = z.object({
   eventId: z.string().uuid()
 });
-
-function formatPriceLabel(priceMin, priceMax, ticketType) {
-  if (ticketType === "free") return "Gratuito";
-  if (ticketType === "consumacao") return "Consumacao";
-  if (priceMin == null && priceMax == null) return "Consulte valores";
-  if (priceMin != null && priceMax != null && priceMin !== priceMax) {
-    return `R$ ${priceMin} - R$ ${priceMax}`;
-  }
-  const value = priceMin ?? priceMax;
-  return `R$ ${value}`;
-}
-
-function formatPriceSecondaryLabel(event) {
-  const parts = [];
-  if (event.ticketType === "consumacao" && event.consumacaoValue != null) {
-    parts.push(`Consumacao minima R$ ${event.consumacaoValue}`);
-  }
-  if (event.couvertArtistico != null) {
-    parts.push(`Couvert artistico R$ ${event.couvertArtistico}`);
-  }
-  const policy = event.pricingPolicy || {};
-  if (policy.freeUntil) parts.push(`Gratis ate ${policy.freeUntil}`);
-  if (policy.menFreeUntil) parts.push(`Homem gratis ate ${policy.menFreeUntil}`);
-  if (policy.womenFreeAllNight) {
-    parts.push("Mulher gratis a noite toda");
-  } else if (policy.womenFreeUntil) {
-    parts.push(`Mulher gratis ate ${policy.womenFreeUntil}`);
-  }
-  return parts.join(" | ");
-}
 
 function mapRadarEvent(markedEvent) {
   const event = markedEvent.event;
@@ -42,11 +13,12 @@ function mapRadarEvent(markedEvent) {
     id: event.id,
     artistId: event.artists[0]?.artist.id ?? null,
     title: event.title,
-    artist: event.artists[0]?.artist.name ?? "Artista NaPalma",
+    artist: event.artists[0]?.artist.name ?? "",
     artistVerified: Boolean(event.artists[0]?.artist?.isVerified),
     venue: event.venue.name,
     region: event.venue.region,
     type: event.type,
+    tags: event.tags ?? [],
     startsAt: event.startDate,
     priceLabel: formatPriceLabel(event.priceMin, event.priceMax, event.ticketType),
     priceSecondaryLabel: formatPriceSecondaryLabel(event),

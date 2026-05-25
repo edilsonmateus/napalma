@@ -65,7 +65,13 @@ export default function ArtistProfilePage() {
       </div>
 
       <h3 className="section-title artist-profile-section-title">Proximos Shows</h3>
-      {!artist.upcomingEvents?.length ? <p className="empty">Sem shows futuros cadastrados.</p> : null}
+      {!artist.upcomingEvents?.length ? (
+        <div className="empty empty-highlight">
+          <p>Sem shows futuros cadastrados.</p>
+          <small className="meta-line">Esse perfil oficial ainda nao publicou a proxima agenda.</small>
+          <Link to="/explore" className="chip">Ver sambas no Explorar</Link>
+        </div>
+      ) : null}
       <div className="artist-shows-list">
         {(artist.upcomingEvents || []).map((event) => (
           <Link key={event.id} to={`/events/${event.id}`} className="artist-show-row">

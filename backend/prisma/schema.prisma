@@ -80,9 +80,26 @@ model User {
   artistFollows ArtistFollow[]
   claims ClaimRequest[] @relation("ClaimRequestedBy")
   claimsReviewed ClaimRequest[] @relation("ClaimReviewedBy")
+  createdRegions Region[] @relation("RegionCreatedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Region {
+  id              String   @id @default(uuid())
+  name            String
+  city            String   @default("Sao Paulo")
+  state           String   @default("SP")
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdByUserId String?
+  createdBy       User?    @relation("RegionCreatedBy", fields: [createdByUserId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([name, city, state])
+  @@index([isActive, sortOrder, name])
 }
 
 model AudienceVisitor {
@@ -433,6 +450,13 @@ model ClaimRequest {
   targetType     ClaimTargetType
   venueId        String?
   artistId       String?
+  responsibleName   String?
+  responsiblePhone  String?
+  claimantDocument  String?
+  relationshipRole  String?
+  officialEmail     String?
+  officialInstagram String?
+  officialWebsite   String?
   justification  String?
   requestType    String          @default("ownership")
   requestedChanges Json?

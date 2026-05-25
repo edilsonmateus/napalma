@@ -30,10 +30,16 @@ export default function VenueOperatorDashboardPage() {
 
   return (
     <section className="screen screen-radar">
-      <header className="page-header">
-        <h2>Painel da Casa</h2>
-        <p>Agenda da casa, proximos sambas e acesso rapido de operacao.</p>
-        <div className="role-session-badge">Perfil ativo: {(user?.role || "venue_manager").toUpperCase()}</div>
+      <header className="page-header admin-page-header">
+        <div className="admin-page-header-main">
+          <h2>Painel da Casa</h2>
+          <p>Agenda da casa, proximos sambas e acesso rapido de operacao.</p>
+          <div className="role-session-wrap">
+            <div className="role-session-badge">Perfil ativo: {(user?.role || "venue_manager").toUpperCase()}</div>
+            <span className="role-live-indicator" aria-label="Perfil ativo ao vivo">LIVE</span>
+          </div>
+        </div>
+        <img src="/assets/brand/icon_mono_77Gira.svg" alt="77Gira" className="admin-page-icon" />
       </header>
 
       {loading ? <p className="empty">Carregando painel da casa...</p> : null}
@@ -58,6 +64,7 @@ export default function VenueOperatorDashboardPage() {
       <div className="admin-shortcuts">
         <Link to="/settings/venues?section=events" className="btn-primary">Abrir Agenda e Cadastro</Link>
         <Link to="/settings/venues?section=events" className="chip">Criar Evento</Link>
+        <Link to="/settings/venues?section=managers" className="chip">Gerenciar Produtores</Link>
       </div>
 
       <h3 className="section-title">Proximos eventos da casa</h3>
@@ -129,3 +136,4 @@ export default function VenueOperatorDashboardPage() {
     </section>
   );
 }
+

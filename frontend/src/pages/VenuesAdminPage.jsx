@@ -4,8 +4,10 @@ import VerifiedBadge from "../components/common/VerifiedBadge";
 import {
   useAddVenueManagerMutation,
   useArtistsQuery,
+  useAdminRegionsQuery,
   useCreateArtistMutation,
   useCreateClaimMutation,
+  useCreateRegionMutation,
   useClaimsQuery,
   useDecideClaimMutation,
   useCreateEventMutation,
@@ -13,14 +15,20 @@ import {
   useCreateVenueMutation,
   useDeleteArtistMutation,
   useDeleteEventMutation,
+  useDeleteRegionMutation,
   useDeleteVenueMutation,
   useEventsQuery,
   useRegionsQuery,
   useRemoveVenueManagerMutation,
   useVenueManagerUsersQuery,
+  useMyClaimsQuery,
+  useRevokeMyVenueAccessMutation,
   useUpdateArtistMutation,
   useUpdateEventMutation,
+  useUpdateRegionMutation,
+  useUploadImageMutation,
   useUpdateVenueMutation,
+  useVenueAdsSummaryQuery,
   useVenueManagersQuery,
   useVenuesQuery
 } from "../hooks/useEventsQuery";
@@ -65,15 +73,12 @@ const initialEventForm = {
   startDate: "",
   endDate: "",
   ticketType: "paid",
+  status: "draft",
   ticketUrl: "",
   priceMin: "",
   priceMax: "",
   consumacaoValue: "",
   couvertArtistico: "",
-  freeUntil: "",
-  menFreeUntil: "",
-  womenFreeUntil: "",
-  womenFreeAllNight: false,
   venueId: "",
   artistName: "",
   isRecurring: false,
@@ -83,6 +88,15 @@ const initialEventForm = {
   recurrenceUntil: "",
   recurrenceExceptions: ""
 };
+
+const publishChecklistModel = [
+  { key: "title", label: "Revisei titulo/artista do evento." },
+  { key: "schedule", label: "Revisei data e horario (inicio e fim)." },
+  { key: "venue", label: "Revisei casa/unidade selecionada." },
+  { key: "region", label: "Revisei regiao da casa para o filtro correto." },
+  { key: "pricing", label: "Revisei politica de preco e valores." },
+  { key: "media", label: "Revisei imagem, descricao e link (se houver)." }
+];
 
 const initialManagerForm = {
   firstName: "",
@@ -94,6 +108,23 @@ const initialManagerForm = {
 };
 const PAGE_SIZE = 6;
 const ADMIN_PREFS_KEY = "napalma:admin:prefs";
+const RECURRENCE_DAYS = [
+  { value: "seg", label: "Seg" },
+  { value: "ter", label: "Ter" },
+  { value: "qua", label: "Qua" },
+  { value: "qui", label: "Qui" },
+  { value: "sex", label: "Sex" },
+  { value: "sab", label: "Sab" },
+  { value: "dom", label: "Dom" }
+];
+const DEFAULT_CITY_REGIONS = ["Centro", "Zona Norte", "Zona Sul", "Zona Leste", "Zona Oeste"];
+const initialRegionForm = {
+  name: "",
+  city: "Sao Paulo",
+  state: "SP",
+  sortOrder: "",
+  isActive: true
+};
 
 function loadAdminPrefs() {
   try {
@@ -119,6 +150,25 @@ function toLocalDateTimeInput(value) {
   return local.toISOString().slice(0, 16);
 }
 
+function formatPreviewDateTime(value) {
+  if (!value) return "Data e hora";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Data e hora";
+  return parsed.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function parseTagList(rawValue) {
+  return String(rawValue || "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
 export default function VenuesAdminPage() {
   const prefs = loadAdminPrefs();
   const navigate = useNavigate();
@@ -137,6 +187,15 @@ export default function VenuesAdminPage() {
   const [selectedManagerUserId, setSelectedManagerUserId] = useState("");
   const [venueEditJustification, setVenueEditJustification] = useState("");
   const [claimViewFilter, setClaimViewFilter] = useState("all");
+  const [houseClaimTargetId, setHouseClaimTargetId] = useState("");
+  const [houseClaimJustification, setHouseClaimJustification] = useState("");
+  const [houseClaimResponsibleName, setHouseClaimResponsibleName] = useState("");
+  const [houseClaimResponsiblePhone, setHouseClaimResponsiblePhone] = useState("");
+  const [houseClaimDocument, setHouseClaimDocument] = useState("");
+  const [houseClaimRelationship, setHouseClaimRelationship] = useState("");
+  const [houseClaimOfficialEmail, setHouseClaimOfficialEmail] = useState("");
+  const [houseClaimOfficialInstagram, setHouseClaimOfficialInstagram] = useState("");
+  const [houseClaimOfficialWebsite, setHouseClaimOfficialWebsite] = useState("");
   const [cancellationTarget, setCancellationTarget] = useState(null);
   const [reactivationTarget, setReactivationTarget] = useState(null);
   const [toast, setToast] = useState({ text: "", type: "info" });
@@ -154,13 +213,26 @@ export default function VenuesAdminPage() {
   const [venuePage, setVenuePage] = useState(1);
   const [artistPage, setArtistPage] = useState(1);
   const [eventPage, setEventPage] = useState(1);
+  const [regionForm, setRegionForm] = useState(initialRegionForm);
+  const [editingRegionId, setEditingRegionId] = useState("");
+  const [uploadingTarget, setUploadingTarget] = useState("");
+  const [publishReviewOpen, setPublishReviewOpen] = useState(false);
+  const [publishChecks, setPublishChecks] = useState(() =>
+    Object.fromEntries(publishChecklistModel.map((item) => [item.key, false]))
+  );
 
   function showToast(text, forcedType) {
     if (!text) {
       setToast({ text: "", type: "info" });
       return;
     }
-    const autoType = text.includes("Nao foi possivel") || text.includes("Revise")
+    const normalized = String(text).toLowerCase();
+    const autoType = normalized.includes("nao foi possivel")
+      || normalized.includes("revise")
+      || normalized.includes("sem permissao")
+      || normalized.includes("voce nao pode")
+      || normalized.includes("forbidden")
+      || normalized.includes("erro")
       ? "error"
       : text.includes("Carregando")
         ? "info"
@@ -168,10 +240,21 @@ export default function VenuesAdminPage() {
     setToast({ text, type: forcedType || autoType });
   }
 
+  const isHouseRole = isVenueRole(user?.role);
   const { data: regions = [] } = useRegionsQuery();
   const { data: venues = [], isLoading: venuesLoading } = useVenuesQuery(regionFilter ? { region: regionFilter } : {});
+  const { data: publicVenues = [] } = useVenuesQuery({ scope: "public" });
+  const { data: adminRegions = [] } = useAdminRegionsQuery({ includeInactive: "true" }, isAdminRole(user?.role));
   const { data: artists = [], isLoading: artistsLoading } = useArtistsQuery();
-  const { data: events = [], isLoading: eventsLoading } = useEventsQuery(regionFilter ? { region: regionFilter } : {});
+  const eventsQueryFilters = useMemo(
+    () => ({
+      ...(regionFilter ? { region: regionFilter } : {}),
+      ...(user ? { includeDrafts: "true" } : {})
+    }),
+    [regionFilter, user]
+  );
+  const { data: events = [], isLoading: eventsLoading } = useEventsQuery(eventsQueryFilters);
+  const { data: houseAdsSummary, isLoading: houseAdsLoading } = useVenueAdsSummaryQuery({ days: 30 }, isHouseRole);
   const { data: venueManagers = [], isLoading: managersLoading } = useVenueManagersQuery(selectedVenueForManagers);
   const { data: managerCandidates = [], isLoading: managerCandidatesLoading } = useVenueManagerUsersQuery(managerSearch);
 
@@ -188,15 +271,21 @@ export default function VenuesAdminPage() {
   const addVenueManagerMutation = useAddVenueManagerMutation();
   const createVenueManagerUserMutation = useCreateVenueManagerUserMutation();
   const removeVenueManagerMutation = useRemoveVenueManagerMutation();
+  const revokeMyVenueAccessMutation = useRevokeMyVenueAccessMutation();
   const decideClaimMutation = useDecideClaimMutation();
+  const createRegionMutation = useCreateRegionMutation();
+  const updateRegionMutation = useUpdateRegionMutation();
+  const deleteRegionMutation = useDeleteRegionMutation();
+  const uploadImageMutation = useUploadImageMutation();
   const { data: claims = [], isLoading: claimsLoading } = useClaimsQuery(undefined, user?.role === "admin");
+  const { data: myClaims = [], isLoading: myClaimsLoading } = useMyClaimsQuery(Boolean(user));
 
   const isEditingVenue = useMemo(() => Boolean(editingVenueId), [editingVenueId]);
   const isEditingArtist = useMemo(() => Boolean(editingArtistId), [editingArtistId]);
   const isEditingEvent = useMemo(() => Boolean(editingEventId), [editingEventId]);
-  const isHouseRole = isVenueRole(user?.role);
   const isProducer = isProducerRole(user?.role);
   const canManageCatalog = isAdminRole(user?.role) || isProducerRole(user?.role);
+  const canManageProducers = isAdminRole(user?.role) || isHouseRole;
   const isAdmin = isAdminRole(user?.role);
   const houseVenues = useMemo(() => (isHouseRole ? venues : []), [isHouseRole, venues]);
   const houseActiveVenue = useMemo(() => {
@@ -230,13 +319,19 @@ export default function VenuesAdminPage() {
     });
   }, [events, eventSearch, eventTimeFilter, isHouseRole, houseActiveVenue]);
   const activeSection = searchParams.get("section") || "overview";
-  const effectiveSection = isHouseRole ? "events" : activeSection;
+  const effectiveSection = activeSection;
   const showOverview = effectiveSection === "overview";
   const showVenues = canManageCatalog && effectiveSection === "venues";
-  const showManagers = canManageCatalog && effectiveSection === "managers";
+  const showManagers = canManageProducers && effectiveSection === "managers";
   const showArtists = canManageCatalog && effectiveSection === "artists";
-  const showEvents = effectiveSection === "events";
+  const houseCanOperate = !isHouseRole || Boolean(houseActiveVenue);
+  const showEvents = effectiveSection === "events" && houseCanOperate;
+  const showEventsBlocked = effectiveSection === "events" && !houseCanOperate;
   const showClaims = isAdmin && effectiveSection === "claims";
+  const showAdminRegions = isAdmin && effectiveSection === "regions";
+  const showHouseClaims = isHouseRole && effectiveSection === "claims";
+  const showHouseProfile = isHouseRole && effectiveSection === "profile";
+  const isHouseProgramacaoClean = isHouseRole && showEvents && searchParams.get("layout") === "clean";
   const sortedVenues = useMemo(() => {
     const list = [...filteredVenues];
     if (venueSort === "az") return list.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
@@ -277,6 +372,54 @@ export default function VenuesAdminPage() {
         ? `${venues.length} casas vinculadas`
         : "Sua casa"
     : "";
+  const houseClaimOptions = useMemo(() => {
+    if (!isHouseRole) return [];
+    const managedIds = new Set((houseVenues || []).map((venue) => venue.id));
+    return (publicVenues || []).filter((venue) => !managedIds.has(venue.id));
+  }, [isHouseRole, houseVenues, publicVenues]);
+  const venueRegionOptions = useMemo(() => {
+    const merged = new Set([
+      ...DEFAULT_CITY_REGIONS,
+      ...regions,
+      venueForm.region || ""
+    ]);
+    return Array.from(merged)
+      .map((item) => String(item || "").trim())
+      .filter(Boolean);
+  }, [regions, venueForm.region]);
+  const isEditingRegion = Boolean(editingRegionId);
+  const houseEvents = useMemo(() => {
+    if (!isHouseRole || !houseActiveVenue) return [];
+    return events
+      .filter((item) => item.venue === houseActiveVenue.name)
+      .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+  }, [isHouseRole, houseActiveVenue, events]);
+  const houseTodayEventsCount = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const d = now.getDate();
+    return houseEvents.filter((event) => {
+      const start = new Date(event.startsAt);
+      return start.getFullYear() === y && start.getMonth() === m && start.getDate() === d;
+    }).length;
+  }, [houseEvents]);
+  const houseUpcomingEvents = useMemo(() => {
+    const now = Date.now();
+    return houseEvents.filter((event) => new Date(event.startsAt).getTime() >= now).slice(0, 6);
+  }, [houseEvents]);
+  const pendingMyHouseClaims = useMemo(
+    () => myClaims.filter((claim) => claim.targetType === "venue" && claim.status === "pending").length,
+    [myClaims]
+  );
+  const previewVenue = venues.find((venue) => venue.id === eventForm.venueId) || houseActiveVenue || null;
+  const previewPriceLabel = eventForm.ticketType === "free"
+    ? "Gratuito"
+    : eventForm.ticketType === "consumacao"
+      ? "Consumacao"
+      : eventForm.priceMin || eventForm.priceMax
+        ? `R$ ${eventForm.priceMin || eventForm.priceMax}`
+        : "Consulte valores";
   const roleHeader = useMemo(() => {
     if (isAdminRole(user?.role)) {
       return {
@@ -295,9 +438,9 @@ export default function VenuesAdminPage() {
     return {
       title: "Gestao de Agenda da Casa",
       subtitle: houseDisplayName
-        ? `Unidade ativa: ${houseDisplayName}. Voce opera somente sua agenda.`
-        : "Cadastro e manutencao de eventos da sua casa.",
-      badge: "Perfil ativo: GESTOR/CASA"
+        ? `Unidade ativa: ${houseDisplayName}. Aqui voce cuida da agenda, produtores e dados da sua casa.`
+        : "Para operar a agenda, primeiro solicite acesso a uma filial cadastrada.",
+      badge: "Perfil ativo: CASA"
     };
   }, [houseDisplayName, user?.role]);
 
@@ -311,11 +454,12 @@ export default function VenuesAdminPage() {
     setEventPage(1);
   }, [eventSearch, regionFilter, eventSort, eventTimeFilter]);
   useEffect(() => {
-    if (isHouseRole && activeSection !== "events") {
-      setSearchParams({ section: "events" });
+    if (isHouseRole && !searchParams.get("section")) {
+      setSearchParams({ section: "overview" });
     }
-  }, [activeSection, isHouseRole, setSearchParams]);
+  }, [isHouseRole, searchParams, setSearchParams]);
   useEffect(() => {
+    if (isHouseRole) return;
     if (!searchParams.get("section") && prefs.section) {
       setSearchParams({ section: prefs.section === "all" ? "overview" : prefs.section });
     }
@@ -358,6 +502,10 @@ export default function VenuesAdminPage() {
   useEffect(() => {
     if (!isHouseRole || !houseActiveVenue?.id) return;
     setEventForm((prev) => ({ ...prev, venueId: houseActiveVenue.id }));
+  }, [isHouseRole, houseActiveVenue?.id]);
+  useEffect(() => {
+    if (!isHouseRole || !houseActiveVenue?.id) return;
+    setSelectedVenueForManagers(houseActiveVenue.id);
   }, [isHouseRole, houseActiveVenue?.id]);
   useEffect(() => {
     const onKey = (e) => {
@@ -440,9 +588,52 @@ export default function VenuesAdminPage() {
       return;
     }
 
+    if (name === "isRecurring" && !checked) {
+      setEventForm((prev) => ({
+        ...prev,
+        isRecurring: false,
+        recurrenceDays: [],
+        recurrenceStartTime: "",
+        recurrenceEndTime: "",
+        recurrenceUntil: "",
+        recurrenceExceptions: ""
+      }));
+      setEventErrors((prev) => ({ ...prev, recurrenceDays: undefined }));
+      return;
+    }
+
     const nextValue = type === "checkbox" ? checked : value;
     setEventForm((prev) => ({ ...prev, [name]: nextValue }));
     setEventErrors((prev) => ({ ...prev, [name]: undefined }));
+  }
+
+  function toggleRecurrenceDay(day) {
+    setEventForm((prev) => {
+      const currentDays = Array.isArray(prev.recurrenceDays) ? prev.recurrenceDays : [];
+      const nextDays = currentDays.includes(day)
+        ? currentDays.filter((item) => item !== day)
+        : [...currentDays, day];
+      return {
+        ...prev,
+        isRecurring: nextDays.length > 0 || prev.isRecurring,
+        recurrenceDays: nextDays
+      };
+    });
+    setEventErrors((prev) => ({ ...prev, recurrenceDays: undefined }));
+  }
+
+  function hasEventTag(tag) {
+    return parseTagList(eventForm.tags).includes(tag);
+  }
+
+  function toggleEventTag(tag) {
+    setEventForm((prev) => {
+      const tags = parseTagList(prev.tags);
+      const next = tags.includes(tag)
+        ? tags.filter((item) => item !== tag)
+        : [...tags, tag];
+      return { ...prev, tags: next.join(", ") };
+    });
   }
 
   function resetVenueForm() {
@@ -462,7 +653,18 @@ export default function VenuesAdminPage() {
     setEditingEventId("");
     setEventForm(initialEventForm);
     setEventErrors({});
+    setPublishReviewOpen(false);
+    setPublishChecks(Object.fromEntries(publishChecklistModel.map((item) => [item.key, false])));
   }
+
+  function togglePublishCheck(key) {
+    setPublishChecks((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  const publishChecklistDone = useMemo(
+    () => publishChecklistModel.every((item) => publishChecks[item.key]),
+    [publishChecks]
+  );
 
   function validateEventBeforeSubmit() {
     const errors = {};
@@ -694,8 +896,7 @@ export default function VenuesAdminPage() {
     }
   }
 
-  async function handleEventSubmit(event) {
-    event.preventDefault();
+  async function persistEvent(nextStatus = "draft") {
     showToast("");
     setEventErrors({});
 
@@ -708,17 +909,13 @@ export default function VenuesAdminPage() {
 
     const payload = {
       ...eventForm,
+      status: nextStatus,
+      artistName: eventForm.artistName?.trim() ? eventForm.artistName.trim() : undefined,
       tags: eventForm.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
       priceMin: eventForm.priceMin ? Number(eventForm.priceMin) : undefined,
       priceMax: eventForm.priceMax ? Number(eventForm.priceMax) : undefined,
       consumacaoValue: eventForm.consumacaoValue ? Number(eventForm.consumacaoValue) : undefined,
       couvertArtistico: eventForm.couvertArtistico ? Number(eventForm.couvertArtistico) : undefined,
-      pricingPolicy: {
-        freeUntil: eventForm.freeUntil || undefined,
-        menFreeUntil: eventForm.menFreeUntil || undefined,
-        womenFreeUntil: eventForm.womenFreeAllNight ? undefined : (eventForm.womenFreeUntil || undefined),
-        womenFreeAllNight: Boolean(eventForm.womenFreeAllNight)
-      },
       ticketUrl: eventForm.ticketUrl || undefined,
       imageUrl: eventForm.imageUrl || undefined,
       isRecurring: Boolean(eventForm.isRecurring),
@@ -749,16 +946,42 @@ export default function VenuesAdminPage() {
 
       if (isEditingEvent) {
         await updateEventMutation.mutateAsync({ id: editingEventId, payload });
-        showToast("Evento atualizado com sucesso.");
+        showToast(nextStatus === "confirmed" ? "Evento publicado com sucesso." : "Rascunho atualizado com sucesso.");
       } else {
         await createEventMutation.mutateAsync(payload);
-        showToast("Evento criado com sucesso.");
+        showToast(nextStatus === "confirmed" ? "Evento publicado com sucesso." : "Rascunho salvo com sucesso.");
       }
       resetEventForm();
+      return true;
     } catch (error) {
       const parsed = parseApiErrors(error);
       setEventErrors(parsed.fieldErrors);
-      showToast(parsed.message || "Nao foi possivel salvar o evento.");
+      showToast(parsed.message || "Nao foi possivel salvar o evento.", "error");
+      return false;
+    }
+  }
+
+  async function handleEventSubmit(event) {
+    event.preventDefault();
+    await persistEvent("draft");
+  }
+
+  function openPublishReview() {
+    const localErrors = validateEventBeforeSubmit();
+    if (Object.keys(localErrors).length > 0) {
+      setEventErrors(localErrors);
+      showToast("Revise os campos do evento destacados abaixo.");
+      return;
+    }
+    setPublishChecks(Object.fromEntries(publishChecklistModel.map((item) => [item.key, false])));
+    setPublishReviewOpen(true);
+  }
+
+  async function confirmPublishEvent() {
+    if (!publishChecklistDone) return;
+    const ok = await persistEvent("confirmed");
+    if (ok) {
+      setPublishReviewOpen(false);
     }
   }
 
@@ -778,15 +1001,12 @@ export default function VenuesAdminPage() {
         startDate: toLocalDateTimeInput(detail.startDate),
         endDate: toLocalDateTimeInput(detail.endDate),
         ticketType: detail.ticketType || "paid",
+        status: detail.status || "draft",
         ticketUrl: detail.ticketUrl || "",
         priceMin: detail.priceMin ?? "",
         priceMax: detail.priceMax ?? "",
         consumacaoValue: detail.consumacaoValue ?? "",
         couvertArtistico: detail.couvertArtistico ?? "",
-        freeUntil: detail.pricingPolicy?.freeUntil || "",
-        menFreeUntil: detail.pricingPolicy?.menFreeUntil || "",
-        womenFreeUntil: detail.pricingPolicy?.womenFreeUntil || "",
-        womenFreeAllNight: Boolean(detail.pricingPolicy?.womenFreeAllNight),
         venueId: detail.venueId || "",
         artistName: detail.artistName || "",
         isRecurring: Boolean(detail.isRecurring),
@@ -896,7 +1116,7 @@ export default function VenuesAdminPage() {
   async function handleAddManager(event) {
     event.preventDefault();
     if (!selectedVenueForManagers || !selectedManagerUserId) {
-      showToast("Selecione a casa e um gestor valido da lista.");
+      showToast("Selecione a casa e um produtor valido da lista.");
       return;
     }
     showToast("");
@@ -907,9 +1127,9 @@ export default function VenuesAdminPage() {
       });
       setManagerSearch("");
       setSelectedManagerUserId("");
-      showToast("Gestor vinculado com sucesso.");
+      showToast("Produtor vinculado com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel vincular gestor.");
+      showToast(error?.response?.data?.message || "Nao foi possivel vincular produtor.");
     }
   }
 
@@ -932,9 +1152,9 @@ export default function VenuesAdminPage() {
       setManagerForm(initialManagerForm);
       setManagerSearch("");
       setSelectedManagerUserId("");
-      showToast("Gestor criado com sucesso.");
+      showToast("Produtor criado com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel criar gestor.");
+      showToast(error?.response?.data?.message || "Nao foi possivel criar produtor.");
     }
   }
 
@@ -964,28 +1184,201 @@ export default function VenuesAdminPage() {
     }
   }
 
+  function resetRegionForm() {
+    setRegionForm(initialRegionForm);
+    setEditingRegionId("");
+  }
+
+  function handleRegionFormChange(event) {
+    const { name, value, type, checked } = event.target;
+    setRegionForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value
+    }));
+  }
+
+  function handleRegionEdit(item) {
+    setEditingRegionId(item.id);
+    setRegionForm({
+      name: item.name || "",
+      city: item.city || "Sao Paulo",
+      state: item.state || "SP",
+      sortOrder: item.sortOrder ?? "",
+      isActive: Boolean(item.isActive)
+    });
+  }
+
+  async function handleRegionSubmit(event) {
+    event.preventDefault();
+    showToast("");
+    const payload = {
+      name: regionForm.name.trim(),
+      city: regionForm.city.trim() || "Sao Paulo",
+      state: (regionForm.state || "SP").trim().toUpperCase(),
+      sortOrder: regionForm.sortOrder === "" ? 0 : Number(regionForm.sortOrder),
+      isActive: Boolean(regionForm.isActive)
+    };
+    try {
+      if (editingRegionId) {
+        await updateRegionMutation.mutateAsync({ id: editingRegionId, payload });
+        showToast("Regiao atualizada com sucesso.");
+      } else {
+        await createRegionMutation.mutateAsync(payload);
+        showToast("Regiao criada com sucesso.");
+      }
+      resetRegionForm();
+    } catch (error) {
+      showToast(error?.response?.data?.message || "Nao foi possivel salvar a regiao.");
+    }
+  }
+
+  async function handleRegionDelete(regionItem) {
+    if ((regionItem?.venuesCount || 0) > 0) {
+      showToast("Regiao com casas vinculadas nao pode ser excluida.", "error");
+      return;
+    }
+    const ok = window.confirm("Deseja excluir esta regiao?");
+    if (!ok) return;
+    showToast("");
+    try {
+      await deleteRegionMutation.mutateAsync(regionItem.id);
+      if (editingRegionId === regionItem.id) resetRegionForm();
+      showToast("Regiao excluida com sucesso.");
+    } catch (error) {
+      showToast(error?.response?.data?.message || "Nao foi possivel excluir a regiao.");
+    }
+  }
+
+  async function handleImageUpload(event, target) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    event.target.value = "";
+    showToast("");
+    setUploadingTarget(target);
+    try {
+      const folder = target === "venue" ? "venues" : target === "artist" ? "artists" : "events";
+      const nameHint = target === "venue" ? venueForm.name : target === "artist" ? artistForm.name : eventForm.title;
+      const uploaded = await uploadImageMutation.mutateAsync({
+        file,
+        folder,
+        name: nameHint || file.name
+      });
+      if (target === "venue") {
+        setVenueForm((prev) => ({ ...prev, imageUrl: uploaded.url || prev.imageUrl }));
+      } else if (target === "artist") {
+        setArtistForm((prev) => ({ ...prev, imageUrl: uploaded.url || prev.imageUrl }));
+      } else {
+        setEventForm((prev) => ({ ...prev, imageUrl: uploaded.url || prev.imageUrl }));
+      }
+      showToast("Imagem enviada com sucesso.");
+    } catch (error) {
+      showToast(error?.response?.data?.message || "Nao foi possivel enviar a imagem.");
+    } finally {
+      setUploadingTarget("");
+    }
+  }
+
+  async function handleRevokeMyHouseAccess(venueId, venueName) {
+    const ok = window.confirm(
+      `Deseja abrir mao da filial "${venueName}"? Voce perdera acesso imediato a esta unidade.`
+    );
+    if (!ok) return;
+    showToast("");
+    try {
+      await revokeMyVenueAccessMutation.mutateAsync(venueId);
+      if (houseActiveVenueId === venueId) {
+        setHouseActiveVenueId("");
+      }
+      showToast("Acesso da filial revogado com sucesso.");
+    } catch (error) {
+      showToast(error?.response?.data?.message || "Nao foi possivel revogar este acesso.");
+    }
+  }
+
+  async function handleHouseOwnershipClaimSubmit(event) {
+    event.preventDefault();
+    showToast("");
+    if (!houseClaimTargetId) {
+      showToast("Selecione a filial para solicitar acesso.", "error");
+      return;
+    }
+    try {
+      await createClaimMutation.mutateAsync({
+        targetType: "venue",
+        requestType: "ownership",
+        venueId: houseClaimTargetId,
+        justification: houseClaimJustification.trim(),
+        responsibleName: houseClaimResponsibleName.trim(),
+        responsiblePhone: houseClaimResponsiblePhone.trim(),
+        claimantDocument: houseClaimDocument.trim(),
+        relationshipRole: houseClaimRelationship.trim(),
+        officialEmail: houseClaimOfficialEmail.trim() || undefined,
+        officialInstagram: houseClaimOfficialInstagram.trim() || undefined,
+        officialWebsite: houseClaimOfficialWebsite.trim() || undefined
+      });
+      showToast("Reivindicacao enviada. Aguarde aprovacao do admin.");
+      setHouseClaimTargetId("");
+      setHouseClaimJustification("");
+      setHouseClaimResponsibleName("");
+      setHouseClaimResponsiblePhone("");
+      setHouseClaimDocument("");
+      setHouseClaimRelationship("");
+      setHouseClaimOfficialEmail("");
+      setHouseClaimOfficialInstagram("");
+      setHouseClaimOfficialWebsite("");
+    } catch (error) {
+      showToast(error?.response?.data?.message || "Nao foi possivel enviar reivindicacao.", "error");
+    }
+  }
+
+  function startHouseProfileEdit() {
+    if (!houseActiveVenue) return;
+    setEditingVenueId(houseActiveVenue.id);
+    setVenueForm({
+      name: houseActiveVenue.name || "",
+      description: houseActiveVenue.description || "",
+      contactName: houseActiveVenue.contactName || "",
+      contactPhone: houseActiveVenue.contactPhone || "",
+      instagramUrl: houseActiveVenue.instagramUrl || "",
+      address: houseActiveVenue.address || "",
+      neighborhood: houseActiveVenue.neighborhood || "",
+      region: houseActiveVenue.region || "",
+      city: houseActiveVenue.city || "Sao Paulo",
+      state: houseActiveVenue.state || "SP",
+      imageUrl: houseActiveVenue.imageUrl || "",
+      openDays: (houseActiveVenue.openDays || []).join(", ")
+    });
+    setSearchParams({ section: "profile" });
+  }
+
   return (
     <section>
       <button className="btn-link" onClick={() => navigate(-1)}>Voltar</button>
-      <header className="page-header">
-        <h2>{roleHeader.title}</h2>
-        <p>{roleHeader.subtitle}</p>
-        <div className="role-session-badge">{roleHeader.badge}</div>
-        {isHouseRole ? <p className="meta-line"><strong>Casa:</strong> {houseDisplayName}</p> : null}
-        {isHouseRole && houseVenues.length > 1 ? (
-          <div className="house-selector-wrap">
-            <label htmlFor="house-active-select" className="meta-line"><strong>Unidade ativa</strong></label>
-            <select
-              id="house-active-select"
-              value={houseActiveVenueId}
-              onChange={(e) => setHouseActiveVenueId(e.target.value)}
-            >
-              {houseVenues.map((venue) => (
-                <option key={venue.id} value={venue.id}>{venue.name}</option>
-              ))}
-            </select>
+      <header className="page-header admin-page-header">
+        <div className="admin-page-header-main">
+          <h2>{roleHeader.title}</h2>
+          <p>{roleHeader.subtitle}</p>
+          <div className="role-session-wrap">
+            <div className="role-session-badge">{roleHeader.badge}</div>
+            <span className="role-live-indicator" aria-label="Perfil ativo ao vivo">LIVE</span>
           </div>
-        ) : null}
+          {isHouseRole ? <p className="meta-line"><strong>Casa:</strong> {houseDisplayName}</p> : null}
+          {isHouseRole && houseVenues.length > 1 ? (
+            <div className="house-selector-wrap">
+              <label htmlFor="house-active-select" className="meta-line"><strong>Unidade ativa</strong></label>
+              <select
+                id="house-active-select"
+                value={houseActiveVenueId}
+                onChange={(e) => setHouseActiveVenueId(e.target.value)}
+              >
+                {houseVenues.map((venue) => (
+                  <option key={venue.id} value={venue.id}>{venue.name}</option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+        </div>
+        <img src="/assets/brand/icon_mono_77Gira.svg" alt="77Gira" className="admin-page-icon" />
       </header>
 
       {toast.text ? <p className={`toast toast-${toast.type}`}>{toast.text}</p> : null}
@@ -998,13 +1391,14 @@ export default function VenuesAdminPage() {
             </button>
             {canManageCatalog ? <button className={`chip ${activeSection === "venues" ? "active" : ""}`} onClick={() => setSearchParams({ section: "venues" })}>Casas</button> : null}
             {canManageCatalog ? <button className={`chip ${activeSection === "artists" ? "active" : ""}`} onClick={() => setSearchParams({ section: "artists" })}>Artistas</button> : null}
-            {canManageCatalog ? <button className={`chip ${activeSection === "managers" ? "active" : ""}`} onClick={() => setSearchParams({ section: "managers" })}>Gestores</button> : null}
+            {isAdmin ? <button className={`chip ${activeSection === "regions" ? "active" : ""}`} onClick={() => setSearchParams({ section: "regions" })}>Regioes</button> : null}
+            {isAdmin ? <button className={`chip ${activeSection === "managers" ? "active" : ""}`} onClick={() => setSearchParams({ section: "managers" })}>Produtores</button> : null}
             {isAdmin ? <button className={`chip ${activeSection === "claims" ? "active" : ""}`} onClick={() => setSearchParams({ section: "claims" })}>Reivindicacoes</button> : null}
             <button className={`chip ${activeSection === "events" ? "active" : ""}`} onClick={() => setSearchParams({ section: "events" })}>Eventos</button>
             <button className="chip" onClick={clearAdminFilters}>Limpar filtros</button>
           </aside>
           <div className="ads-content">
-            <div className="chip-row">
+            <div className="chip-row admin-filter-row">
               <button className={`chip ${regionFilter === "" ? "active" : ""}`} onClick={() => setRegionFilter("")}>Todas</button>
               {regions.map((region) => (
                 <button key={region} className={`chip ${regionFilter === region ? "active" : ""}`} onClick={() => setRegionFilter(region)}>
@@ -1017,8 +1411,9 @@ export default function VenuesAdminPage() {
               {showVenues ? <article className="clean-card"><h4>Casas</h4><p>{filteredVenues.length}</p></article> : null}
               {showArtists ? <article className="clean-card"><h4>Artistas</h4><p>{filteredArtists.length}</p></article> : null}
               {showEvents ? <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
-              {showManagers ? <article className="clean-card"><h4>Gestores</h4><p>{totalManagers}</p></article> : null}
+              {showManagers ? <article className="clean-card"><h4>Produtores</h4><p>{totalManagers}</p></article> : null}
               {showClaims ? <article className="clean-card"><h4>Reivindicacoes</h4><p>{pendingClaimsCount} pendentes</p></article> : null}
+              {showAdminRegions ? <article className="clean-card"><h4>Regioes</h4><p>{adminRegions.length}</p></article> : null}
               {showOverview ? <article className="clean-card"><h4>Casas</h4><p>{filteredVenues.length}</p></article> : null}
               {showOverview ? <article className="clean-card"><h4>Artistas</h4><p>{filteredArtists.length}</p></article> : null}
               {showOverview ? <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
@@ -1027,17 +1422,95 @@ export default function VenuesAdminPage() {
             {showOverview ? (
               <article className="clean-card admin-overview-card">
                 <h4>Visao Geral</h4>
-                <p className="meta-line">Use o menu lateral para abrir Casas, Artistas, Gestores, Reivindicacoes e Eventos sem rolagem infinita.</p>
+                <p className="meta-line">Use o menu lateral para abrir Casas, Artistas, Produtores, Reivindicacoes e Eventos sem rolagem infinita.</p>
               </article>
             ) : null}
           </div>
         </div>
+      ) : isHouseProgramacaoClean ? (
+        <div className="ads-content">
+          <div className="admin-kpis">
+            <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article>
+          </div>
+        </div>
       ) : (
-        <div className="admin-kpis">
-          <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article>
+        <div className="ads-layout">
+          <aside className="ads-sidebar">
+            <button className={`chip ${activeSection === "overview" ? "active" : ""}`} onClick={() => setSearchParams({ section: "overview" })}>
+              Visao Geral
+            </button>
+            <button className={`chip ${activeSection === "events" ? "active" : ""}`} onClick={() => setSearchParams({ section: "events" })}>
+              Eventos
+            </button>
+            <button className={`chip ${activeSection === "profile" ? "active" : ""}`} onClick={() => setSearchParams({ section: "profile" })}>
+              Dados da Casa
+            </button>
+            <button className={`chip ${activeSection === "managers" ? "active" : ""}`} onClick={() => setSearchParams({ section: "managers" })}>
+              Produtores
+            </button>
+            <button className={`chip ${activeSection === "claims" ? "active" : ""}`} onClick={() => setSearchParams({ section: "claims" })}>
+              Solicitar Acesso
+            </button>
+            <button className="chip" onClick={clearAdminFilters}>Limpar filtros</button>
+          </aside>
+          <div className="ads-content">
+            <div className="admin-kpis">
+              {showOverview ? <article className="clean-card"><h4>Casa em foco</h4><p>{houseDisplayName || "Sem unidade ativa"}</p></article> : null}
+              {showOverview ? <article className="clean-card"><h4>Eventos da casa</h4><p>{houseEvents.length}</p></article> : null}
+              {showOverview ? <article className="clean-card"><h4>Hoje</h4><p>{houseTodayEventsCount} evento(s)</p></article> : null}
+              {showOverview ? <article className="clean-card"><h4>Solicitacoes</h4><p>{pendingMyHouseClaims} pendente(s)</p></article> : null}
+              {showOverview ? <article className="clean-card"><h4>Impressoes (30d)</h4><p>{houseAdsSummary?.summary?.impressions ?? 0}</p></article> : null}
+              {showOverview ? <article className="clean-card"><h4>Cliques (30d)</h4><p>{houseAdsSummary?.summary?.clicks ?? 0}</p></article> : null}
+              {showOverview ? <article className="clean-card"><h4>CTR (30d)</h4><p>{houseAdsSummary?.summary?.ctr ?? 0}%</p></article> : null}
+              {showEvents && !isHouseProgramacaoClean ? <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
+              {showHouseProfile ? <article className="clean-card"><h4>Dados da Casa</h4><p>{houseDisplayName || "Sem unidade ativa"}</p></article> : null}
+              {showManagers ? <article className="clean-card"><h4>Produtores</h4><p>{totalManagers}</p></article> : null}
+              {showHouseClaims ? <article className="clean-card"><h4>Solicitacoes</h4><p>{myClaims.filter((c) => c.status === "pending").length} pendentes</p></article> : null}
+            </div>
+            {showEvents && !isHouseProgramacaoClean ? <div className="admin-content-divider" /> : null}
+          </div>
         </div>
       )}
 
+      <div className={`admin-section-stack${isHouseRole ? " house-section-stack" : ""}${isHouseRole && (showOverview || showEvents) ? " no-divider" : ""}${isHouseProgramacaoClean ? " house-events-focus" : ""}`}>
+      {showOverview && isHouseRole ? (
+        <>
+          {!houseActiveVenue ? (
+            <p className="empty">Sem filial aprovada. Abra "Solicitar Acesso" no menu lateral para liberar a operacao.</p>
+          ) : null}
+          {houseActiveVenue ? (
+            <>
+              {houseAdsLoading ? <p className="empty">Carregando metricas de anuncios...</p> : null}
+            </>
+          ) : null}
+        </>
+      ) : null}
+
+      {showVenues && isProducer ? (
+        <article className="danger-zone-card">
+          <h3>Zona de Perigo</h3>
+          <p className="meta-line">Remova uma casa da sua carteira sem apagar a casa da plataforma.</p>
+          {venues.length === 0 ? (
+            <p className="empty">Nenhuma casa vinculada para revogar.</p>
+          ) : (
+            <div className="danger-zone-list">
+              {venues.map((venue) => (
+                <div key={`danger-producer-${venue.id}`} className="danger-zone-item">
+                  <span>{venue.name} - {venue.region}</span>
+                  <button
+                    type="button"
+                    className="chip chip-danger"
+                    onClick={() => handleVenueDelete(venue.id)}
+                    disabled={deleteVenueMutation.isPending}
+                  >
+                    Abrir mao da casa
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </article>
+      ) : null}
       {showVenues ? <h3 className="section-title">Casas</h3> : null}
       {showVenues && canManageCatalog ? <form className="venue-form" onSubmit={handleVenueSubmit}>
         <input name="name" value={venueForm.name} onChange={handleVenueChange} placeholder="Nome da casa" required />
@@ -1049,10 +1522,27 @@ export default function VenuesAdminPage() {
         <input name="instagramUrl" value={venueForm.instagramUrl} onChange={handleVenueChange} placeholder="Instagram da casa (URL, opcional)" />
         <input name="address" value={venueForm.address} onChange={handleVenueChange} placeholder="Endereco" required />
         <input name="neighborhood" value={venueForm.neighborhood} onChange={handleVenueChange} placeholder="Bairro" required />
-        <input name="region" value={venueForm.region} onChange={handleVenueChange} placeholder="Regiao" required />
+        <select name="region" value={venueForm.region} onChange={handleVenueChange} required>
+          <option value="">Regiao</option>
+          {venueRegionOptions.map((regionName) => (
+            <option key={`region-option-create-${regionName}`} value={regionName}>
+              {regionName}
+            </option>
+          ))}
+        </select>
         <input name="city" value={venueForm.city} onChange={handleVenueChange} placeholder="Cidade" required />
         <input name="state" value={venueForm.state} onChange={handleVenueChange} placeholder="UF" maxLength={2} required />
         <input name="imageUrl" value={venueForm.imageUrl} onChange={handleVenueChange} placeholder="URL da imagem" />
+        <label className="meta-line">
+          Upload da imagem da casa (JPG, PNG ou WebP, ate 5MB)
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(event) => handleImageUpload(event, "venue")}
+            disabled={uploadingTarget === "venue"}
+          />
+        </label>
+        {uploadingTarget === "venue" ? <p className="meta-line">Enviando imagem...</p> : null}
         <input
           name="openDays"
           value={venueForm.openDays}
@@ -1087,7 +1577,7 @@ export default function VenuesAdminPage() {
       {showVenues && venuesLoading ? <p className="empty">Carregando casas...</p> : null}
       {showVenues ? <div className="admin-list-header">
         <strong>Casas cadastradas ({filteredVenues.length})</strong>
-        <div className="admin-actions-row">
+        <div className="admin-actions-row admin-filter-row">
           <button className="chip" onClick={exportVenuesCsv}>Exportar CSV</button>
         </div>
         <select value={venueSort} onChange={(e) => setVenueSort(e.target.value)}>
@@ -1134,20 +1624,20 @@ export default function VenuesAdminPage() {
         </div>
       ) : null}
 
-      {showManagers ? <h3 className="section-title">Gestores por Casa</h3> : null}
-      {showManagers && isAdmin ? <form className="venue-form" onSubmit={handleCreateManager}>
+      {showManagers ? <h3 className="section-title">Produtores por Casa</h3> : null}
+      {showManagers && canManageProducers ? <form className="venue-form" onSubmit={handleCreateManager}>
         <input
           name="firstName"
           value={managerForm.firstName}
           onChange={handleManagerFormChange}
-          placeholder="Nome do gestor"
+          placeholder="Nome do produtor"
           required
         />
         <input
           name="lastName"
           value={managerForm.lastName}
           onChange={handleManagerFormChange}
-          placeholder="Sobrenome do gestor"
+          placeholder="Sobrenome do produtor"
           required
         />
         <input
@@ -1162,14 +1652,14 @@ export default function VenuesAdminPage() {
           type="email"
           value={managerForm.email}
           onChange={handleManagerFormChange}
-          placeholder="Email do gestor"
+          placeholder="Email do produtor"
           required
         />
         <input
           name="phone"
           value={managerForm.phone}
           onChange={handleManagerFormChange}
-          placeholder="Telefone do gestor (opcional)"
+          placeholder="Telefone do produtor (opcional)"
         />
         <input
           name="password"
@@ -1181,24 +1671,28 @@ export default function VenuesAdminPage() {
         />
         <div className="form-actions-inline">
           <button className="btn-primary" type="submit" disabled={createVenueManagerUserMutation.isPending}>
-            {createVenueManagerUserMutation.isPending ? "Criando..." : "Criar gestor"}
+            {createVenueManagerUserMutation.isPending ? "Criando..." : "Criar produtor"}
           </button>
         </div>
       </form> : null}
-      {showManagers && isAdmin ? <form className="venue-form" onSubmit={handleAddManager}>
-        <select value={selectedVenueForManagers} onChange={(e) => setSelectedVenueForManagers(e.target.value)} required>
-          <option value="">Selecione a casa</option>
-          {venues.map((venue) => (
-            <option key={venue.id} value={venue.id}>{venue.name}</option>
-          ))}
-        </select>
+      {showManagers && canManageProducers ? <form className="venue-form" onSubmit={handleAddManager}>
+        {!isHouseRole ? (
+          <select value={selectedVenueForManagers} onChange={(e) => setSelectedVenueForManagers(e.target.value)} required>
+            <option value="">Selecione a casa</option>
+            {venues.map((venue) => (
+              <option key={venue.id} value={venue.id}>{venue.name}</option>
+            ))}
+          </select>
+        ) : (
+          <input value={houseDisplayName || "Sua casa"} disabled readOnly />
+        )}
         <input
           value={managerSearch}
           onChange={(e) => {
             setManagerSearch(e.target.value);
             setSelectedManagerUserId("");
           }}
-          placeholder="Buscar gestor por nome, email ou usuario"
+          placeholder="Buscar produtor por nome, email ou usuario"
           required
         />
         <select
@@ -1206,25 +1700,25 @@ export default function VenuesAdminPage() {
           onChange={(e) => setSelectedManagerUserId(e.target.value)}
           required
         >
-          <option value="">Selecione o gestor</option>
+          <option value="">Selecione o produtor</option>
           {managerCandidates.map((user) => (
             <option key={user.id} value={user.id}>
               {user.firstName} {user.lastName} - {user.email}
             </option>
           ))}
         </select>
-        {managerCandidatesLoading ? <p className="empty">Buscando gestores...</p> : null}
+        {managerCandidatesLoading ? <p className="empty">Buscando produtores...</p> : null}
         <div className="form-actions-inline">
           <button className="btn-primary" type="submit" disabled={addVenueManagerMutation.isPending}>
-            Vincular gestor
+            Vincular produtor
           </button>
         </div>
       </form> : null}
 
-      {showManagers && selectedVenueForManagers && managersLoading ? <p className="empty">Carregando gestores...</p> : null}
+      {showManagers && selectedVenueForManagers && managersLoading ? <p className="empty">Carregando produtores...</p> : null}
       {showManagers && selectedVenueForManagers ? (
         <div className="venue-list">
-          {venueManagers.length === 0 ? <p className="empty">Nenhum gestor vinculado.</p> : null}
+          {venueManagers.length === 0 ? <p className="empty">Nenhum produtor vinculado.</p> : null}
           {venueManagers.map((entry) => (
             <article key={entry.id} className="venue-card">
               <div>
@@ -1247,7 +1741,7 @@ export default function VenuesAdminPage() {
         </div>
       ) : null}
 
-      {showClaims ? <h3 className="section-title">Reivindicacoes de produtores</h3> : null}
+      {showClaims ? <h3 className="section-title">Reivindicacoes de produtores e casas</h3> : null}
       {showClaims ? (
         <div className="admin-actions-row">
           <button className={`chip ${claimViewFilter === "all" ? "active" : ""}`} onClick={() => setClaimViewFilter("all")}>Todas</button>
@@ -1273,6 +1767,18 @@ export default function VenuesAdminPage() {
                 {claim.venue?.contactName ? <p className="meta-line">Responsavel da casa: {claim.venue.contactName}</p> : null}
                 {claim.venue?.contactPhone ? <p className="meta-line">Telefone da casa: {claim.venue.contactPhone}</p> : null}
                 {claim.justification ? <p className="meta-line">Motivo: {claim.justification}</p> : null}
+                {claim.requestType === "ownership" ? (
+                  <div className="claim-evidence-block">
+                    <p className="meta-line"><strong>Atencao: validar prova de propriedade antes de aprovar.</strong></p>
+                    {claim.evidence?.responsibleName ? <p className="meta-line">Responsavel legal: {claim.evidence.responsibleName}</p> : null}
+                    {claim.evidence?.responsiblePhone ? <p className="meta-line">Telefone do solicitante: {claim.evidence.responsiblePhone}</p> : null}
+                    {claim.evidence?.claimantDocument ? <p className="meta-line">Documento (CNPJ/CPF): {claim.evidence.claimantDocument}</p> : null}
+                    {claim.evidence?.relationshipRole ? <p className="meta-line">Vinculo declarado: {claim.evidence.relationshipRole}</p> : null}
+                    {claim.evidence?.officialEmail ? <p className="meta-line">Email oficial: {claim.evidence.officialEmail}</p> : null}
+                    {claim.evidence?.officialInstagram ? <p className="meta-line">Instagram oficial: {claim.evidence.officialInstagram}</p> : null}
+                    {claim.evidence?.officialWebsite ? <p className="meta-line">Site oficial: {claim.evidence.officialWebsite}</p> : null}
+                  </div>
+                ) : null}
                 {claim.requestType === "venue_update" && claim.requestedChanges ? (
                   <p className="meta-line">Resumo da alteracao: {Object.keys(claim.requestedChanges).join(", ")}</p>
                 ) : null}
@@ -1289,6 +1795,267 @@ export default function VenuesAdminPage() {
               )}
             </article>
           ))}
+        </div>
+      ) : null}
+
+      {showAdminRegions ? <h3 className="section-title">Regioes</h3> : null}
+      {showAdminRegions ? (
+        <p className="meta-line">Gerencie as regioes que alimentam filtros de cidade e cadastro de casas.</p>
+      ) : null}
+      {showAdminRegions ? (
+        <article className="danger-zone-card">
+          <h3>Zonas cadastradas</h3>
+          <p className="meta-line">Hover vermelho apenas nas zonas sem casas vinculadas (prontas para exclusao).</p>
+          <div className="region-demo-grid">
+            {adminRegions.map((item) => {
+              const isDeletable = (item.venuesCount || 0) === 0;
+              return (
+                <button
+                  key={`region-demo-${item.id}`}
+                  type="button"
+                  className={`region-demo-chip ${isDeletable ? "is-deletable" : "is-locked"}`}
+                  onClick={() => (isDeletable && !item.readOnly ? handleRegionDelete(item) : null)}
+                  title={
+                    item.readOnly
+                      ? "Regiao legada: crie uma regiao oficial para gerenciar exclusao."
+                      : isDeletable
+                        ? "Pronta para exclusao"
+                        : "Com casas vinculadas"
+                  }
+                >
+                  <span>{item.name}</span>
+                  {isDeletable && !item.readOnly ? <strong>x</strong> : null}
+                </button>
+              );
+            })}
+          </div>
+        </article>
+      ) : null}
+      {showAdminRegions ? (
+        <form className="venue-form" onSubmit={handleRegionSubmit}>
+          <input
+            name="name"
+            value={regionForm.name}
+            onChange={handleRegionFormChange}
+            placeholder="Regiao"
+            required
+          />
+          <input
+            name="city"
+            value={regionForm.city}
+            onChange={handleRegionFormChange}
+            placeholder="Cidade"
+            required
+          />
+          <input
+            name="state"
+            value={regionForm.state}
+            onChange={handleRegionFormChange}
+            placeholder="UF"
+            maxLength={2}
+            required
+          />
+          <input
+            name="sortOrder"
+            type="number"
+            min="0"
+            value={regionForm.sortOrder}
+            onChange={handleRegionFormChange}
+            placeholder="Ordem"
+          />
+          <label className="meta-line form-checkbox-inline">
+            <input
+              type="checkbox"
+              name="isActive"
+              checked={Boolean(regionForm.isActive)}
+              onChange={handleRegionFormChange}
+            />
+            Regiao ativa
+          </label>
+          <div className="form-actions-inline">
+            <button
+              className="btn-primary"
+              type="submit"
+              disabled={createRegionMutation.isPending || updateRegionMutation.isPending}
+            >
+              {isEditingRegion ? "Salvar regiao" : "Criar regiao"}
+            </button>
+            {isEditingRegion ? (
+              <button type="button" className="chip" onClick={resetRegionForm}>
+                Cancelar
+              </button>
+            ) : null}
+          </div>
+        </form>
+      ) : null}
+      {showAdminRegions ? (
+        <div className="venue-list admin-entity-grid">
+          {adminRegions.map((item) => (
+            <article
+              key={item.id}
+              className={`venue-card region-admin-card ${(item.venuesCount || 0) === 0 ? "is-deletable" : "is-locked"}`}
+            >
+              <div>
+                <h3>{item.name}</h3>
+                <p className="meta-line">{item.city} - {item.state}</p>
+                <p className="meta-line">Ordem: {item.sortOrder}</p>
+                <p className="meta-line">Status: {item.isActive ? "Ativa" : "Inativa"}</p>
+                <p className="meta-line">Casas vinculadas: {item.venuesCount || 0}</p>
+                {item.readOnly ? <p className="meta-line">Origem: legado (vinda das casas cadastradas)</p> : null}
+                {item.source === "base" ? <p className="meta-line">Origem: base padrao da cidade (somente leitura)</p> : null}
+              </div>
+              <div className="venue-actions">
+                <button className="chip" onClick={() => handleRegionEdit(item)} disabled={Boolean(item.readOnly)}>Editar</button>
+                <button
+                  className="chip"
+                  onClick={() => handleRegionDelete(item)}
+                  disabled={Boolean(item.readOnly) || deleteRegionMutation.isPending || (item.venuesCount || 0) > 0}
+                  title={
+                    item.readOnly
+                      ? "Regiao legada: cadastre em Regioes para editar/excluir."
+                      : (item.venuesCount || 0) > 0
+                        ? "Remova as casas vinculadas antes de excluir."
+                        : "Excluir regiao"
+                  }
+                >
+                  Excluir
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : null}
+
+      {showHouseProfile ? <h3 className="section-title">{`Dados da casa - ${houseDisplayName || "sem unidade ativa"}`}</h3> : null}
+      {showHouseProfile ? (
+        <p className="meta-line">Confira os dados publicados da sua casa. Para ajustar qualquer campo, envie uma solicitacao para aprovacao do admin.</p>
+      ) : null}
+      {showHouseProfile && !houseActiveVenue ? (
+        <p className="empty">Nenhuma filial aprovada para esta conta. Solicite acesso na aba "Solicitar Acesso".</p>
+      ) : null}
+      {showHouseProfile && houseActiveVenue ? (
+        <>
+          <article className="clean-card">
+            <p className="meta-line"><strong>Nome:</strong> {houseActiveVenue.name}</p>
+            <p className="meta-line"><strong>Responsavel:</strong> {houseActiveVenue.contactName || "Nao informado"}</p>
+            <p className="meta-line"><strong>Telefone:</strong> {houseActiveVenue.contactPhone || "Nao informado"}</p>
+            <p className="meta-line"><strong>Instagram:</strong> {houseActiveVenue.instagramUrl || "Nao informado"}</p>
+            <p className="meta-line"><strong>Endereco:</strong> {houseActiveVenue.address}</p>
+            <p className="meta-line"><strong>Bairro/Regiao:</strong> {houseActiveVenue.neighborhood} - {houseActiveVenue.region}</p>
+            <p className="meta-line"><strong>Cidade:</strong> {houseActiveVenue.city} - {houseActiveVenue.state}</p>
+            <p className="meta-line"><strong>Funcionamento:</strong> {(houseActiveVenue.openDays || []).join(", ") || "Nao informado"}</p>
+            <div className="form-actions-inline">
+              <button className="chip" type="button" onClick={startHouseProfileEdit}>Solicitar alteracao de dados</button>
+            </div>
+          </article>
+          <article className="danger-zone-card">
+            <h3>Zona de Perigo</h3>
+            <p className="meta-line">Se necessario, abra mao da propriedade desta filial na sua conta.</p>
+            <div className="danger-zone-list">
+              <div className="danger-zone-item">
+                <span>{houseActiveVenue.name} - {houseActiveVenue.region}</span>
+                <button
+                  type="button"
+                  className="chip chip-danger"
+                  onClick={() => handleRevokeMyHouseAccess(houseActiveVenue.id, houseActiveVenue.name)}
+                  disabled={revokeMyVenueAccessMutation.isPending}
+                >
+                  Abrir mao da filial
+                </button>
+              </div>
+            </div>
+          </article>
+          {isEditingVenue ? (
+            <form className="venue-form" onSubmit={handleVenueSubmit}>
+              <input name="name" value={venueForm.name} onChange={handleVenueChange} placeholder="Nome da casa" required />
+              <input name="description" value={venueForm.description} onChange={handleVenueChange} placeholder="Descricao" required />
+              <input name="contactName" value={venueForm.contactName} onChange={handleVenueChange} placeholder="Responsavel da casa" />
+              <input name="contactPhone" value={venueForm.contactPhone} onChange={handleVenueChange} placeholder="Telefone da casa" />
+              <input name="instagramUrl" value={venueForm.instagramUrl} onChange={handleVenueChange} placeholder="Instagram (URL)" />
+              <input name="address" value={venueForm.address} onChange={handleVenueChange} placeholder="Endereco" required />
+              <input name="neighborhood" value={venueForm.neighborhood} onChange={handleVenueChange} placeholder="Bairro" required />
+              <select name="region" value={venueForm.region} onChange={handleVenueChange} required>
+                <option value="">Regiao</option>
+                {venueRegionOptions.map((regionName) => (
+                  <option key={`region-option-edit-${regionName}`} value={regionName}>
+                    {regionName}
+                  </option>
+                ))}
+              </select>
+              <input name="city" value={venueForm.city} onChange={handleVenueChange} placeholder="Cidade" required />
+              <input name="state" value={venueForm.state} onChange={handleVenueChange} placeholder="UF" maxLength={2} required />
+              <input name="imageUrl" value={venueForm.imageUrl} onChange={handleVenueChange} placeholder="URL da imagem" />
+              <label className="meta-line">
+                Upload da imagem da casa (JPG, PNG ou WebP, ate 5MB)
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(event) => handleImageUpload(event, "venue")}
+                  disabled={uploadingTarget === "venue"}
+                />
+              </label>
+              {uploadingTarget === "venue" ? <p className="meta-line">Enviando imagem...</p> : null}
+              <input name="openDays" value={venueForm.openDays} onChange={handleVenueChange} placeholder="Dias de funcionamento (ex: Seg, Qua, Sex, Sab)" />
+              <textarea
+                value={venueEditJustification}
+                onChange={(e) => setVenueEditJustification(e.target.value)}
+                placeholder="Explique por que esta alteracao e necessaria (obrigatorio)"
+                rows={2}
+                required
+              />
+              <div className="form-actions-inline">
+                <button className="btn-primary" type="submit" disabled={createClaimMutation.isPending}>Enviar solicitacao</button>
+                <button type="button" className="chip" onClick={resetVenueForm}>Cancelar</button>
+              </div>
+            </form>
+          ) : null}
+        </>
+      ) : null}
+
+      {showHouseClaims ? <h3 className="section-title">Solicitar acesso a filial</h3> : null}
+      {showHouseClaims ? (
+        <p className="meta-line">Escolha a filial cadastrada no NaPalma e envie comprovacao de vinculo. O admin vai revisar e aprovar.</p>
+      ) : null}
+      {showHouseClaims ? (
+        <form className="venue-form" onSubmit={handleHouseOwnershipClaimSubmit}>
+          <select value={houseClaimTargetId} onChange={(e) => setHouseClaimTargetId(e.target.value)} required>
+            <option value="">Selecione a filial que voce quer operar</option>
+            {houseClaimOptions.map((venue) => (
+              <option key={venue.id} value={venue.id}>{venue.name} - {venue.region}</option>
+            ))}
+          </select>
+          <input value={houseClaimResponsibleName} onChange={(e) => setHouseClaimResponsibleName(e.target.value)} placeholder="Nome do responsavel legal" required />
+          <input value={houseClaimResponsiblePhone} onChange={(e) => setHouseClaimResponsiblePhone(e.target.value)} placeholder="Telefone de contato" required />
+          <input value={houseClaimDocument} onChange={(e) => setHouseClaimDocument(e.target.value)} placeholder="CNPJ/CPF do solicitante" required />
+          <input value={houseClaimRelationship} onChange={(e) => setHouseClaimRelationship(e.target.value)} placeholder="Vinculo com a filial (socio, diretor, representante...)" required />
+          <textarea value={houseClaimJustification} onChange={(e) => setHouseClaimJustification(e.target.value)} placeholder="Justificativa da solicitacao (ex: sou responsavel pela agenda e operacao da casa)" rows={2} required />
+          <input type="email" value={houseClaimOfficialEmail} onChange={(e) => setHouseClaimOfficialEmail(e.target.value)} placeholder="Email oficial (opcional)" />
+          <input value={houseClaimOfficialInstagram} onChange={(e) => setHouseClaimOfficialInstagram(e.target.value)} placeholder="Instagram oficial (opcional)" />
+          <input type="url" value={houseClaimOfficialWebsite} onChange={(e) => setHouseClaimOfficialWebsite(e.target.value)} placeholder="Site oficial (opcional)" />
+          <button className="btn-primary" type="submit" disabled={createClaimMutation.isPending}>
+            {createClaimMutation.isPending ? "Enviando..." : "Enviar solicitacao de acesso"}
+          </button>
+        </form>
+      ) : null}
+      {showHouseClaims && houseClaimOptions.length === 0 ? (
+        <p className="empty">No momento nao ha novas filiais disponiveis para esta conta.</p>
+      ) : null}
+      {showHouseClaims && myClaimsLoading ? <p className="empty">Carregando suas solicitacoes...</p> : null}
+      {showHouseClaims ? (
+        <div className="venue-list">
+          {myClaims
+            .filter((claim) => claim.targetType === "venue")
+            .map((claim) => (
+              <article key={claim.id} className={`venue-card claim-card claim-status-${claim.status}`}>
+                <div>
+                  <h3>Filial: {claim.venue?.name || "Casa"}</h3>
+                  <p className="meta-line">Status: {claim.status}</p>
+                  <p className="meta-line">Tipo: {claim.requestType === "ownership" ? "Reivindicacao de propriedade" : "Alteracao de dados"}</p>
+                  {claim.justification ? <p className="meta-line">Justificativa: {claim.justification}</p> : null}
+                </div>
+                <small className="meta-line">{new Date(claim.createdAt).toLocaleString("pt-BR")}</small>
+              </article>
+            ))}
         </div>
       ) : null}
 
@@ -1312,6 +2079,16 @@ export default function VenuesAdminPage() {
           </label>
         ) : null}
         <input name="imageUrl" type="url" value={artistForm.imageUrl} onChange={handleArtistChange} placeholder="URL da imagem" />
+        <label className="meta-line">
+          Upload da imagem do artista (JPG, PNG ou WebP, ate 5MB)
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(event) => handleImageUpload(event, "artist")}
+            disabled={uploadingTarget === "artist"}
+          />
+        </label>
+        {uploadingTarget === "artist" ? <p className="meta-line">Enviando imagem...</p> : null}
         <input name="spotifyUrl" type="url" value={artistForm.spotifyUrl} onChange={handleArtistChange} placeholder="URL Spotify" />
         <input name="youtubeUrl" type="url" value={artistForm.youtubeUrl} onChange={handleArtistChange} placeholder="URL YouTube" />
         <input name="instagramUrl" type="url" value={artistForm.instagramUrl} onChange={handleArtistChange} placeholder="URL Instagram" />
@@ -1378,11 +2155,36 @@ export default function VenuesAdminPage() {
         </div>
       ) : null}
 
+      {showEventsBlocked ? (
+        <p className="empty">Sua conta ainda nao tem filial aprovada. Abra "Solicitar Acesso", envie os dados de comprovacao e aguarde aprovacao do admin.</p>
+      ) : null}
       {showEvents ? <h3 className="section-title">{isHouseRole ? `Eventos da casa - ${houseDisplayName}` : "Eventos"}</h3> : null}
-      {showEvents ? <form className="venue-form" onSubmit={handleEventSubmit}>
-        <input name="title" value={eventForm.title} onChange={handleEventChange} placeholder="Titulo do evento" required />
+      {showEvents && (!isHouseRole || !isHouseProgramacaoClean) ? (
+        <article className="venue-card">
+          <div>
+            <h3>Previa do card</h3>
+            <h3>{eventForm.title?.trim() || "Titulo do evento"}</h3>
+            {eventForm.artistName?.trim() ? (
+              <p className="meta-line artist-inline-with-badge">
+                <span>{eventForm.artistName.trim()}</span>
+              </p>
+            ) : null}
+            <p className="meta-line">{previewVenue?.name || "Casa"} - {previewVenue?.region || "Regiao"}</p>
+            <p className="meta-line">{formatPreviewDateTime(eventForm.startDate)}</p>
+            <p className="meta-line">{previewPriceLabel}</p>
+          </div>
+        </article>
+      ) : null}
+      {showEvents && (!isHouseRole || !isHouseProgramacaoClean) ? <form className="venue-form" onSubmit={handleEventSubmit}>
+        <input
+          name="title"
+          value={eventForm.title}
+          onChange={handleEventChange}
+          placeholder="Titulo do evento (ou artista, se for show solo)"
+          required
+        />
         {eventErrors.title?.[0] ? <p className="field-error">{eventErrors.title[0]}</p> : null}
-        <input name="artistName" list="artists-list" value={eventForm.artistName} onChange={handleEventChange} placeholder="Artista principal" required={!isHouseRole} />
+        <input name="artistName" list="artists-list" value={eventForm.artistName} onChange={handleEventChange} placeholder="Artista principal (opcional)" />
         <datalist id="artists-list">
           {artists.map((artist) => (
             <option key={artist.id} value={artist.name} />
@@ -1396,7 +2198,7 @@ export default function VenuesAdminPage() {
           <option value="pagode">Pagode</option>
           <option value="gafieira">Gafieira</option>
           <option value="samba_rock">Samba Rock</option>
-          <option value="feijoada_sambista">Feijoada Sambista</option>
+          <option value="feijoada_sambista">Samba com Feijoada</option>
         </select>
         <select
           name="venueId"
@@ -1425,16 +2227,27 @@ export default function VenuesAdminPage() {
           Evento recorrente semanal
         </label>
         {eventForm.isRecurring ? (
-          <>
-            <select name="recurrenceDays" multiple value={eventForm.recurrenceDays} onChange={handleEventChange}>
-              <option value="seg">Segunda</option>
-              <option value="ter">Terca</option>
-              <option value="qua">Quarta</option>
-              <option value="qui">Quinta</option>
-              <option value="sex">Sexta</option>
-              <option value="sab">Sabado</option>
-              <option value="dom">Domingo</option>
-            </select>
+          <div className="recurrence-panel">
+            <small className="meta-line">
+              {eventForm.recurrenceDays.length > 0
+                ? `Recorrencia ativa: ${eventForm.recurrenceDays.join(", ")}`
+                : "Selecione os dias da semana para repetir o evento."}
+            </small>
+            <div className="chip-row recurrence-day-row">
+              {RECURRENCE_DAYS.map((day) => {
+                const active = eventForm.recurrenceDays.includes(day.value);
+                return (
+                  <button
+                    key={day.value}
+                    type="button"
+                    className={`chip recurrence-day-chip ${active ? "active" : ""}`}
+                    onClick={() => toggleRecurrenceDay(day.value)}
+                  >
+                    {day.label}
+                  </button>
+                );
+              })}
+            </div>
             {eventErrors.recurrenceDays?.[0] ? <p className="field-error">{eventErrors.recurrenceDays[0]}</p> : null}
             <div className="date-row">
               <input
@@ -1465,7 +2278,7 @@ export default function VenuesAdminPage() {
               onChange={handleEventChange}
               placeholder="Datas sem evento (AAAA-MM-DD, separadas por virgula)"
             />
-          </>
+          </div>
         ) : null}
         <select name="ticketType" value={eventForm.ticketType} onChange={handleEventChange} required>
           <option value="paid">Pago</option>
@@ -1497,39 +2310,95 @@ export default function VenuesAdminPage() {
           onChange={handleEventChange}
           placeholder="Couvert artistico (opcional)"
         />
-        <div className="date-row">
-          <input name="freeUntil" type="time" value={eventForm.freeUntil} onChange={handleEventChange} placeholder="Gratis ate (geral)" />
-          <input name="menFreeUntil" type="time" value={eventForm.menFreeUntil} onChange={handleEventChange} placeholder="Homem gratis ate" />
-        </div>
-        <div className="date-row">
-          <input
-            name="womenFreeUntil"
-            type="time"
-            value={eventForm.womenFreeUntil}
-            onChange={handleEventChange}
-            placeholder="Mulher gratis ate"
-            disabled={eventForm.womenFreeAllNight}
-          />
-          <label className="meta-line form-checkbox-inline">
-            <input
-              type="checkbox"
-              name="womenFreeAllNight"
-              checked={Boolean(eventForm.womenFreeAllNight)}
-              onChange={handleEventChange}
-            />
-            Mulher gratis a noite toda
-          </label>
-        </div>
         <input name="ticketUrl" type="url" value={eventForm.ticketUrl} onChange={handleEventChange} placeholder="URL de ingresso" />
         <input name="imageUrl" type="url" value={eventForm.imageUrl} onChange={handleEventChange} placeholder="URL da imagem" />
-        <input name="tags" value={eventForm.tags} onChange={handleEventChange} placeholder="Tags separadas por virgula" />
+        <label className="meta-line">
+          Upload da imagem do evento (JPG, PNG ou WebP, ate 5MB)
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(event) => handleImageUpload(event, "event")}
+            disabled={uploadingTarget === "event"}
+          />
+        </label>
+        {uploadingTarget === "event" ? <p className="meta-line">Enviando imagem...</p> : null}
+        <div className="audience-tag-panel">
+          <small className="meta-line">Sinalizacoes do evento</small>
+          <div className="chip-row recurrence-day-row">
+            <button
+              type="button"
+              className={`chip recurrence-day-chip ${hasEventTag("samba_familiar") ? "active" : ""}`}
+              onClick={() => toggleEventTag("samba_familiar")}
+            >
+              Samba Familiar
+            </button>
+            <button
+              type="button"
+              className={`chip recurrence-day-chip ${hasEventTag("kids_friendly") ? "active" : ""}`}
+              onClick={() => toggleEventTag("kids_friendly")}
+            >
+              Kids Friendly
+            </button>
+          </div>
+        </div>
+        <input name="tags" value={eventForm.tags} onChange={handleEventChange} placeholder="Outras tags (opcional), separadas por virgula" />
         <div className="form-actions-inline">
-          <button className="btn-primary" type="submit" disabled={createEventMutation.isPending || updateEventMutation.isPending}>
-            {isEditingEvent ? "Salvar evento" : "Criar evento"}
+          <button className="chip" type="submit" disabled={createEventMutation.isPending || updateEventMutation.isPending}>
+            {isEditingEvent ? "Salvar rascunho" : "Criar rascunho"}
+          </button>
+          <button
+            className="btn-primary publish-warning-btn"
+            type="button"
+            onClick={openPublishReview}
+            disabled={createEventMutation.isPending || updateEventMutation.isPending}
+          >
+            Publicar evento
           </button>
           {isEditingEvent ? <button type="button" className="chip" onClick={resetEventForm}>Cancelar</button> : null}
         </div>
       </form> : null}
+      {showEvents && publishReviewOpen ? (
+        <div className="publish-review-overlay" role="dialog" aria-modal="true">
+          <div className="publish-review-modal">
+            <h4>Revisao obrigatoria antes de publicar</h4>
+            <p className="meta-line">
+              Marque todos os itens para liberar a publicacao deste evento.
+            </p>
+            <div className="publish-review-summary">
+              <p><strong>Titulo:</strong> {eventForm.title || "-"}</p>
+              <p><strong>Casa:</strong> {previewVenue?.name || "-"}</p>
+              <p><strong>Inicio:</strong> {formatPreviewDateTime(eventForm.startDate)}</p>
+              <p><strong>Fim:</strong> {formatPreviewDateTime(eventForm.endDate)}</p>
+              <p><strong>Preco:</strong> {previewPriceLabel}</p>
+            </div>
+            <div className="publish-review-checks">
+              {publishChecklistModel.map((item) => (
+                <label key={item.key} className="publish-check-item">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(publishChecks[item.key])}
+                    onChange={() => togglePublishCheck(item.key)}
+                  />
+                  <span>{item.label}</span>
+                </label>
+              ))}
+            </div>
+            <div className="form-actions-inline">
+              <button type="button" className="chip" onClick={() => setPublishReviewOpen(false)}>
+                Voltar
+              </button>
+              <button
+                type="button"
+                className="btn-primary publish-warning-btn"
+                disabled={!publishChecklistDone || createEventMutation.isPending || updateEventMutation.isPending}
+                onClick={confirmPublishEvent}
+              >
+                Publicar agora
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {showEvents && eventsLoading ? <p className="empty">Carregando eventos...</p> : null}
       {showEvents ? <div className="admin-list-header">
@@ -1565,6 +2434,9 @@ export default function VenuesAdminPage() {
                 {eventItem.artistVerified ? <VerifiedBadge className="artist-verified-dot" title="Artista verificado" /> : null}
               </p>
               <p className="meta-line">{eventItem.venue} - {eventItem.region}</p>
+              <p className={`meta-line ${eventItem.status === "draft" ? "status-draft" : "live-status-live"}`}>
+                {eventItem.status === "draft" ? "Rascunho" : "Publicado"}
+              </p>
               {eventItem.isRecurring ? (
                 <p className="meta-line">Recorrente: {(eventItem.recurrenceDays || []).join(", ") || "semanal"}</p>
               ) : null}
@@ -1593,6 +2465,7 @@ export default function VenuesAdminPage() {
           <button className="chip" onClick={() => setEventPage((p) => Math.min(eventTotalPages, p + 1))} disabled={eventPage === eventTotalPages}>Proxima</button>
         </div>
       ) : null}
+      </div>
 
       {reactivationTarget ? (
         <div className="modal-backdrop" onClick={() => setReactivationTarget(null)}>
@@ -1650,4 +2523,6 @@ export default function VenuesAdminPage() {
     </section>
   );
 }
+
+
 

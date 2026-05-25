@@ -62,9 +62,16 @@ export default function HistoryPage() {
 
   return (
     <section className="screen screen-history history-clean">
-      <header className="page-header">
-        <h2>Meu Historico</h2>
-        <p>Seu percurso sambista, metas e evolucao.</p>
+      <header className="page-header history-logo-header">
+        <div>
+          <h2>Meu Historico</h2>
+          <p>Seus roles, metas e evolucao.</p>
+        </div>
+        <img
+          src="/assets/brand/logoBase77Gira.svg"
+          alt="77Gira"
+          className="history-brand-logo"
+        />
       </header>
 
       <h3 className="section-title">Sambas que voce ja foi</h3>
@@ -76,7 +83,13 @@ export default function HistoryPage() {
       ) : null}
       {user && isLoading ? <p className="empty">Carregando historico...</p> : null}
       {user && isError ? <p className="empty">Nao foi possivel carregar seu historico.</p> : null}
-      {user && !isLoading && !isError && historyEvents.length === 0 ? <p className="empty">Nenhum evento registrado ainda.</p> : null}
+      {user && !isLoading && !isError && historyEvents.length === 0 ? (
+        <div className="empty empty-highlight">
+          <p>Nenhum evento registrado ainda.</p>
+          <small className="meta-line">Quando voce marcar "Eu fui" no Radar, seu historico aparece aqui.</small>
+          <Link to="/radar" className="chip">Abrir Meu Radar</Link>
+        </div>
+      ) : null}
       {user && historyEvents.length > 0 ? (
         <input
           className="search-input"

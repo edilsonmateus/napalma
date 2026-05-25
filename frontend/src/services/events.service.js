@@ -5,15 +5,19 @@ import {
   venues as fallbackVenues
 } from "../data/mockData";
 
+const allowMockFallback =
+  import.meta.env.VITE_ENABLE_API_FALLBACK_MOCKS === "true" ||
+  !import.meta.env.PROD;
+
 export async function getEvents(params = {}) {
   try {
     const { data } = await api.get("/events", { params });
     if (!data?.items || !Array.isArray(data.items)) {
-      return fallbackEvents;
+      return allowMockFallback ? fallbackEvents : [];
     }
     return data.items;
   } catch (_error) {
-    return fallbackEvents;
+    return allowMockFallback ? fallbackEvents : [];
   }
 }
 
@@ -26,23 +30,53 @@ export async function getRegions() {
   try {
     const { data } = await api.get("/regions");
     if (!data?.items || !Array.isArray(data.items)) {
-      return fallbackRegions;
+      return allowMockFallback ? fallbackRegions : [];
     }
     return data.items;
   } catch (_error) {
-    return fallbackRegions;
+    return allowMockFallback ? fallbackRegions : [];
   }
+}
+
+export async function getAdminRegions(params = {}) {
+  const { data } = await api.get("/admin/regions", { params });
+  return data.items || [];
+}
+
+export async function createRegion(payload) {
+  const { data } = await api.post("/admin/regions", payload);
+  return data.item;
+}
+
+export async function updateRegion(id, payload) {
+  const { data } = await api.patch(`/admin/regions/${id}`, payload);
+  return data.item;
+}
+
+export async function deleteRegion(id) {
+  await api.delete(`/admin/regions/${id}`);
+}
+
+export async function uploadImageFile({ file, folder = "general", name = "" }) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("folder", folder);
+  if (name) formData.append("name", name);
+  const { data } = await api.post("/uploads/image", formData, {
+    headers: { "Content-Type": "multipart/form-data" }
+  });
+  return data.item;
 }
 
 export async function getVenues(params = {}) {
   try {
     const { data } = await api.get("/venues", { params });
     if (!data?.items || !Array.isArray(data.items)) {
-      return fallbackVenues;
+      return allowMockFallback ? fallbackVenues : [];
     }
     return data.items;
   } catch (_error) {
-    return fallbackVenues;
+    return allowMockFallback ? fallbackVenues : [];
   }
 }
 
@@ -63,6 +97,10 @@ export async function addVenueManager(venueId, payload) {
 
 export async function removeVenueManager(venueId, userId) {
   await api.delete(`/venues/${venueId}/managers/${userId}`);
+}
+
+export async function revokeMyVenueAccess(venueId) {
+  await api.delete(`/venues/${venueId}/my-access`);
 }
 
 export async function getVenueManagerUsers(params = {}) {

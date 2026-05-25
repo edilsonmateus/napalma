@@ -5,16 +5,19 @@ import {
   createClaim,
   createVenueManagerUser,
   createAdCreative,
+  createRegion,
   createEvent,
   createVenue,
   deleteArtist,
   deleteEvent,
   deleteVenue,
+  deleteRegion,
   getVenueManagers,
   getVenueManagerUsers,
   getArtists,
   getArtistProfile,
   getAdCampaigns,
+  getAdminRegions,
   getAdsActivity,
   getVenueAdsSummary,
   getAudienceSummary,
@@ -36,6 +39,7 @@ import {
   markEventInRadar,
   addVenueManager,
   removeVenueManager,
+  revokeMyVenueAccess,
   followArtist,
   unfollowArtist,
   createPelaHora,
@@ -46,7 +50,9 @@ import {
   updateAdCampaign,
   updateAdCreative,
   updateEvent,
-  updateVenue
+  updateVenue,
+  updateRegion,
+  uploadImageFile
 } from "../services/events.service";
 
 export function useEventsQuery(filters = {}) {
@@ -55,6 +61,10 @@ export function useEventsQuery(filters = {}) {
 
 export function useRegionsQuery() {
   return useQuery({ queryKey: ["regions"], queryFn: getRegions });
+}
+
+export function useAdminRegionsQuery(params = {}, enabled = true) {
+  return useQuery({ queryKey: ["admin-regions", params], queryFn: () => getAdminRegions(params), enabled });
 }
 
 export function useMyRadarQuery(enabled = true) {
@@ -200,6 +210,45 @@ export function useDeleteVenueMutation() {
   return useMutation({ mutationFn: deleteVenue, onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["venues"] }); queryClient.invalidateQueries({ queryKey: ["regions"] }); } });
 }
 
+export function useCreateRegionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createRegion,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-regions"] });
+      queryClient.invalidateQueries({ queryKey: ["regions"] });
+    }
+  });
+}
+
+export function useUpdateRegionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => updateRegion(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-regions"] });
+      queryClient.invalidateQueries({ queryKey: ["regions"] });
+    }
+  });
+}
+
+export function useDeleteRegionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteRegion,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-regions"] });
+      queryClient.invalidateQueries({ queryKey: ["regions"] });
+    }
+  });
+}
+
+export function useUploadImageMutation() {
+  return useMutation({
+    mutationFn: uploadImageFile
+  });
+}
+
 export function useAddVenueManagerMutation() {
   const queryClient = useQueryClient();
   return useMutation({ mutationFn: ({ venueId, payload }) => addVenueManager(venueId, payload), onSuccess: (_data, variables) => { queryClient.invalidateQueries({ queryKey: ["venue-managers", variables.venueId] }); } });
@@ -218,6 +267,18 @@ export function useCreateVenueManagerUserMutation() {
 export function useRemoveVenueManagerMutation() {
   const queryClient = useQueryClient();
   return useMutation({ mutationFn: ({ venueId, userId }) => removeVenueManager(venueId, userId), onSuccess: (_data, variables) => { queryClient.invalidateQueries({ queryKey: ["venue-managers", variables.venueId] }); } });
+}
+
+export function useRevokeMyVenueAccessMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: revokeMyVenueAccess,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["venues"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["my-claims"] });
+    }
+  });
 }
 
 export function useCreateArtistMutation() {
@@ -365,6 +426,8 @@ export function useDecideClaimMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["claims"] });
       queryClient.invalidateQueries({ queryKey: ["my-claims"] });
+      queryClient.invalidateQueries({ queryKey: ["venues"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
     }
   });
 }

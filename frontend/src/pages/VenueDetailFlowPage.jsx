@@ -6,6 +6,10 @@ import AdSlotCard from "../components/ads/AdSlotCard";
 import { buildGoogleMapsLink, buildUberLink, buildWazeLink } from "../utils/maps";
 import { useAuthStore } from "../store/authStore";
 import VerifiedBadge from "../components/common/VerifiedBadge";
+import { getAudienceBadges } from "../utils/eventAudienceBadges";
+import mapsIcon from "../assets/routes/maps.svg";
+import wazeIcon from "../assets/routes/waze.svg";
+import uberIcon from "../assets/routes/uber.svg";
 
 function formatDate(value) {
   return new Date(value).toLocaleString("pt-BR", {
@@ -95,7 +99,13 @@ export default function VenueDetailFlowPage() {
 
       <h3 className="section-title">Proximas atracoes</h3>
       {eventsLoading ? <p className="empty">Carregando eventos da casa...</p> : null}
-      {!eventsLoading && sortedEvents.length === 0 ? <p className="empty">Sem eventos cadastrados para esta casa.</p> : null}
+      {!eventsLoading && sortedEvents.length === 0 ? (
+        <div className="empty empty-highlight">
+          <p>Sem eventos cadastrados para esta casa.</p>
+          <small className="meta-line">Volte ao Explorar para encontrar outros sambas ao vivo.</small>
+          <Link to="/explore" className="chip">Ir para Explorar</Link>
+        </div>
+      ) : null}
       <div className="feedback feedback-reserved">{actionFeedback || " "}</div>
 
       <div className="venue-list">
@@ -116,14 +126,6 @@ export default function VenueDetailFlowPage() {
                   </h3>
                   <small className="meta-line"><CalendarClock size={14} /> {formatDate(event.startsAt)}</small>
                 </div>
-                {event.artist && event.artist !== event.title && event.artist !== "Artista NaPalma" ? (
-                  <div className="venue-artist-wrap">
-                    <p className="meta-line venue-artist-main">
-                      <span>{event.artist}</span>
-                    </p>
-                    {event.artistId ? <Link to={`/artists/${event.artistId}`} className="btn-link artist-page-link">pagina do artista</Link> : null}
-                  </div>
-                ) : null}
                 <div className="venue-event-price-row">
                   <p className="meta-line">{event.priceLabel}</p>
                   {user && isFuture ? (
@@ -145,6 +147,13 @@ export default function VenueDetailFlowPage() {
                 </div>
                 {event.priceSecondaryLabel ? <small className="meta-line">{event.priceSecondaryLabel}</small> : null}
                 <small className="meta-line">Comeca {formatHour(event.startsAt)} - Termina {formatHour(event.endsAt)}</small>
+                {getAudienceBadges(event).length > 0 ? (
+                  <div className="event-audience-row">
+                    {getAudienceBadges(event).map((badge) => (
+                      <span key={badge} className="event-audience-badge">{badge}</span>
+                    ))}
+                  </div>
+                ) : null}
                 <small className={`meta-line live-status live-status-${status.tone}`}>{status.label}</small>
               </div>
             </Link>
@@ -167,11 +176,17 @@ export default function VenueDetailFlowPage() {
             <h3>Como chegar</h3>
             <p className="meta-line">Escolha o app para rota:</p>
             <div className="route-mini-layout">
-              <div className="route-mini-actions share-actions">
-                <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="chip route-mini-chip route-chip-maps">Maps</a>
-                <a href={wazeUrl} target="_blank" rel="noreferrer" className="chip route-mini-chip route-chip-waze">Waze</a>
-                <a href={uberUrl} target="_blank" rel="noreferrer" className="chip route-mini-chip route-chip-uber">Uber</a>
-                <button type="button" className="chip route-mini-chip route-chip-close" onClick={() => setShowRouteModal(false)}>Fechar</button>
+              <div className="route-icon-row">
+                <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Maps" aria-label="Abrir rota no Maps">
+                  <img src={mapsIcon} alt="" className="route-icon-img route-icon-img-maps" />
+                </a>
+                <a href={wazeUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Waze" aria-label="Abrir rota no Waze">
+                  <img src={wazeIcon} alt="" className="route-icon-img route-icon-img-waze" />
+                </a>
+                <a href={uberUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Uber" aria-label="Abrir rota no Uber">
+                  <img src={uberIcon} alt="" className="route-icon-img route-icon-img-uber" />
+                </a>
+                <button type="button" className="chip route-mini-chip route-chip-close route-inline-back" onClick={() => setShowRouteModal(false)}>Fechar</button>
               </div>
               <div className="route-mini-track" aria-hidden="true">
                 <span className="route-mini-dot route-mini-dot-start" />

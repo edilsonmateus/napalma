@@ -49,7 +49,7 @@ Senha para todas: `123456`
 - RBAC por perfil
 - Ownership de dados no backend
 - Gestao de casas/artistas/eventos
-- Gestao de vinculos de gestores por casa
+- Gestao de vinculos de produtores por casa
 - Radar, historico e conquistas
 - Plano do Dia (Pela Hora) com sugestao/manual e timeline
 - Publicidade (slots, placeholders, tracking e relatorios)

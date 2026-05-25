@@ -6,7 +6,7 @@ const querySchema = z.object({
   q: z.string().trim().min(1).optional()
 });
 
-const createVenueManagerSchema = z.object({
+const createProducerSchema = z.object({
   firstName: z.string().trim().min(2),
   lastName: z.string().trim().min(2),
   username: z.string().trim().min(3),
@@ -15,12 +15,12 @@ const createVenueManagerSchema = z.object({
   password: z.string().min(6)
 });
 
-export async function listVenueManagerUsers(req, res, next) {
+export async function listProducerUsers(req, res, next) {
   try {
     const { q } = querySchema.parse(req.query);
     const items = await prisma.user.findMany({
       where: {
-        role: "venue_manager",
+        role: "producer",
         ...(q
           ? {
               OR: [
@@ -51,9 +51,9 @@ export async function listVenueManagerUsers(req, res, next) {
   }
 }
 
-export async function createVenueManagerUser(req, res, next) {
+export async function createProducerUser(req, res, next) {
   try {
-    const data = createVenueManagerSchema.parse(req.body);
+    const data = createProducerSchema.parse(req.body);
     const email = data.email.toLowerCase();
 
     const existing = await prisma.user.findFirst({
@@ -79,7 +79,7 @@ export async function createVenueManagerUser(req, res, next) {
         lastName: data.lastName,
         phone: data.phone,
         passwordHash,
-        role: "venue_manager"
+        role: "producer"
       },
       select: {
         id: true,
@@ -98,3 +98,5 @@ export async function createVenueManagerUser(req, res, next) {
     next(error);
   }
 }
+
+export const createVenueManagerUser = createProducerUser;

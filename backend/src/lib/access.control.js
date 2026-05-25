@@ -56,9 +56,10 @@ export function canManageEvent(user, event) {
   }
 
   if (isVenueManager(user)) {
+    const viaCreator = event.createdByUserId === user.id;
     const viaLegacyManager = event.venue?.managerUserId === user.id;
     const viaAccessList = (event.venue?.managerAccesses || []).some((entry) => entry.userId === user.id);
-    return viaLegacyManager || viaAccessList;
+    return viaCreator || viaLegacyManager || viaAccessList;
   }
 
   return false;

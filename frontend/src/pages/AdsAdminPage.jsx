@@ -348,10 +348,16 @@ export default function AdsAdminPage() {
 
   return (
     <section className="screen screen-history screen-ads-hard">
-      <header className="page-header">
-        <h2>Gestao de Publicidade</h2>
-        <p>Campanhas, criativos por slot e toggles de exibicao.</p>
-        <div className="role-session-badge">Perfil ativo: {(user?.role || "admin").toUpperCase()}</div>
+      <header className="page-header admin-page-header">
+        <div className="admin-page-header-main">
+          <h2>Gestao de Publicidade</h2>
+          <p>Campanhas, criativos por slot e toggles de exibicao.</p>
+          <div className="role-session-wrap">
+            <div className="role-session-badge">Perfil ativo: {(user?.role || "admin").toUpperCase()}</div>
+            <span className="role-live-indicator" aria-label="Perfil ativo ao vivo">LIVE</span>
+          </div>
+        </div>
+        <img src="/assets/brand/icon_mono_77Gira.svg" alt="77Gira" className="admin-page-icon" />
       </header>
       <div className="ads-layout">
         <aside className="ads-sidebar">
@@ -819,3 +825,4 @@ export default function AdsAdminPage() {
     </section>
   );
 }
+

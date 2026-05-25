@@ -23,20 +23,20 @@ describe("ownership utils", () => {
     expect(canManageEvent(admin, { createdByUserId: "x", venue: {} })).toBe(true);
   });
 
-  it("venue_manager can manage event via legacy managerUserId", () => {
+  it("venue_manager cannot manage event via legacy managerUserId", () => {
     const event = {
       createdByUserId: "other",
       venue: { managerUserId: "u-manager", managerAccesses: [] }
     };
-    expect(canManageEvent(manager, event)).toBe(true);
+    expect(canManageEvent(manager, event)).toBe(false);
   });
 
-  it("venue_manager can manage event via managerAccesses link", () => {
+  it("venue_manager cannot manage event via managerAccesses link", () => {
     const event = {
       createdByUserId: "other",
       venue: { managerUserId: null, managerAccesses: [{ userId: "u-manager" }] }
     };
-    expect(canManageEvent(manager, event)).toBe(true);
+    expect(canManageEvent(manager, event)).toBe(false);
   });
 
   it("attendee cannot manage event", () => {

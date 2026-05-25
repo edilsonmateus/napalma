@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>77Gira - Modelos de Negócio e Monetização</title>
+  <style>
+    :root{
+      --bg:#0f1220;
+      --bg-soft:#171b2d;
+      --card:#1d2338;
+      --text:#eef2ff;
+      --muted:#b8bfdc;
+      --ok:#45d483;
+      --warn:#ffbf69;
+      --danger:#ff6b6b;
+      --accent:#8ea2ff;
+      --line:#313a5f;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg,var(--bg),#0b0e18 60%);
+      color:var(--text);
+      line-height:1.5;
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:28px 18px 60px}
+    h1,h2,h3{line-height:1.2;margin:0 0 10px}
+    h1{font-size:34px}
+    h2{font-size:24px;margin-top:34px}
+    h3{font-size:18px;margin-top:18px}
+    p,li{color:var(--muted)}
+    .lead{font-size:18px;color:#d9e0ff;max-width:900px}
+    .grid{display:grid;gap:14px}
+    .g2{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+    .g3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+    .card{
+      background:linear-gradient(180deg,var(--card),#1a2033);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:14px;
+    }
+    .pill{
+      display:inline-block;padding:4px 10px;border-radius:999px;
+      border:1px solid var(--line);font-size:12px;color:#dbe3ff;margin-right:6px
+    }
+    .ok{color:var(--ok)} .warn{color:var(--warn)} .danger{color:var(--danger)}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{border:1px solid var(--line);padding:9px;text-align:left;vertical-align:top}
+    th{background:var(--bg-soft);color:#dfe6ff}
+    .kpi{font-size:28px;font-weight:700;color:#fff}
+    .small{font-size:13px}
+    .footer{margin-top:28px;padding-top:14px;border-top:1px solid var(--line)}
+    .tag-row{margin:8px 0 2px}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>77Gira - Modelos de Negócio e Monetização</h1>
+    <p class="lead">
+      Estudo expandido para sustentar o negócio da 77Gira no curto, médio e longo prazo, equilibrando
+      receita recorrente, performance comercial e crescimento com baixo risco operacional.
+    </p>
+
+    <section>
+      <h2>1) Tese Central de Negócio</h2>
+      <div class="card">
+        <p>
+          A 77Gira não é só um app de agenda de samba. É um <strong>motor de demanda local</strong> para casas,
+          produtores e artistas. O valor econômico está em: <strong>atenção qualificada</strong>, <strong>conversão de público</strong>,
+          <strong>gestão de agenda</strong> e <strong>dados operacionais</strong>.
+        </p>
+        <div class="tag-row">
+          <span class="pill">B2B2C</span>
+          <span class="pill">Marketplace de atenção local</span>
+          <span class="pill">SaaS + Mídia + Serviços</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>2) Linhas de Receita (Stack de Monetização)</h2>
+      <div class="grid g2">
+        <article class="card">
+          <h3>A. Assinatura de Casas (MRR)</h3>
+          <ul>
+            <li>Plano Base: presença, agenda, perfil da casa, métricas essenciais.</li>
+            <li>Plano Pro: recursos avançados (produtores, automações, insights).</li>
+            <li>Plano Premium: destaque no feed + suporte prioritário.</li>
+          </ul>
+          <p><strong>Força:</strong> previsibilidade de caixa.</p>
+          <p><strong>Risco:</strong> churn se não houver resultado claro para a casa.</p>
+        </article>
+
+        <article class="card">
+          <h3>B. Mídia Local (ADS)</h3>
+          <ul>
+            <li>Campanhas por slot (explorar, radar, detalhes).</li>
+            <li>Compra por período, por região, por janela de horário.</li>
+            <li>Formato destaque de evento e “sponsored card”.</li>
+          </ul>
+          <p><strong>Força:</strong> margem alta.</p>
+          <p><strong>Risco:</strong> excesso de ads prejudicar UX.</p>
+        </article>
+
+        <article class="card">
+          <h3>C. Fee de Captação/Ativação</h3>
+          <ul>
+            <li>Produtor 77Gira capta nova casa e ativa operação.</li>
+            <li>Comissão de onboarding e setup inicial.</li>
+            <li>Bônus por retenção (ex: casa ativa por 90 dias).</li>
+          </ul>
+          <p><strong>Força:</strong> acelera expansão territorial.</p>
+          <p><strong>Risco:</strong> custo de campo se operação for desorganizada.</p>
+        </article>
+
+        <article class="card">
+          <h3>D. Serviços Operacionais (Done-for-you)</h3>
+          <ul>
+            <li>Gestão de agenda para casas sem time dedicado.</li>
+            <li>Criação de criativos e calendário editorial.</li>
+            <li>Pacote “Performance da Semana”.</li>
+          </ul>
+          <p><strong>Força:</strong> ticket alto e relação forte com cliente.</p>
+          <p><strong>Risco:</strong> baixa escalabilidade sem processos.</p>
+        </article>
+
+        <article class="card">
+          <h3>E. Benefícios ao Público (futuro)</h3>
+          <ul>
+            <li>Lista 77Gira / voucher / perks por casa.</li>
+            <li>Parcerias com transporte (cupom dinâmico).</li>
+            <li>Programa de fidelidade com marcas parceiras.</li>
+          </ul>
+          <p><strong>Força:</strong> aumenta retenção e recorrência do usuário final.</p>
+          <p><strong>Risco:</strong> exige operação comercial robusta.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>3) Modelos Operacionais para Produtores (sua dúvida principal)</h2>
+      <div class="grid g3">
+        <article class="card">
+          <h3>Modelo 1 - Produtor Freelancer 77Gira</h3>
+          <p>Captador independente com comissionamento por casa ativa.</p>
+          <p><strong>Pagamento:</strong> fee de entrada + recorrência limitada (ex: 3 meses).</p>
+          <p><strong>Controle:</strong> painel com carteira, status e SLA.</p>
+        </article>
+        <article class="card">
+          <h3>Modelo 2 - Produtor Indicado pela Casa</h3>
+          <p>A casa indica seu produtor e ele opera agenda/campanhas.</p>
+          <p><strong>Pagamento:</strong> 100% negociado casa↔produtor; 77Gira cobra da casa.</p>
+          <p><strong>Controle:</strong> claim + aprovação + revogação pela casa.</p>
+        </article>
+        <article class="card">
+          <h3>Modelo 3 - Squad Interno 77Gira</h3>
+          <p>Equipe própria para contas estratégicas.</p>
+          <p><strong>Pagamento:</strong> salário + bônus por NRR/churn.</p>
+          <p><strong>Controle:</strong> qualidade e padrão elevados.</p>
+        </article>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3>Recomendação prática: modelo híbrido</h3>
+        <ul>
+          <li><strong>Entrada:</strong> Freelancer 77Gira para captação rápida de casas.</li>
+          <li><strong>Operação contínua:</strong> produtor da casa (quando existir) + supervisão 77Gira.</li>
+          <li><strong>Contas premium:</strong> squad interno 77Gira para maior LTV.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <h2>4) Unidade Econômica (simplificada)</h2>
+      <div class="grid g3">
+        <div class="card">
+          <div class="small">Meta CAC payback</div>
+          <div class="kpi">&lt; 3 meses</div>
+        </div>
+        <div class="card">
+          <div class="small">Margem alvo em mídia</div>
+          <div class="kpi">60%+</div>
+        </div>
+        <div class="card">
+          <div class="small">Churn mensal alvo</div>
+          <div class="kpi">&lt; 5%</div>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Indicador</th>
+            <th>Por que importa</th>
+            <th>Como melhorar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>MRR por casa</td>
+            <td>Base de sustentabilidade</td>
+            <td>Upsell de ADS + serviços</td>
+          </tr>
+          <tr>
+            <td>Ativação (D30)</td>
+            <td>Reduz churn inicial</td>
+            <td>Onboarding assistido + playbook semanal</td>
+          </tr>
+          <tr>
+            <td>Receita ADS / casa ativa</td>
+            <td>Alavanca de margem</td>
+            <td>Pacotes por bairro/horário</td>
+          </tr>
+          <tr>
+            <td>LTV/CAC</td>
+            <td>Escala saudável</td>
+            <td>Retenção e expansão por carteira</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>5) Produtos Comerciais (prontos para vender)</h2>
+      <div class="grid g2">
+        <article class="card">
+          <h3>Pacote Presença</h3>
+          <ul>
+            <li>Perfil da casa + agenda + selo de qualidade</li>
+            <li>1 usuário produtor vinculado</li>
+            <li>Relatório mensal básico</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Pacote Movimento</h3>
+          <ul>
+            <li>Tudo do Presença</li>
+            <li>Campanhas patrocinadas por região</li>
+            <li>Destaque de evento em horários de pico</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Pacote Performance</h3>
+          <ul>
+            <li>Tudo do Movimento</li>
+            <li>Gestão assistida por produtor 77Gira</li>
+            <li>Meta de ocupação + revisão semanal</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>Pacote Lançamento de Praça</h3>
+          <ul>
+            <li>White-label de cidade</li>
+            <li>Onboarding de casas âncora</li>
+            <li>Operação comercial inicial por 90 dias</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>6) Governança de Permissões (evita caos operacional)</h2>
+      <div class="card">
+        <ul>
+          <li><strong>Admin:</strong> cria casas, aprova claims, revoga acessos, gerencia regiões.</li>
+          <li><strong>Casa:</strong> opera unidade própria, cria/vincula produtores, solicita filiais.</li>
+          <li><strong>Produtor:</strong> opera apenas carteira aprovada, sem deletar ativos globais.</li>
+          <li><strong>Público:</strong> descoberta, radar, histórico, compartilhamento e rota.</li>
+        </ul>
+        <p class="small"><span class="warn">Importante:</span> toda alteração sensível pode exigir trilha de aprovação (auditoria).</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>7) Roadmap de Monetização (90 dias)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Fase</th>
+            <th>Objetivo</th>
+            <th>Entregas</th>
+            <th>Métrica de sucesso</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>0-30 dias</td>
+            <td>Validar oferta base</td>
+            <td>Pacote Presença + processo de claim sólido</td>
+            <td>10 casas pagantes</td>
+          </tr>
+          <tr>
+            <td>31-60 dias</td>
+            <td>Subir ARPA</td>
+            <td>ADS com pacotes regionais + relatório simples</td>
+            <td>30% das casas com mídia ativa</td>
+          </tr>
+          <tr>
+            <td>61-90 dias</td>
+            <td>Escalar aquisição</td>
+            <td>Rede de produtores/freela + fee de captação</td>
+            <td>CAC estável e churn controlado</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>8) Riscos e Mitigações</h2>
+      <div class="grid g2">
+        <article class="card">
+          <h3 class="danger">Risco: baixa atualização de agenda</h3>
+          <p>Sem agenda viva, o usuário perde confiança.</p>
+          <p><strong>Mitigação:</strong> produtor responsável por SLA + alertas de agenda vazia.</p>
+        </article>
+        <article class="card">
+          <h3 class="danger">Risco: conflito de propriedade de casa</h3>
+          <p>Claims indevidos geram atrito comercial.</p>
+          <p><strong>Mitigação:</strong> fluxo de comprovação documental + trilha de auditoria.</p>
+        </article>
+        <article class="card">
+          <h3 class="warn">Risco: receita concentrada em poucas casas</h3>
+          <p>Dependência perigosa de poucos clientes.</p>
+          <p><strong>Mitigação:</strong> carteira pulverizada por região e faixa de ticket.</p>
+        </article>
+        <article class="card">
+          <h3 class="warn">Risco: mídia agressiva prejudicar retenção</h3>
+          <p>Excesso de ads reduz valor para usuário.</p>
+          <p><strong>Mitigação:</strong> limites de frequência e qualidade de criativo.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>9) Estrutura sugerida de preços (exemplo)</h2>
+      <div class="card">
+        <p class="small">Apenas referência para testes comerciais (não definitivo):</p>
+        <ul>
+          <li><strong>Presença:</strong> assinatura mensal fixa.</li>
+          <li><strong>Movimento:</strong> assinatura + crédito de mídia.</li>
+          <li><strong>Performance:</strong> mensalidade + fee operacional.</li>
+          <li><strong>Captação:</strong> comissão por casa ativada e retida.</li>
+        </ul>
+        <p class="small mono">Regra saudável: MRR cobre operação; ADS e serviços aceleram lucro.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>10) Conclusão Executiva</h2>
+      <div class="card">
+        <p>
+          Para a 77Gira “ficar em pé”, a combinação mais robusta é:
+          <strong>Assinatura de casas (base) + Mídia local (margem) + Serviços (ticket alto) + Rede de produtores (escala)</strong>.
+        </p>
+        <p>
+          A prioridade estratégica é provar resultado para casa de show (movimento real), pois isso
+          reduz churn e sustenta todas as demais receitas.
+        </p>
+      </div>
+    </section>
+
+    <div class="footer small">
+      Documento gerado para planejamento de negócios da 77Gira.
+    </div>
+  </div>
+</body>
+</html>
+

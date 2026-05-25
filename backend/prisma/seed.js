@@ -1,7 +1,7 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
 import bcrypt from "bcryptjs";
-import { PrismaClient, EventType, UserRole } from "@prisma/client";
+import { PrismaClient, UserRole } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -14,22 +14,47 @@ function slugify(value) {
     .replace(/(^-|-$)/g, "");
 }
 
+function normalizeKey(value) {
+  return slugify(value).replace(/-/g, "");
+}
+
+function readRowValue(row, aliases) {
+  for (const alias of aliases) {
+    if (row[alias] != null && String(row[alias]).trim().length > 0) {
+      return row[alias];
+    }
+  }
+  const normalizedEntries = Object.entries(row).map(([key, val]) => [normalizeKey(key), val]);
+  for (const alias of aliases) {
+    const target = normalizeKey(alias);
+    const found = normalizedEntries.find(([key]) => key === target);
+    if (found && found[1] != null && String(found[1]).trim().length > 0) {
+      return found[1];
+    }
+    const fuzzy = normalizedEntries.find(([key]) => key.startsWith(target.slice(0, 8)) || target.startsWith(key.slice(0, 8)));
+    if (fuzzy && fuzzy[1] != null && String(fuzzy[1]).trim().length > 0) {
+      return fuzzy[1];
+    }
+  }
+  return "";
+}
+
 function safeText(value) {
   return String(value || "")
     .replace(/\uFEFF/g, "")
-    .replace(/Ã§/g, "ç")
-    .replace(/Ã£/g, "ã")
-    .replace(/Ã¡/g, "á")
-    .replace(/Ã©/g, "é")
-    .replace(/Ãª/g, "ê")
-    .replace(/Ã­/g, "í")
-    .replace(/Ã³/g, "ó")
-    .replace(/Ãµ/g, "õ")
-    .replace(/Ãº/g, "ú")
-    .replace(/Ã‰/g, "É")
-    .replace(/Ã“/g, "Ó")
-    .replace(/Ã/g, "à")
-    .replace(/ðŸ”’/g, "")
+    .replace(/ÃƒÂ§/g, "Ã§")
+    .replace(/ÃƒÂ£/g, "Ã£")
+    .replace(/ÃƒÂ¡/g, "Ã¡")
+    .replace(/ÃƒÂ©/g, "Ã©")
+    .replace(/ÃƒÂª/g, "Ãª")
+    .replace(/ÃƒÂ­/g, "Ã­")
+    .replace(/ÃƒÂ³/g, "Ã³")
+    .replace(/ÃƒÂµ/g, "Ãµ")
+    .replace(/ÃƒÂº/g, "Ãº")
+    .replace(/Ãƒâ€°/g, "Ã‰")
+    .replace(/Ãƒâ€œ/g, "Ã“")
+    .replace(/Ãƒ/g, "Ã ")
+    .replace(/Ã°Å¸â€â€™/g, "")
     .trim();
 }
 
@@ -92,18 +117,18 @@ function parseOpenDays(value) {
     .map((d) => d.replace(/\.$/, ""));
 }
 
-function mapEventType(value) {
+function mapEventType(value, eventTypeResolver) {
   const v = slugify(value);
-  if (v.includes("gafieira")) return EventType.gafieira;
-  if (v.includes("pagode")) return EventType.pagode;
-  if (v.includes("samba-rock") || v.includes("samba-rock")) return EventType.samba_rock;
-  if (v.includes("feijoada")) return EventType.feijoada_sambista;
-  return EventType.roda_samba;
+  if (v.includes("gafieira")) return eventTypeResolver.gafieira;
+  if (v.includes("pagode")) return eventTypeResolver.pagode;
+  if (v.includes("samba-rock") || v.includes("samba-rock")) return eventTypeResolver.samba_rock;
+  if (v.includes("feijoada")) return eventTypeResolver.feijoada_sambista;
+  return eventTypeResolver.roda_samba;
 }
 
 function parsePrice(value) {
   const raw = safeText(value).toLowerCase();
-  if (!raw || raw.includes("gratis") || raw.includes("grátis")) {
+  if (!raw || raw.includes("gratis") || raw.includes("grÃ¡tis")) {
     return { ticketType: "free", priceMin: null, priceMax: null };
   }
   const numeric = raw
@@ -147,14 +172,48 @@ function buildEventDates(dayRef, startMinutes, endMinutes) {
   return { startDate: start, endDate: end };
 }
 
+function buildRollingDayRef(index) {
+  const base = new Date();
+  base.setHours(0, 0, 0, 0);
+  const offsetDays = index % 7;
+  base.setDate(base.getDate() + offsetDays);
+  return {
+    day: base.getDate(),
+    month: base.getMonth() + 1,
+    year: base.getFullYear()
+  };
+}
+
 async function main() {
+  const enumRows = await prisma.$queryRaw`
+    SELECT e.enumlabel
+    FROM pg_enum e
+    JOIN pg_type t ON t.oid = e.enumtypid
+    WHERE t.typname = 'EventType'
+  `;
+  const enumSet = new Set(enumRows.map((row) => String(row.enumlabel)));
+  const eventTypeResolver = {
+    roda_samba: enumSet.has("roda_samba")
+      ? "roda_samba"
+      : enumSet.has("roda_de_samba")
+      ? "roda_de_samba"
+      : "pagode",
+    pagode: enumSet.has("pagode") ? "pagode" : "roda_samba",
+    gafieira: enumSet.has("gafieira") ? "gafieira" : "pagode",
+    samba_rock: enumSet.has("samba_rock") ? "samba_rock" : "pagode",
+    feijoada_sambista: enumSet.has("feijoada_sambista") ? "feijoada_sambista" : "pagode"
+  };
+
   await prisma.refreshToken.deleteMany();
+  await prisma.itineraryItem.deleteMany();
+  await prisma.itinerary.deleteMany();
   await prisma.eventArtist.deleteMany();
   await prisma.markedEvent.deleteMany();
   await prisma.userEventHistory.deleteMany();
   await prisma.userAchievement.deleteMany();
   await prisma.achievement.deleteMany();
   await prisma.claimRequest.deleteMany();
+  await prisma.region.deleteMany();
   await prisma.producerArtistAccess.deleteMany();
   await prisma.producerVenueAccess.deleteMany();
   await prisma.event.deleteMany();
@@ -171,6 +230,19 @@ async function main() {
     prisma.user.create({ data: { email: "lia@napalma.app", username: "lia.samba", firstName: "Lia", lastName: "Campos", passwordHash, role: UserRole.attendee } })
   ]);
 
+  const defaultRegions = ["Centro", "Zona Norte", "Zona Sul", "Zona Leste", "Zona Oeste", "Grande Sao Paulo"];
+
+  await prisma.region.createMany({
+    data: defaultRegions.map((name, index) => ({
+      name,
+      city: "Sao Paulo",
+      state: "SP",
+      sortOrder: index,
+      isActive: true,
+      createdByUserId: admin.id
+    }))
+  });
+
   const importsDir = path.resolve(process.cwd(), "..", "docs", "imports");
   const housesCsv = fs.readFileSync(path.join(importsDir, "TAB-CASA.csv"), "utf8");
   const attractionsCsv = fs.readFileSync(path.join(importsDir, "TAB-ATRACOES.csv"), "utf8");
@@ -179,6 +251,7 @@ async function main() {
   const attractionRows = parseCsv(attractionsCsv);
 
   const venueByName = new Map();
+  const venueBySlug = new Map();
   for (const row of houseRows) {
     const name = safeText(row.nomeCasa);
     if (!name) continue;
@@ -199,24 +272,40 @@ async function main() {
       }
     });
     venueByName.set(name.toLowerCase(), venue);
+    venueBySlug.set(slugify(name), venue);
   }
 
   const artistBySlug = new Map();
   const createdEvents = [];
+  let skippedNoTitle = 0;
+  let skippedNoVenue = 0;
+  let skippedInvalidDate = 0;
 
-  for (const row of attractionRows) {
-    const title = safeText(row["nomeAtração"] || row.nomeAtracao);
-    const venueName = safeText(row.nomeCasa).toLowerCase();
-    const venue = venueByName.get(venueName);
-    if (!title || !venue) continue;
+  for (let index = 0; index < attractionRows.length; index += 1) {
+    const row = attractionRows[index];
+    const title = safeText(readRowValue(row, ["nomeAtracao", "nomeAtração", "nomeAtraÃ§Ã£o", "nomeAtraçao", "nomeAtraÃ§ao"]));
+    const venueNameRaw = safeText(readRowValue(row, ["nomeCasa"]));
+    const venueName = venueNameRaw.toLowerCase();
+    const venue = venueByName.get(venueName) || venueBySlug.get(slugify(venueNameRaw));
+    if (!title) {
+      skippedNoTitle += 1;
+      continue;
+    }
+    if (!venue) {
+      skippedNoVenue += 1;
+      continue;
+    }
 
-    const dateRef = parseDateWithCurrentYear(row.diaAtracao);
-    const startMinutes = parseTimeToMinutes(row.horaAtracao);
-    const endMinutes = parseTimeToMinutes(row.hora_final_Atracao);
-    if (!dateRef || startMinutes == null || endMinutes == null) continue;
+    const dateRef = buildRollingDayRef(index);
+    const startMinutes = parseTimeToMinutes(readRowValue(row, ["horaAtracao", "horaAtração", "horaAtraÃ§Ã£o"]));
+    const endMinutes = parseTimeToMinutes(readRowValue(row, ["hora_final_Atracao", "horaFinalAtracao", "horaFinalAtração", "horaFinalAtraÃ§Ã£o"]));
+    if (startMinutes == null || endMinutes == null) {
+      skippedInvalidDate += 1;
+      continue;
+    }
 
     const { startDate, endDate } = buildEventDates(dateRef, startMinutes, endMinutes);
-    const price = parsePrice(row.precoEntrada);
+    const price = parsePrice(readRowValue(row, ["precoEntrada", "preÃ§oEntrada"]));
     const artistName = title;
     const artistSlug = slugify(artistName);
 
@@ -226,8 +315,8 @@ async function main() {
         data: {
           name: artistName,
           slug: artistSlug,
-          bio: safeText(row.descricaoAtracao) || undefined,
-          imageUrl: safeText(row.imgAtracao) || undefined,
+          bio: safeText(readRowValue(row, ["descricaoAtracao", "descriÃ§Ã£oAtracao", "descricaoAtraÃ§Ã£o"])) || undefined,
+          imageUrl: safeText(readRowValue(row, ["imgAtracao", "imgAtraÃ§Ã£o"])) || undefined,
           genres: ["samba"],
           createdByUserId: producer.id
         }
@@ -238,16 +327,16 @@ async function main() {
     const event = await prisma.event.create({
       data: {
         title,
-        description: safeText(row.descricaoAtracao) || undefined,
-        imageUrl: safeText(row.imgAtracao) || undefined,
-        type: mapEventType(row.estiloAtracao),
+        description: safeText(readRowValue(row, ["descricaoAtracao", "descriÃ§Ã£oAtracao", "descricaoAtraÃ§Ã£o"])) || undefined,
+        imageUrl: safeText(readRowValue(row, ["imgAtracao", "imgAtraÃ§Ã£o"])) || undefined,
+        type: mapEventType(readRowValue(row, ["estiloAtracao", "estiloAtraÃ§Ã£o"]), eventTypeResolver),
         tags: ["samba"],
         startDate,
         endDate,
         ticketType: price.ticketType,
         priceMin: price.priceMin,
         priceMax: price.priceMax,
-        status: String(row.soudOut || "").toLowerCase() === "true" ? "sold_out" : "confirmed",
+        status: String(readRowValue(row, ["soudOut", "soldOut"]) || "").toLowerCase() === "true" ? "sold_out" : "confirmed",
         venueId: venue.id,
         createdByUserId: producer.id,
         artists: {
@@ -281,7 +370,7 @@ async function main() {
     ]
   });
 
-  console.log(`Seed finalizado: ${venueByName.size} casas, ${artistBySlug.size} artistas, ${createdEvents.length} eventos.`);
+  console.log(`Seed finalizado: ${venueByName.size} casas, ${artistBySlug.size} artistas, ${createdEvents.length} eventos. Pulados -> sem titulo: ${skippedNoTitle}, sem casa: ${skippedNoVenue}, data/hora invalida: ${skippedInvalidDate}.`);
 }
 
 main()
@@ -293,3 +382,21 @@ main()
     await prisma.$disconnect();
     process.exit(1);
   });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

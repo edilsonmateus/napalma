@@ -8,6 +8,13 @@ const createClaimSchema = z
     requestType: z.enum(["ownership", "venue_update"]).optional().default("ownership"),
     venueId: z.string().uuid().optional(),
     artistId: z.string().uuid().optional(),
+    responsibleName: z.string().trim().min(3).max(120).optional(),
+    responsiblePhone: z.string().trim().min(8).max(30).optional(),
+    claimantDocument: z.string().trim().min(5).max(40).optional(),
+    relationshipRole: z.string().trim().min(3).max(120).optional(),
+    officialEmail: z.string().trim().email().max(160).optional(),
+    officialInstagram: z.string().trim().max(120).optional(),
+    officialWebsite: z.string().trim().url().max(255).optional(),
     justification: z.string().trim().min(5).max(500),
     requestedChanges: z.record(z.any()).optional()
   })
@@ -17,6 +24,20 @@ const createClaimSchema = z
     }
     if (data.targetType === "artist" && !data.artistId) {
       ctx.addIssue({ code: "custom", path: ["artistId"], message: "Informe o artista para reivindicacao." });
+    }
+    if (data.requestType === "ownership") {
+      if (!data.responsibleName) {
+        ctx.addIssue({ code: "custom", path: ["responsibleName"], message: "Informe o nome do responsavel." });
+      }
+      if (!data.responsiblePhone) {
+        ctx.addIssue({ code: "custom", path: ["responsiblePhone"], message: "Informe telefone de contato." });
+      }
+      if (!data.claimantDocument) {
+        ctx.addIssue({ code: "custom", path: ["claimantDocument"], message: "Informe CNPJ/CPF do solicitante." });
+      }
+      if (!data.relationshipRole) {
+        ctx.addIssue({ code: "custom", path: ["relationshipRole"], message: "Informe seu vinculo com a casa/artista." });
+      }
     }
   });
 
@@ -37,6 +58,15 @@ function mapClaim(claim) {
     requestType: claim.requestType || "ownership",
     justification: claim.justification ?? "",
     requestedChanges: claim.requestedChanges ?? null,
+    evidence: {
+      responsibleName: claim.responsibleName ?? "",
+      responsiblePhone: claim.responsiblePhone ?? "",
+      claimantDocument: claim.claimantDocument ?? "",
+      relationshipRole: claim.relationshipRole ?? "",
+      officialEmail: claim.officialEmail ?? "",
+      officialInstagram: claim.officialInstagram ?? "",
+      officialWebsite: claim.officialWebsite ?? ""
+    },
     decisionNote: claim.decisionNote ?? "",
     createdAt: claim.createdAt,
     reviewedAt: claim.reviewedAt,
@@ -71,13 +101,22 @@ function mapClaim(claim) {
 
 export async function createClaimRequest(req, res, next) {
   try {
-    if (req.user?.role !== "producer") {
+    const isProducer = req.user?.role === "producer";
+    const isHouse = req.user?.role === "venue_manager";
+    if (!isProducer && !isHouse) {
       return res.status(403).json({
         error: "forbidden",
-        message: "Apenas produtores podem abrir reivindicacoes."
+        message: "Somente produtor ou casa podem abrir reivindicacoes."
       });
     }
     const data = createClaimSchema.parse(req.body);
+
+    if (isHouse && data.targetType !== ClaimTargetType.venue) {
+      return res.status(403).json({
+        error: "forbidden",
+        message: "Perfil casa pode reivindicar somente casas."
+      });
+    }
 
     if (data.targetType === ClaimTargetType.venue) {
       const venue = await prisma.venue.findUnique({ where: { id: data.venueId }, select: { id: true } });
@@ -114,7 +153,14 @@ export async function createClaimRequest(req, res, next) {
         venueId: data.venueId ?? null,
         artistId: data.artistId ?? null,
         justification: data.justification,
-        requestedChanges: data.requestedChanges ?? null
+        requestedChanges: data.requestedChanges ?? null,
+        responsibleName: data.responsibleName ?? null,
+        responsiblePhone: data.responsiblePhone ?? null,
+        claimantDocument: data.claimantDocument ?? null,
+        relationshipRole: data.relationshipRole ?? null,
+        officialEmail: data.officialEmail ?? null,
+        officialInstagram: data.officialInstagram ?? null,
+        officialWebsite: data.officialWebsite ?? null
       },
       include: {
         venue: true,
@@ -211,16 +257,34 @@ export async function decideClaim(req, res, next) {
           }
         }
         if (existing.requestType === "ownership" && existing.targetType === ClaimTargetType.venue && existing.venueId) {
-          await tx.producerVenueAccess.upsert({
-            where: {
-              producerId_venueId: {
-                producerId: existing.requestedById,
-                venueId: existing.venueId
-              }
-            },
-            update: {},
-            create: { producerId: existing.requestedById, venueId: existing.venueId }
+          const requester = await tx.user.findUnique({
+            where: { id: existing.requestedById },
+            select: { role: true }
           });
+
+          if (requester?.role === "venue_manager") {
+            await tx.venueManagerAccess.upsert({
+              where: {
+                userId_venueId: {
+                  userId: existing.requestedById,
+                  venueId: existing.venueId
+                }
+              },
+              update: {},
+              create: { userId: existing.requestedById, venueId: existing.venueId }
+            });
+          } else {
+            await tx.producerVenueAccess.upsert({
+              where: {
+                producerId_venueId: {
+                  producerId: existing.requestedById,
+                  venueId: existing.venueId
+                }
+              },
+              update: {},
+              create: { producerId: existing.requestedById, venueId: existing.venueId }
+            });
+          }
         }
         if (existing.requestType === "ownership" && existing.targetType === ClaimTargetType.artist && existing.artistId) {
           await tx.producerArtistAccess.upsert({

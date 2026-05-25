@@ -10,11 +10,10 @@ export default function EventCard({ event }) {
         <span className="event-region"><MapPin size={14} /> {event.region}</span>
       </div>
       <div className="event-body">
-        <h3>{event.title}</h3>
-        <p className="artist-inline-with-badge">
-          <span>{event.artist}</span>
+        <h3 className="artist-inline-with-badge">
+          <span>{event.title}</span>
           {event.artistVerified ? <VerifiedBadge className="artist-verified-dot" title="Artista verificado" /> : null}
-        </p>
+        </h3>
         <small>{event.venue}</small>
       </div>
     </Link>

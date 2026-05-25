@@ -45,7 +45,7 @@ function mapItinerary(item) {
         position: row.position,
         eventId: row.eventId,
         title: row.event.title,
-        artist: row.event.artists[0]?.artist.name || "Artista NaPalma",
+        artist: row.event.artists[0]?.artist.name || "",
         venue: row.event.venue.name,
         region: row.event.venue.region,
         startsAt: row.event.startDate,
@@ -257,7 +257,7 @@ export async function suggestPelaHora(req, res, next) {
         items: built.items.map((row) => ({
           eventId: row.event.id,
           title: row.event.title,
-          artist: row.event.artists[0]?.artist.name || "Artista NaPalma",
+          artist: row.event.artists[0]?.artist.name || "",
           venue: row.event.venue.name,
           region: row.event.venue.region,
           startsAt: row.event.startDate,

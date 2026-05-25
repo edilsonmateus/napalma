@@ -9,6 +9,12 @@ import {
 } from "../hooks/useEventsQuery";
 import { useAuthStore } from "../store/authStore";
 import VerifiedBadge from "../components/common/VerifiedBadge";
+import { getAudienceBadges } from "../utils/eventAudienceBadges";
+import { buildGoogleMapsLink, buildUberLink, buildWazeLink } from "../utils/maps";
+import mapsIcon from "../assets/routes/maps.svg";
+import wazeIcon from "../assets/routes/waze.svg";
+import uberIcon from "../assets/routes/uber.svg";
+import AppToast from "../components/common/AppToast";
 
 function toDateInput(value) {
   const d = new Date(value);
@@ -49,7 +55,8 @@ export default function PelaHoraPage() {
   const [title, setTitle] = useState("Plano do Dia");
   const [mode, setMode] = useState("manual");
   const [selectedEventIds, setSelectedEventIds] = useState([]);
-  const [feedback, setFeedback] = useState("");
+  const [toast, setToast] = useState({ text: "", type: "info" });
+  const [attendedMap, setAttendedMap] = useState({});
 
   const { data: events = [], isLoading: eventsLoading } = useEventsQuery();
   const { data: itineraries = [], isLoading: itinerariesLoading } = useMyPelaHoraQuery(Boolean(user));
@@ -90,35 +97,39 @@ export default function PelaHoraPage() {
     setSelectedEventIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   }
 
+  function toggleAttended(itemId) {
+    setAttendedMap((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
+  }
+
   async function handleSave() {
     if (!user) return;
     const eventIds = mode === "automatic" ? (suggestion?.eventIds || []) : selectedEventIds;
     if (eventIds.length < 2) {
-      setFeedback("Escolha pelo menos 2 sambas para montar seu Pela Hora.");
+      setToast({ text: "Escolha pelo menos 2 sambas para montar seu Pela Hora.", type: "info" });
       return;
     }
     try {
-      setFeedback("");
+      setToast({ text: "", type: "info" });
       await createPelaHora.mutateAsync({
         title,
         date,
         mode,
         eventIds
       });
-      setFeedback("Pela Hora salvo com sucesso.");
+      setToast({ text: "Pela Hora salvo com sucesso.", type: "success" });
       if (mode === "manual") setSelectedEventIds([]);
     } catch (_error) {
-      setFeedback("Nao foi possivel salvar seu Pela Hora agora.");
+      setToast({ text: "Nao foi possivel salvar seu Pela Hora agora.", type: "error" });
     }
   }
 
   async function handleDeletePlan(id) {
     try {
-      setFeedback("");
+      setToast({ text: "", type: "info" });
       await deletePelaHora.mutateAsync(id);
-      setFeedback("Plano removido com sucesso.");
+      setToast({ text: "Plano removido com sucesso.", type: "success" });
     } catch (_error) {
-      setFeedback("Nao foi possivel remover esse plano agora.");
+      setToast({ text: "Nao foi possivel remover esse plano agora.", type: "error" });
     }
   }
 
@@ -161,17 +172,28 @@ export default function PelaHoraPage() {
           <h3 className="section-title">Escolha os eventos do seu plano</h3>
           <p className="meta-line">Toque no evento para adicionar. Toque novamente para remover.</p>
           {eventsLoading ? <p className="empty helper-empty">Carregando sambas...</p> : null}
-          {filteredByDate.length === 0 ? <p className="empty helper-empty">Sem sambas nessa data. Tente outra data ou use a sugestao automatica.</p> : null}
+          {filteredByDate.length === 0 ? (
+            <div className="empty helper-empty">
+              <p>Sem sambas nessa data.</p>
+              <small className="meta-line">Tente outra data ou use a sugestao automatica.</small>
+            </div>
+          ) : null}
           <div className="venue-list">
             {filteredByDate.map((event) => (
               <button key={event.id} type="button" className={`venue-card ${selectedEventIds.includes(event.id) ? "active-card" : ""}`} onClick={() => toggleEvent(event.id)}>
                 <div>
-                  <h3>{event.title}</h3>
-                  <p className="meta-line artist-inline-with-badge">
-                    <span>{event.artist}</span>
+                  <h3 className="artist-inline-with-badge">
+                    <span>{event.title}</span>
                     {event.artistVerified ? <VerifiedBadge className="artist-verified-dot" title="Artista verificado" /> : null}
-                  </p>
+                  </h3>
                   <p className="meta-line">{event.venue} - {event.region}</p>
+                  {getAudienceBadges(event).length > 0 ? (
+                    <div className="event-audience-row">
+                      {getAudienceBadges(event).map((badge) => (
+                        <span key={badge} className="event-audience-badge">{badge}</span>
+                      ))}
+                    </div>
+                  ) : null}
                   {selectedEventIds.includes(event.id) ? (
                     <small className="meta-line added-flag">
                       Adicionado ao plano
@@ -221,7 +243,12 @@ export default function PelaHoraPage() {
         <>
           <h3 className="section-title">Sugestao automatica de plano</h3>
           {suggestionLoading ? <p className="empty helper-empty">Gerando seu Pela Hora...</p> : null}
-          {!suggestionLoading && !suggestion ? <p className="empty helper-empty">Sem sugestao pronta para essa data. Tente outra data.</p> : null}
+          {!suggestionLoading && !suggestion ? (
+            <div className="empty helper-empty">
+              <p>Sem sugestao pronta para essa data.</p>
+              <small className="meta-line">Troque a data ou monte manualmente pelo menos 2 sambas.</small>
+            </div>
+          ) : null}
           {suggestion ? (
             <div className="clean-card">
               <p className="meta-line">Risco: {suggestion.riskScore} | Deslocamento: {suggestion.totalTransitMinutes} min</p>
@@ -240,11 +267,16 @@ export default function PelaHoraPage() {
       ) : null}
 
       {user ? <button className="btn-primary" type="button" onClick={handleSave}>Salvar plano do dia</button> : null}
-      {feedback ? <p className="empty">{feedback}</p> : null}
+      {user ? <AppToast toast={toast} onClose={() => setToast({ text: "", type: "info" })} /> : null}
 
       <h3 className="section-title">Planos salvos</h3>
       {user && itinerariesLoading ? <p className="empty">Carregando historico de Pela Hora...</p> : null}
-      {user && !itinerariesLoading && itineraries.length === 0 ? <p className="empty">Nenhum plano salvo ainda.</p> : null}
+      {user && !itinerariesLoading && itineraries.length === 0 ? (
+        <div className="empty empty-highlight">
+          <p>Nenhum plano salvo ainda.</p>
+          <small className="meta-line">Escolha 2 ou mais sambas e clique em "Salvar plano do dia".</small>
+        </div>
+      ) : null}
       <div className="venue-list">
         {itineraries.map((itinerary) => (
           <article key={itinerary.id} className="venue-card itinerary-saved-card">
@@ -276,10 +308,54 @@ export default function PelaHoraPage() {
                     {idx < arr.length - 1 ? <span className="schedule-line" /> : null}
                   </div>
                   <div className="saved-mini-content">
-                    <p className="meta-line saved-mini-title"><strong>{item.title}</strong></p>
+                    <div className="saved-mini-head">
+                      <p className="meta-line saved-mini-title"><strong>{item.title}</strong></p>
+                      <div className="saved-mini-head-right">
+                        <small className="meta-line saved-mini-time">{formatHour(item.startsAt)}</small>
+                        <small className="meta-line saved-route-label">Partiu →</small>
+                        <div className="saved-route-actions">
+                          <a
+                            href={buildGoogleMapsLink(item)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="saved-route-chip"
+                            aria-label={`Abrir rota no Maps para ${item.title}`}
+                            title="Maps"
+                          >
+                            <img src={mapsIcon} alt="" aria-hidden="true" className="route-icon-img route-icon-img-maps" />
+                          </a>
+                          <a
+                            href={buildWazeLink(item)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="saved-route-chip"
+                            aria-label={`Abrir rota no Waze para ${item.title}`}
+                            title="Waze"
+                          >
+                            <img src={wazeIcon} alt="" aria-hidden="true" className="route-icon-img route-icon-img-waze" />
+                          </a>
+                          <a
+                            href={buildUberLink(item)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="saved-route-chip"
+                            aria-label={`Abrir rota no Uber para ${item.title}`}
+                            title="Uber"
+                          >
+                            <img src={uberIcon} alt="" aria-hidden="true" className="route-icon-img route-icon-img-uber" />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
                     <small className="meta-line">{item.venue}</small>
+                    <button
+                      type="button"
+                      className={`chip saved-attended-chip ${attendedMap[item.id] ? "active" : ""}`}
+                      onClick={() => toggleAttended(item.id)}
+                    >
+                      Eu fui
+                    </button>
                   </div>
-                  <small className="meta-line saved-mini-time">{formatHour(item.startsAt)}</small>
                 </div>
               ))}
               {itinerary.items.length > 3 ? <small className="meta-line">+{itinerary.items.length - 3} sambas no plano</small> : null}

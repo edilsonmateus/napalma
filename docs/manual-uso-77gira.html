@@ -1,0 +1,570 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manual de Uso - 77Gira / NaPalma</title>
+  <style>
+    :root {
+      --bg: #071122;
+      --panel: #0f2138;
+      --panel-2: #132a44;
+      --text: #d9e6f5;
+      --muted: #9cb1ca;
+      --line: rgba(182, 203, 226, 0.2);
+      --accent: #39d98a;
+      --warn: #f5a524;
+      --danger: #ef4444;
+      --brand-a: #6d28d9;
+      --brand-b: #db2777;
+      --brand-c: #f59e0b;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Inter", sans-serif;
+      background: radial-gradient(circle at 20% 10%, #131b3a 0%, var(--bg) 40%, #03070f 100%);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      height: 100vh;
+      overflow: auto;
+      border-right: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(16,30,52,.95), rgba(8,16,30,.95));
+      padding: 24px 18px;
+    }
+
+    .logo-box {
+      background: linear-gradient(90deg, var(--brand-a), var(--brand-b), var(--brand-c));
+      padding: 1px;
+      border-radius: 14px;
+      margin-bottom: 16px;
+    }
+
+    .logo-box > div {
+      border-radius: 13px;
+      background: #08121f;
+      padding: 14px;
+    }
+
+    .logo-title {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .logo-sub {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: .85rem;
+    }
+
+    .side-note {
+      background: rgba(57, 217, 138, 0.12);
+      border: 1px solid rgba(57, 217, 138, 0.4);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: .83rem;
+      color: #c4f6df;
+      margin-bottom: 14px;
+    }
+
+    nav ul { list-style: none; padding: 0; margin: 0; }
+    nav a {
+      display: block;
+      color: var(--text);
+      text-decoration: none;
+      padding: 8px 10px;
+      margin: 4px 0;
+      border-radius: 8px;
+      font-size: .93rem;
+      border: 1px solid transparent;
+    }
+    nav a:hover {
+      border-color: var(--line);
+      background: rgba(255,255,255,.04);
+    }
+
+    .content {
+      padding: 28px clamp(16px, 4vw, 48px) 60px;
+      max-width: 1300px;
+      width: 100%;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(109,40,217,.2), rgba(219,39,119,.12), rgba(245,158,11,.14));
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 22px;
+    }
+
+    h1, h2, h3 { line-height: 1.2; margin: 0 0 10px; }
+    h1 { font-size: clamp(1.5rem, 2vw, 2.2rem); }
+    h2 { font-size: clamp(1.2rem, 1.4vw, 1.5rem); margin-top: 30px; }
+    h3 { font-size: 1rem; margin-top: 18px; }
+
+    p { color: var(--text); margin: 8px 0; }
+    .muted { color: var(--muted); }
+
+    .grid-2, .grid-3 {
+      display: grid;
+      gap: 14px;
+      margin: 14px 0;
+    }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .card {
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+
+    .tag {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: .76rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+      margin-right: 6px;
+    }
+    .tag.ok { background: rgba(57,217,138,.18); color: #aff1d0; }
+    .tag.warn { background: rgba(245,165,36,.18); color: #ffd69e; }
+    .tag.danger { background: rgba(239,68,68,.18); color: #ffc2c2; }
+
+    .steps { counter-reset: etapa; padding-left: 0; margin: 10px 0; }
+    .steps li {
+      list-style: none;
+      counter-increment: etapa;
+      background: rgba(255,255,255,.02);
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+    .steps li::before {
+      content: "Etapa " counter(etapa) ": ";
+      font-weight: 700;
+      color: #d8ecff;
+    }
+
+    .checklist { padding-left: 18px; }
+    .checklist li { margin: 6px 0; }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      margin: 10px 0;
+      background: rgba(255,255,255,.02);
+      overflow: hidden;
+    }
+    summary {
+      cursor: pointer;
+      padding: 11px 12px;
+      font-weight: 600;
+      background: rgba(255,255,255,.02);
+    }
+    details > div { padding: 0 12px 12px; }
+
+    .img-ph {
+      border: 1px dashed rgba(255,255,255,.35);
+      border-radius: 12px;
+      min-height: 180px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: #b8cae2;
+      margin-top: 8px;
+      background: repeating-linear-gradient(
+        45deg,
+        rgba(255,255,255,.02),
+        rgba(255,255,255,.02) 10px,
+        rgba(255,255,255,.04) 10px,
+        rgba(255,255,255,.04) 20px
+      );
+    }
+
+    code {
+      background: rgba(0,0,0,.3);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 2px 6px;
+      color: #e1f0ff;
+      font-family: Consolas, monospace;
+      font-size: .9em;
+    }
+
+    .kbd {
+      border: 1px solid var(--line);
+      border-bottom-width: 2px;
+      border-radius: 5px;
+      padding: 0 6px;
+      font-size: .85em;
+      background: rgba(255,255,255,.04);
+    }
+
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: rgba(57,217,138,.08);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 12px 0;
+    }
+
+    .danger-zone {
+      border-left-color: var(--danger);
+      background: rgba(239,68,68,.1);
+    }
+
+    footer {
+      margin-top: 40px;
+      color: var(--muted);
+      font-size: .9rem;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+    }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar {
+        position: static;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+      }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="logo-box">
+        <div>
+          <p class="logo-title">Manual 77Gira / NaPalma</p>
+          <p class="logo-sub">Operação + Produto + Suporte</p>
+        </div>
+      </div>
+
+      <div class="side-note">Dica: use este manual como base de treinamento para equipe de operação e atendimento.</div>
+
+      <nav>
+        <ul>
+          <li><a href="#visao-geral">Visão Geral</a></li>
+          <li><a href="#acessos">Perfis e Acessos</a></li>
+          <li><a href="#publico">Fluxo Público</a></li>
+          <li><a href="#casa">Fluxo Casa</a></li>
+          <li><a href="#produtor">Fluxo Produtor</a></li>
+          <li><a href="#admin">Fluxo Admin</a></li>
+          <li><a href="#ads">Publicidade</a></li>
+          <li><a href="#padroes">Padrões Operacionais</a></li>
+          <li><a href="#erros">Problemas Comuns</a></li>
+          <li><a href="#checklists">Checklists</a></li>
+          <li><a href="#assets">Placeholders de Imagem</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <section class="hero" id="visao-geral">
+        <span class="tag ok">VERSÃO OPERACIONAL</span>
+        <h1>Manual de Uso do App 77Gira / NaPalma</h1>
+        <p class="muted">Documento oficial para operação diária da plataforma: cadastro, gestão de agenda, perfis administrativos, radar do usuário, "Pela Hora" e publicidade.</p>
+      </section>
+
+      <section>
+        <h2>Objetivo do sistema</h2>
+        <div class="grid-3">
+          <article class="card">
+            <h3>Descoberta de samba</h3>
+            <p class="muted">Mostrar eventos por região, data e hora, incluindo status <strong>Ao Vivo</strong>.</p>
+          </article>
+          <article class="card">
+            <h3>Gestão de agenda</h3>
+            <p class="muted">Permitir que casa e produtor operem eventos, casas, artistas e filiais com controle.</p>
+          </article>
+          <article class="card">
+            <h3>Monetização</h3>
+            <p class="muted">Permitir gestão de publicidade e inventário de slots com métricas.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="acessos">
+        <h2>Perfis e Acessos</h2>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Público</h3>
+            <ul class="checklist">
+              <li>Explorar eventos</li>
+              <li>Salvar no Radar</li>
+              <li>Montar plano no "Pela Hora"</li>
+              <li>Compartilhar evento</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Casa</h3>
+            <ul class="checklist">
+              <li>Gerir dados da casa</li>
+              <li>Criar e editar eventos da unidade ativa</li>
+              <li>Gerir produtores vinculados</li>
+              <li>Solicitar acesso a nova filial</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Produtor</h3>
+            <ul class="checklist">
+              <li>Gerir carteira aprovada</li>
+              <li>Cadastrar artista/evento dentro das permissões</li>
+              <li>Acompanhar reivindicações</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Admin</h3>
+            <ul class="checklist">
+              <li>Gestão global de casas, artistas, regiões, claims e eventos</li>
+              <li>Aprovação crítica de solicitações</li>
+              <li>Governança de publicidade</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="publico">
+        <h2>Fluxo do usuário público</h2>
+        <ol class="steps">
+          <li>Acesse <strong>Explorar</strong> e use filtros de <strong>região</strong>, <strong>dia</strong> e <strong>hora</strong>.</li>
+          <li>Toque em um card para abrir detalhe e escolha <strong>Acho que eu vou</strong> para salvar no Radar.</li>
+          <li>Use <strong>Partiu agora</strong> para abrir rota em Maps, Waze ou Uber.</li>
+          <li>No <strong>Pela Hora</strong>, monte um roteiro com 2 ou mais sambas e salve o plano.</li>
+          <li>No <strong>Meu Radar</strong>, confirme presença com <strong>Eu fui!</strong> ou remova com <strong>Não fui</strong>.</li>
+        </ol>
+
+        <details>
+          <summary>Regras importantes de experiência</summary>
+          <div>
+            <ul class="checklist">
+              <li>Eventos em execução aparecem como <strong>Tá Rolando</strong>.</li>
+              <li>Artistas verificados exibem selo visual em todos os pontos de contato.</li>
+              <li>Texto de compartilhamento segue template humanizado com link.</li>
+            </ul>
+          </div>
+        </details>
+      </section>
+
+      <section id="casa">
+        <h2>Fluxo do perfil Casa</h2>
+        <div class="callout">
+          Casa é o centro da operação local. A unidade ativa define contexto para cadastro e edição de eventos.
+        </div>
+
+        <h3>Menu lateral recomendado</h3>
+        <ul class="checklist">
+          <li>Visão Geral</li>
+          <li>Eventos</li>
+          <li>Dados da Casa</li>
+          <li>Produtores</li>
+          <li>Solicitar Acesso (filiais)</li>
+        </ul>
+
+        <h3>Cadastrar evento (padrão)</h3>
+        <ol class="steps">
+          <li>Preencha <strong>Título do evento</strong> (ou artista, se show solo).</li>
+          <li>Opcional: informe <strong>Artista principal</strong>.</li>
+          <li>Defina início e fim com data/hora válida.</li>
+          <li>Defina política de preço (grátis, pago, consumação, couvert).</li>
+          <li>Salve e valide no card de prévia.</li>
+        </ol>
+
+        <div class="callout danger-zone">
+          <strong>Zona de perigo:</strong> ações de desvinculação/revogação devem ter confirmação explícita e log.
+        </div>
+      </section>
+
+      <section id="produtor">
+        <h2>Fluxo do perfil Produtor</h2>
+        <p class="muted">Produtor atua em carteira aprovada e não deve editar entidades fora das permissões.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>O que pode</h3>
+            <ul class="checklist">
+              <li>Cadastrar artistas</li>
+              <li>Cadastrar eventos em casas da carteira</li>
+              <li>Solicitar reivindicação de casa/artista</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>O que não pode</h3>
+            <ul class="checklist">
+              <li>Excluir casa da plataforma</li>
+              <li>Editar casa fora da carteira aprovada</li>
+              <li>Aprovar as próprias reivindicações</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="admin">
+        <h2>Fluxo do perfil Admin</h2>
+        <p>Administração geral da base: casas, artistas, produtores, eventos, regiões e reivindicações.</p>
+
+        <details open>
+          <summary>Checklist de governança semanal</summary>
+          <div>
+            <ul class="checklist">
+              <li>Revisar reivindicações pendentes</li>
+              <li>Revisar alterações críticas de casa/artista</li>
+              <li>Validar regiões novas antes de liberar em filtros</li>
+              <li>Auditar exclusões e revogações</li>
+            </ul>
+          </div>
+        </details>
+      </section>
+
+      <section id="ads">
+        <h2>Módulo de Publicidade</h2>
+        <div class="grid-2">
+          <article class="card">
+            <h3>Componentes</h3>
+            <ul class="checklist">
+              <li>Campanhas</li>
+              <li>Criativos por slot</li>
+              <li>Métricas (imp, clique, CTR)</li>
+              <li>Saúde e alertas</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Boas práticas</h3>
+            <ul class="checklist">
+              <li>Evitar bloqueio visual na jornada principal</li>
+              <li>Posicionar publicidade in-feed com equilíbrio</li>
+              <li>Mensurar performance por slot</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="padroes">
+        <h2>Padrões Operacionais</h2>
+        <ul class="checklist">
+          <li>Região vem de cadastro controlado (dropdown), não texto livre.</li>
+          <li>Eventos "ao vivo" devem ter destaque e previsão de término.</li>
+          <li>Ações críticas devem gerar feedback visual coerente: verde = sucesso, vermelho = erro.</li>
+          <li>Sem duplicação de informação de endereço entre casa e evento.</li>
+        </ul>
+      </section>
+
+      <section id="erros">
+        <h2>Problemas comuns e solução rápida</h2>
+
+        <details>
+          <summary>Não consigo ver dados novos no front</summary>
+          <div>
+            <p>Confirme se backend e frontend corretos estão rodando e se a porta do Vite não mudou (ex.: 5173/5174).</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Erro de porta 3333 em uso</summary>
+          <div>
+            <p>Finalize o processo que está usando a 3333 e reinicie o backend.</p>
+            <p>Comando base: <code>netstat -ano | findstr :3333</code> e depois <code>taskkill /PID &lt;PID&gt; /F</code>.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Reivindicação aprovada não apareceu no dropdown</summary>
+          <div>
+            <p>Revalidar vínculo, limpar cache de sessão e confirmar resposta da API de unidades ativas do perfil.</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="checklists">
+        <h2>Checklists de operação</h2>
+        <div class="grid-3">
+          <article class="card">
+            <h3>Antes de publicar evento</h3>
+            <ul class="checklist">
+              <li>Nome e horário corretos</li>
+              <li>Região válida</li>
+              <li>Preço coerente</li>
+              <li>Imagem carregada</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Antes de aprovar claim</h3>
+            <ul class="checklist">
+              <li>Responsável identificado</li>
+              <li>Contato validado</li>
+              <li>Justificativa registrada</li>
+              <li>Escopo de acesso definido</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Antes de abrir campanha ADS</h3>
+            <ul class="checklist">
+              <li>Criativo revisado</li>
+              <li>Link de destino testado</li>
+              <li>Slot correto</li>
+              <li>Data de início/fim validada</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="assets">
+        <h2>Placeholders de imagem (para você substituir)</h2>
+        <p class="muted">Use estes blocos para marcar onde capturas reais de tela devem entrar no manual final.</p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>Explorar com filtros</h3>
+            <div class="img-ph">INSERIR PRINT<br/>Explorar + filtros + cards</div>
+          </article>
+          <article class="card">
+            <h3>Painel Casa</h3>
+            <div class="img-ph">INSERIR PRINT<br/>Menu lateral + unidade ativa</div>
+          </article>
+          <article class="card">
+            <h3>Painel Produtor</h3>
+            <div class="img-ph">INSERIR PRINT<br/>Carteira + reivindicação</div>
+          </article>
+          <article class="card">
+            <h3>Painel Admin</h3>
+            <div class="img-ph">INSERIR PRINT<br/>Reivindicações + regiões</div>
+          </article>
+        </div>
+
+        <h3>Snippet de imagem real (HTML)</h3>
+        <pre><code>&lt;figure class="card"&gt;
+  &lt;img src="./imports/print-explorar.png" alt="Tela explorar" style="width:100%;border-radius:10px;border:1px solid rgba(255,255,255,.18)" /&gt;
+  &lt;figcaption class="muted"&gt;Tela Explorar com filtros por região e data.&lt;/figcaption&gt;
+&lt;/figure&gt;</code></pre>
+      </section>
+
+      <footer>
+        Manual operacional - 77Gira / NaPalma<br/>
+        Atualize esta documentação a cada mudança de fluxo, permissões ou layout administrativo.
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

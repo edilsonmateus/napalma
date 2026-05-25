@@ -13,6 +13,6 @@ export function isAdminRole(role) {
 export function getRoleHome(role) {
   if (isAdminRole(role)) return "/settings/venues";
   if (isProducerRole(role)) return "/workspace/produtor";
-  if (isVenueRole(role)) return "/workspace/casa";
+  if (isVenueRole(role)) return "/settings/venues?section=overview";
   return "/explore";
 }

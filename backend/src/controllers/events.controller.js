@@ -1,10 +1,15 @@
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { canManageEvent } from "../lib/access.control.js";
+import { formatPriceLabel, formatPriceSecondaryLabel } from "../utils/price.js";
 
 const querySchema = z.object({
   region: z.string().trim().min(1).optional(),
-  venueId: z.string().uuid().optional()
+  venueId: z.string().uuid().optional(),
+  includeDrafts: z
+    .union([z.boolean(), z.string()])
+    .optional()
+    .transform((value) => value === true || value === "true")
 });
 
 const recurrenceDaySchema = z.enum(["dom", "seg", "ter", "qua", "qui", "sex", "sab"]);
@@ -18,12 +23,7 @@ const eventTypeSchema = z.enum([
 ]);
 
 const ticketTypeSchema = z.enum(["free", "paid", "consumacao"]);
-const pricingPolicySchema = z.object({
-  freeUntil: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-  menFreeUntil: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-  womenFreeUntil: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-  womenFreeAllNight: z.boolean().optional().default(false)
-}).optional();
+const eventStatusSchema = z.enum(["draft", "confirmed"]);
 
 const eventBaseSchema = z.object({
   title: z.string().trim().min(3),
@@ -39,9 +39,9 @@ const eventBaseSchema = z.object({
   priceMax: z.number().nonnegative().optional(),
   consumacaoValue: z.number().nonnegative().optional(),
   couvertArtistico: z.number().nonnegative().optional(),
-  pricingPolicy: pricingPolicySchema,
   venueId: z.string().uuid(),
-  artistName: z.string().trim().min(2),
+  artistName: z.string().trim().min(2).optional(),
+  status: eventStatusSchema.optional().default("confirmed"),
   isRecurring: z.boolean().optional().default(false),
   recurrenceDays: z.array(recurrenceDaySchema).optional().default([]),
   recurrenceStartTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
@@ -109,78 +109,57 @@ function computeDurationMs(event) {
   return diff > 0 ? diff : 2 * 60 * 60 * 1000;
 }
 
-function getRecurringOccurrence(event, now = new Date()) {
-  if (!event.isRecurring) return null;
+function getRecurringOccurrences(event, now = new Date(), lookbackDays = 1, lookaheadDays = 14, maxItems = 4) {
+  if (!event.isRecurring) return [];
   const days = event.recurrenceDays || [];
-  if (days.length === 0) return null;
+  if (days.length === 0) return [];
 
   const startRef = new Date(event.startDate);
   const until = event.recurrenceUntil ? new Date(event.recurrenceUntil) : null;
   const startTime = parseTimeOrFallback(event.recurrenceStartTime, startRef);
+  const durationMs = computeDurationMs(event);
   const exceptions = new Set((event.recurrenceExceptions || []).map((value) => dateKey(new Date(value))));
+  const from = new Date(now);
+  from.setHours(0, 0, 0, 0);
+  from.setDate(from.getDate() - lookbackDays);
+  const to = new Date(now);
+  to.setHours(23, 59, 59, 999);
+  to.setDate(to.getDate() + lookaheadDays);
 
-  for (let offset = 0; offset <= 120; offset += 1) {
-    const candidate = new Date(now);
-    candidate.setHours(0, 0, 0, 0);
-    candidate.setDate(candidate.getDate() + offset);
-    if (candidate < new Date(startRef.toDateString())) continue;
-    if (until && candidate > until) break;
-
-    const dayKey = dayKeyFromDate(candidate);
+  const out = [];
+  for (let cursor = new Date(from); cursor <= to; cursor.setDate(cursor.getDate() + 1)) {
+    const dayStart = new Date(cursor);
+    if (dayStart < new Date(startRef.getFullYear(), startRef.getMonth(), startRef.getDate())) continue;
+    if (until && dayStart > until) continue;
+    const dayKey = dayKeyFromDate(dayStart);
     if (!days.includes(dayKey)) continue;
-    if (exceptions.has(dateKey(candidate))) continue;
+    if (exceptions.has(dateKey(dayStart))) continue;
 
-    candidate.setHours(startTime.hours, startTime.minutes, 0, 0);
-    if (candidate >= now) return candidate;
+    const startsAt = new Date(dayStart);
+    startsAt.setHours(startTime.hours, startTime.minutes, 0, 0);
+    const endsAt = new Date(startsAt.getTime() + durationMs);
+    if (endsAt < now && out.length >= maxItems) continue;
+    if (endsAt < from) continue;
+
+    out.push({ startsAt, endsAt });
   }
 
-  return null;
-}
+  const sorted = out
+    .filter((item) => item.endsAt >= from)
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
 
-function formatPriceLabel(priceMin, priceMax, ticketType) {
-  if (ticketType === "free") return "Gratuito";
-  if (ticketType === "consumacao") return "Consumacao";
-  if (priceMin == null && priceMax == null) return "Consulte valores";
-  if (priceMin != null && priceMax != null && priceMin !== priceMax) {
-    return `R$ ${priceMin} - R$ ${priceMax}`;
-  }
-  const value = priceMin ?? priceMax;
-  return `R$ ${value}`;
-}
-
-function formatPriceSecondaryLabel(event) {
-  const parts = [];
-  if (event.ticketType === "consumacao" && event.consumacaoValue != null) {
-    parts.push(`Consumacao minima R$ ${event.consumacaoValue}`);
-  }
-  if (event.couvertArtistico != null) {
-    parts.push(`Couvert artistico R$ ${event.couvertArtistico}`);
-  }
-
-  const policy = event.pricingPolicy || {};
-  if (policy.freeUntil) parts.push(`Gratis ate ${policy.freeUntil}`);
-  if (policy.menFreeUntil) parts.push(`Homem gratis ate ${policy.menFreeUntil}`);
-  if (policy.womenFreeAllNight) {
-    parts.push("Mulher gratis a noite toda");
-  } else if (policy.womenFreeUntil) {
-    parts.push(`Mulher gratis ate ${policy.womenFreeUntil}`);
-  }
-
-  return parts.join(" | ");
+  const live = sorted.filter((item) => item.startsAt <= now && item.endsAt >= now);
+  const upcoming = sorted.filter((item) => item.startsAt > now).slice(0, Math.max(0, maxItems - live.length));
+  return [...live, ...upcoming];
 }
 
 function mapEventPayload(event) {
-  const nextRecurringStart = getRecurringOccurrence(event);
-  const startsAt = event.isRecurring && nextRecurringStart ? nextRecurringStart : event.startDate;
-  const endsAt = event.isRecurring && nextRecurringStart
-    ? new Date(nextRecurringStart.getTime() + computeDurationMs(event))
-    : event.endDate;
-
   return {
     id: event.id,
+    baseEventId: event.id,
     title: event.title,
     artistId: event.artists[0]?.artist.id ?? null,
-    artist: event.artists[0]?.artist.name ?? "Artista NaPalma",
+    artist: event.artists[0]?.artist.name ?? "",
     artistVerified: Boolean(event.artists[0]?.artist?.isVerified),
     venue: event.venue.name,
     region: event.venue.region,
@@ -189,18 +168,43 @@ function mapEventPayload(event) {
     venueState: event.venue.state ?? "",
     venueOpenDays: event.venue.openDays ?? [],
     type: event.type,
-    startsAt,
-    endsAt,
+    startsAt: event.startDate,
+    endsAt: event.endDate,
     isRecurring: Boolean(event.isRecurring),
     recurrenceDays: event.recurrenceDays ?? [],
     recurrenceStartTime: event.recurrenceStartTime ?? "",
     recurrenceEndTime: event.recurrenceEndTime ?? "",
     recurrenceUntil: event.recurrenceUntil ?? null,
     recurrenceExceptions: event.recurrenceExceptions ?? [],
+    tags: event.tags ?? [],
     priceLabel: formatPriceLabel(event.priceMin, event.priceMax, event.ticketType),
     priceSecondaryLabel: formatPriceSecondaryLabel(event),
-    imageUrl: event.imageUrl ?? event.venue.imageUrl ?? ""
+    imageUrl: event.imageUrl ?? event.venue.imageUrl ?? "",
+    status: event.status ?? "confirmed"
   };
+}
+
+function expandEventPayloadForExplore(event, now = new Date()) {
+  const base = mapEventPayload(event);
+  if (!base.isRecurring) {
+    return [{
+      ...base,
+      isLiveNow: new Date(base.startsAt) <= now && new Date(base.endsAt) >= now
+    }];
+  }
+
+  const occurrences = getRecurringOccurrences(event, now, 1, 14, 4);
+  if (occurrences.length === 0) {
+    return [];
+  }
+
+  return occurrences.map((occurrence) => ({
+    ...base,
+    id: `${base.baseEventId}__${occurrence.startsAt.toISOString()}`,
+    startsAt: occurrence.startsAt,
+    endsAt: occurrence.endsAt,
+    isLiveNow: occurrence.startsAt <= now && occurrence.endsAt >= now
+  }));
 }
 
 function mapEventDetailPayload(event) {
@@ -219,13 +223,14 @@ function mapEventDetailPayload(event) {
     priceMax: event.priceMax,
     consumacaoValue: event.consumacaoValue,
     couvertArtistico: event.couvertArtistico,
-    pricingPolicy: event.pricingPolicy ?? null,
+    pricingPolicy: null,
     isRecurring: Boolean(event.isRecurring),
     recurrenceDays: event.recurrenceDays ?? [],
     recurrenceStartTime: event.recurrenceStartTime ?? "",
     recurrenceEndTime: event.recurrenceEndTime ?? "",
     recurrenceUntil: event.recurrenceUntil ?? null,
     recurrenceExceptions: event.recurrenceExceptions ?? [],
+    status: event.status ?? "confirmed",
     venueId: event.venueId,
     artistName: event.artists[0]?.artist.name ?? "",
     artistId: event.artists[0]?.artist.id ?? null,
@@ -244,16 +249,12 @@ function mapEventDetailPayload(event) {
 
 export async function listEvents(req, res, next) {
   try {
-    const { region, venueId } = querySchema.parse(req.query);
-    const isVenueManager = req.user?.role === "venue_manager";
+    const { region, venueId, includeDrafts } = querySchema.parse(req.query);
+    const role = req.user?.role;
+    const canIncludeDrafts = ["admin", "producer", "venue_manager"].includes(role);
+    const includeDraftsSafe = canIncludeDrafts ? includeDrafts : false;
     const isProducer = req.user?.role === "producer";
     const venueScope = {};
-    if (isVenueManager) {
-      venueScope.OR = [
-        { managerUserId: req.user.id },
-        { managerAccesses: { some: { userId: req.user.id } } }
-      ];
-    }
     if (region) {
       venueScope.region = region;
     }
@@ -266,7 +267,7 @@ export async function listEvents(req, res, next) {
     }
     const items = await prisma.event.findMany({
       where: {
-        status: "confirmed",
+        status: includeDraftsSafe ? undefined : "confirmed",
         ...(isProducer
           ? {
               OR: [
@@ -307,7 +308,11 @@ export async function listEvents(req, res, next) {
       }
     });
 
-    const payload = items.map(mapEventPayload);
+    const now = new Date();
+    const payload = items
+      .flatMap((event) => expandEventPayloadForExplore(event, now))
+      .filter((item) => new Date(item.endsAt).getTime() >= now.getTime())
+      .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
 
     res.json({ items: payload });
   } catch (error) {
@@ -322,11 +327,11 @@ export async function createEvent(req, res, next) {
     const venueExists = await prisma.venue.findUnique({
       where: { id: data.venueId },
       include: {
-        producerAccesses: {
-          select: { producerId: true }
-        },
         managerAccesses: {
           select: { userId: true }
+        },
+        producerAccesses: {
+          select: { producerId: true }
         }
       }
     });
@@ -339,16 +344,6 @@ export async function createEvent(req, res, next) {
     }
 
     if (
-      req.user.role === "venue_manager" &&
-      venueExists.managerUserId !== req.user.id &&
-      !venueExists.managerAccesses.some((entry) => entry.userId === req.user.id)
-    ) {
-      return res.status(403).json({
-        error: "forbidden",
-        message: "Voce so pode criar eventos para sua casa."
-      });
-    }
-    if (
       req.user.role === "producer" &&
       venueExists.createdByUserId !== req.user.id &&
       !(venueExists.producerAccesses || []).some((entry) => entry.producerId === req.user.id)
@@ -359,22 +354,36 @@ export async function createEvent(req, res, next) {
       });
     }
 
-    const artistSlug = data.artistName
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
+    if (
+      req.user.role === "venue_manager" &&
+      venueExists.managerUserId !== req.user.id &&
+      !(venueExists.managerAccesses || []).some((entry) => entry.userId === req.user.id)
+    ) {
+      return res.status(403).json({
+        error: "forbidden",
+        message: "Perfil casa so pode criar eventos nas suas casas vinculadas."
+      });
+    }
 
-    const artist = await prisma.artist.upsert({
-      where: { slug: artistSlug },
-      update: {},
-      create: {
-        name: data.artistName,
-        slug: artistSlug,
-        genres: ["samba"]
-      }
-    });
+    let artist = null;
+    if (data.artistName) {
+      const artistSlug = data.artistName
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+
+      artist = await prisma.artist.upsert({
+        where: { slug: artistSlug },
+        update: {},
+        create: {
+          name: data.artistName,
+          slug: artistSlug,
+          genres: ["samba"]
+        }
+      });
+    }
 
     const event = await prisma.event.create({
       data: {
@@ -391,7 +400,6 @@ export async function createEvent(req, res, next) {
         priceMax: data.priceMax,
         consumacaoValue: data.consumacaoValue,
         couvertArtistico: data.couvertArtistico,
-        pricingPolicy: data.pricingPolicy,
         isRecurring: data.isRecurring ?? false,
         recurrenceDays: data.isRecurring ? data.recurrenceDays ?? [] : [],
         recurrenceStartTime: data.isRecurring ? data.recurrenceStartTime ?? null : null,
@@ -399,10 +407,9 @@ export async function createEvent(req, res, next) {
         recurrenceUntil: data.isRecurring ? data.recurrenceUntil ?? null : null,
         recurrenceExceptions: data.isRecurring ? (data.recurrenceExceptions ?? []) : [],
         venueId: data.venueId,
+        status: data.status ?? "confirmed",
         createdByUserId: req.user.id,
-        artists: {
-          create: [{ artistId: artist.id, order: 0 }]
-        }
+        ...(artist ? { artists: { create: [{ artistId: artist.id, order: 0 }] } } : {})
       },
       include: {
         venue: true,
@@ -440,6 +447,15 @@ export async function getEventById(req, res, next) {
       });
     }
 
+    const role = req.user?.role;
+    const canReadDraft = ["admin", "producer", "venue_manager"].includes(role) && canManageEvent(req.user, event);
+    if (event.status === "draft" && !canReadDraft) {
+      return res.status(404).json({
+        error: "event_not_found",
+        message: "Evento nao encontrado."
+      });
+    }
+
     res.json({ item: mapEventDetailPayload(event) });
   } catch (error) {
     next(error);
@@ -457,14 +473,14 @@ export async function updateEvent(req, res, next) {
         artists: true,
         venue: {
           include: {
-            producerAccesses: {
-              select: { producerId: true }
-            },
-            managerAccesses: {
-              select: { userId: true }
-            }
+          managerAccesses: {
+            select: { userId: true }
+          },
+          producerAccesses: {
+            select: { producerId: true }
           }
         }
+      }
       }
     });
 
@@ -486,11 +502,11 @@ export async function updateEvent(req, res, next) {
       const venueExists = await prisma.venue.findUnique({
         where: { id: data.venueId },
         include: {
-          producerAccesses: {
-            select: { producerId: true }
-          },
           managerAccesses: {
             select: { userId: true }
+          },
+          producerAccesses: {
+            select: { producerId: true }
           }
         }
       });
@@ -501,16 +517,6 @@ export async function updateEvent(req, res, next) {
         });
       }
       if (
-        req.user.role === "venue_manager" &&
-        venueExists.managerUserId !== req.user.id &&
-        !venueExists.managerAccesses.some((entry) => entry.userId === req.user.id)
-      ) {
-        return res.status(403).json({
-          error: "forbidden",
-          message: "Voce so pode mover eventos para sua casa."
-        });
-      }
-      if (
         req.user.role === "producer" &&
         venueExists.createdByUserId !== req.user.id &&
         !venueExists.producerAccesses.some((entry) => entry.producerId === req.user.id)
@@ -518,6 +524,16 @@ export async function updateEvent(req, res, next) {
         return res.status(403).json({
           error: "forbidden",
           message: "Produtor so pode mover eventos para casas aprovadas."
+        });
+      }
+      if (
+        req.user.role === "venue_manager" &&
+        venueExists.managerUserId !== req.user.id &&
+        !venueExists.managerAccesses.some((entry) => entry.userId === req.user.id)
+      ) {
+        return res.status(403).json({
+          error: "forbidden",
+          message: "Perfil casa so pode mover eventos para casas vinculadas."
         });
       }
     }
@@ -560,7 +576,6 @@ export async function updateEvent(req, res, next) {
           priceMax: data.priceMax,
           consumacaoValue: data.consumacaoValue,
           couvertArtistico: data.couvertArtistico,
-          pricingPolicy: data.pricingPolicy,
           venueId: data.venueId,
           isRecurring: data.isRecurring,
           recurrenceDays: data.isRecurring === false
@@ -577,7 +592,8 @@ export async function updateEvent(req, res, next) {
             : data.recurrenceUntil,
           recurrenceExceptions: data.isRecurring === false
             ? []
-            : data.recurrenceExceptions
+            : data.recurrenceExceptions,
+          status: data.status
         }
       });
 
@@ -630,11 +646,11 @@ export async function deleteEvent(req, res, next) {
         },
         venue: {
           include: {
-            producerAccesses: {
-              select: { producerId: true }
-            },
             managerAccesses: {
               select: { userId: true }
+            },
+            producerAccesses: {
+              select: { producerId: true }
             }
           }
         }

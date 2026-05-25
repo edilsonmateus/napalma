@@ -1,55 +1,61 @@
-# QA Manual - NaPalma
+# QA Checklist v2 - Bloco 5
 
-## Smoke geral
+## Objetivo
+Validar operacao completa por perfil (`publico`, `casa`, `produtor`, `admin`) antes de deploy PWA.
 
-1. App abre em `http://localhost:5173`.
-2. Login funciona com conta demo.
-3. Navegacao inferior responde sem erro.
-4. Nao existe erro 500 no console de backend ao navegar no frontend.
+## 1) Ambiente
+- [ ] Backend online em `http://localhost:3333`
+- [ ] Frontend online em `http://localhost:5173` (ou porta alternativa mostrada no terminal)
+- [ ] Sem erro bloqueante no console do navegador
+- [ ] Sem erro `500` no terminal do backend durante fluxo principal
 
-## Publico
+## 2) Publico
+- [ ] `Explorar` carrega cards por dia e regiao
+- [ ] Filtros (`Hoje/Semana`, regiao, busca, data, hora, ao vivo) funcionam em conjunto
+- [ ] `Partiu Agora` abre opcoes de rota (Maps, Waze, Uber)
+- [ ] Abrir casa -> abrir evento -> compartilhar link/mensagem
+- [ ] `Acho que eu vou` salva/remove no Radar
+- [ ] `Meu Radar` mostra botao `Eu Fui` apenas na janela valida
+- [ ] `Historico` recebe item apos `Eu Fui`
+- [ ] `Pela Hora` manual e automatico salvam plano sem erro
 
-1. `Explorar` carrega eventos.
-2. `Radar` marca/desmarca evento.
-3. `Historico` marca como foi e mostra progresso de conquista.
-4. `Pela Hora` permite montar plano manual e salvar.
-5. `Pela Hora` em modo automatico sugere roteiro quando houver eventos na data.
-6. Compartilhamento no detalhe de evento abre intent (WhatsApp/Telegram/Facebook ou copia link).
+## 3) Casa (venue_manager)
+- [ ] Login redireciona para painel de casa
+- [ ] Menu lateral aparece por padrao
+- [ ] `Eventos` permite criar/editar/excluir evento da unidade ativa
+- [ ] `Dados da casa` permite enviar alteracoes com justificativa
+- [ ] `Produtores` permite vincular/desvincular produtor
+- [ ] `Solicitar acesso` envia claim de nova filial
+- [ ] `Zona de perigo` (quando aplicavel) funciona sem apagar casa da plataforma por engano
 
-## Produtor
+## 4) Produtor
+- [ ] Login redireciona para `workspace/produtor`
+- [ ] Menu lateral e KPI carregam
+- [ ] Claim de casa/artista cria solicitacao pendente
+- [ ] Antes da aprovacao: nao edita ativos fora da carteira
+- [ ] Apos aprovacao: edita somente ativos aprovados
+- [ ] Sem acesso ao painel de Ads admin
 
-1. Redireciona para `/workspace/produtor`.
-2. KPIs do painel aparecem.
-3. Atalhos abrem gestao nas secoes corretas.
-4. Em gestao:
-- criar/editar/excluir casa
-- criar/editar/excluir artista
-- criar/editar/excluir evento
+## 5) Admin
+- [ ] Painel de gestao carrega secoes (`Casas`, `Artistas`, `Regioes`, `Reivindicacoes`, `Eventos`)
+- [ ] Aprovar/rejeitar claims atualiza permissoes
+- [ ] Verificacao de artista reflete selo no front
+- [ ] Criar regiao mantem lista existente (nao sobrescreve)
+- [ ] Excluir regiao respeita bloqueio por casas vinculadas
+- [ ] Ads admin acessivel apenas para admin
 
-## Casa
+## 6) Permissoes visuais (matriz)
+- [ ] Publico: sem links de gestao admin/casa/produtor
+- [ ] Casa: acesso a painel proprio e gestao de unidade
+- [ ] Produtor: acesso a painel produtor e gestao da carteira aprovada
+- [ ] Admin: acesso total incluindo Ads
 
-1. Redireciona para `/workspace/casa`.
-2. Painel mostra agenda ligada.
-3. Gestao abre em foco de eventos.
-4. Criacao/edicao de evento funciona.
+## 7) Feedback UX (sem pulo de layout)
+- [ ] Toast discreto aparece em acoes-chave (evento, radar, pela hora)
+- [ ] Toast some automaticamente
+- [ ] Nenhuma acao critica depende de toast para continuar fluxo
 
-## Gestao (escala)
-
-1. Busca funciona em casas/artistas/eventos.
-2. Ordenacao `Mais recentes` e `A-Z` funciona.
-3. Paginacao avanca/volta corretamente.
-4. Exportacao CSV baixa arquivo valido.
-5. Filtro temporal de eventos (`Todos/Futuros/Passados`) funciona.
-
-## Publicidade
-
-1. Placeholder visual aparece quando `VITE_AD_PLACEHOLDER=true`.
-2. Slots carregam sem quebrar layout em `Explorar`, `Detalhe da casa` e topo do `Radar`.
-3. Gestao de Ads no admin cria/edita campanha e criativo.
-4. Relatorios de Ads retornam dados por periodo.
-
-## Erros e feedback
-
-1. Toast aparece em sucesso.
-2. Toast aparece em erro.
-3. Toast desaparece sozinho.
+## 8) Go/No-Go
+- [ ] Todos os itens criticos acima aprovados
+- [ ] Bugs restantes classificados como baixa prioridade
+- [ ] Release pronta para smoke de deploy

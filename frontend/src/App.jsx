@@ -1,21 +1,21 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuthStore } from "./store/authStore";
-import ExplorePage from "./pages/ExplorePage";
-import EventDetailPage from "./pages/EventDetailPage";
-import VenueDetailFlowPage from "./pages/VenueDetailFlowPage";
-import ArtistProfilePage from "./pages/ArtistProfilePage";
-import RadarPage from "./pages/RadarPage";
-import PelaHoraPage from "./pages/PelaHoraPage";
-import HistoryPage from "./pages/HistoryPage";
-import SettingsPage from "./pages/SettingsPage";
-import VenuesAdminPage from "./pages/VenuesAdminPage";
-import ProducerDashboardPage from "./pages/ProducerDashboardPage";
-import VenueOperatorDashboardPage from "./pages/VenueOperatorDashboardPage";
-import AdsAdminPage from "./pages/AdsAdminPage";
 import BottomNav from "./components/layout/BottomNav";
 import { useTrackAudienceVisitMutation } from "./hooks/useEventsQuery";
 import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "./utils/roles";
+
+const ExplorePage = lazy(() => import("./pages/ExplorePage"));
+const EventDetailPage = lazy(() => import("./pages/EventDetailPage"));
+const VenueDetailFlowPage = lazy(() => import("./pages/VenueDetailFlowPage"));
+const ArtistProfilePage = lazy(() => import("./pages/ArtistProfilePage"));
+const RadarPage = lazy(() => import("./pages/RadarPage"));
+const PelaHoraPage = lazy(() => import("./pages/PelaHoraPage"));
+const HistoryPage = lazy(() => import("./pages/HistoryPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const VenuesAdminPage = lazy(() => import("./pages/VenuesAdminPage"));
+const ProducerDashboardPage = lazy(() => import("./pages/ProducerDashboardPage"));
+const AdsAdminPage = lazy(() => import("./pages/AdsAdminPage"));
 
 const VISITOR_STORAGE_KEY = "napalma:visitor-id";
 const VISIT_DAY_KEY = "napalma:last-visit-day";
@@ -46,7 +46,7 @@ export default function App() {
 
   function getDefaultRoute() {
     if (isProducerRole(user?.role)) return "/workspace/produtor";
-    if (isVenueRole(user?.role)) return "/workspace/casa";
+    if (isVenueRole(user?.role)) return "/settings/venues?section=overview";
     return "/explore";
   }
 
@@ -82,50 +82,55 @@ export default function App() {
     <div className={`app-shell ${isBackofficeMode ? "app-shell-admin" : ""}`}>
       {isOffline ? <div className="offline-banner">Voce esta offline. Algumas acoes podem falhar.</div> : null}
       <main className="app-content">
-        <Routes>
-          <Route path="/" element={<Navigate to={getDefaultRoute()} replace />} />
-          <Route path="/explore" element={<ExplorePage />} />
-          <Route path="/events/:eventId" element={<EventDetailPage />} />
-          <Route path="/artists/:artistId" element={<ArtistProfilePage />} />
-          <Route path="/venues/:venueId" element={<VenueDetailFlowPage />} />
-          <Route path="/radar" element={<RadarPage />} />
-          <Route path="/pela-hora" element={<PelaHoraPage />} />
-          <Route path="/history" element={<HistoryPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route
-            path="/workspace/produtor"
-            element={(
-              <RequireRole user={user} allowedRoles={["admin", "produtor", "producer"]}>
-                <ProducerDashboardPage />
-              </RequireRole>
-            )}
-          />
-          <Route
-            path="/workspace/casa"
-            element={(
-              <RequireRole user={user} allowedRoles={["admin", "casa", "produtor", "venue_manager", "producer"]}>
-                <VenueOperatorDashboardPage />
-              </RequireRole>
-            )}
-          />
-          <Route
-            path="/settings/venues"
-            element={(
-              <RequireRole user={user} allowedRoles={["admin", "produtor", "casa", "producer", "venue_manager"]}>
-                <VenuesAdminPage />
-              </RequireRole>
-            )}
-          />
-          <Route
-            path="/settings/ads"
-            element={(
-              <RequireRole user={user} allowedRoles={["admin"]}>
-                <AdsAdminPage />
-              </RequireRole>
-            )}
-          />
-          <Route path="*" element={<Navigate to={getDefaultRoute()} replace />} />
-        </Routes>
+        <Suspense fallback={<div className="empty">Carregando pagina...</div>}>
+          <Routes>
+            <Route path="/" element={<Navigate to={getDefaultRoute()} replace />} />
+            <Route path="/explore" element={<ExplorePage />} />
+            <Route path="/events/:eventId" element={<EventDetailPage />} />
+            <Route path="/artists/:artistId" element={<ArtistProfilePage />} />
+            <Route path="/venues/:venueId" element={<VenueDetailFlowPage />} />
+            <Route path="/radar" element={<RadarPage />} />
+            <Route path="/pela-hora" element={<PelaHoraPage />} />
+            <Route
+              path="/history"
+              element={isVenueRole(user?.role) ? <Navigate to="/settings/venues?section=overview" replace /> : <HistoryPage />}
+            />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route
+              path="/workspace/produtor"
+              element={(
+                <RequireRole user={user} allowedRoles={["admin", "produtor", "producer"]}>
+                  <ProducerDashboardPage />
+                </RequireRole>
+              )}
+            />
+            <Route
+              path="/workspace/casa"
+              element={(
+                <RequireRole user={user} allowedRoles={["admin", "casa", "produtor", "venue_manager", "producer"]}>
+                  <VenuesAdminPage />
+                </RequireRole>
+              )}
+            />
+            <Route
+              path="/settings/venues"
+              element={(
+                <RequireRole user={user} allowedRoles={["admin", "produtor", "casa", "producer", "venue_manager"]}>
+                  <VenuesAdminPage />
+                </RequireRole>
+              )}
+            />
+            <Route
+              path="/settings/ads"
+              element={(
+                <RequireRole user={user} allowedRoles={["admin"]}>
+                  <AdsAdminPage />
+                </RequireRole>
+              )}
+            />
+            <Route path="*" element={<Navigate to={getDefaultRoute()} replace />} />
+          </Routes>
+        </Suspense>
       </main>
       <BottomNav />
     </div>

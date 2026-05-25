@@ -9,6 +9,11 @@ import {
 import { useAuthStore } from "../store/authStore";
 import { buildGoogleMapsLink, buildUberLink, buildWazeLink, getVenueAddressString } from "../utils/maps";
 import VerifiedBadge from "../components/common/VerifiedBadge";
+import { getAudienceBadges } from "../utils/eventAudienceBadges";
+import mapsIcon from "../assets/routes/maps.svg";
+import wazeIcon from "../assets/routes/waze.svg";
+import uberIcon from "../assets/routes/uber.svg";
+import AppToast from "../components/common/AppToast";
 
 function formatDate(value) {
   return new Date(value).toLocaleString("pt-BR");
@@ -47,7 +52,7 @@ export default function EventDetailPage() {
   const { data: events = [], isLoading } = useEventsQuery();
   const { data: radarEvents = [] } = useMyRadarQuery(Boolean(user));
   const toggleRadar = useToggleRadarMutation();
-  const [actionFeedback, setActionFeedback] = useState("");
+  const [toast, setToast] = useState({ text: "", type: "info" });
   const [shareNote, setShareNote] = useState("");
   const [showRouteModal, setShowRouteModal] = useState(false);
 
@@ -58,9 +63,10 @@ export default function EventDetailPage() {
   if (!event) return <p>Evento nao encontrado.</p>;
 
   const shareTitle = `${event.title} | NaPalma`;
-  const showArtistLine = Boolean(event.artist && event.artist !== "Artista NaPalma" && event.artist !== event.title);
+  const showArtistLine = Boolean(event.artist && event.artist !== event.title);
   const venueAddress = getVenueAddressString(event);
   const venueAddressDisplay = stripBrazilZipCode(venueAddress);
+  const locationLabel = venueAddressDisplay || `${event.venue} - ${event.region}`;
   const googleMapsUrl = buildGoogleMapsLink(event);
   const wazeUrl = buildWazeLink(event);
   const uberUrl = buildUberLink(event);
@@ -79,22 +85,22 @@ export default function EventDetailPage() {
     try {
       if (navigator.share) {
         await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
-        setActionFeedback("Compartilhado com sucesso.");
+        setToast({ text: "Compartilhado com sucesso.", type: "success" });
         return;
       }
       await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-      setActionFeedback("Link copiado para compartilhar.");
+      setToast({ text: "Link copiado para compartilhar.", type: "success" });
     } catch (_error) {
-      setActionFeedback("Nao foi possivel compartilhar agora.");
+      setToast({ text: "Nao foi possivel compartilhar agora.", type: "error" });
     }
   }
 
   async function handleCopyLink() {
     try {
       await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-      setActionFeedback("Link copiado para compartilhar.");
+      setToast({ text: "Link copiado para compartilhar.", type: "success" });
     } catch (_error) {
-      setActionFeedback("Nao foi possivel copiar o link.");
+      setToast({ text: "Nao foi possivel copiar o link.", type: "error" });
     }
   }
 
@@ -123,22 +129,22 @@ export default function EventDetailPage() {
     anchor.click();
     document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
-    setActionFeedback("Arquivo de agenda baixado (.ics).");
+    setToast({ text: "Arquivo de agenda baixado (.ics).", type: "success" });
   }
 
   async function handleToggleRadar() {
     try {
-      setActionFeedback("");
+      setToast({ text: "", type: "info" });
       const result = await toggleRadar.mutateAsync({ eventId: event.id, currentlyMarked: marked });
       const unlocked = result?.unlockedAchievements || [];
       if (unlocked.length > 0) {
         const first = unlocked[0];
-        setActionFeedback(`Conquista desbloqueada: ${first.icon || "trofeu"} ${first.name}`);
+        setToast({ text: `Conquista desbloqueada: ${first.icon || "trofeu"} ${first.name}`, type: "success" });
         return;
       }
-      setActionFeedback(marked ? "Evento removido do seu Radar." : "Evento salvo no seu Radar.");
+      setToast({ text: marked ? "Evento removido do seu Radar." : "Evento salvo no seu Radar.", type: "success" });
     } catch (_error) {
-      setActionFeedback("Nao foi possivel atualizar o Radar agora.");
+      setToast({ text: "Nao foi possivel atualizar o Radar agora.", type: "error" });
     }
   }
 
@@ -167,11 +173,14 @@ export default function EventDetailPage() {
         {event.priceSecondaryLabel ? <p className="meta-line">{event.priceSecondaryLabel}</p> : null}
 
         <div className="decision-meta">
-          <div className="meta-line"><MapPin size={14} /> {event.venue} - {event.region}</div>
-          {venueAddressDisplay ? <div className="meta-line">{venueAddressDisplay}</div> : null}
+          <div className="meta-line"><MapPin size={14} /> {locationLabel}</div>
           <div className="meta-line"><CalendarClock size={14} /> {formatDate(event.startsAt)}</div>
-          {Array.isArray(event.venueOpenDays) && event.venueOpenDays.length > 0 ? (
-            <div className="meta-line">Funciona: {event.venueOpenDays.join(", ")}</div>
+          {getAudienceBadges(event).length > 0 ? (
+            <div className="event-audience-row">
+              {getAudienceBadges(event).map((badge) => (
+                <span key={badge} className="event-audience-badge">{badge}</span>
+              ))}
+            </div>
           ) : null}
           <div className="share-actions">
             <button type="button" className="chip" onClick={() => setShowRouteModal(true)}>Como chegar</button>
@@ -186,7 +195,11 @@ export default function EventDetailPage() {
         ) : null}
         {user ? (
           <div className="decision-actions">
-            <button className="btn-primary" onClick={handleToggleRadar} disabled={toggleRadar.isPending}>
+            <button
+              className={marked && !toggleRadar.isPending ? "chip decision-radar-muted" : "btn-primary"}
+              onClick={handleToggleRadar}
+              disabled={toggleRadar.isPending}
+            >
               <Star size={14} />
               {toggleRadar.isPending ? "Atualizando..." : marked ? "Marcado no seu Radar" : "Acho que eu vou"}
             </button>
@@ -227,18 +240,24 @@ export default function EventDetailPage() {
         </div>
       </div>
 
-      {actionFeedback ? <p className="feedback">{actionFeedback}</p> : null}
+      <AppToast toast={toast} onClose={() => setToast({ text: "", type: "info" })} />
       {showRouteModal ? (
         <div className="modal-backdrop" onClick={() => setShowRouteModal(false)}>
           <article className="modal-card route-mini-modal" onClick={(event) => event.stopPropagation()}>
             <h3>Como chegar</h3>
             <p className="meta-line">Escolha o app para rota:</p>
             <div className="route-mini-layout">
-              <div className="route-mini-actions share-actions">
-                <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="chip route-mini-chip route-chip-maps">Maps</a>
-                <a href={wazeUrl} target="_blank" rel="noreferrer" className="chip route-mini-chip route-chip-waze">Waze</a>
-                <a href={uberUrl} target="_blank" rel="noreferrer" className="chip route-mini-chip route-chip-uber">Uber</a>
-                <button type="button" className="chip route-mini-chip route-chip-close" onClick={() => setShowRouteModal(false)}>Fechar</button>
+              <div className="route-icon-row">
+                <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Maps" aria-label="Abrir rota no Maps">
+                  <img src={mapsIcon} alt="" className="route-icon-img route-icon-img-maps" />
+                </a>
+                <a href={wazeUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Waze" aria-label="Abrir rota no Waze">
+                  <img src={wazeIcon} alt="" className="route-icon-img route-icon-img-waze" />
+                </a>
+                <a href={uberUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Uber" aria-label="Abrir rota no Uber">
+                  <img src={uberIcon} alt="" className="route-icon-img route-icon-img-uber" />
+                </a>
+                <button type="button" className="chip route-mini-chip route-chip-close route-inline-back" onClick={() => setShowRouteModal(false)}>Fechar</button>
               </div>
               <div className="route-mini-track" aria-hidden="true">
                 <span className="route-mini-dot route-mini-dot-start" />
