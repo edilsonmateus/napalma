@@ -1,9 +1,10 @@
 import { Suspense, lazy, useEffect, useState } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useAuthStore } from "./store/authStore";
 import BottomNav from "./components/layout/BottomNav";
 import { useTrackAudienceVisitMutation } from "./hooks/useEventsQuery";
 import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "./utils/roles";
+import { ONBOARDING_STORAGE_KEY } from "./utils/onboarding";
 
 const ExplorePage = lazy(() => import("./pages/ExplorePage"));
 const EventDetailPage = lazy(() => import("./pages/EventDetailPage"));
@@ -16,9 +17,11 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const VenuesAdminPage = lazy(() => import("./pages/VenuesAdminPage"));
 const ProducerDashboardPage = lazy(() => import("./pages/ProducerDashboardPage"));
 const AdsAdminPage = lazy(() => import("./pages/AdsAdminPage"));
+const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
 
 const VISITOR_STORAGE_KEY = "napalma:visitor-id";
 const VISIT_DAY_KEY = "napalma:last-visit-day";
+const SPLASH_MS = 1100;
 
 function getOrCreateVisitorId() {
   try {
@@ -39,16 +42,43 @@ function RequireRole({ user, allowedRoles, children }) {
 }
 
 export default function App() {
+  const location = useLocation();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [showSplash, setShowSplash] = useState(true);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(() => {
+    try {
+      return localStorage.getItem(ONBOARDING_STORAGE_KEY) === "true";
+    } catch (_error) {
+      return false;
+    }
+  });
   const user = useAuthStore((state) => state.user);
   const { mutate: trackAudienceVisit } = useTrackAudienceVisitMutation();
   const isBackofficeMode = isAdminRole(user?.role) || isProducerRole(user?.role) || isVenueRole(user?.role);
+  const isOnboardingRoute = location.pathname === "/onboarding";
+  const shouldForceOnboarding = !showSplash && !hasSeenOnboarding && !isOnboardingRoute;
 
   function getDefaultRoute() {
     if (isProducerRole(user?.role)) return "/workspace/produtor";
     if (isVenueRole(user?.role)) return "/settings/venues?section=overview";
     return "/explore";
   }
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowSplash(false), SPLASH_MS);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isOnboardingRoute) return;
+    try {
+      if (localStorage.getItem(ONBOARDING_STORAGE_KEY) === "true") {
+        setHasSeenOnboarding(true);
+      }
+    } catch (_error) {
+      // no-op
+    }
+  }, [isOnboardingRoute, location.key]);
 
   useEffect(() => {
     function handleOnline() {
@@ -78,6 +108,21 @@ export default function App() {
     trackAudienceVisit({ visitorId: getOrCreateVisitorId() });
   }, [isOffline, trackAudienceVisit, user?.id]);
 
+  if (showSplash) {
+    return (
+      <section className="splash-screen">
+        <div className="splash-logo-wrap">
+          <img src="/assets/brand/logoBase77Gira.svg" alt="77Gira" className="splash-logo" />
+          <p>Todos os sambas aqui</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (shouldForceOnboarding) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   return (
     <div className={`app-shell ${isBackofficeMode ? "app-shell-admin" : ""}`}>
       {isOffline ? <div className="offline-banner">Voce esta offline. Algumas acoes podem falhar.</div> : null}
@@ -85,6 +130,7 @@ export default function App() {
         <Suspense fallback={<div className="empty">Carregando pagina...</div>}>
           <Routes>
             <Route path="/" element={<Navigate to={getDefaultRoute()} replace />} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/events/:eventId" element={<EventDetailPage />} />
             <Route path="/artists/:artistId" element={<ArtistProfilePage />} />
@@ -132,7 +178,7 @@ export default function App() {
           </Routes>
         </Suspense>
       </main>
-      <BottomNav />
+      {!isOnboardingRoute ? <BottomNav /> : null}
     </div>
   );
 }

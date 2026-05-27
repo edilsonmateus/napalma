@@ -175,7 +175,8 @@ function buildEventDates(dayRef, startMinutes, endMinutes) {
 function buildRollingDayRef(index) {
   const base = new Date();
   base.setHours(0, 0, 0, 0);
-  const offsetDays = index % 7;
+  // Sempre ancora os mocks a partir de hoje e distribui pelos proximos 10 dias.
+  const offsetDays = index % 10;
   base.setDate(base.getDate() + offsetDays);
   return {
     day: base.getDate(),
@@ -216,6 +217,7 @@ async function main() {
   await prisma.region.deleteMany();
   await prisma.producerArtistAccess.deleteMany();
   await prisma.producerVenueAccess.deleteMany();
+  await prisma.artistFollow.deleteMany();
   await prisma.event.deleteMany();
   await prisma.artist.deleteMany();
   await prisma.venueManagerAccess.deleteMany();
