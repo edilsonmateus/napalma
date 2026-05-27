@@ -157,7 +157,7 @@ export default function PelaHoraPage() {
 
       {user ? (
         <div className="venue-form pela-hora-setup">
-          <p className="meta-line setup-subtitle">Nome e data do plano</p>
+          <h3 className="section-title">Passo 1 - Nome e data do plano</h3>
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="De um nome ao seu plano" />
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           <div className="chip-row">
@@ -169,7 +169,7 @@ export default function PelaHoraPage() {
 
       {user && mode === "manual" ? (
         <>
-          <h3 className="section-title">Escolha os eventos do seu plano</h3>
+          <h3 className="section-title">Passo 2 - Escolha os eventos do seu plano</h3>
           <p className="meta-line">Toque no evento para adicionar. Toque novamente para remover.</p>
           {eventsLoading ? <p className="empty helper-empty">Carregando sambas...</p> : null}
           {filteredByDate.length === 0 ? (
