@@ -38,6 +38,7 @@ import { isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
 
 const initialVenueForm = {
   name: "",
+  goldPartner: false,
   description: "",
   contactName: "",
   contactPhone: "",
@@ -551,8 +552,9 @@ export default function VenuesAdminPage() {
   }, [toast.text]);
 
   function handleVenueChange(event) {
-    const { name, value } = event.target;
-    setVenueForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = event.target;
+    const nextValue = type === "checkbox" ? checked : value;
+    setVenueForm((prev) => ({ ...prev, [name]: nextValue }));
     setVenueErrors((prev) => ({ ...prev, [name]: undefined }));
   }
   function clearAdminFilters() {
@@ -820,6 +822,7 @@ export default function VenuesAdminPage() {
       setEditingVenueId(detail.id);
       setVenueForm({
         name: detail.name || "",
+        goldPartner: Boolean(detail.goldPartner),
         description: detail.description || "",
         contactName: detail.contactName || "",
         contactPhone: detail.contactPhone || "",
@@ -1336,6 +1339,7 @@ export default function VenuesAdminPage() {
     setEditingVenueId(houseActiveVenue.id);
     setVenueForm({
       name: houseActiveVenue.name || "",
+      goldPartner: Boolean(houseActiveVenue.goldPartner),
       description: houseActiveVenue.description || "",
       contactName: houseActiveVenue.contactName || "",
       contactPhone: houseActiveVenue.contactPhone || "",
@@ -1533,6 +1537,15 @@ export default function VenuesAdminPage() {
         <input name="city" value={venueForm.city} onChange={handleVenueChange} placeholder="Cidade" required />
         <input name="state" value={venueForm.state} onChange={handleVenueChange} placeholder="UF" maxLength={2} required />
         <input name="imageUrl" value={venueForm.imageUrl} onChange={handleVenueChange} placeholder="URL da imagem" />
+        <label className="checkbox-inline">
+          <input
+            type="checkbox"
+            name="goldPartner"
+            checked={Boolean(venueForm.goldPartner)}
+            onChange={handleVenueChange}
+          />
+          Casa Gold Partner
+        </label>
         <label className="meta-line">
           Upload da imagem da casa (JPG, PNG ou WebP, ate 5MB)
           <input
@@ -1985,6 +1998,15 @@ export default function VenuesAdminPage() {
               <input name="city" value={venueForm.city} onChange={handleVenueChange} placeholder="Cidade" required />
               <input name="state" value={venueForm.state} onChange={handleVenueChange} placeholder="UF" maxLength={2} required />
               <input name="imageUrl" value={venueForm.imageUrl} onChange={handleVenueChange} placeholder="URL da imagem" />
+              <label className="checkbox-inline">
+                <input
+                  type="checkbox"
+                  name="goldPartner"
+                  checked={Boolean(venueForm.goldPartner)}
+                  onChange={handleVenueChange}
+                />
+                Casa Gold Partner
+              </label>
               <label className="meta-line">
                 Upload da imagem da casa (JPG, PNG ou WebP, ate 5MB)
                 <input

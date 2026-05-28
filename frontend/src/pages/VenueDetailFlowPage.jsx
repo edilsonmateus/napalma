@@ -83,7 +83,10 @@ export default function VenueDetailFlowPage() {
       ) : null}
 
       <div className="decision-card">
-        <h2>{venue.name}</h2>
+        <h2 className="artist-inline-with-badge">
+          <span>{venue.name}</span>
+          {venue.goldPartner ? <VerifiedBadge className="artist-verified-dot gold-partner-badge" title="Casa Gold Partner" iconSrc="/goldenVerificado.svg" /> : null}
+        </h2>
         <p className="decision-artist">{venue.description || "Casa de samba em destaque na regiao."}</p>
         <div className="decision-meta">
           <div className="meta-line"><MapPin size={14} /> {venue.address}</div>

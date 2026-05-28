@@ -10,6 +10,7 @@ const querySchema = z.object({
 
 const createVenueSchema = z.object({
   name: z.string().trim().min(3),
+  goldPartner: z.boolean().optional().default(false),
   description: z.string().trim().min(3).optional(),
   contactName: z.string().trim().min(2).optional(),
   contactPhone: z.string().trim().min(8).optional(),
@@ -50,6 +51,7 @@ function mapVenuePayload(venue) {
     id: venue.id,
     name: venue.name,
     slug: venue.slug,
+    goldPartner: Boolean(venue.goldPartner),
     description: venue.description,
     contactName: venue.contactName ?? "",
     contactPhone: venue.contactPhone ?? "",

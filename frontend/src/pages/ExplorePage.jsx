@@ -342,7 +342,10 @@ export default function ExplorePage() {
                   {routeModeVenueId !== venue.id ? (
                     <div className="venue-flow-body">
                       <div className="venue-flow-head">
-                        <h3>{venue.name}</h3>
+                        <h3 className="artist-inline-with-badge">
+                          <span>{venue.name}</span>
+                          {venue.goldPartner ? <VerifiedBadge className="artist-verified-dot gold-partner-badge" title="Casa Gold Partner" iconSrc="/goldenVerificado.svg" /> : null}
+                        </h3>
                         <button
                           type="button"
                           className="chip route-inline-trigger"
