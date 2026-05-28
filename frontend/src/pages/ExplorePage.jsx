@@ -312,13 +312,6 @@ export default function ExplorePage() {
           </div>
         </div>
       ) : null}
-      {!isLoadingState && grouped.length > 0 ? (
-        <div className="section-divider">
-          <h3>Proximas Atracoes</h3>
-          <p>Descubra o que acontece hoje e nos proximos dias.</p>
-        </div>
-      ) : null}
-
       {!isLoadingState && grouped.map((group, groupIndex) => (
         <div key={group.label} className="day-group" style={{ "--reveal-index": groupIndex }}>
           <h4 className="day-group-title">

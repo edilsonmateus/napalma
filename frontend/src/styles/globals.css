@@ -722,13 +722,14 @@ body {
 }
 
 .screen-explore .page-header.explore-logo-header {
-  min-height: 88px;
+  min-height: 68px;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .explore-brand-logo {
-  width: min(100%, 182px);
+  width: clamp(126px, 34vw, 158px);
   height: auto;
   display: block;
 }
@@ -1512,16 +1513,22 @@ body {
 
 .pela-hora-howto {
   margin-bottom: 18px;
+  background: rgba(46, 30, 70, 0.26);
+  border: 1px solid rgba(112, 90, 146, 0.34);
+  box-shadow: none;
 }
 
 .pela-hora-howto h4 {
   margin-bottom: 8px;
+  color: #c8bedc;
+  font-size: 17px;
+  font-weight: 600;
 }
 
 .helper-text {
-  font-size: 14px;
-  line-height: 1.45;
-  color: #a8a0b8;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #9d93b2;
 }
 
 .pela-hora-setup {
@@ -2715,7 +2722,7 @@ button.venue-card {
 
 .explore-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) 40px auto;
   gap: 8px;
   margin-bottom: 10px;
   align-items: center;
@@ -2728,6 +2735,9 @@ button.venue-card {
 
 .explore-clear-btn {
   width: auto;
+  white-space: nowrap;
+  min-height: 40px;
+  height: 40px;
 }
 
 .explore-calendar-trigger {
@@ -3617,7 +3627,7 @@ button.venue-card {
   }
 
   .explore-controls {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) 40px auto;
     gap: 6px;
   }
 
@@ -3627,8 +3637,8 @@ button.venue-card {
   }
 
   .explore-clear-btn {
-    grid-column: 1 / -1;
-    justify-self: end;
+    grid-column: auto;
+    justify-self: auto;
   }
 
   .explore-datehour-panel {
