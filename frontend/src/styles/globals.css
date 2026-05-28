@@ -729,7 +729,7 @@ body {
 }
 
 .explore-brand-logo {
-  width: clamp(126px, 34vw, 158px);
+  width: clamp(63px, 17vw, 79px);
   height: auto;
   display: block;
 }
@@ -817,7 +817,7 @@ body {
 }
 
 .history-brand-logo {
-  width: min(34vw, 140px);
+  width: min(17vw, 70px);
   height: auto;
   display: block;
   flex-shrink: 0;
