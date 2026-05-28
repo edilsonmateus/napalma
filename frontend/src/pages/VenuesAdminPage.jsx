@@ -333,6 +333,14 @@ export default function VenuesAdminPage() {
   const showHouseClaims = isHouseRole && effectiveSection === "claims";
   const showHouseProfile = isHouseRole && effectiveSection === "profile";
   const isHouseProgramacaoClean = isHouseRole && showEvents && searchParams.get("layout") === "clean";
+
+  useEffect(() => {
+    if (showEvents) return;
+    setPublishReviewOpen(false);
+    setReactivationTarget(null);
+    setCancellationTarget(null);
+  }, [showEvents]);
+
   const sortedVenues = useMemo(() => {
     const list = [...filteredVenues];
     if (venueSort === "az") return list.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
@@ -2489,7 +2497,7 @@ export default function VenuesAdminPage() {
       ) : null}
       </div>
 
-      {reactivationTarget ? (
+      {showEvents && reactivationTarget ? (
         <div className="modal-backdrop" onClick={() => setReactivationTarget(null)}>
           <article className="modal-card" onClick={(event) => event.stopPropagation()}>
             <h3>Reativar data da serie</h3>
@@ -2512,7 +2520,7 @@ export default function VenuesAdminPage() {
           </article>
         </div>
       ) : null}
-      {cancellationTarget ? (
+      {showEvents && cancellationTarget ? (
         <div className="modal-backdrop" onClick={() => setCancellationTarget(null)}>
           <article className="modal-card" onClick={(event) => event.stopPropagation()}>
             <h3>Cancelar data da serie</h3>

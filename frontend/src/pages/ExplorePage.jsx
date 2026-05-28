@@ -184,11 +184,15 @@ export default function ExplorePage() {
   return (
     <section className="screen screen-explore">
       <header className="page-header explore-logo-header">
-        <img
-          src="/assets/brand/logoBase77Gira.svg"
-          alt="77Gira - Todos os sambas aqui"
-          className="explore-brand-logo"
-        />
+        <div className="explore-brand-wrap" aria-label="77Gira - Todos os Sambas Aqui">
+          <img
+            src="/assets/brand/logoBase77Gira.svg"
+            alt="77Gira - Todos os Sambas Aqui"
+            className="explore-brand-logo"
+          />
+          <p className="explore-brand-concept">Todos os Sambas Aqui</p>
+          <div className="explore-brand-separator" aria-hidden="true" />
+        </div>
       </header>
 
       <div className="chip-row">
