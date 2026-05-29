@@ -14,6 +14,8 @@ const RadarPage = lazy(() => import("./pages/RadarPage"));
 const PelaHoraPage = lazy(() => import("./pages/PelaHoraPage"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const SignupPage = lazy(() => import("./pages/SignupPage"));
 const VenuesAdminPage = lazy(() => import("./pages/VenuesAdminPage"));
 const ProducerDashboardPage = lazy(() => import("./pages/ProducerDashboardPage"));
 const AdsAdminPage = lazy(() => import("./pages/AdsAdminPage"));
@@ -159,6 +161,8 @@ export default function App() {
               path="/history"
               element={isVenueRole(user?.role) ? <Navigate to="/settings/venues?section=overview" replace /> : <HistoryPage />}
             />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route
               path="/workspace/produtor"
