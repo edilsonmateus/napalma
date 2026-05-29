@@ -33,7 +33,12 @@ export default function OnboardingPage() {
   }
 
   return (
-    <section className="onboarding-screen" style={{ background: slide.background }}>
+    <section
+      className="onboarding-screen"
+      style={{
+        backgroundImage: `linear-gradient(180deg, rgba(11, 9, 16, 0.52) 0%, rgba(11, 9, 16, 0.82) 58%, rgba(11, 9, 16, 0.92) 100%), url(${slide.bgImage})`
+      }}
+    >
       <div className="onboarding-content">
         <div className="onboarding-icon" aria-hidden="true">
           {slide.icon}
@@ -56,7 +61,7 @@ export default function OnboardingPage() {
             <span />
           )}
           <button type="button" className="btn-primary" onClick={nextStep}>
-            {isLast ? "Comecar" : "Proximo"}
+            {isLast ? "Começar" : "Próximo"}
           </button>
         </div>
       </div>

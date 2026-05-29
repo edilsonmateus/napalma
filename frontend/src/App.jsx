@@ -21,7 +21,8 @@ const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
 
 const VISITOR_STORAGE_KEY = "napalma:visitor-id";
 const VISIT_DAY_KEY = "napalma:last-visit-day";
-const SPLASH_MS = 1100;
+const SPLASH_MS_MOBILE = 5000;
+const SPLASH_MS_DESKTOP = 2000;
 
 function getOrCreateVisitorId() {
   try {
@@ -65,7 +66,11 @@ export default function App() {
   }
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setShowSplash(false), SPLASH_MS);
+    const isDesktop = window.matchMedia("(min-width: 900px)").matches;
+    const timer = window.setTimeout(
+      () => setShowSplash(false),
+      isDesktop ? SPLASH_MS_DESKTOP : SPLASH_MS_MOBILE
+    );
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -111,6 +116,19 @@ export default function App() {
   if (showSplash) {
     return (
       <section className="splash-screen">
+        <video
+          className="splash-video"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          poster="/assets/onboarding/splash-bg.webp"
+          aria-hidden="true"
+        >
+          <source src="/assets/onboarding/videoSplash77Gira.mp4" type="video/mp4" />
+        </video>
+        <div className="splash-overlay" aria-hidden="true" />
         <div className="splash-logo-wrap">
           <img src="/assets/brand/logoBase77Gira.svg" alt="77Gira" className="splash-logo" />
           <p>Todos os sambas aqui</p>
