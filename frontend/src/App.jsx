@@ -5,6 +5,7 @@ import BottomNav from "./components/layout/BottomNav";
 import { useTrackAudienceVisitMutation } from "./hooks/useEventsQuery";
 import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "./utils/roles";
 import { ONBOARDING_STORAGE_KEY } from "./utils/onboarding";
+import { getOrCreateVisitorId } from "./utils/visitor";
 
 const ExplorePage = lazy(() => import("./pages/ExplorePage"));
 const EventDetailPage = lazy(() => import("./pages/EventDetailPage"));
@@ -21,22 +22,9 @@ const ProducerDashboardPage = lazy(() => import("./pages/ProducerDashboardPage")
 const AdsAdminPage = lazy(() => import("./pages/AdsAdminPage"));
 const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
 
-const VISITOR_STORAGE_KEY = "napalma:visitor-id";
 const VISIT_DAY_KEY = "napalma:last-visit-day";
 const SPLASH_MS_MOBILE = 5000;
 const SPLASH_MS_DESKTOP = 2000;
-
-function getOrCreateVisitorId() {
-  try {
-    const existing = localStorage.getItem(VISITOR_STORAGE_KEY);
-    if (existing) return existing;
-    const id = `v_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
-    localStorage.setItem(VISITOR_STORAGE_KEY, id);
-    return id;
-  } catch (_error) {
-    return `v_fallback_${Date.now().toString(36)}`;
-  }
-}
 
 function RequireRole({ user, allowedRoles, children }) {
   if (!user) return <Navigate to="/settings" replace />;

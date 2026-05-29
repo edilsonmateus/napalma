@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { login } from "../services/auth.service";
 import { useAuthStore } from "../store/authStore";
 import { getRoleHome } from "../utils/roles";
+import { getOrCreateVisitorId } from "../utils/visitor";
 
 const DEMO_ACCOUNTS = [
   { label: "Admin", email: "admin@napalma.app" },
@@ -30,7 +31,7 @@ export default function LoginPage() {
     setMessage("");
     setIsLoading(true);
     try {
-      const data = await login({ email, password });
+      const data = await login({ email, password, visitorId: getOrCreateVisitorId() });
       setAuth({ token: data.accessToken, refreshToken: data.refreshToken, user: data.user });
       navigate(getRoleHome(data.user.role), { replace: true });
     } catch (error) {

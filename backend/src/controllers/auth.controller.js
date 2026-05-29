@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { env } from "../config/env.js";
 import crypto from "node:crypto";
+import { linkVisitorToUser } from "./audience.controller.js";
 
 const roleSchema = z.enum(["admin", "producer", "venue_manager", "attendee"]);
 
@@ -14,13 +15,15 @@ const registerSchema = z.object({
   lastName: z.string().trim().min(2),
   phone: z.string().trim().min(8).optional(),
   instagramHandle: z.string().trim().min(2).optional(),
+  visitorId: z.string().min(8).max(120).optional(),
   password: z.string().min(6),
   role: roleSchema.optional()
 });
 
 const loginSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(1)
+  password: z.string().min(1),
+  visitorId: z.string().min(8).max(120).optional()
 });
 
 const refreshSchema = z.object({
@@ -99,6 +102,7 @@ export async function register(req, res, next) {
 
     const accessToken = signAccessToken(user);
     const refreshToken = await issueRefreshToken(user.id);
+    await linkVisitorToUser(data.visitorId, user.id);
     res.status(201).json({ accessToken, refreshToken, user: sanitizeUser(user) });
   } catch (error) {
     next(error);
@@ -128,6 +132,7 @@ export async function login(req, res, next) {
 
     const accessToken = signAccessToken(user);
     const refreshToken = await issueRefreshToken(user.id);
+    await linkVisitorToUser(data.visitorId, user.id);
     res.json({ accessToken, refreshToken, user: sanitizeUser(user) });
   } catch (error) {
     next(error);

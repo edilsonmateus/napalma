@@ -151,10 +151,10 @@ export function useVenueAdsSummaryQuery(params = {}, enabled = true) {
   });
 }
 
-export function useAudienceSummaryQuery(enabled = true) {
+export function useAudienceSummaryQuery(params = {}, enabled = true) {
   return useQuery({
-    queryKey: ["audience-summary"],
-    queryFn: getAudienceSummary,
+    queryKey: ["audience-summary", params],
+    queryFn: () => getAudienceSummary(params),
     enabled
   });
 }

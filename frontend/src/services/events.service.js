@@ -288,8 +288,8 @@ export async function trackAudienceVisit(payload) {
   return data;
 }
 
-export async function getAudienceSummary() {
-  const { data } = await api.get("/analytics/audience-summary");
+export async function getAudienceSummary(params = {}) {
+  const { data } = await api.get("/analytics/audience-summary", { params });
   return data;
 }
 

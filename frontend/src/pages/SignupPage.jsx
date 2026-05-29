@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { register } from "../services/auth.service";
 import { useAuthStore } from "../store/authStore";
 import { getRoleHome } from "../utils/roles";
+import { getOrCreateVisitorId } from "../utils/visitor";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ export default function SignupPage() {
     setMessage("");
     setIsLoading(true);
     try {
-      const data = await register(form);
+      const data = await register({ ...form, visitorId: getOrCreateVisitorId() });
       setAuth({ token: data.accessToken, refreshToken: data.refreshToken, user: data.user });
       navigate(getRoleHome(data.user.role), { replace: true });
     } catch (error) {

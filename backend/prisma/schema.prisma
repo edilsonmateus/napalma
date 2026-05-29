@@ -106,6 +106,7 @@ model AudienceVisitor {
   id          String   @id @default(uuid())
   visitorId   String   @unique
   userId      String?
+  linkedAt    DateTime?
   firstSeenAt DateTime @default(now())
   lastSeenAt  DateTime @default(now())
   hits        Int      @default(1)
@@ -114,6 +115,7 @@ model AudienceVisitor {
 
   @@index([lastSeenAt])
   @@index([userId])
+  @@index([linkedAt])
 }
 
 model Itinerary {

@@ -48,7 +48,7 @@ export default function ProducerDashboardPage() {
   const { data: claimVenues = [] } = useVenuesQuery({ scope: "public" });
   const { data: claimArtists = [] } = useArtistsQuery({ scope: "public" });
   const { data: events = [], isLoading: eventsLoading } = useEventsQuery();
-  const { data: audienceSummary } = useAudienceSummaryQuery(true);
+  const { data: audienceSummary } = useAudienceSummaryQuery({ days: 30 }, true);
   const { data: myClaims = [] } = useMyClaimsQuery(true);
   const createClaim = useCreateClaimMutation();
   const { data: pendingClaims = [] } = useClaimsQuery("pending", true);
@@ -170,11 +170,19 @@ export default function ProducerDashboardPage() {
               </article>
               <article className="clean-card">
                 <h4>Publico ativo (30d)</h4>
-                <p>{audienceSummary?.activeAudience30d ?? 0}</p>
+                <p>{audienceSummary?.global?.activeAudience ?? 0}</p>
               </article>
               <article className="clean-card">
                 <h4>Base cadastrada</h4>
-                <p>{audienceSummary?.registeredUsers ?? 0}</p>
+                <p>{audienceSummary?.global?.registeredUsers ?? 0}</p>
+              </article>
+              <article className="clean-card">
+                <h4>Conversao (30d)</h4>
+                <p>{audienceSummary?.global?.conversionRate ?? 0}%</p>
+              </article>
+              <article className="clean-card">
+                <h4>Radar (carteira)</h4>
+                <p>{audienceSummary?.scoped?.radarUsers ?? 0}</p>
               </article>
             </div>
           ) : null}

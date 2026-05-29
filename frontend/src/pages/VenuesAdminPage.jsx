@@ -4,6 +4,7 @@ import VerifiedBadge from "../components/common/VerifiedBadge";
 import {
   useAddVenueManagerMutation,
   useArtistsQuery,
+  useAudienceSummaryQuery,
   useAdminRegionsQuery,
   useCreateArtistMutation,
   useCreateClaimMutation,
@@ -256,6 +257,7 @@ export default function VenuesAdminPage() {
   );
   const { data: events = [], isLoading: eventsLoading } = useEventsQuery(eventsQueryFilters);
   const { data: houseAdsSummary, isLoading: houseAdsLoading } = useVenueAdsSummaryQuery({ days: 30 }, isHouseRole);
+  const { data: audienceSummary } = useAudienceSummaryQuery({ days: 30 }, Boolean(user));
   const { data: venueManagers = [], isLoading: managersLoading } = useVenueManagersQuery(selectedVenueForManagers);
   const { data: managerCandidates = [], isLoading: managerCandidatesLoading } = useVenueManagerUsersQuery(managerSearch);
 
@@ -1430,6 +1432,8 @@ export default function VenuesAdminPage() {
               {showOverview ? <article className="clean-card"><h4>Artistas</h4><p>{filteredArtists.length}</p></article> : null}
               {showOverview ? <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
               {showOverview ? <article className="clean-card"><h4>Reivindicacoes</h4><p>{pendingClaimsCount} pendentes</p></article> : null}
+              {showOverview ? <article className="clean-card"><h4>Visitantes (30d)</h4><p>{audienceSummary?.global?.activeAudience ?? 0}</p></article> : null}
+              {showOverview ? <article className="clean-card"><h4>Conversao (30d)</h4><p>{audienceSummary?.global?.conversionRate ?? 0}%</p></article> : null}
             </div>
             {showOverview ? (
               <article className="clean-card admin-overview-card">
@@ -1474,6 +1478,8 @@ export default function VenuesAdminPage() {
               {showOverview ? <article className="clean-card"><h4>Impressoes (30d)</h4><p>{houseAdsSummary?.summary?.impressions ?? 0}</p></article> : null}
               {showOverview ? <article className="clean-card"><h4>Cliques (30d)</h4><p>{houseAdsSummary?.summary?.clicks ?? 0}</p></article> : null}
               {showOverview ? <article className="clean-card"><h4>CTR (30d)</h4><p>{houseAdsSummary?.summary?.ctr ?? 0}%</p></article> : null}
+              {showOverview ? <article className="clean-card"><h4>Radar da casa (30d)</h4><p>{audienceSummary?.scoped?.radarUsers ?? 0}</p></article> : null}
+              {showOverview ? <article className="clean-card"><h4>Publico presente (30d)</h4><p>{audienceSummary?.scoped?.attendeesUsers ?? 0}</p></article> : null}
               {showEvents && !isHouseProgramacaoClean ? <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
               {showHouseProfile ? <article className="clean-card"><h4>Dados da Casa</h4><p>{houseDisplayName || "Sem unidade ativa"}</p></article> : null}
               {showManagers ? <article className="clean-card"><h4>Produtores</h4><p>{totalManagers}</p></article> : null}

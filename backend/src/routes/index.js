@@ -89,7 +89,7 @@ router.post("/auth/refresh", authLimiter, refresh);
 router.post("/auth/logout", authLimiter, logout);
 router.get("/auth/me", requireAuth, me);
 router.post("/analytics/visit", trackAudienceVisit);
-router.get("/analytics/audience-summary", ...canManageCatalog, getAudienceSummary);
+router.get("/analytics/audience-summary", requireAuth, requireRole(["admin", "producer", "venue_manager"]), getAudienceSummary);
 router.get("/me/claims", requireAuth, listMyClaims);
 router.post("/me/claims", requireAuth, claimsLimiter, createClaimRequest);
 router.get("/claims", ...canReviewClaims, listClaims);
