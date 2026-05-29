@@ -10,6 +10,7 @@ export default function SignupPage() {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
+    username: "",
     email: "",
     password: ""
   });
@@ -55,6 +56,14 @@ export default function SignupPage() {
           value={form.lastName}
           onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))}
           placeholder="Sobrenome"
+          required
+        />
+        <input
+          type="text"
+          value={form.username}
+          onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
+          placeholder="Usuario (minimo 3 caracteres)"
+          minLength={3}
           required
         />
         <input
