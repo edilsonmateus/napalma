@@ -2,6 +2,7 @@
   "name": "77Gira Sambas",
   "short_name": "77Gira Sambas",
   "description": "Todos os sambas aqui.",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -9,15 +10,21 @@
   "theme_color": "#0D0D0D",
   "icons": [
     {
-      "src": "/assets/brand/77manifestLogo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/assets/brand/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/assets/brand/icon_mono_77Gira.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/assets/brand/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/brand/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ]
