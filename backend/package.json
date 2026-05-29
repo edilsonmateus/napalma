@@ -4,15 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/server.js",
-    "start": "node src/server.js",
-    "test": "vitest run",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "node prisma/seed.js",
-    "prisma:seed:achievements": "node prisma/seed-achievements.js",
-    "prisma:normalize:claims": "node prisma/normalize-claims-fixture.js",
-    "prisma:backfill:event-artists": "node prisma/backfill-event-artists.js"
+  "dev": "node --watch src/server.js",
+  "start": "node src/server.js",
+  "test": "vitest run",
+  "prisma:generate": "prisma generate",
+  "prisma:migrate": "prisma migrate dev",
+  "prisma:migrate:deploy": "prisma migrate deploy",
+  "prisma:seed": "node prisma/seed.js",
+  "prisma:seed:achievements": "node prisma/seed-achievements.js",
+  "prisma:normalize:claims": "node prisma/normalize-claims-fixture.js",
+  "prisma:backfill:event-artists": "node prisma/backfill-event-artists.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
