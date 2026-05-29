@@ -3,8 +3,7 @@ export const regions = [
   "Zona Norte",
   "Zona Sul",
   "Zona Leste",
-  "Zona Oeste",
-  "Grande Sao Paulo"
+  "Zona Oeste"
 ];
 
 export const events = [

@@ -10,7 +10,7 @@
   },
   "defaultVertical": "samba",
   "enabledVerticals": ["samba"],
-  "regions": ["Centro", "Zona Norte", "Zona Sul", "Zona Leste", "Zona Oeste", "Grande Sao Paulo"],
+  "regions": ["Centro", "Zona Norte", "Zona Sul", "Zona Leste", "Zona Oeste"],
   "currency": "BRL",
   "locale": "pt-BR"
 }

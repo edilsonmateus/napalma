@@ -6,9 +6,13 @@ const FALLBACK_REGIONS = [
   "Zona Norte",
   "Zona Sul",
   "Zona Leste",
-  "Zona Oeste",
-  "Grande Sao Paulo"
+  "Zona Oeste"
 ];
+
+const HIDDEN_REGION_KEYS = new Set([
+  "grande sao paulo",
+  "grande são paulo"
+].map((item) => normalizeRegionKey(item)));
 
 function normalizeRegionKey(value) {
   return String(value || "")
@@ -16,6 +20,11 @@ function normalizeRegionKey(value) {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+}
+
+function isHiddenRegionName(value) {
+  const key = normalizeRegionKey(value);
+  return key ? HIDDEN_REGION_KEYS.has(key) : false;
 }
 
 const createRegionSchema = z.object({
@@ -68,6 +77,7 @@ export async function listRegions(_req, res, next) {
     for (const item of ordered) {
       const value = String(item || "").trim();
       if (!value) continue;
+      if (isHiddenRegionName(value)) continue;
       const key = normalizeRegionKey(value);
       if (!key || seen.has(key)) continue;
       seen.add(key);
@@ -97,11 +107,13 @@ export async function listRegionsAdmin(req, res, next) {
         .filter(([key]) => key)
     );
 
-    const officialItems = rows.map((row) => {
-      const key = normalizeRegionKey(row.name);
-      const venuesCount = usageMap.get(key) || 0;
-      return mapRegionAdmin({ ...row, venuesCount });
-    });
+    const officialItems = rows
+      .filter((row) => !isHiddenRegionName(row.name))
+      .map((row) => {
+        const key = normalizeRegionKey(row.name);
+        const venuesCount = usageMap.get(key) || 0;
+        return mapRegionAdmin({ ...row, venuesCount });
+      });
     const officialKeys = new Set(officialItems.map((item) => normalizeRegionKey(item.name)));
 
     const venueRows = await prisma.venue.findMany({
@@ -111,6 +123,7 @@ export async function listRegionsAdmin(req, res, next) {
     });
     const fallbackItems = venueRows
       .filter((row) => String(row.region || "").trim().length > 0)
+      .filter((row) => !isHiddenRegionName(row.region))
       .map((row, idx) => {
         const name = String(row.region || "").trim();
         const key = normalizeRegionKey(name);
