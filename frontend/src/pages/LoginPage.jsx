@@ -157,7 +157,7 @@ export default function LoginPage() {
           <button type="submit" className="auth-btn auth-btn-primary" disabled={isLoading}>
             {isLoading ? "Entrando..." : "Entrar"}
           </button>
-          <Link to="/signup" className="auth-btn">Criar conta</Link>
+          <Link to="/signup" className="auth-btn auth-btn-strong">Criar conta</Link>
           <Link to="/explore" className="auth-btn">Continuar sem conta</Link>
         </div>
       </form>

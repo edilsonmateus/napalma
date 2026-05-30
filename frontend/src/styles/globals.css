@@ -1725,7 +1725,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-weight: 600;
+  font-weight: 400;
   font-size: 15px;
   line-height: 1;
   cursor: pointer;
@@ -1734,6 +1734,11 @@ body {
 .auth-btn-primary {
   border: none;
   background: var(--gradient-samba);
+  font-weight: 700;
+}
+
+.auth-btn-strong {
+  font-weight: 700;
 }
 
 .admin-shortcuts {

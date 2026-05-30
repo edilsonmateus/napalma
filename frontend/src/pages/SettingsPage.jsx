@@ -157,7 +157,7 @@ export default function SettingsPage() {
           ) : (
             <>
               <Link to="/login" className="auth-btn auth-btn-primary">Entrar</Link>
-              <Link to="/signup" className="auth-btn">Criar conta</Link>
+              <Link to="/signup" className="auth-btn auth-btn-strong">Criar conta</Link>
               <Link to="/explore" className="auth-btn">Continuar sem conta</Link>
             </>
           )}
