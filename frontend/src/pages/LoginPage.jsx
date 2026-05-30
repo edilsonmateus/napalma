@@ -111,7 +111,7 @@ export default function LoginPage() {
     try {
       await navigator.share({
         title: "77Gira SP",
-        text: "Descubra os sambas da cidade e monte seu role na 77Gira.",
+        text: "A amizade, nem mesmo a força do tempo irá destruir...\n\nSeu amigo é um verdadeiro amigo, ele está compartilhando com você a agenda organizada de sambas de São Paulo.\nValorize isto",
         url: appUrl
       });
     } catch (error) {
@@ -195,7 +195,7 @@ export default function LoginPage() {
       {showQrModal ? (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="qr-title-login">
           <div className="modal-card route-mini-modal settings-qr-modal">
-            <h3 id="qr-title-login">Compartilhar por QR Code</h3>
+            <h3 id="qr-title-login">Compartilhe o 77Gira com o amiguinho, vai!</h3>
             <p className="meta-line">Aponte a camera para abrir o app no celular.</p>
             <div className="settings-qr-canvas-wrap">
               <canvas ref={qrCanvasRef} />
