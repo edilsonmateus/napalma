@@ -89,11 +89,13 @@ export default function VenueDetailFlowPage() {
         </h2>
         <p className="decision-artist">{venue.description || "Casa de samba em destaque na regiao."}</p>
         <div className="decision-meta">
-          <div className="meta-line"><MapPin size={14} /> {venue.address}</div>
-          <div className="meta-line">{venue.city} - {venue.state} - {venue.region}</div>
-          {Array.isArray(venue.openDays) && venue.openDays.length > 0 ? (
-            <div className="meta-line">Funciona: {venue.openDays.join(", ")}</div>
-          ) : null}
+          <div className="venue-location-muted">
+            <div className="meta-line"><MapPin size={14} /> {venue.address}</div>
+            <div className="meta-line">{venue.city} - {venue.state} - {venue.region}</div>
+            {Array.isArray(venue.openDays) && venue.openDays.length > 0 ? (
+              <div className="meta-line">Funciona: {venue.openDays.join(", ")}</div>
+            ) : null}
+          </div>
           <div className="share-actions">
             <button type="button" className="chip" onClick={() => setShowRouteModal(true)}>Como chegar</button>
           </div>

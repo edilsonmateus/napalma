@@ -85,6 +85,13 @@ export default function ExplorePage() {
         .filter((item) => typeof item === "string" && item.trim().length > 0),
     [regions]
   );
+  useEffect(() => {
+    if (prefs.region === "Todas") return;
+    if (regionOptions.length === 0) return;
+    if (!regionOptions.includes(prefs.region)) {
+      setPrefs((prev) => ({ ...prev, region: "Todas" }));
+    }
+  }, [prefs.region, regionOptions]);
   const [routeModeVenueId, setRouteModeVenueId] = useState("");
   const { data: exploreAd } = useAdDeliveryQuery("explore_feed_large", true);
   const adToRender = useMemo(() => exploreAd || null, [exploreAd]);

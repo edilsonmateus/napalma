@@ -151,7 +151,7 @@ export default function PelaHoraPage() {
       {!user ? (
         <div className="empty login-gate">
           <p>O Plano do Dia fica disponivel quando voce entra na conta.</p>
-          <Link to="/settings" className="chip">Entrar agora</Link>
+          <Link to="/settings" className="inline-login-cta">Entrar agora</Link>
         </div>
       ) : null}
 

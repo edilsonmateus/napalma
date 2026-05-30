@@ -78,7 +78,7 @@ export default function HistoryPage() {
       {!user ? (
         <div className="empty login-gate">
           <p>Seu Historico e suas conquistas aparecem quando voce entra na conta.</p>
-          <Link to="/settings" className="chip">Entrar agora</Link>
+          <Link to="/settings" className="inline-login-cta">Entrar agora</Link>
         </div>
       ) : null}
       {user && isLoading ? <p className="empty">Carregando historico...</p> : null}

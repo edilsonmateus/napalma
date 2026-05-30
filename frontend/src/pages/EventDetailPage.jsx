@@ -190,7 +190,7 @@ export default function EventDetailPage() {
         {!user ? (
           <div className="empty login-gate">
             <p>Quer salvar no Radar? Entre na sua conta.</p>
-            <Link to="/settings" className="chip">Entrar agora</Link>
+            <Link to="/settings" className="inline-login-cta">Entrar agora</Link>
           </div>
         ) : null}
         {user ? (

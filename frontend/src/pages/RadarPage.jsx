@@ -113,7 +113,7 @@ export default function RadarPage() {
       {!user ? (
         <div className="empty login-gate">
           <p>Para salvar sambas no seu Radar, entre ou crie sua conta.</p>
-          <Link to="/settings" className="chip">Entrar agora</Link>
+          <Link to="/settings" className="inline-login-cta">Entrar agora</Link>
         </div>
       ) : null}
       {user ? <AdSlotCard ad={adToRender} slot="radar_header" compact /> : null}

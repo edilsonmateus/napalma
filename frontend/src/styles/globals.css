@@ -3410,6 +3410,10 @@ button.venue-card {
   gap: 6px;
 }
 
+.venue-location-muted .meta-line {
+  color: rgba(184, 190, 203, 0.5);
+}
+
 .decision-actions {
   margin-top: 12px;
   display: grid;
