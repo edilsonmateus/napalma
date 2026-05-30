@@ -106,10 +106,9 @@ export default function SettingsPage() {
 
         <div className="settings-share-actions clean-card">
           {showInstallBtn ? (
-            <button type="button" className="auth-btn settings-install-btn" onClick={handleInstallApp}>
+            <button type="button" className="settings-install-image-btn" onClick={handleInstallApp} aria-label="Instalar app">
               {/* TODO: inserir SVG do botao de instalacao (/installAppBtn.svg) */}
-              <img src="/installAppBtn.svg" alt="" aria-hidden="true" className="settings-install-icon" />
-              Instalar app
+              <img src="/installAppBtn.svg" alt="" aria-hidden="true" className="settings-install-image" />
             </button>
           ) : null}
 
