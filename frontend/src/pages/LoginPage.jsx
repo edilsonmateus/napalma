@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { login } from "../services/auth.service";
 import { useAuthStore } from "../store/authStore";
 import { getRoleHome } from "../utils/roles";
+import { promptInstallApp, subscribeInstallPrompt } from "../utils/installPrompt";
 import { getOrCreateVisitorId } from "../utils/visitor";
 
 const DEMO_ACCOUNTS = [
@@ -23,7 +24,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState(allowDemoAuth ? "123456" : "");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const installPromptRef = useRef(null);
   const qrCanvasRef = useRef(null);
   const [showInstallBtn, setShowInstallBtn] = useState(false);
   const [showShareBtn, setShowShareBtn] = useState(false);
@@ -38,16 +38,9 @@ export default function LoginPage() {
   }
 
   useEffect(() => {
-    function handleBeforeInstallPrompt(event) {
-      event.preventDefault();
-      installPromptRef.current = event;
-      setShowInstallBtn(true);
-    }
-
     // iOS Safari nao dispara beforeinstallprompt.
     // Nesses casos, compartilhamento nativo e QR Code sao os caminhos principais.
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    return subscribeInstallPrompt(setShowInstallBtn);
   }, []);
 
   useEffect(() => {
@@ -91,18 +84,8 @@ export default function LoginPage() {
   }
 
   async function handleInstallApp() {
-    const deferredPrompt = installPromptRef.current;
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    try {
-      await deferredPrompt.userChoice;
-    } catch (_error) {
-      // no-op
-    } finally {
-      installPromptRef.current = null;
-      setShowInstallBtn(false);
-    }
+    await promptInstallApp();
+    setShowInstallBtn(false);
   }
 
   async function handleNativeShare() {

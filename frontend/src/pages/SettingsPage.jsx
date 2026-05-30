@@ -5,13 +5,13 @@ import QRCode from "qrcode";
 import { logout } from "../services/auth.service";
 import { useAuthStore } from "../store/authStore";
 import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
+import { promptInstallApp, subscribeInstallPrompt } from "../utils/installPrompt";
 
 export default function SettingsPage() {
   const { refreshToken, user, clearAuth } = useAuthStore();
 
   const roleHome = getRoleHome(user?.role);
   const canOpenVenuesPanel = Boolean(user) && (isAdminRole(user?.role) || isProducerRole(user?.role) || isVenueRole(user?.role));
-  const installPromptRef = useRef(null);
   const qrCanvasRef = useRef(null);
   const [showInstallBtn, setShowInstallBtn] = useState(false);
   const [showShareBtn, setShowShareBtn] = useState(false);
@@ -22,16 +22,9 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    function handleBeforeInstallPrompt(event) {
-      event.preventDefault();
-      installPromptRef.current = event;
-      setShowInstallBtn(true);
-    }
-
     // iOS Safari nao dispara beforeinstallprompt.
     // Nesses casos, compartilhamento nativo e QR Code sao os caminhos principais.
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    return subscribeInstallPrompt(setShowInstallBtn);
   }, []);
 
   useEffect(() => {
@@ -71,18 +64,8 @@ export default function SettingsPage() {
   }
 
   async function handleInstallApp() {
-    const deferredPrompt = installPromptRef.current;
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    try {
-      await deferredPrompt.userChoice;
-    } catch (_error) {
-      // no-op
-    } finally {
-      installPromptRef.current = null;
-      setShowInstallBtn(false);
-    }
+    await promptInstallApp();
+    setShowInstallBtn(false);
   }
 
   async function handleNativeShare() {

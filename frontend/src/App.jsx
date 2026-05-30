@@ -6,6 +6,7 @@ import { useTrackAudienceVisitMutation } from "./hooks/useEventsQuery";
 import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "./utils/roles";
 import { ONBOARDING_STORAGE_KEY } from "./utils/onboarding";
 import { getOrCreateVisitorId } from "./utils/visitor";
+import { setupInstallPromptCapture } from "./utils/installPrompt";
 
 const ExplorePage = lazy(() => import("./pages/ExplorePage"));
 const EventDetailPage = lazy(() => import("./pages/EventDetailPage"));
@@ -62,6 +63,10 @@ export default function App() {
       isDesktop ? SPLASH_MS_DESKTOP : SPLASH_MS_MOBILE
     );
     return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    setupInstallPromptCapture();
   }, []);
 
   useEffect(() => {
