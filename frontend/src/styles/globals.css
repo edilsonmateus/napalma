@@ -3627,7 +3627,8 @@ button.venue-card {
 .auth-settings-footer strong {
   font-size: 16px;
   line-height: 1.2;
-  color: var(--text-primary);
+  color: rgba(157, 166, 182, 0.5);
+  font-weight: 600;
 }
 
 .auth-settings-footer p {
