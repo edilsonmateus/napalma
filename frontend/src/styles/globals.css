@@ -3516,6 +3516,25 @@ button.venue-card {
   margin-bottom: 8px;
 }
 
+.inline-login-cta {
+  display: inline-flex;
+  align-items: center;
+  color: #40e07a;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.inline-login-cta:hover {
+  color: #5ef191;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
 .settings-share-actions {
   display: flex;
   flex-direction: column;
@@ -3587,6 +3606,108 @@ button.venue-card {
 
 .auth-screen .settings-share-actions {
   margin-top: 8px;
+}
+
+.auth-screen,
+.settings-screen {
+  min-height: calc(100dvh - 120px);
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-settings-footer {
+  margin-top: auto;
+  padding-top: 18px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+  display: grid;
+  gap: 6px;
+}
+
+.auth-settings-footer strong {
+  font-size: 16px;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.auth-settings-footer p {
+  margin: 0;
+  color: rgba(157, 166, 182, 0.5);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.settings-inline-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.settings-info-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  color: #b8854f;
+  border: 1px solid rgba(184, 133, 79, 0.6);
+  background: rgba(184, 133, 79, 0.14);
+}
+
+.settings-inline-note p {
+  margin: 0;
+  color: rgba(211, 189, 163, 0.86);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.settings-link-row {
+  display: block;
+  padding: 12px 0;
+  margin: 0;
+  color: var(--text-primary);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(157, 166, 182, 0.14);
+}
+
+.settings-link-row:last-child {
+  border-bottom: none;
+}
+
+.settings-link-row:hover {
+  color: #ffffff;
+}
+
+.settings-link-row.muted {
+  color: rgba(157, 166, 182, 0.72);
+}
+
+.legal-card {
+  margin-bottom: 10px;
+}
+
+.legal-card h3 {
+  margin: 0 0 8px;
+}
+
+.legal-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-secondary);
+}
+
+.legal-list li + li {
+  margin-top: 6px;
+}
+
+.legal-updated {
+  margin-top: 12px;
 }
 
 .history-clean .section-title {

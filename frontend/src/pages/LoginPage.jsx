@@ -28,6 +28,13 @@ export default function LoginPage() {
   const [showInstallBtn, setShowInstallBtn] = useState(false);
   const [showShareBtn, setShowShareBtn] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  const isMobileLike = useMemo(() => {
+    if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    const mobileUa = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+    const coarse = window.matchMedia?.("(pointer: coarse)")?.matches;
+    return Boolean(mobileUa || coarse);
+  }, []);
   const appUrl = useMemo(() => {
     const configured = import.meta.env.VITE_PUBLIC_APP_URL;
     return configured || window.location.origin;
@@ -84,6 +91,10 @@ export default function LoginPage() {
   }
 
   async function handleInstallApp() {
+    if (!isMobileLike) {
+      setShowQrModal(true);
+      return;
+    }
     await promptInstallApp();
     setShowInstallBtn(false);
   }
@@ -152,12 +163,18 @@ export default function LoginPage() {
       </form>
 
       <div className="settings-share-actions clean-card">
-        {showInstallBtn ? (
-          <button type="button" className="settings-install-image-btn" onClick={handleInstallApp} aria-label="Instalar app">
-            {/* TODO: inserir SVG do botao de instalacao (/installAppBtn.svg) */}
-            <img src="/installAppBtn.svg" alt="" aria-hidden="true" className="settings-install-image" />
+        {isMobileLike ? (
+          showInstallBtn ? (
+            <button type="button" className="settings-install-image-btn" onClick={handleInstallApp} aria-label="Instalar app">
+              {/* TODO: inserir SVG do botao de instalacao (/installAppBtn.svg) */}
+              <img src="/installAppBtn.svg" alt="" aria-hidden="true" className="settings-install-image" />
+            </button>
+          ) : null
+        ) : (
+          <button type="button" className="auth-btn" onClick={handleInstallApp}>
+            Instalar no celular
           </button>
-        ) : null}
+        )}
 
         {showShareBtn ? (
           <button type="button" className="auth-btn" onClick={handleNativeShare}>
@@ -174,6 +191,13 @@ export default function LoginPage() {
 
       {message ? <p className="empty">{message}</p> : null}
 
+      <p className="meta-line">
+        Ao continuar, voce concorda com nossos{" "}
+        <Link to="/terms" className="btn-link">Termos de uso</Link>{" "}
+        e{" "}
+        <Link to="/privacy" className="btn-link">Politica de privacidade</Link>.
+      </p>
+
       {showQrModal ? (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="qr-title-login">
           <div className="modal-card route-mini-modal settings-qr-modal">
@@ -188,6 +212,11 @@ export default function LoginPage() {
           </div>
         </div>
       ) : null}
+
+      <footer className="auth-settings-footer">
+        <strong>77Gira v1.0.0</strong>
+        <p>Feito em casa, feito com alma. Desenhado e codificado por 77 Giramundo © 2026 Todos os direitos reservados.</p>
+      </footer>
     </section>
   );
 }

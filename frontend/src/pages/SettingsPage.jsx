@@ -16,6 +16,13 @@ export default function SettingsPage() {
   const [showInstallBtn, setShowInstallBtn] = useState(false);
   const [showShareBtn, setShowShareBtn] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  const isMobileLike = useMemo(() => {
+    if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    const mobileUa = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+    const coarse = window.matchMedia?.("(pointer: coarse)")?.matches;
+    return Boolean(mobileUa || coarse);
+  }, []);
   const appUrl = useMemo(() => {
     const configured = import.meta.env.VITE_PUBLIC_APP_URL;
     return configured || window.location.origin;
@@ -64,6 +71,10 @@ export default function SettingsPage() {
   }
 
   async function handleInstallApp() {
+    if (!isMobileLike) {
+      setShowQrModal(true);
+      return;
+    }
     await promptInstallApp();
     setShowInstallBtn(false);
   }
@@ -83,7 +94,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <section>
+    <section className="settings-screen">
       <header className="page-header">
         <h2>Configuracoes</h2>
       </header>
@@ -91,26 +102,38 @@ export default function SettingsPage() {
         <div className="settings-avatar">{user?.firstName?.[0] || "7"}</div>
         <div>
           <strong>{user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : "Sua conta"}</strong>
-          <p>{user?.email || "Entre para sincronizar Radar e Historico."}</p>
+          {user ? <p>{user.email}</p> : null}
+          {!user ? (
+            <div className="settings-inline-note" role="note" aria-live="polite">
+              <span className="settings-info-icon" aria-hidden="true">i</span>
+              <p>Entre para manter seus dados sincronizados e ver mais recursos do app.</p>
+            </div>
+          ) : null}
         </div>
       </div>
 
       <div className="settings-content-stack">
         <div className="settings-list clean-card">
-          <p>Privacidade</p>
-          <p>Ajuda</p>
-          <p>Avaliar</p>
-          <p>Termos de uso</p>
-          <p>Sobre</p>
+          <Link to="/privacy" className="settings-link-row">Privacidade</Link>
+          <Link to="/help" className="settings-link-row">Ajuda</Link>
+          <p className="settings-link-row muted">Avaliar (em breve)</p>
+          <Link to="/terms" className="settings-link-row">Termos de uso</Link>
+          <Link to="/about" className="settings-link-row">Sobre</Link>
         </div>
 
         <div className="settings-share-actions clean-card">
-          {showInstallBtn ? (
-            <button type="button" className="settings-install-image-btn" onClick={handleInstallApp} aria-label="Instalar app">
-              {/* TODO: inserir SVG do botao de instalacao (/installAppBtn.svg) */}
-              <img src="/installAppBtn.svg" alt="" aria-hidden="true" className="settings-install-image" />
+          {isMobileLike ? (
+            showInstallBtn ? (
+              <button type="button" className="settings-install-image-btn" onClick={handleInstallApp} aria-label="Instalar app">
+                {/* TODO: inserir SVG do botao de instalacao (/installAppBtn.svg) */}
+                <img src="/installAppBtn.svg" alt="" aria-hidden="true" className="settings-install-image" />
+              </button>
+            ) : null
+          ) : (
+            <button type="button" className="auth-btn" onClick={handleInstallApp}>
+              Instalar no celular
             </button>
-          ) : null}
+          )}
 
           {showShareBtn ? (
             <button type="button" className="auth-btn" onClick={handleNativeShare}>
@@ -143,8 +166,6 @@ export default function SettingsPage() {
 
       {canOpenVenuesPanel ? <p><Link to="/settings/venues" className="btn-link">Gerenciar casas de samba</Link></p> : null}
       {isAdminRole(user?.role) ? <p><Link to="/settings/ads" className="btn-link">Gerenciar publicidade</Link></p> : null}
-      {!user ? <p className="empty">Entre para manter seus dados sincronizados.</p> : null}
-
       {showQrModal ? (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="qr-title">
           <div className="modal-card route-mini-modal settings-qr-modal">
@@ -159,6 +180,11 @@ export default function SettingsPage() {
           </div>
         </div>
       ) : null}
+
+      <footer className="auth-settings-footer">
+        <strong>77Gira v1.0.0</strong>
+        <p>Feito em casa, feito com alma. Desenhado e codificado por 77 Giramundo © 2026 Todos os direitos reservados.</p>
+      </footer>
     </section>
   );
 }
