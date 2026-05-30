@@ -37,6 +37,12 @@ function getLiveStatus(startsAt, endsAt) {
   }
   if (now <= end) {
     const mins = Math.ceil((end - now) / 60000);
+    if (mins >= 60) {
+      const hours = Math.floor(mins / 60);
+      const rest = mins % 60;
+      const hhmm = `${hours}:${String(rest).padStart(2, "0")}`;
+      return { label: `Rolando agora - termina em ${hhmm}`, tone: "live" };
+    }
     return { label: `Rolando agora - termina em ${mins} min`, tone: "live" };
   }
   return { label: "Encerrado", tone: "ended" };
