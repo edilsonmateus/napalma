@@ -3526,7 +3526,7 @@ button.venue-card {
 
 .settings-share-actions .settings-install-image-btn + .auth-btn,
 .settings-share-actions .settings-install-image-btn + button.auth-btn {
-  margin-top: 50px;
+  margin-top: 35px;
 }
 
 .settings-share-actions .auth-btn {
