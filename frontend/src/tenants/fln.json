@@ -5,8 +5,8 @@
     "country":  "BR",
     "timezone":  "America/Sao_Paulo",
     "brand":  {
-                  "name":  "NaPalma SC",
-                  "tagline":  "O ritmo da cidade, na palma da sua mao"
+                  "name":  "77Gira SC",
+                  "tagline":  "Todos os sambas aqui"
               },
     "defaultVertical":  "samba",
     "enabledVerticals":  [
@@ -22,3 +22,4 @@
     "currency":  "BRL",
     "locale":  "pt-BR"
 }
+

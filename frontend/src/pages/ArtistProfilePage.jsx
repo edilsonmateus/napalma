@@ -42,7 +42,7 @@ export default function ArtistProfilePage() {
           {artist.name}
           {artist.isVerified ? <VerifiedBadge className="artist-verified-dot" title="Perfil oficial verificado" /> : null}
         </h2>
-        <p className="artist-profile-bio">{artist.bio || "Perfil oficial do artista no NaPalma."}</p>
+        <p className="artist-profile-bio">{artist.bio || "Perfil oficial do artista no 77Gira."}</p>
         <div className="artist-profile-stats">
           <p><strong>{artist.followersCount || 0}</strong> Seguidores</p>
           <p><strong>{postsCount}</strong> Shows</p>

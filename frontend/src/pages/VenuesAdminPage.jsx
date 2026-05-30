@@ -2050,7 +2050,7 @@ export default function VenuesAdminPage() {
 
       {showHouseClaims ? <h3 className="section-title">Solicitar acesso a filial</h3> : null}
       {showHouseClaims ? (
-        <p className="meta-line">Escolha a filial cadastrada no NaPalma e envie comprovacao de vinculo. O admin vai revisar e aprovar.</p>
+        <p className="meta-line">Escolha a filial cadastrada no 77Gira e envie comprovacao de vinculo. O admin vai revisar e aprovar.</p>
       ) : null}
       {showHouseClaims ? (
         <form className="venue-form" onSubmit={handleHouseOwnershipClaimSubmit}>

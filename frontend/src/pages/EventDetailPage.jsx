@@ -62,7 +62,7 @@ export default function EventDetailPage() {
   if (isLoading) return <p className="empty">Carregando evento...</p>;
   if (!event) return <p>Evento nao encontrado.</p>;
 
-  const shareTitle = `${event.title} | NaPalma`;
+  const shareTitle = `${event.title} | 77Gira`;
   const showArtistLine = Boolean(event.artist && event.artist !== event.title);
   const venueAddress = getVenueAddressString(event);
   const venueAddressDisplay = stripBrazilZipCode(venueAddress);
@@ -108,9 +108,9 @@ export default function EventDetailPage() {
     const ics = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
-      "PRODID:-//NaPalma//Samba Agenda//PT-BR",
+      "PRODID:-//77Gira//Samba Agenda//PT-BR",
       "BEGIN:VEVENT",
-      `UID:${event.id}@napalma.app`,
+      `UID:${event.id}@77gira.app`,
       `DTSTAMP:${formatCalendarDate(new Date().toISOString())}`,
       `DTSTART:${formatCalendarDate(event.startsAt)}`,
       `DTEND:${formatCalendarDate(event.endsAt)}`,

@@ -1,9 +1,10 @@
 ﻿{
   "tenantId": "fln",
   "brand": {
-    "logoText": "NaPalma",
+    "logoText": "77Gira",
     "primary": "#ffb81c",
     "secondary": "#c8102e",
     "accent": "#6b3fa0"
   }
 }
+

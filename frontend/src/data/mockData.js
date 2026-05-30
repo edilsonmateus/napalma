@@ -32,7 +32,7 @@ export const events = [
   {
     id: "evt-3",
     title: "Noite de Gafieira",
-    artist: "Orquestra NaPalma",
+    artist: "Orquestra 77Gira",
     venue: "Salao Aurora",
     region: "Zona Oeste",
     type: "gafieira",
