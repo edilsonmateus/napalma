@@ -35,7 +35,7 @@ import {
 } from "../hooks/useEventsQuery";
 import { getArtistById, getEventById, getVenueById } from "../services/events.service";
 import { useAuthStore } from "../store/authStore";
-import { isAdminRole, isProducerRole, isVenueRole } from "../utils/rolês";
+import { isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
 
 const initialVenueForm = {
   name: "",
@@ -79,7 +79,7 @@ const initialEventForm = {
   ticketUrl: "",
   priceMin: "",
   priceMax: "",
-  consumaçãoValue: "",
+  consumacaoValue: "",
   couvertArtistico: "",
   venueId: "",
   artistName: "",
@@ -334,7 +334,7 @@ export default function VenuesAdminPage() {
   const showAdminRegions = isAdmin && effectiveSection === "regions";
   const showHouseClaims = isHouseRole && effectiveSection === "claims";
   const showHouseProfile = isHouseRole && effectiveSection === "profile";
-  const isHouseProgramaçãoClean = isHouseRole && showEvents && searchParams.get("layout") === "clean";
+  const isHouseProgramacaoClean = isHouseRole && showEvents && searchParams.get("layout") === "clean";
 
   useEffect(() => {
     if (showEvents) return;
@@ -426,7 +426,7 @@ export default function VenuesAdminPage() {
   const previewVenue = venues.find((venue) => venue.id === eventForm.venueId) || houseActiveVenue || null;
   const previewPriceLabel = eventForm.ticketType === "free"
     ? "Gratuito"
-    : eventForm.ticketType === "consumação"
+    : eventForm.ticketType === "consumacao"
       ? "Consumação"
       : eventForm.priceMin || eventForm.priceMax
         ? `R$ ${eventForm.priceMin || eventForm.priceMax}`
@@ -689,8 +689,8 @@ export default function VenuesAdminPage() {
     if (eventForm.ticketType === "free" && (eventForm.priceMin || eventForm.priceMax)) {
       errors.ticketType = ["Evento gratuito não deve ter preco."];
     }
-    if (eventForm.ticketType === "consumação" && eventForm.consumaçãoValue && Number(eventForm.consumaçãoValue) < 0) {
-      errors.consumaçãoValue = ["Consumação minima não pode ser negativa."];
+    if (eventForm.ticketType === "consumacao" && eventForm.consumacaoValue && Number(eventForm.consumacaoValue) < 0) {
+      errors.consumacaoValue = ["Consumação minima não pode ser negativa."];
     }
     if (eventForm.priceMin && eventForm.priceMax && Number(eventForm.priceMax) < Number(eventForm.priceMin)) {
       errors.priceMax = ["Preco máximo deve ser maior ou igual ao mínimo."];
@@ -927,7 +927,7 @@ export default function VenuesAdminPage() {
       tags: eventForm.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
       priceMin: eventForm.priceMin ? Number(eventForm.priceMin) : undefined,
       priceMax: eventForm.priceMax ? Number(eventForm.priceMax) : undefined,
-      consumaçãoValue: eventForm.consumaçãoValue ? Number(eventForm.consumaçãoValue) : undefined,
+      consumacaoValue: eventForm.consumacaoValue ? Number(eventForm.consumacaoValue) : undefined,
       couvertArtistico: eventForm.couvertArtistico ? Number(eventForm.couvertArtistico) : undefined,
       ticketUrl: eventForm.ticketUrl || undefined,
       imageUrl: eventForm.imageUrl || undefined,
@@ -953,8 +953,8 @@ export default function VenuesAdminPage() {
         payload.priceMin = undefined;
         payload.priceMax = undefined;
       }
-      if (eventForm.ticketType !== "consumação") {
-        payload.consumaçãoValue = undefined;
+      if (eventForm.ticketType !== "consumacao") {
+        payload.consumacaoValue = undefined;
       }
 
       if (isEditingEvent) {
@@ -1018,7 +1018,7 @@ export default function VenuesAdminPage() {
         ticketUrl: detail.ticketUrl || "",
         priceMin: detail.priceMin ?? "",
         priceMax: detail.priceMax ?? "",
-        consumaçãoValue: detail.consumaçãoValue ?? "",
+        consumacaoValue: detail.consumacaoValue ?? "",
         couvertArtistico: detail.couvertArtistico ?? "",
         venueId: detail.venueId || "",
         artistName: detail.artistName || "",
@@ -1443,7 +1443,7 @@ export default function VenuesAdminPage() {
             ) : null}
           </div>
         </div>
-      ) : isHouseProgramaçãoClean ? (
+      ) : isHouseProgramacaoClean ? (
         <div className="ads-content">
           <div className="admin-kpis">
             <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article>
@@ -1480,17 +1480,17 @@ export default function VenuesAdminPage() {
               {showOverview ? <article className="clean-card"><h4>CTR (30d)</h4><p>{houseAdsSummary?.summary?.ctr ?? 0}%</p></article> : null}
               {showOverview ? <article className="clean-card"><h4>Radar da casa (30d)</h4><p>{audienceSummary?.scoped?.radarUsers ?? 0}</p></article> : null}
               {showOverview ? <article className="clean-card"><h4>Público presente (30d)</h4><p>{audienceSummary?.scoped?.attendeesUsers ?? 0}</p></article> : null}
-              {showEvents && !isHouseProgramaçãoClean ? <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
+              {showEvents && !isHouseProgramacaoClean ? <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
               {showHouseProfile ? <article className="clean-card"><h4>Dados da Casa</h4><p>{houseDisplayName || "Sem unidade ativa"}</p></article> : null}
               {showManagers ? <article className="clean-card"><h4>Produtores</h4><p>{totalManagers}</p></article> : null}
               {showHouseClaims ? <article className="clean-card"><h4>Solicitacoes</h4><p>{myClaims.filter((c) => c.status === "pending").length} pendentes</p></article> : null}
             </div>
-            {showEvents && !isHouseProgramaçãoClean ? <div className="admin-content-divider" /> : null}
+            {showEvents && !isHouseProgramacaoClean ? <div className="admin-content-divider" /> : null}
           </div>
         </div>
       )}
 
-      <div className={`admin-section-stack${isHouseRole ? " house-section-stack" : ""}${isHouseRole && (showOverview || showEvents) ? " no-divider" : ""}${isHouseProgramaçãoClean ? " house-events-focus" : ""}`}>
+      <div className={`admin-section-stack${isHouseRole ? " house-section-stack" : ""}${isHouseRole && (showOverview || showEvents) ? " no-divider" : ""}${isHouseProgramacaoClean ? " house-events-focus" : ""}`}>
       {showOverview && isHouseRole ? (
         <>
           {!houseActiveVenue ? (
@@ -2195,7 +2195,7 @@ export default function VenuesAdminPage() {
         <p className="empty">Sua conta ainda não tem filial aprovada. Abra "Solicitar Acesso", envie os dados de comprovacao e aguarde aprovacao do admin.</p>
       ) : null}
       {showEvents ? <h3 className="section-title">{isHouseRole ? `Eventos da casa - ${houseDisplayName}` : "Eventos"}</h3> : null}
-      {showEvents && (!isHouseRole || !isHouseProgramaçãoClean) ? (
+      {showEvents && (!isHouseRole || !isHouseProgramacaoClean) ? (
         <article className="venue-card">
           <div>
             <h3>Previa do card</h3>
@@ -2211,7 +2211,7 @@ export default function VenuesAdminPage() {
           </div>
         </article>
       ) : null}
-      {showEvents && (!isHouseRole || !isHouseProgramaçãoClean) ? <form className="venue-form" onSubmit={handleEventSubmit}>
+      {showEvents && (!isHouseRole || !isHouseProgramacaoClean) ? <form className="venue-form" onSubmit={handleEventSubmit}>
         <input
           name="title"
           value={eventForm.title}
@@ -2319,24 +2319,24 @@ export default function VenuesAdminPage() {
         <select name="ticketType" value={eventForm.ticketType} onChange={handleEventChange} required>
           <option value="paid">Pago</option>
           <option value="free">Gratuito</option>
-          <option value="consumação">Consumação</option>
+          <option value="consumacao">Consumação</option>
         </select>
         {eventErrors.ticketType?.[0] ? <p className="field-error">{eventErrors.ticketType[0]}</p> : null}
         <input name="priceMin" type="number" min="0" step="0.01" value={eventForm.priceMin} onChange={handleEventChange} placeholder="Preco mínimo" />
         <input name="priceMax" type="number" min="0" step="0.01" value={eventForm.priceMax} onChange={handleEventChange} placeholder="Preco máximo" />
         {eventErrors.priceMax?.[0] ? <p className="field-error">{eventErrors.priceMax[0]}</p> : null}
-        {eventForm.ticketType === "consumação" ? (
+        {eventForm.ticketType === "consumacao" ? (
           <input
-            name="consumaçãoValue"
+            name="consumacaoValue"
             type="number"
             min="0"
             step="0.01"
-            value={eventForm.consumaçãoValue}
+            value={eventForm.consumacaoValue}
             onChange={handleEventChange}
             placeholder="Consumação minima (opcional)"
           />
         ) : null}
-        {eventErrors.consumaçãoValue?.[0] ? <p className="field-error">{eventErrors.consumaçãoValue[0]}</p> : null}
+        {eventErrors.consumacaoValue?.[0] ? <p className="field-error">{eventErrors.consumacaoValue[0]}</p> : null}
         <input
           name="couvertArtistico"
           type="number"

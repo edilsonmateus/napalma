@@ -4,7 +4,7 @@ import { Share2 } from "lucide-react";
 import QRCode from "qrcode";
 import { login } from "../services/auth.service";
 import { useAuthStore } from "../store/authStore";
-import { getRoleHome } from "../utils/rolês";
+import { getRoleHome } from "../utils/roles";
 import { promptInstallApp, subscribeInstallPrompt } from "../utils/installPrompt";
 import { getOrCreateVisitorId } from "../utils/visitor";
 

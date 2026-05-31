@@ -4,7 +4,7 @@ import { Share2 } from "lucide-react";
 import QRCode from "qrcode";
 import { logout } from "../services/auth.service";
 import { useAuthStore } from "../store/authStore";
-import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "../utils/rolês";
+import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
 import { promptInstallApp, subscribeInstallPrompt } from "../utils/installPrompt";
 
 export default function SettingsPage() {
