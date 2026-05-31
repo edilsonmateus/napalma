@@ -60,7 +60,7 @@ export default function EventDetailPage() {
   const marked = useMemo(() => radarEvents.some((item) => item.id === eventId), [eventId, radarEvents]);
 
   if (isLoading) return <p className="empty">Carregando evento...</p>;
-  if (!event) return <p>Evento nao encontrado.</p>;
+  if (!event) return <p>Evento não encontrado.</p>;
 
   const shareTitle = `${event.title} | 77Gira`;
   const showArtistLine = Boolean(event.artist && event.artist !== event.title);
@@ -91,7 +91,7 @@ export default function EventDetailPage() {
       await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
       setToast({ text: "Link copiado para compartilhar.", type: "success" });
     } catch (_error) {
-      setToast({ text: "Nao foi possivel compartilhar agora.", type: "error" });
+      setToast({ text: "Não foi possível compartilhar agora.", type: "error" });
     }
   }
 
@@ -100,7 +100,7 @@ export default function EventDetailPage() {
       await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
       setToast({ text: "Link copiado para compartilhar.", type: "success" });
     } catch (_error) {
-      setToast({ text: "Nao foi possivel copiar o link.", type: "error" });
+      setToast({ text: "Não foi possível copiar o link.", type: "error" });
     }
   }
 
@@ -144,7 +144,7 @@ export default function EventDetailPage() {
       }
       setToast({ text: marked ? "Evento removido do seu Radar." : "Evento salvo no seu Radar.", type: "success" });
     } catch (_error) {
-      setToast({ text: "Nao foi possivel atualizar o Radar agora.", type: "error" });
+      setToast({ text: "Não foi possível atualizar o Radar agora.", type: "error" });
     }
   }
 
@@ -160,7 +160,7 @@ export default function EventDetailPage() {
             <span>{event.title}</span>
             {event.artistVerified ? <VerifiedBadge className="artist-verified-dot" title="Artista verificado" /> : null}
           </h2>
-          {event.artistId ? <Link to={`/artists/${event.artistId}`} className="btn-link artist-page-link">pagina do artista</Link> : null}
+          {event.artistId ? <Link to={`/artists/${event.artistId}`} className="btn-link artist-page-link">página do artista</Link> : null}
         </div>
         {showArtistLine ? (
           <div className="decision-artist-wrap">
@@ -229,7 +229,7 @@ export default function EventDetailPage() {
             <a href={facebookUrl} target="_blank" rel="noreferrer" className="chip share-link"><Share2 size={14} /> Facebook</a>
           </div>
           <details className="share-more">
-            <summary>Mais opcoes</summary>
+            <summary>Mais opções</summary>
             <div className="share-links">
               <a href={googleCalendarUrl} target="_blank" rel="noreferrer" className="chip share-link"><CalendarClock size={14} /> Google Agenda</a>
               <button className="chip share-action" onClick={handleDownloadIcs}>

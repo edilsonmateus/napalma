@@ -41,7 +41,7 @@ function formatGroupLabel(dateValue) {
   const target = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
   const diffDays = Math.round((target - today) / 86400000);
   if (diffDays === 0) return "Hoje";
-  if (diffDays === 1) return "Amanha";
+  if (diffDays === 1) return "Amanhã";
   const weekdayShort = date.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
   const dayMonth = date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
   return `${weekdayShort}, ${dayMonth}`;
@@ -244,7 +244,7 @@ export default function ExplorePage() {
       <div className="explore-controls">
         <input
           className="search-input"
-          placeholder="Buscar casa por nome, bairro ou regiao..."
+          placeholder="Buscar casa por nome, bairro ou região..."
           value={query}
           onChange={(e) => setPrefs((prev) => ({ ...prev, query: e.target.value, limit: 8 }))}
         />
@@ -285,7 +285,7 @@ export default function ExplorePage() {
       <AdSlotCard ad={adToRender} slot="explore_feed_large" />
       {!eventsLoading && !isError ? (
         <div className="explore-summary-bar">
-          <span>{visibleEventsCount} {visibleEventsCount === 1 ? "samba visivel" : "sambas visiveis"}</span>
+          <span>{visibleEventsCount} {visibleEventsCount === 1 ? "samba visível" : "sambas visíveis"}</span>
           <span>Escopo: {scopeLabel}</span>
           <span>{liveOnly ? "Modo ao vivo" : "Modo geral"}</span>
         </div>
@@ -305,14 +305,14 @@ export default function ExplorePage() {
           ))}
         </div>
       ) : null}
-      {isError ? <p className="empty">Nao foi possivel carregar os sambas agora.</p> : null}
+      {isError ? <p className="empty">Não foi possível carregar os sambas agora.</p> : null}
       {!isLoadingState && !isError && grouped.length === 0 ? (
         <div className="empty empty-highlight explore-empty-action">
           <p>Sem eventos para este filtro no momento.</p>
-          <small className="meta-line">Tente limpar filtros, trocar regiao ou ajustar dia/hora.</small>
+          <small className="meta-line">Tente limpar filtros, trocar região ou ajustar dia/hora.</small>
           <div className="chip-row">
             <button className="chip" onClick={() => setPrefs(DEFAULT_PREFS)}>
-              Voltar para visao geral
+              Voltar para visão geral
             </button>
             <button
               className="chip"
@@ -394,7 +394,7 @@ export default function ExplorePage() {
                           ) : null}
                         </>
                       ) : (
-                        <small className="meta-line">Sem proxima atracao cadastrada</small>
+                        <small className="meta-line">Sem próxima atração cadastrada</small>
                       )}
                     </div>
                   ) : null}
@@ -423,7 +423,7 @@ export default function ExplorePage() {
                 <div className="venue-flow-body">
                   <h3>Mais samba chegando</h3>
                   <p className="meta-line">Em breve essa agenda enche.</p>
-                  <small className="meta-line">Fique de olho nos proximos dias.</small>
+                  <small className="meta-line">Fique de olho nos próximos dias.</small>
                 </div>
               </article>
             ) : null}

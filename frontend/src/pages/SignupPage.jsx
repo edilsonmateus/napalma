@@ -31,7 +31,7 @@ export default function SignupPage() {
       setAuth({ token: data.accessToken, refreshToken: data.refreshToken, user: data.user });
       navigate(getRoleHome(data.user.role), { replace: true });
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Nao foi possivel criar conta agora.");
+      setMessage(error?.response?.data?.message || "Não foi possível criar conta agora.");
     } finally {
       setIsLoading(false);
     }
@@ -41,7 +41,7 @@ export default function SignupPage() {
     <section className="auth-screen clean-card">
       <header className="page-header">
         <h2>Criar conta</h2>
-        <p>Cadastre seu acesso para salvar radar, historico e planos.</p>
+        <p>Cadastre seu acesso para salvar radar, histórico e planos.</p>
       </header>
 
       <form className="venue-form" onSubmit={handleSubmit}>
@@ -63,7 +63,7 @@ export default function SignupPage() {
           type="text"
           value={form.username}
           onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
-          placeholder="Usuario (minimo 3 caracteres)"
+          placeholder="Usuário (mínimo 3 caracteres)"
           minLength={3}
           required
         />
@@ -71,14 +71,14 @@ export default function SignupPage() {
           type="email"
           value={form.email}
           onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-          placeholder="Email"
+          placeholder="E-mail"
           required
         />
         <input
           type="password"
           value={form.password}
           onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-          placeholder="Senha (minimo 6 caracteres)"
+          placeholder="Senha (mínimo 6 caracteres)"
           minLength={6}
           required
         />
@@ -87,12 +87,18 @@ export default function SignupPage() {
           <button type="submit" className="auth-btn auth-btn-primary" disabled={isLoading}>
             {isLoading ? "Criando..." : "Criar conta"}
           </button>
-          <Link to="/login" className="auth-btn">Ja tenho conta</Link>
+          <Link to="/login" className="auth-btn">Já tenho conta</Link>
           <Link to="/explore" className="auth-btn">Continuar sem conta</Link>
         </div>
       </form>
 
       {message ? <p className="empty">{message}</p> : null}
+
+      <footer className="auth-settings-footer">
+        <strong>77Gira v1.0.0</strong>
+        <p>Feito em casa, feito com alma. Desenhado e codificado por 77 Giramundo © 2026. Todos os direitos reservados.</p>
+      </footer>
     </section>
   );
 }
+

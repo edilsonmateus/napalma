@@ -119,7 +119,7 @@ export default function PelaHoraPage() {
       setToast({ text: "Pela Hora salvo com sucesso.", type: "success" });
       if (mode === "manual") setSelectedEventIds([]);
     } catch (_error) {
-      setToast({ text: "Nao foi possivel salvar seu Pela Hora agora.", type: "error" });
+      setToast({ text: "Não foi possivel salvar seu Pela Hora agora.", type: "error" });
     }
   }
 
@@ -129,7 +129,7 @@ export default function PelaHoraPage() {
       await deletePelaHora.mutateAsync(id);
       setToast({ text: "Plano removido com sucesso.", type: "success" });
     } catch (_error) {
-      setToast({ text: "Nao foi possivel remover esse plano agora.", type: "error" });
+      setToast({ text: "Não foi possivel remover esse plano agora.", type: "error" });
     }
   }
 
@@ -143,7 +143,7 @@ export default function PelaHoraPage() {
       <section className="clean-card pela-hora-howto">
         <h4>Como funciona</h4>
         <p className="meta-line helper-text">1. Escolha uma data.</p>
-        <p className="meta-line helper-text">2. Escolha os sambas manualmente ou receba uma sugestao pronta.</p>
+        <p className="meta-line helper-text">2. Escolha os sambas manualmente ou receba uma sugestão pronta.</p>
         <p className="meta-line helper-text">3. Salve seu plano e acompanhe o roteiro do dia.</p>
         <p className="meta-line helper-text">4. Delete um plano. Apague as provas, quem viu, mentiu.</p>
       </section>
@@ -162,7 +162,7 @@ export default function PelaHoraPage() {
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           <div className="chip-row">
             <button className={`chip ${mode === "manual" ? "active" : ""}`} type="button" onClick={() => setMode("manual")}>Escolher eu mesmo</button>
-            <button className={`chip ${mode === "automatic" ? "active" : ""}`} type="button" onClick={() => setMode("automatic")}>Receber sugestao</button>
+            <button className={`chip ${mode === "automatic" ? "active" : ""}`} type="button" onClick={() => setMode("automatic")}>Receber sugestão</button>
           </div>
         </div>
       ) : null}
@@ -175,7 +175,7 @@ export default function PelaHoraPage() {
           {filteredByDate.length === 0 ? (
             <div className="empty helper-empty">
               <p>Sem sambas nessa data.</p>
-              <small className="meta-line">Tente outra data ou use a sugestao automatica.</small>
+              <small className="meta-line">Tente outra data ou use a sugestão automatica.</small>
             </div>
           ) : null}
           <div className="venue-list">
@@ -211,7 +211,7 @@ export default function PelaHoraPage() {
           </div>
           {selectedTimeline.items.length > 0 ? (
             <div className="clean-card schedule-card">
-              <h4>Programacao</h4>
+              <h4>Programação</h4>
               <p className="meta-line">
                 {selectedTimeline.items.length} {selectedTimeline.items.length === 1 ? "samba" : "sambas"} | deslocamento estimado {selectedTimeline.totalTransit} min
               </p>
@@ -241,11 +241,11 @@ export default function PelaHoraPage() {
 
       {user && mode === "automatic" ? (
         <>
-          <h3 className="section-title">Sugestao automatica de plano</h3>
+          <h3 className="section-title">Sugestão automatica de plano</h3>
           {suggestionLoading ? <p className="empty helper-empty">Gerando seu Pela Hora...</p> : null}
           {!suggestionLoading && !suggestion ? (
             <div className="empty helper-empty">
-              <p>Sem sugestao pronta para essa data.</p>
+              <p>Sem sugestão pronta para essa data.</p>
               <small className="meta-line">Troque a data ou monte manualmente pelo menos 2 sambas.</small>
             </div>
           ) : null}
@@ -270,7 +270,7 @@ export default function PelaHoraPage() {
       {user ? <AppToast toast={toast} onClose={() => setToast({ text: "", type: "info" })} /> : null}
 
       <h3 className="section-title">Planos salvos</h3>
-      {user && itinerariesLoading ? <p className="empty">Carregando historico de Pela Hora...</p> : null}
+      {user && itinerariesLoading ? <p className="empty">Carregando histórico de Pela Hora...</p> : null}
       {user && !itinerariesLoading && itineraries.length === 0 ? (
         <div className="empty empty-highlight">
           <p>Nenhum plano salvo ainda.</p>
@@ -297,7 +297,7 @@ export default function PelaHoraPage() {
               </div>
             </div>
             <p className="meta-line">
-              {new Date(itinerary.date).toLocaleDateString("pt-BR")} Â· {itinerary.mode === "manual" ? "manual" : "automatico"}
+              {new Date(itinerary.date).toLocaleDateString("pt-BR")} Â· {itinerary.mode === "manual" ? "manual" : "automático"}
             </p>
             <p className="meta-line">{itinerary.items.length} sambas Â· deslocamento {itinerary.totalTransitMinutes} min</p>
             <div className="saved-mini-timeline">
@@ -366,3 +366,4 @@ export default function PelaHoraPage() {
     </section>
   );
 }
+

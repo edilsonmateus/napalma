@@ -35,7 +35,7 @@ import {
 } from "../hooks/useEventsQuery";
 import { getArtistById, getEventById, getVenueById } from "../services/events.service";
 import { useAuthStore } from "../store/authStore";
-import { isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
+import { isAdminRole, isProducerRole, isVenueRole } from "../utils/rolês";
 
 const initialVenueForm = {
   name: "",
@@ -79,7 +79,7 @@ const initialEventForm = {
   ticketUrl: "",
   priceMin: "",
   priceMax: "",
-  consumacaoValue: "",
+  consumaçãoValue: "",
   couvertArtistico: "",
   venueId: "",
   artistName: "",
@@ -95,9 +95,9 @@ const publishChecklistModel = [
   { key: "title", label: "Revisei titulo/artista do evento." },
   { key: "schedule", label: "Revisei data e horario (inicio e fim)." },
   { key: "venue", label: "Revisei casa/unidade selecionada." },
-  { key: "region", label: "Revisei regiao da casa para o filtro correto." },
+  { key: "region", label: "Revisei região da casa para o filtro correto." },
   { key: "pricing", label: "Revisei politica de preco e valores." },
-  { key: "media", label: "Revisei imagem, descricao e link (se houver)." }
+  { key: "media", label: "Revisei imagem, descrição e link (se houver)." }
 ];
 
 const initialManagerForm = {
@@ -229,10 +229,10 @@ export default function VenuesAdminPage() {
       return;
     }
     const normalized = String(text).toLowerCase();
-    const autoType = normalized.includes("nao foi possivel")
+    const autoType = normalized.includes("não foi possivel")
       || normalized.includes("revise")
       || normalized.includes("sem permissao")
-      || normalized.includes("voce nao pode")
+      || normalized.includes("voce não pode")
       || normalized.includes("forbidden")
       || normalized.includes("erro")
       ? "error"
@@ -334,7 +334,7 @@ export default function VenuesAdminPage() {
   const showAdminRegions = isAdmin && effectiveSection === "regions";
   const showHouseClaims = isHouseRole && effectiveSection === "claims";
   const showHouseProfile = isHouseRole && effectiveSection === "profile";
-  const isHouseProgramacaoClean = isHouseRole && showEvents && searchParams.get("layout") === "clean";
+  const isHouseProgramaçãoClean = isHouseRole && showEvents && searchParams.get("layout") === "clean";
 
   useEffect(() => {
     if (showEvents) return;
@@ -426,8 +426,8 @@ export default function VenuesAdminPage() {
   const previewVenue = venues.find((venue) => venue.id === eventForm.venueId) || houseActiveVenue || null;
   const previewPriceLabel = eventForm.ticketType === "free"
     ? "Gratuito"
-    : eventForm.ticketType === "consumacao"
-      ? "Consumacao"
+    : eventForm.ticketType === "consumação"
+      ? "Consumação"
       : eventForm.priceMin || eventForm.priceMax
         ? `R$ ${eventForm.priceMin || eventForm.priceMax}`
         : "Consulte valores";
@@ -441,13 +441,13 @@ export default function VenuesAdminPage() {
     }
     if (isProducerRole(user?.role)) {
       return {
-        title: "Gestao de Casas, Artistas e Eventos do Produtor",
+        title: "Gestão de Casas, Artistas e Eventos do Produtor",
         subtitle: "Voce edita somente carteira aprovada e reivindicacoes.",
         badge: "Perfil ativo: PRODUTOR"
       };
     }
     return {
-      title: "Gestao de Agenda da Casa",
+      title: "Gestão de Agenda da Casa",
       subtitle: houseDisplayName
         ? `Unidade ativa: ${houseDisplayName}. Aqui voce cuida da agenda, produtores e dados da sua casa.`
         : "Para operar a agenda, primeiro solicite acesso a uma filial cadastrada.",
@@ -544,7 +544,7 @@ export default function VenuesAdminPage() {
     URL.revokeObjectURL(url);
   }
   function exportVenuesCsv() {
-    downloadCsv("casas.csv", ["Nome", "Bairro", "Regiao", "Eventos"], filteredVenues.map((v) => [v.name, v.neighborhood, v.region, v.eventsCount]));
+    downloadCsv("casas.csv", ["Nome", "Bairro", "Região", "Eventos"], filteredVenues.map((v) => [v.name, v.neighborhood, v.region, v.eventsCount]));
     showToast("CSV de casas exportado.");
   }
   function exportArtistsCsv() {
@@ -552,7 +552,7 @@ export default function VenuesAdminPage() {
     showToast("CSV de artistas exportado.");
   }
   function exportEventsCsv() {
-    downloadCsv("eventos.csv", ["Titulo", "Artista", "Casa", "Regiao", "Inicio"], filteredEvents.map((e) => [e.title, e.artist, e.venue, e.region, e.startsAt || e.startDate]));
+    downloadCsv("eventos.csv", ["Titulo", "Artista", "Casa", "Região", "Inicio"], filteredEvents.map((e) => [e.title, e.artist, e.venue, e.region, e.startsAt || e.startDate]));
     showToast("CSV de eventos exportado.");
   }
   useEffect(() => {
@@ -687,13 +687,13 @@ export default function VenuesAdminPage() {
       errors.endDate = ["Termino precisa ser depois do inicio."];
     }
     if (eventForm.ticketType === "free" && (eventForm.priceMin || eventForm.priceMax)) {
-      errors.ticketType = ["Evento gratuito nao deve ter preco."];
+      errors.ticketType = ["Evento gratuito não deve ter preco."];
     }
-    if (eventForm.ticketType === "consumacao" && eventForm.consumacaoValue && Number(eventForm.consumacaoValue) < 0) {
-      errors.consumacaoValue = ["Consumacao minima nao pode ser negativa."];
+    if (eventForm.ticketType === "consumação" && eventForm.consumaçãoValue && Number(eventForm.consumaçãoValue) < 0) {
+      errors.consumaçãoValue = ["Consumação minima não pode ser negativa."];
     }
     if (eventForm.priceMin && eventForm.priceMax && Number(eventForm.priceMax) < Number(eventForm.priceMin)) {
-      errors.priceMax = ["Preco maximo deve ser maior ou igual ao minimo."];
+      errors.priceMax = ["Preco máximo deve ser maior ou igual ao mínimo."];
     }
     if (eventForm.isRecurring && (!Array.isArray(eventForm.recurrenceDays) || eventForm.recurrenceDays.length === 0)) {
       errors.recurrenceDays = ["Selecione ao menos um dia da semana."];
@@ -773,7 +773,7 @@ export default function VenuesAdminPage() {
     } catch (error) {
       const parsed = parseApiErrors(error);
       setVenueErrors(parsed.fieldErrors);
-      showToast(parsed.message || "Nao foi possivel salvar a casa.");
+      showToast(parsed.message || "Não foi possivel salvar a casa.");
     }
   }
 
@@ -819,7 +819,7 @@ export default function VenuesAdminPage() {
     } catch (error) {
       const parsed = parseApiErrors(error);
       setArtistErrors(parsed.fieldErrors);
-      showToast(parsed.message || "Nao foi possivel salvar o artista.");
+      showToast(parsed.message || "Não foi possivel salvar o artista.");
     }
   }
 
@@ -848,7 +848,7 @@ export default function VenuesAdminPage() {
       setVenueEditJustification("");
       showToast("Casa carregada. Edite os campos e salve.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel carregar os dados completos da casa.");
+      showToast(error?.response?.data?.message || "Não foi possivel carregar os dados completos da casa.");
     }
   }
 
@@ -873,7 +873,7 @@ export default function VenuesAdminPage() {
       });
       showToast("Artista carregado. Edite os campos e salve.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel carregar os dados completos do artista.");
+      showToast(error?.response?.data?.message || "Não foi possivel carregar os dados completos do artista.");
     }
   }
 
@@ -881,7 +881,7 @@ export default function VenuesAdminPage() {
     const ok = window.confirm(
       isProducer
         ? "Deseja remover esta casa da sua carteira?"
-        : "Deseja excluir esta casa? Essa acao nao pode ser desfeita."
+        : "Deseja excluir esta casa? Essa acao não pode ser desfeita."
     );
     if (!ok) return;
 
@@ -891,7 +891,7 @@ export default function VenuesAdminPage() {
       if (editingVenueId === venueId) resetVenueForm();
       showToast(isProducer ? "Casa removida da sua carteira." : "Casa excluida com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel excluir a casa.");
+      showToast(error?.response?.data?.message || "Não foi possivel excluir a casa.");
     }
   }
 
@@ -905,7 +905,7 @@ export default function VenuesAdminPage() {
       if (editingArtistId === artistId) resetArtistForm();
       showToast("Artista excluido com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel excluir o artista.");
+      showToast(error?.response?.data?.message || "Não foi possivel excluir o artista.");
     }
   }
 
@@ -927,7 +927,7 @@ export default function VenuesAdminPage() {
       tags: eventForm.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
       priceMin: eventForm.priceMin ? Number(eventForm.priceMin) : undefined,
       priceMax: eventForm.priceMax ? Number(eventForm.priceMax) : undefined,
-      consumacaoValue: eventForm.consumacaoValue ? Number(eventForm.consumacaoValue) : undefined,
+      consumaçãoValue: eventForm.consumaçãoValue ? Number(eventForm.consumaçãoValue) : undefined,
       couvertArtistico: eventForm.couvertArtistico ? Number(eventForm.couvertArtistico) : undefined,
       ticketUrl: eventForm.ticketUrl || undefined,
       imageUrl: eventForm.imageUrl || undefined,
@@ -953,8 +953,8 @@ export default function VenuesAdminPage() {
         payload.priceMin = undefined;
         payload.priceMax = undefined;
       }
-      if (eventForm.ticketType !== "consumacao") {
-        payload.consumacaoValue = undefined;
+      if (eventForm.ticketType !== "consumação") {
+        payload.consumaçãoValue = undefined;
       }
 
       if (isEditingEvent) {
@@ -969,7 +969,7 @@ export default function VenuesAdminPage() {
     } catch (error) {
       const parsed = parseApiErrors(error);
       setEventErrors(parsed.fieldErrors);
-      showToast(parsed.message || "Nao foi possivel salvar o evento.", "error");
+      showToast(parsed.message || "Não foi possivel salvar o evento.", "error");
       return false;
     }
   }
@@ -1018,7 +1018,7 @@ export default function VenuesAdminPage() {
         ticketUrl: detail.ticketUrl || "",
         priceMin: detail.priceMin ?? "",
         priceMax: detail.priceMax ?? "",
-        consumacaoValue: detail.consumacaoValue ?? "",
+        consumaçãoValue: detail.consumaçãoValue ?? "",
         couvertArtistico: detail.couvertArtistico ?? "",
         venueId: detail.venueId || "",
         artistName: detail.artistName || "",
@@ -1035,7 +1035,7 @@ export default function VenuesAdminPage() {
       });
       showToast("Evento carregado. Edite os campos e salve.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel carregar os dados completos do evento.");
+      showToast(error?.response?.data?.message || "Não foi possivel carregar os dados completos do evento.");
     }
   }
 
@@ -1049,7 +1049,7 @@ export default function VenuesAdminPage() {
       if (editingEventId === eventId) resetEventForm();
       showToast("Evento excluido com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel excluir o evento.");
+      showToast(error?.response?.data?.message || "Não foi possivel excluir o evento.");
     }
   }
 
@@ -1073,7 +1073,7 @@ export default function VenuesAdminPage() {
       showToast(`Data ${trimmed} cancelada na serie.`);
       setCancellationTarget(null);
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel cancelar esta data.");
+      showToast(error?.response?.data?.message || "Não foi possivel cancelar esta data.");
     }
   }
 
@@ -1105,7 +1105,7 @@ export default function VenuesAdminPage() {
         return updatedDates.length > 0 ? { ...prev, dates: updatedDates } : null;
       });
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel reativar esta data.");
+      showToast(error?.response?.data?.message || "Não foi possivel reativar esta data.");
     }
   }
 
@@ -1115,7 +1115,7 @@ export default function VenuesAdminPage() {
       .sort();
 
     if (currentExceptions.length === 0) {
-      showToast("Este evento nao possui datas canceladas.");
+      showToast("Este evento não possui datas canceladas.");
       return;
     }
 
@@ -1142,7 +1142,7 @@ export default function VenuesAdminPage() {
       setSelectedManagerUserId("");
       showToast("Produtor vinculado com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel vincular produtor.");
+      showToast(error?.response?.data?.message || "Não foi possivel vincular produtor.");
     }
   }
 
@@ -1167,7 +1167,7 @@ export default function VenuesAdminPage() {
       setSelectedManagerUserId("");
       showToast("Produtor criado com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel criar produtor.");
+      showToast(error?.response?.data?.message || "Não foi possivel criar produtor.");
     }
   }
 
@@ -1181,7 +1181,7 @@ export default function VenuesAdminPage() {
       });
       showToast("Vinculo removido com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel remover vinculo.");
+      showToast(error?.response?.data?.message || "Não foi possivel remover vinculo.");
     }
   }
 
@@ -1191,9 +1191,9 @@ export default function VenuesAdminPage() {
         id: claimId,
         payload: { status }
       });
-      showToast(status === "approved" ? "Reivindicacao aprovada." : "Reivindicacao rejeitada.");
+      showToast(status === "approved" ? "Reivindicação aprovada." : "Reivindicação rejeitada.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel decidir a reivindicacao.");
+      showToast(error?.response?.data?.message || "Não foi possivel decidir a reivindicação.");
     }
   }
 
@@ -1234,31 +1234,31 @@ export default function VenuesAdminPage() {
     try {
       if (editingRegionId) {
         await updateRegionMutation.mutateAsync({ id: editingRegionId, payload });
-        showToast("Regiao atualizada com sucesso.");
+        showToast("Região atualizada com sucesso.");
       } else {
         await createRegionMutation.mutateAsync(payload);
-        showToast("Regiao criada com sucesso.");
+        showToast("Região criada com sucesso.");
       }
       resetRegionForm();
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel salvar a regiao.");
+      showToast(error?.response?.data?.message || "Não foi possivel salvar a região.");
     }
   }
 
   async function handleRegionDelete(regionItem) {
     if ((regionItem?.venuesCount || 0) > 0) {
-      showToast("Regiao com casas vinculadas nao pode ser excluida.", "error");
+      showToast("Região com casas vinculadas não pode ser excluida.", "error");
       return;
     }
-    const ok = window.confirm("Deseja excluir esta regiao?");
+    const ok = window.confirm("Deseja excluir esta região?");
     if (!ok) return;
     showToast("");
     try {
       await deleteRegionMutation.mutateAsync(regionItem.id);
       if (editingRegionId === regionItem.id) resetRegionForm();
-      showToast("Regiao excluida com sucesso.");
+      showToast("Região excluida com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel excluir a regiao.");
+      showToast(error?.response?.data?.message || "Não foi possivel excluir a região.");
     }
   }
 
@@ -1285,7 +1285,7 @@ export default function VenuesAdminPage() {
       }
       showToast("Imagem enviada com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel enviar a imagem.");
+      showToast(error?.response?.data?.message || "Não foi possivel enviar a imagem.");
     } finally {
       setUploadingTarget("");
     }
@@ -1304,7 +1304,7 @@ export default function VenuesAdminPage() {
       }
       showToast("Acesso da filial revogado com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel revogar este acesso.");
+      showToast(error?.response?.data?.message || "Não foi possivel revogar este acesso.");
     }
   }
 
@@ -1329,7 +1329,7 @@ export default function VenuesAdminPage() {
         officialInstagram: houseClaimOfficialInstagram.trim() || undefined,
         officialWebsite: houseClaimOfficialWebsite.trim() || undefined
       });
-      showToast("Reivindicacao enviada. Aguarde aprovacao do admin.");
+      showToast("Reivindicação enviada. Aguarde aprovacao do admin.");
       setHouseClaimTargetId("");
       setHouseClaimJustification("");
       setHouseClaimResponsibleName("");
@@ -1340,7 +1340,7 @@ export default function VenuesAdminPage() {
       setHouseClaimOfficialInstagram("");
       setHouseClaimOfficialWebsite("");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Nao foi possivel enviar reivindicacao.", "error");
+      showToast(error?.response?.data?.message || "Não foi possivel enviar reivindicação.", "error");
     }
   }
 
@@ -1443,7 +1443,7 @@ export default function VenuesAdminPage() {
             ) : null}
           </div>
         </div>
-      ) : isHouseProgramacaoClean ? (
+      ) : isHouseProgramaçãoClean ? (
         <div className="ads-content">
           <div className="admin-kpis">
             <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article>
@@ -1479,18 +1479,18 @@ export default function VenuesAdminPage() {
               {showOverview ? <article className="clean-card"><h4>Cliques (30d)</h4><p>{houseAdsSummary?.summary?.clicks ?? 0}</p></article> : null}
               {showOverview ? <article className="clean-card"><h4>CTR (30d)</h4><p>{houseAdsSummary?.summary?.ctr ?? 0}%</p></article> : null}
               {showOverview ? <article className="clean-card"><h4>Radar da casa (30d)</h4><p>{audienceSummary?.scoped?.radarUsers ?? 0}</p></article> : null}
-              {showOverview ? <article className="clean-card"><h4>Publico presente (30d)</h4><p>{audienceSummary?.scoped?.attendeesUsers ?? 0}</p></article> : null}
-              {showEvents && !isHouseProgramacaoClean ? <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
+              {showOverview ? <article className="clean-card"><h4>Público presente (30d)</h4><p>{audienceSummary?.scoped?.attendeesUsers ?? 0}</p></article> : null}
+              {showEvents && !isHouseProgramaçãoClean ? <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
               {showHouseProfile ? <article className="clean-card"><h4>Dados da Casa</h4><p>{houseDisplayName || "Sem unidade ativa"}</p></article> : null}
               {showManagers ? <article className="clean-card"><h4>Produtores</h4><p>{totalManagers}</p></article> : null}
               {showHouseClaims ? <article className="clean-card"><h4>Solicitacoes</h4><p>{myClaims.filter((c) => c.status === "pending").length} pendentes</p></article> : null}
             </div>
-            {showEvents && !isHouseProgramacaoClean ? <div className="admin-content-divider" /> : null}
+            {showEvents && !isHouseProgramaçãoClean ? <div className="admin-content-divider" /> : null}
           </div>
         </div>
       )}
 
-      <div className={`admin-section-stack${isHouseRole ? " house-section-stack" : ""}${isHouseRole && (showOverview || showEvents) ? " no-divider" : ""}${isHouseProgramacaoClean ? " house-events-focus" : ""}`}>
+      <div className={`admin-section-stack${isHouseRole ? " house-section-stack" : ""}${isHouseRole && (showOverview || showEvents) ? " no-divider" : ""}${isHouseProgramaçãoClean ? " house-events-focus" : ""}`}>
       {showOverview && isHouseRole ? (
         <>
           {!houseActiveVenue ? (
@@ -1498,7 +1498,7 @@ export default function VenuesAdminPage() {
           ) : null}
           {houseActiveVenue ? (
             <>
-              {houseAdsLoading ? <p className="empty">Carregando metricas de anuncios...</p> : null}
+              {houseAdsLoading ? <p className="empty">Carregando métricas de anuncios...</p> : null}
             </>
           ) : null}
         </>
@@ -1533,7 +1533,7 @@ export default function VenuesAdminPage() {
       {showVenues && canManageCatalog ? <form className="venue-form" onSubmit={handleVenueSubmit}>
         <input name="name" value={venueForm.name} onChange={handleVenueChange} placeholder="Nome da casa" required />
         {venueErrors.name?.[0] ? <p className="field-error">{venueErrors.name[0]}</p> : null}
-        <input name="description" value={venueForm.description} onChange={handleVenueChange} placeholder="Descricao" required />
+        <input name="description" value={venueForm.description} onChange={handleVenueChange} placeholder="Descrição" required />
         {venueErrors.description?.[0] ? <p className="field-error">{venueErrors.description[0]}</p> : null}
         <input name="contactName" value={venueForm.contactName} onChange={handleVenueChange} placeholder="Responsavel da casa (opcional)" />
         <input name="contactPhone" value={venueForm.contactPhone} onChange={handleVenueChange} placeholder="Telefone da casa (opcional)" />
@@ -1541,7 +1541,7 @@ export default function VenuesAdminPage() {
         <input name="address" value={venueForm.address} onChange={handleVenueChange} placeholder="Endereco" required />
         <input name="neighborhood" value={venueForm.neighborhood} onChange={handleVenueChange} placeholder="Bairro" required />
         <select name="region" value={venueForm.region} onChange={handleVenueChange} required>
-          <option value="">Regiao</option>
+          <option value="">Região</option>
           {venueRegionOptions.map((regionName) => (
             <option key={`region-option-create-${regionName}`} value={regionName}>
               {regionName}
@@ -1613,7 +1613,7 @@ export default function VenuesAdminPage() {
         </select>
         <input
           className="search-input"
-          placeholder="Buscar casa por nome, bairro ou regiao..."
+          placeholder="Buscar casa por nome, bairro ou região..."
           value={venueSearch}
           onChange={(e) => setVenueSearch(e.target.value)}
         />
@@ -1646,8 +1646,8 @@ export default function VenuesAdminPage() {
       {showVenues && venueTotalPages > 1 ? (
         <div className="pagination-row">
           <button className="chip" onClick={() => setVenuePage((p) => Math.max(1, p - 1))} disabled={venuePage === 1}>Anterior</button>
-          <small className="meta-line">Pagina {venuePage} de {venueTotalPages}</small>
-          <button className="chip" onClick={() => setVenuePage((p) => Math.min(venueTotalPages, p + 1))} disabled={venuePage === venueTotalPages}>Proxima</button>
+          <small className="meta-line">Página {venuePage} de {venueTotalPages}</small>
+          <button className="chip" onClick={() => setVenuePage((p) => Math.min(venueTotalPages, p + 1))} disabled={venuePage === venueTotalPages}>Próxima</button>
         </div>
       ) : null}
 
@@ -1671,7 +1671,7 @@ export default function VenuesAdminPage() {
           name="username"
           value={managerForm.username}
           onChange={handleManagerFormChange}
-          placeholder="Usuario de acesso"
+          placeholder="Usuário de acesso"
           required
         />
         <input
@@ -1719,7 +1719,7 @@ export default function VenuesAdminPage() {
             setManagerSearch(e.target.value);
             setSelectedManagerUserId("");
           }}
-          placeholder="Buscar produtor por nome, email ou usuario"
+          placeholder="Buscar produtor por nome, email ou usuário"
           required
         />
         <select
@@ -1781,7 +1781,7 @@ export default function VenuesAdminPage() {
         </div>
       ) : null}
       {showClaims && claimsLoading ? <p className="empty">Carregando reivindicacoes...</p> : null}
-      {showClaims && !claimsLoading && filteredClaims.length === 0 ? <p className="empty">Nenhuma reivindicacao no filtro atual.</p> : null}
+      {showClaims && !claimsLoading && filteredClaims.length === 0 ? <p className="empty">Nenhuma reivindicação no filtro atual.</p> : null}
       {showClaims ? (
         <div className="venue-list">
           {filteredClaims.map((claim) => (
@@ -1789,7 +1789,7 @@ export default function VenuesAdminPage() {
               <div>
                 <h3>{claim.targetType === "venue" ? "Casa" : "Artista"}: {claim.venue?.name || claim.artist?.name}</h3>
                 <p className="meta-line">Produtor: {claim.requestedBy?.name || claim.requestedBy?.email}</p>
-                <p className="meta-line">Tipo: {claim.requestType === "venue_update" ? "Alteracao de dados da casa" : "Reivindicacao de carteira"}</p>
+                <p className="meta-line">Tipo: {claim.requestType === "venue_update" ? "Alteracao de dados da casa" : "Reivindicação de carteira"}</p>
                 <p className="meta-line">Status: {claim.status}</p>
                 {claim.venue?.contactName ? <p className="meta-line">Responsavel da casa: {claim.venue.contactName}</p> : null}
                 {claim.venue?.contactPhone ? <p className="meta-line">Telefone da casa: {claim.venue.contactPhone}</p> : null}
@@ -1844,7 +1844,7 @@ export default function VenuesAdminPage() {
                   onClick={() => (isDeletable && !item.readOnly ? handleRegionDelete(item) : null)}
                   title={
                     item.readOnly
-                      ? "Regiao legada: crie uma regiao oficial para gerenciar exclusao."
+                      ? "Região legada: crie uma região oficial para gerenciar exclusao."
                       : isDeletable
                         ? "Pronta para exclusao"
                         : "Com casas vinculadas"
@@ -1864,7 +1864,7 @@ export default function VenuesAdminPage() {
             name="name"
             value={regionForm.name}
             onChange={handleRegionFormChange}
-            placeholder="Regiao"
+            placeholder="Região"
             required
           />
           <input
@@ -1897,7 +1897,7 @@ export default function VenuesAdminPage() {
               checked={Boolean(regionForm.isActive)}
               onChange={handleRegionFormChange}
             />
-            Regiao ativa
+            Região ativa
           </label>
           <div className="form-actions-inline">
             <button
@@ -1905,7 +1905,7 @@ export default function VenuesAdminPage() {
               type="submit"
               disabled={createRegionMutation.isPending || updateRegionMutation.isPending}
             >
-              {isEditingRegion ? "Salvar regiao" : "Criar regiao"}
+              {isEditingRegion ? "Salvar região" : "Criar região"}
             </button>
             {isEditingRegion ? (
               <button type="button" className="chip" onClick={resetRegionForm}>
@@ -1939,10 +1939,10 @@ export default function VenuesAdminPage() {
                   disabled={Boolean(item.readOnly) || deleteRegionMutation.isPending || (item.venuesCount || 0) > 0}
                   title={
                     item.readOnly
-                      ? "Regiao legada: cadastre em Regioes para editar/excluir."
+                      ? "Região legada: cadastre em Regioes para editar/excluir."
                       : (item.venuesCount || 0) > 0
                         ? "Remova as casas vinculadas antes de excluir."
-                        : "Excluir regiao"
+                        : "Excluir região"
                   }
                 >
                   Excluir
@@ -1964,13 +1964,13 @@ export default function VenuesAdminPage() {
         <>
           <article className="clean-card">
             <p className="meta-line"><strong>Nome:</strong> {houseActiveVenue.name}</p>
-            <p className="meta-line"><strong>Responsavel:</strong> {houseActiveVenue.contactName || "Nao informado"}</p>
-            <p className="meta-line"><strong>Telefone:</strong> {houseActiveVenue.contactPhone || "Nao informado"}</p>
-            <p className="meta-line"><strong>Instagram:</strong> {houseActiveVenue.instagramUrl || "Nao informado"}</p>
+            <p className="meta-line"><strong>Responsavel:</strong> {houseActiveVenue.contactName || "Não informado"}</p>
+            <p className="meta-line"><strong>Telefone:</strong> {houseActiveVenue.contactPhone || "Não informado"}</p>
+            <p className="meta-line"><strong>Instagram:</strong> {houseActiveVenue.instagramUrl || "Não informado"}</p>
             <p className="meta-line"><strong>Endereco:</strong> {houseActiveVenue.address}</p>
-            <p className="meta-line"><strong>Bairro/Regiao:</strong> {houseActiveVenue.neighborhood} - {houseActiveVenue.region}</p>
+            <p className="meta-line"><strong>Bairro/Região:</strong> {houseActiveVenue.neighborhood} - {houseActiveVenue.region}</p>
             <p className="meta-line"><strong>Cidade:</strong> {houseActiveVenue.city} - {houseActiveVenue.state}</p>
-            <p className="meta-line"><strong>Funcionamento:</strong> {(houseActiveVenue.openDays || []).join(", ") || "Nao informado"}</p>
+            <p className="meta-line"><strong>Funcionamento:</strong> {(houseActiveVenue.openDays || []).join(", ") || "Não informado"}</p>
             <div className="form-actions-inline">
               <button className="chip" type="button" onClick={startHouseProfileEdit}>Solicitar alteracao de dados</button>
             </div>
@@ -1995,14 +1995,14 @@ export default function VenuesAdminPage() {
           {isEditingVenue ? (
             <form className="venue-form" onSubmit={handleVenueSubmit}>
               <input name="name" value={venueForm.name} onChange={handleVenueChange} placeholder="Nome da casa" required />
-              <input name="description" value={venueForm.description} onChange={handleVenueChange} placeholder="Descricao" required />
+              <input name="description" value={venueForm.description} onChange={handleVenueChange} placeholder="Descrição" required />
               <input name="contactName" value={venueForm.contactName} onChange={handleVenueChange} placeholder="Responsavel da casa" />
               <input name="contactPhone" value={venueForm.contactPhone} onChange={handleVenueChange} placeholder="Telefone da casa" />
               <input name="instagramUrl" value={venueForm.instagramUrl} onChange={handleVenueChange} placeholder="Instagram (URL)" />
               <input name="address" value={venueForm.address} onChange={handleVenueChange} placeholder="Endereco" required />
               <input name="neighborhood" value={venueForm.neighborhood} onChange={handleVenueChange} placeholder="Bairro" required />
               <select name="region" value={venueForm.region} onChange={handleVenueChange} required>
-                <option value="">Regiao</option>
+                <option value="">Região</option>
                 {venueRegionOptions.map((regionName) => (
                   <option key={`region-option-edit-${regionName}`} value={regionName}>
                     {regionName}
@@ -2074,7 +2074,7 @@ export default function VenuesAdminPage() {
         </form>
       ) : null}
       {showHouseClaims && houseClaimOptions.length === 0 ? (
-        <p className="empty">No momento nao ha novas filiais disponiveis para esta conta.</p>
+        <p className="empty">No momento não ha novas filiais disponiveis para esta conta.</p>
       ) : null}
       {showHouseClaims && myClaimsLoading ? <p className="empty">Carregando suas solicitacoes...</p> : null}
       {showHouseClaims ? (
@@ -2086,7 +2086,7 @@ export default function VenuesAdminPage() {
                 <div>
                   <h3>Filial: {claim.venue?.name || "Casa"}</h3>
                   <p className="meta-line">Status: {claim.status}</p>
-                  <p className="meta-line">Tipo: {claim.requestType === "ownership" ? "Reivindicacao de propriedade" : "Alteracao de dados"}</p>
+                  <p className="meta-line">Tipo: {claim.requestType === "ownership" ? "Reivindicação de propriedade" : "Alteracao de dados"}</p>
                   {claim.justification ? <p className="meta-line">Justificativa: {claim.justification}</p> : null}
                 </div>
                 <small className="meta-line">{new Date(claim.createdAt).toLocaleString("pt-BR")}</small>
@@ -2186,16 +2186,16 @@ export default function VenuesAdminPage() {
       {showArtists && artistTotalPages > 1 ? (
         <div className="pagination-row">
           <button className="chip" onClick={() => setArtistPage((p) => Math.max(1, p - 1))} disabled={artistPage === 1}>Anterior</button>
-          <small className="meta-line">Pagina {artistPage} de {artistTotalPages}</small>
-          <button className="chip" onClick={() => setArtistPage((p) => Math.min(artistTotalPages, p + 1))} disabled={artistPage === artistTotalPages}>Proxima</button>
+          <small className="meta-line">Página {artistPage} de {artistTotalPages}</small>
+          <button className="chip" onClick={() => setArtistPage((p) => Math.min(artistTotalPages, p + 1))} disabled={artistPage === artistTotalPages}>Próxima</button>
         </div>
       ) : null}
 
       {showEventsBlocked ? (
-        <p className="empty">Sua conta ainda nao tem filial aprovada. Abra "Solicitar Acesso", envie os dados de comprovacao e aguarde aprovacao do admin.</p>
+        <p className="empty">Sua conta ainda não tem filial aprovada. Abra "Solicitar Acesso", envie os dados de comprovacao e aguarde aprovacao do admin.</p>
       ) : null}
       {showEvents ? <h3 className="section-title">{isHouseRole ? `Eventos da casa - ${houseDisplayName}` : "Eventos"}</h3> : null}
-      {showEvents && (!isHouseRole || !isHouseProgramacaoClean) ? (
+      {showEvents && (!isHouseRole || !isHouseProgramaçãoClean) ? (
         <article className="venue-card">
           <div>
             <h3>Previa do card</h3>
@@ -2205,13 +2205,13 @@ export default function VenuesAdminPage() {
                 <span>{eventForm.artistName.trim()}</span>
               </p>
             ) : null}
-            <p className="meta-line">{previewVenue?.name || "Casa"} - {previewVenue?.region || "Regiao"}</p>
+            <p className="meta-line">{previewVenue?.name || "Casa"} - {previewVenue?.region || "Região"}</p>
             <p className="meta-line">{formatPreviewDateTime(eventForm.startDate)}</p>
             <p className="meta-line">{previewPriceLabel}</p>
           </div>
         </article>
       ) : null}
-      {showEvents && (!isHouseRole || !isHouseProgramacaoClean) ? <form className="venue-form" onSubmit={handleEventSubmit}>
+      {showEvents && (!isHouseRole || !isHouseProgramaçãoClean) ? <form className="venue-form" onSubmit={handleEventSubmit}>
         <input
           name="title"
           value={eventForm.title}
@@ -2227,7 +2227,7 @@ export default function VenuesAdminPage() {
           ))}
         </datalist>
         {eventErrors.artistName?.[0] ? <p className="field-error">{eventErrors.artistName[0]}</p> : null}
-        <textarea name="description" value={eventForm.description} onChange={handleEventChange} placeholder="Descricao" rows={3} required />
+        <textarea name="description" value={eventForm.description} onChange={handleEventChange} placeholder="Descrição" rows={3} required />
         {eventErrors.description?.[0] ? <p className="field-error">{eventErrors.description[0]}</p> : null}
         <select name="type" value={eventForm.type} onChange={handleEventChange} required>
           <option value="roda_samba">Roda de Samba</option>
@@ -2319,24 +2319,24 @@ export default function VenuesAdminPage() {
         <select name="ticketType" value={eventForm.ticketType} onChange={handleEventChange} required>
           <option value="paid">Pago</option>
           <option value="free">Gratuito</option>
-          <option value="consumacao">Consumacao</option>
+          <option value="consumação">Consumação</option>
         </select>
         {eventErrors.ticketType?.[0] ? <p className="field-error">{eventErrors.ticketType[0]}</p> : null}
-        <input name="priceMin" type="number" min="0" step="0.01" value={eventForm.priceMin} onChange={handleEventChange} placeholder="Preco minimo" />
-        <input name="priceMax" type="number" min="0" step="0.01" value={eventForm.priceMax} onChange={handleEventChange} placeholder="Preco maximo" />
+        <input name="priceMin" type="number" min="0" step="0.01" value={eventForm.priceMin} onChange={handleEventChange} placeholder="Preco mínimo" />
+        <input name="priceMax" type="number" min="0" step="0.01" value={eventForm.priceMax} onChange={handleEventChange} placeholder="Preco máximo" />
         {eventErrors.priceMax?.[0] ? <p className="field-error">{eventErrors.priceMax[0]}</p> : null}
-        {eventForm.ticketType === "consumacao" ? (
+        {eventForm.ticketType === "consumação" ? (
           <input
-            name="consumacaoValue"
+            name="consumaçãoValue"
             type="number"
             min="0"
             step="0.01"
-            value={eventForm.consumacaoValue}
+            value={eventForm.consumaçãoValue}
             onChange={handleEventChange}
-            placeholder="Consumacao minima (opcional)"
+            placeholder="Consumação minima (opcional)"
           />
         ) : null}
-        {eventErrors.consumacaoValue?.[0] ? <p className="field-error">{eventErrors.consumacaoValue[0]}</p> : null}
+        {eventErrors.consumaçãoValue?.[0] ? <p className="field-error">{eventErrors.consumaçãoValue[0]}</p> : null}
         <input
           name="couvertArtistico"
           type="number"
@@ -2497,8 +2497,8 @@ export default function VenuesAdminPage() {
       {showEvents && eventTotalPages > 1 ? (
         <div className="pagination-row">
           <button className="chip" onClick={() => setEventPage((p) => Math.max(1, p - 1))} disabled={eventPage === 1}>Anterior</button>
-          <small className="meta-line">Pagina {eventPage} de {eventTotalPages}</small>
-          <button className="chip" onClick={() => setEventPage((p) => Math.min(eventTotalPages, p + 1))} disabled={eventPage === eventTotalPages}>Proxima</button>
+          <small className="meta-line">Página {eventPage} de {eventTotalPages}</small>
+          <button className="chip" onClick={() => setEventPage((p) => Math.min(eventTotalPages, p + 1))} disabled={eventPage === eventTotalPages}>Próxima</button>
         </div>
       ) : null}
       </div>
@@ -2531,7 +2531,7 @@ export default function VenuesAdminPage() {
           <article className="modal-card" onClick={(event) => event.stopPropagation()}>
             <h3>Cancelar data da serie</h3>
             <p className="meta-line"><strong>{cancellationTarget.title}</strong></p>
-            <p className="meta-line">Selecione a data desta edicao que nao vai acontecer.</p>
+            <p className="meta-line">Selecione a data desta edicao que não vai acontecer.</p>
             <input
               type="date"
               value={cancellationTarget.selectedDate}
@@ -2559,6 +2559,7 @@ export default function VenuesAdminPage() {
     </section>
   );
 }
+
 
 
 

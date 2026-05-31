@@ -173,7 +173,7 @@ export default function AdsAdminPage() {
       setCampaignForm(INITIAL_CAMPAIGN);
       setMessage("Campanha criada.");
     } catch (_error) {
-      setMessage("Nao foi possivel criar campanha.");
+      setMessage("Não foi possivel criar campanha.");
     }
   }
 
@@ -224,7 +224,7 @@ export default function AdsAdminPage() {
       );
       setMessage("Campanhas expiradas pausadas.");
     } catch (_error) {
-      setMessage("Nao foi possivel pausar todas as campanhas expiradas.");
+      setMessage("Não foi possivel pausar todas as campanhas expiradas.");
     }
   }
 
@@ -287,7 +287,7 @@ export default function AdsAdminPage() {
       }));
       setMessage("Criativo adicionado.");
     } catch (_error) {
-      setMessage("Nao foi possivel adicionar criativo.");
+      setMessage("Não foi possivel adicionar criativo.");
     }
   }
 
@@ -350,7 +350,7 @@ export default function AdsAdminPage() {
     <section className="screen screen-history screen-ads-hard">
       <header className="page-header admin-page-header">
         <div className="admin-page-header-main">
-          <h2>Gestao de Publicidade</h2>
+          <h2>Gestão de Publicidade</h2>
           <p>Campanhas, criativos por slot e toggles de exibicao.</p>
           <div className="role-session-wrap">
             <div className="role-session-badge">Perfil ativo: {(user?.role || "admin").toUpperCase()}</div>
@@ -365,9 +365,9 @@ export default function AdsAdminPage() {
             ["overview", "Visao Geral"],
             ["campaigns", "Campanhas"],
             ["creatives", "Criativos por Slot"],
-            ["health", "Saude e Alertas"],
+            ["health", "Saúde e Alertas"],
             ["activity", "Atividade"],
-            ["reports", "Relatorios"]
+            ["reports", "Relatórios"]
           ].map(([id, label]) => (
             <button key={id} className={`chip ${adsSection === id ? "active" : ""}`} onClick={() => setAdsSection(id)}>{label}</button>
           ))}
@@ -403,7 +403,7 @@ export default function AdsAdminPage() {
 
       <section className="clean-card">
         <div className="form-actions-inline">
-          <strong>Metricas</strong>
+          <strong>Métricas</strong>
           <select value={reportDays} onChange={(e) => setReportDays(Number(e.target.value))}>
             <option value={7}>7 dias</option>
             <option value={15}>15 dias</option>
@@ -414,7 +414,7 @@ export default function AdsAdminPage() {
             Exportar CSV
           </button>
         </div>
-        {reportLoading ? <p className="meta-line">Carregando metricas...</p> : null}
+        {reportLoading ? <p className="meta-line">Carregando métricas...</p> : null}
         {report ? (
           <>
             <p className="meta-line">
@@ -691,7 +691,7 @@ export default function AdsAdminPage() {
       <>
       {(activeWithoutCreatives.length > 0 || activeMissingSlots.length > 0) ? (
         <div className="empty empty-highlight">
-          <strong>Saude de campanhas</strong>
+          <strong>Saúde de campanhas</strong>
           {activeWithoutCreatives.length > 0 ? (
             <p className="meta-line">{activeWithoutCreatives.length} campanha(s) ativas sem criativo.</p>
           ) : null}
@@ -825,4 +825,5 @@ export default function AdsAdminPage() {
     </section>
   );
 }
+
 

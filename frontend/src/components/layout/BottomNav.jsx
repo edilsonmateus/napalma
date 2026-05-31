@@ -11,20 +11,20 @@ export default function BottomNav() {
   const items = isProducer
     ? [
       { to: "/workspace/produtor", label: "Painel", icon: Compass },
-      { to: "/settings/venues", label: "Gestao", icon: Star },
+      { to: "/settings/venues", label: "Gestão", icon: Star },
       { to: "/settings", label: "Config", icon: Settings }
     ]
     : isVenue
       ? [
         { to: "/workspace/casa", label: "Painel", icon: Compass },
-        { to: "/settings/venues?section=events&layout=clean", label: "Programacao", icon: Star },
+      { to: "/settings/venues?section=events&layout=clean", label: "Programação", icon: Star },
         { to: "/settings", label: "Config", icon: Settings }
       ]
       : [
         { to: "/explore", label: "Explorar", icon: Compass },
         { to: "/pela-hora", label: "Pela Hora", icon: CalendarRange },
         { to: "/radar", label: "Meu Radar", icon: Star },
-        { to: "/history", label: "Historico", icon: Clock3 },
+        { to: "/history", label: "Histórico", icon: Clock3 },
         { to: "/settings", label: "Config", icon: Settings }
       ];
 

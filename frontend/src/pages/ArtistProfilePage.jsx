@@ -21,7 +21,7 @@ export default function ArtistProfilePage() {
   const toggleFollow = useToggleArtistFollowMutation();
 
   if (isLoading) return <p className="empty">Carregando perfil do artista...</p>;
-  if (!artist) return <p className="empty">Artista nao encontrado.</p>;
+  if (!artist) return <p className="empty">Artista não encontrado.</p>;
 
   const canFollow = Boolean(user);
   const isFollowing = Boolean(artist.isFollowing);
@@ -64,11 +64,11 @@ export default function ArtistProfilePage() {
         )}
       </div>
 
-      <h3 className="section-title artist-profile-section-title">Proximos Shows</h3>
+      <h3 className="section-title artist-profile-section-title">Próximos Shows</h3>
       {!artist.upcomingEvents?.length ? (
         <div className="empty empty-highlight">
           <p>Sem shows futuros cadastrados.</p>
-          <small className="meta-line">Esse perfil oficial ainda nao publicou a proxima agenda.</small>
+          <small className="meta-line">Esse perfil oficial ainda não publicou a próxima agenda.</small>
           <Link to="/explore" className="chip">Ver sambas no Explorar</Link>
         </div>
       ) : null}

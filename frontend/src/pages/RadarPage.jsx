@@ -86,10 +86,10 @@ export default function RadarPage() {
         setToast({ text: `Conquista desbloqueada: ${first.icon || "trofeu"} ${first.name}`, type: "success" });
         return;
       }
-      setToast({ text: "Presenca confirmada no Historico. Voce tem ate 24h apos o fim para confirmar.", type: "success" });
+      setToast({ text: "Presenca confirmada no Histórico. Voce tem ate 24h apos o fim para confirmar.", type: "success" });
     } catch (error) {
       const apiMessage = error?.response?.data?.message;
-      setToast({ text: apiMessage || "Nao foi possivel confirmar esse samba agora.", type: "error" });
+      setToast({ text: apiMessage || "Não foi possivel confirmar esse samba agora.", type: "error" });
     }
   }
 
@@ -99,7 +99,7 @@ export default function RadarPage() {
       await toggleRadar.mutateAsync({ eventId: event.id, currentlyMarked: true });
       setToast({ text: "Removido do Radar.", type: "success" });
     } catch (_error) {
-      setToast({ text: "Nao foi possivel remover esse samba do Radar agora.", type: "error" });
+      setToast({ text: "Não foi possivel remover esse samba do Radar agora.", type: "error" });
     }
   }
 
@@ -118,7 +118,7 @@ export default function RadarPage() {
       ) : null}
       {user ? <AdSlotCard ad={adToRender} slot="radar_header" compact /> : null}
       {user && isLoading ? <p className="empty">Carregando seu radar...</p> : null}
-      {user && isError ? <p className="empty">Nao foi possivel carregar seu Radar agora.</p> : null}
+      {user && isError ? <p className="empty">Não foi possivel carregar seu Radar agora.</p> : null}
       {user && !isLoading && !isError && !hasEvents ? (
         <div className="empty empty-highlight">
           <p>Nenhum samba marcado ainda.</p>
@@ -192,7 +192,7 @@ export default function RadarPage() {
                   onClick={() => handleNotAttended(event)}
                   disabled={toggleRadar.isPending}
                 >
-                  {toggleRadar.isPending ? "Removendo..." : "Nao fui"}
+                  {toggleRadar.isPending ? "Removendo..." : "Não fui"}
                 </button>
               </div>
             ) : null}
@@ -202,3 +202,4 @@ export default function RadarPage() {
     </section>
   );
 }
+

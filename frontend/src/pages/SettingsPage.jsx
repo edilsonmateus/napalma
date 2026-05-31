@@ -4,7 +4,7 @@ import { Share2 } from "lucide-react";
 import QRCode from "qrcode";
 import { logout } from "../services/auth.service";
 import { useAuthStore } from "../store/authStore";
-import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
+import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "../utils/rolÍs";
 import { promptInstallApp, subscribeInstallPrompt } from "../utils/installPrompt";
 
 export default function SettingsPage() {
@@ -29,7 +29,7 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    // iOS Safari nao dispara beforeinstallprompt.
+    // iOS Safari n„o dispara beforeinstallprompt.
     // Nesses casos, compartilhamento nativo e QR Code sao os caminhos principais.
     return subscribeInstallPrompt(setShowInstallBtn);
   }, []);
@@ -96,7 +96,7 @@ export default function SettingsPage() {
   return (
     <section className="settings-screen">
       <header className="page-header">
-        <h2>Configuracoes</h2>
+        <h2>Configura√ß√µes</h2>
       </header>
       <div className="settings-profile clean-card">
         <div className="settings-avatar">{user?.firstName?.[0] || "7"}</div>
@@ -170,7 +170,7 @@ export default function SettingsPage() {
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="qr-title">
           <div className="modal-card route-mini-modal settings-qr-modal">
             <h3 id="qr-title">Compartilhe o 77Gira com o amiguinho, vai!</h3>
-            <p className="meta-line">Aponte a camera para abrir o app no celular.</p>
+            <p className="meta-line">Aponte a c√¢mera para abrir o app no celular.</p>
             <div className="settings-qr-canvas-wrap">
               <canvas ref={qrCanvasRef} />
             </div>
@@ -188,3 +188,4 @@ export default function SettingsPage() {
     </section>
   );
 }
+

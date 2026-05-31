@@ -4,7 +4,7 @@ import { Share2 } from "lucide-react";
 import QRCode from "qrcode";
 import { login } from "../services/auth.service";
 import { useAuthStore } from "../store/authStore";
-import { getRoleHome } from "../utils/roles";
+import { getRoleHome } from "../utils/rolÍs";
 import { promptInstallApp, subscribeInstallPrompt } from "../utils/installPrompt";
 import { getOrCreateVisitorId } from "../utils/visitor";
 
@@ -12,7 +12,7 @@ const DEMO_ACCOUNTS = [
   { label: "Admin", email: "admin@napalma.app" },
   { label: "Produtor", email: "produtor@napalma.app" },
   { label: "Casa", email: "casa@napalma.app" },
-  { label: "Publico", email: "lia@napalma.app" }
+  { label: "P˙blico", email: "lia@napalma.app" }
 ];
 
 export default function LoginPage() {
@@ -45,7 +45,7 @@ export default function LoginPage() {
   }
 
   useEffect(() => {
-    // iOS Safari nao dispara beforeinstallprompt.
+    // iOS Safari n„o dispara beforeinstallprompt.
     // Nesses casos, compartilhamento nativo e QR Code sao os caminhos principais.
     return subscribeInstallPrompt(setShowInstallBtn);
   }, []);
@@ -84,7 +84,7 @@ export default function LoginPage() {
       setAuth({ token: data.accessToken, refreshToken: data.refreshToken, user: data.user });
       navigate(getRoleHome(data.user.role), { replace: true });
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Nao foi possivel entrar agora.");
+      setMessage(error?.response?.data?.message || "N√£o foi poss√≠vel entrar agora.");
     } finally {
       setIsLoading(false);
     }
@@ -192,17 +192,17 @@ export default function LoginPage() {
       {message ? <p className="empty">{message}</p> : null}
 
       <p className="meta-line">
-        Ao continuar, voce concorda com nossos{" "}
+        Ao continuar, voc√™ concorda com nossos{" "}
         <Link to="/terms" className="btn-link">Termos de uso</Link>{" "}
         e{" "}
-        <Link to="/privacy" className="btn-link">Politica de privacidade</Link>.
+        <Link to="/privacy" className="btn-link">Pol√≠tica de privacidade</Link>.
       </p>
 
       {showQrModal ? (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="qr-title-login">
           <div className="modal-card route-mini-modal settings-qr-modal">
             <h3 id="qr-title-login">Compartilhe o 77Gira com o amiguinho, vai!</h3>
-            <p className="meta-line">Aponte a camera para abrir o app no celular.</p>
+            <p className="meta-line">Aponte a c√¢mera para abrir o app no celular.</p>
             <div className="settings-qr-canvas-wrap">
               <canvas ref={qrCanvasRef} />
             </div>
@@ -220,3 +220,4 @@ export default function LoginPage() {
     </section>
   );
 }
+

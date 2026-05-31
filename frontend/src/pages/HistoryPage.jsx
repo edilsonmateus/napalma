@@ -64,8 +64,8 @@ export default function HistoryPage() {
     <section className="screen screen-history history-clean">
       <header className="page-header history-logo-header">
         <div>
-          <h2>Meu Historico</h2>
-          <p>Seus roles, metas e evolucao.</p>
+          <h2>Meu Histórico</h2>
+          <p>Seus rolês, metas e evolução.</p>
         </div>
         <img
           src="/assets/brand/logoBase77Gira.svg"
@@ -77,16 +77,16 @@ export default function HistoryPage() {
       <h3 className="section-title">Sambas que voce ja foi</h3>
       {!user ? (
         <div className="empty login-gate">
-          <p>Seu Historico e suas conquistas aparecem quando voce entra na conta.</p>
+          <p>Seu Histórico e suas conquistas aparecem quando voce entra na conta.</p>
           <Link to="/settings" className="inline-login-cta">Entrar agora</Link>
         </div>
       ) : null}
-      {user && isLoading ? <p className="empty">Carregando historico...</p> : null}
-      {user && isError ? <p className="empty">Nao foi possivel carregar seu historico.</p> : null}
+      {user && isLoading ? <p className="empty">Carregando histórico...</p> : null}
+      {user && isError ? <p className="empty">Não foi possivel carregar seu histórico.</p> : null}
       {user && !isLoading && !isError && historyEvents.length === 0 ? (
         <div className="empty empty-highlight">
           <p>Nenhum evento registrado ainda.</p>
-          <small className="meta-line">Quando voce marcar "Eu fui" no Radar, seu historico aparece aqui.</small>
+          <small className="meta-line">Quando voce marcar "Eu fui" no Radar, seu histórico aparece aqui.</small>
           <Link to="/radar" className="chip">Abrir Meu Radar</Link>
         </div>
       ) : null}
@@ -121,7 +121,7 @@ export default function HistoryPage() {
         </p>
       ) : null}
       {user && achievementsLoading ? <p className="empty">Carregando conquistas...</p> : null}
-      {user && achievementsError ? <p className="empty">Nao foi possivel carregar suas conquistas.</p> : null}
+      {user && achievementsError ? <p className="empty">Não foi possivel carregar suas conquistas.</p> : null}
       {user && !achievementsLoading && !achievementsError && achievements.length === 0 ? <p className="empty">Nenhuma conquista disponivel ainda.</p> : null}
 
       {blockedSorted.length > 0 ? (
@@ -163,4 +163,5 @@ export default function HistoryPage() {
     </section>
   );
 }
+
 

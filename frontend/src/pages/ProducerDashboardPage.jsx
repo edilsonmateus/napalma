@@ -99,7 +99,7 @@ export default function ProducerDashboardPage() {
         officialInstagram: officialInstagram || undefined,
         officialWebsite: officialWebsite || undefined
       });
-      setClaimFeedback("Reivindicacao enviada para analise do admin.");
+      setClaimFeedback("Reivindicação enviada para analise do admin.");
       setClaimTargetId("");
       setClaimJustification("");
       setResponsibleName("");
@@ -110,7 +110,7 @@ export default function ProducerDashboardPage() {
       setOfficialInstagram("");
       setOfficialWebsite("");
     } catch (error) {
-      setClaimFeedback(error?.response?.data?.message || "Nao foi possivel enviar reivindicacao.");
+      setClaimFeedback(error?.response?.data?.message || "Não foi possivel enviar reivindicação.");
     }
   }
 
@@ -142,7 +142,7 @@ export default function ProducerDashboardPage() {
             Minhas reivindicacoes
           </button>
           <button className={`chip ${activeSection === "events" ? "active" : ""}`} onClick={() => setSearchParams({ section: "events" })}>
-            Proximos eventos
+            Próximos eventos
           </button>
           <button className="chip" onClick={clearProducerFilters}>
             Limpar filtros
@@ -169,7 +169,7 @@ export default function ProducerDashboardPage() {
                 <p>{eventsThisWeek(events)}</p>
               </article>
               <article className="clean-card">
-                <h4>Publico ativo (30d)</h4>
+                <h4>Público ativo (30d)</h4>
                 <p>{audienceSummary?.global?.activeAudience ?? 0}</p>
               </article>
               <article className="clean-card">
@@ -188,14 +188,14 @@ export default function ProducerDashboardPage() {
           ) : null}
 
           <div className="admin-shortcuts producer-shortcuts">
-            <Link to="/settings/venues" className="btn-primary">Abrir Gestao Completa</Link>
+            <Link to="/settings/venues" className="btn-primary">Abrir Gestão Completa</Link>
             <Link to="/settings/venues?section=events" className="chip">Criar Evento</Link>
           </div>
 
           {showOverview ? (
             <article className="clean-card admin-overview-card">
               <h4>Visao Geral do Produtor</h4>
-              <p className="meta-line">Use o menu lateral para reivindicar carteira, acompanhar suas solicitacoes e acessar os proximos eventos.</p>
+              <p className="meta-line">Use o menu lateral para reivindicar carteira, acompanhar suas solicitacoes e acessar os próximos eventos.</p>
             </article>
           ) : null}
 
@@ -216,7 +216,7 @@ export default function ProducerDashboardPage() {
                 <textarea
                   value={claimJustification}
                   onChange={(e) => setClaimJustification(e.target.value)}
-                  placeholder="Justificativa: contrato, parceria, gestao de agenda..."
+                  placeholder="Justificativa: contrato, parceria, gestão de agenda..."
                   rows={2}
                   required
                 />
@@ -262,7 +262,7 @@ export default function ProducerDashboardPage() {
                   placeholder="Site oficial (opcional)"
                 />
                 <button className="btn-primary" type="submit" disabled={createClaim.isPending}>
-                  {createClaim.isPending ? "Enviando..." : "Enviar reivindicacao"}
+                  {createClaim.isPending ? "Enviando..." : "Enviar reivindicação"}
                 </button>
               </form>
               {claimFeedback ? <p className="empty">{claimFeedback}</p> : null}
@@ -288,7 +288,7 @@ export default function ProducerDashboardPage() {
 
           {showEvents ? (
             <>
-              <h3 className="section-title">Proximos eventos</h3>
+              <h3 className="section-title">Próximos eventos</h3>
               {nextEvents.length === 0 ? <p className="empty">Sem eventos futuros no momento.</p> : null}
               <div className="venue-list">
                 {nextEvents.map((event) => (
@@ -312,5 +312,6 @@ export default function ProducerDashboardPage() {
     </section>
   );
 }
+
 
 
