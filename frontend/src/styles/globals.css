@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,300;6..12,400;6..12,500;6..12,600;6..12,700&display=swap");
+
 :root {
   /* Core colors */
   --primary-red: #c8102e;
@@ -12,6 +14,15 @@
   --text-primary: #f4f6fb;
   --text-secondary: #b8becb;
   --text-muted: #9da6b6;
+  --font-public: "Nunito Sans", "Segoe UI", Arial, sans-serif;
+  --font-admin: "Segoe UI", "Inter", Arial, sans-serif;
+  --weight-title: 500;
+  --weight-card-title: 500;
+  --weight-subtitle: 450;
+  --weight-body: 350;
+  --weight-meta: 300;
+  --weight-action: 400;
+  --weight-action-secondary: 350;
 
   /* Status colors */
   --status-live: #40e07a;
@@ -40,10 +51,15 @@
 
 body {
   margin: 0;
-  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  font-family: var(--font-public);
+  font-weight: var(--weight-body);
   background: radial-gradient(circle at top, #1b1029, var(--bg-app) 45%);
   color: var(--text-primary);
   line-height: 1.6;
+}
+
+body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .auth-btn, .event-card, .venue-flow-card, .clean-card, .modal-card) {
+  font-family: var(--font-public);
 }
 
 .app-shell {
@@ -69,7 +85,7 @@ body {
   --text-primary: var(--admin-text);
   --text-secondary: var(--admin-text-muted);
   --admin-radius: 3px;
-  --admin-font: "Segoe UI", "Inter", Arial, sans-serif;
+  --admin-font: var(--font-admin);
 }
 
 .app-shell-admin body,
@@ -77,6 +93,10 @@ body {
   background: linear-gradient(180deg, #0f161f 0%, #111821 100%);
   font-family: var(--admin-font);
   font-weight: 400;
+}
+
+.app-shell-admin :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .auth-btn, .event-card, .venue-flow-card, .clean-card, .modal-card) {
+  font-family: var(--admin-font);
 }
 
 .app-shell-admin .screen {
@@ -854,6 +874,7 @@ body {
 .page-header h1,
 .page-header h2 {
   margin: 0;
+  font-weight: var(--weight-title);
 }
 
 .page-header p {
@@ -988,6 +1009,7 @@ body {
   border-radius: var(--radius-pill);
   padding: 6px var(--space-3);
   min-width: 96px;
+  font-weight: var(--weight-action-secondary);
   cursor: pointer;
   transition: transform 0.15s ease, border-color 0.15s ease;
 }
@@ -1125,6 +1147,7 @@ body {
   margin: 0 0 6px;
   font-size: 18px;
   line-height: 1.3;
+  font-weight: var(--weight-card-title);
 }
 
 .event-body p,
@@ -1148,7 +1171,7 @@ body {
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--weight-subtitle);
   line-height: 1.2;
   color: #08150e;
   background: #44e58a;
@@ -1198,7 +1221,7 @@ body {
   background: var(--gradient-samba);
   padding: 12px 16px;
   width: fit-content;
-  font-weight: 700;
+  font-weight: var(--weight-action);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1240,7 +1263,7 @@ body {
   background: rgba(31, 76, 128, 0.24);
   color: #7bd3ff;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--weight-subtitle);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -1371,7 +1394,7 @@ body {
   letter-spacing: 0.1px;
   max-width: 520px;
   font-size: 16px;
-  font-weight: 400;
+  font-weight: var(--weight-body);
 }
 
 .artist-profile-stats {
@@ -1389,7 +1412,7 @@ body {
 
 .artist-profile-stats strong {
   color: #e3eaf7;
-  font-weight: 500;
+  font-weight: var(--weight-subtitle);
   margin-right: 4px;
 }
 
@@ -1408,7 +1431,7 @@ body {
   border-radius: 999px;
   color: #e2e8f5;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: var(--weight-action);
   font-size: 15px;
   letter-spacing: 0.1px;
   padding: 0 18px;
@@ -1427,8 +1450,8 @@ body {
 .artist-profile-section-title {
   margin-top: 28px;
   margin-bottom: 10px;
-  font-size: 31px;
-  font-weight: 600;
+  font-size: 25px;
+  font-weight: var(--weight-title);
   letter-spacing: 0.1px;
 }
 
@@ -1449,7 +1472,7 @@ body {
 
 .artist-show-venue {
   font-size: 17px;
-  font-weight: 450;
+  font-weight: var(--weight-subtitle);
   letter-spacing: 0.1px;
 }
 
@@ -1463,8 +1486,8 @@ body {
 }
 
 .artist-profile-title {
-  font-size: clamp(2rem, 4.6vw, 2.6rem);
-  font-weight: 560;
+  font-size: clamp(1.6rem, 3.68vw, 2.08rem);
+  font-weight: var(--weight-title);
   letter-spacing: 0.1px;
   line-height: 1.1;
 }
@@ -1500,7 +1523,7 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: var(--weight-title);
 }
 
 .settings-profile p {
@@ -1569,6 +1592,7 @@ body {
   margin-bottom: 14px;
   line-height: 1.35;
   letter-spacing: 0.2px;
+  font-weight: var(--weight-title);
 }
 
 .venue-form {
@@ -1594,7 +1618,7 @@ body {
   margin-bottom: 8px;
   color: #c8bedc;
   font-size: 17px;
-  font-weight: 600;
+  font-weight: var(--weight-subtitle);
 }
 
 .helper-text {
@@ -1734,11 +1758,11 @@ body {
 .auth-btn-primary {
   border: none;
   background: var(--gradient-samba);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .auth-btn-strong {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .admin-shortcuts {
@@ -1913,7 +1937,7 @@ body {
 .day-group-count {
   color: var(--text-muted);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: var(--weight-meta);
 }
 
 .venue-flow-placeholder {
@@ -2131,7 +2155,7 @@ button.venue-card {
 
 .selected-check {
   color: #9de8b9;
-  font-weight: 700;
+  font-weight: var(--weight-title);
   font-size: 16px;
 }
 
@@ -2397,7 +2421,7 @@ button.venue-card {
   right: 10px;
   bottom: 8px;
   z-index: 2;
-  font-weight: 700;
+  font-weight: var(--weight-card-title);
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
@@ -2521,7 +2545,7 @@ button.venue-card {
 
 .next-event-title {
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: var(--weight-card-title);
   margin-top: 0 !important;
 }
 
@@ -2727,7 +2751,7 @@ button.venue-card {
 
 .live-status {
   color: #d0d0d0;
-  font-weight: 600;
+  font-weight: var(--weight-subtitle);
 }
 
 .live-status-live {
@@ -2796,6 +2820,7 @@ button.venue-card {
   padding: var(--space-3) var(--space-4);
   margin-bottom: 0;
   line-height: 1.45;
+  font-weight: var(--weight-body);
 }
 
 .explore-controls {
@@ -3407,7 +3432,7 @@ button.venue-card {
 .decision-price {
   margin: 0 0 12px;
   color: var(--status-warning);
-  font-weight: 700;
+  font-weight: var(--weight-subtitle);
 }
 
 .decision-meta {
@@ -3417,6 +3442,13 @@ button.venue-card {
 
 .venue-location-muted .meta-line {
   color: rgba(184, 190, 203, 0.5);
+  font-size: 0.805em;
+  line-height: 1.45;
+}
+
+.event-address-line {
+  font-size: 0.805em;
+  line-height: 1.45;
 }
 
 .decision-actions {
@@ -3529,7 +3561,7 @@ button.venue-card {
   display: inline-flex;
   align-items: center;
   color: #40e07a;
-  font-weight: 600;
+  font-weight: var(--weight-action);
   font-size: 14px;
   line-height: 1;
   text-decoration: none;
@@ -3637,7 +3669,7 @@ button.venue-card {
   font-size: 16px;
   line-height: 1.2;
   color: rgba(157, 166, 182, 0.5);
-  font-weight: 600;
+  font-weight: var(--weight-subtitle);
 }
 
 .auth-settings-footer p {
@@ -3663,7 +3695,7 @@ button.venue-card {
   justify-content: center;
   flex-shrink: 0;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--weight-subtitle);
   line-height: 1;
   color: #b8854f;
   border: 1px solid rgba(184, 133, 79, 0.6);
@@ -3815,7 +3847,7 @@ button.venue-card {
 .achievements-completed summary {
   cursor: pointer;
   color: var(--text-secondary);
-  font-weight: 600;
+  font-weight: var(--weight-subtitle);
 }
 
 @keyframes fade-in {
@@ -3854,7 +3886,7 @@ button.venue-card {
 
   .page-header h1,
   .page-header h2 {
-    font-size: 34px;
+    font-size: 27px;
     line-height: 1.12;
     letter-spacing: -0.2px;
   }
@@ -3885,7 +3917,7 @@ button.venue-card {
   .section-title {
     margin-top: 20px;
     margin-bottom: 8px;
-    font-size: 30px;
+    font-size: 24px;
     line-height: 1.2;
   }
 
@@ -4149,13 +4181,13 @@ button.venue-card {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
+  font-size: 22px;
   background: rgba(255, 255, 255, 0.09);
 }
 
 .onboarding-content h1 {
   margin: 0;
-  font-size: clamp(28px, 6vw, 38px);
+  font-size: clamp(22px, 4.8vw, 30px);
   line-height: 1.12;
 }
 

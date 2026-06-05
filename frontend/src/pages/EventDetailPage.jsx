@@ -173,7 +173,7 @@ export default function EventDetailPage() {
         {event.priceSecondaryLabel ? <p className="meta-line">{event.priceSecondaryLabel}</p> : null}
 
         <div className="decision-meta">
-          <div className="meta-line"><MapPin size={14} /> {locationLabel}</div>
+          <div className="meta-line event-address-line"><MapPin size={14} /> {locationLabel}</div>
           <div className="meta-line"><CalendarClock size={14} /> {formatDate(event.startsAt)}</div>
           {getAudienceBadges(event).length > 0 ? (
             <div className="event-audience-row">
