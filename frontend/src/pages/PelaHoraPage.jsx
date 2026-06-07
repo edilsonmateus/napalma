@@ -38,7 +38,7 @@ function estimateTransitMinutes(prevRegion, nextRegion) {
 }
 
 function riskCopy(riskScore) {
-  if (riskScore <= 1) return "Suave. Da pra curtir sem correria.";
+  if (riskScore <= 1) return "Suave. Dá pra curtir sem correria.";
   if (riskScore <= 3) return "Vai rolar, mas sem vacilar no deslocamento.";
   return "Roteiro raiz: chance alta de correria entre sambas.";
 }
@@ -119,7 +119,7 @@ export default function PelaHoraPage() {
       setToast({ text: "Pela Hora salvo com sucesso.", type: "success" });
       if (mode === "manual") setSelectedEventIds([]);
     } catch (_error) {
-      setToast({ text: "N�o foi possivel salvar seu Pela Hora agora.", type: "error" });
+      setToast({ text: "Não foi possível salvar seu Pela Hora agora.", type: "error" });
     }
   }
 
@@ -129,7 +129,7 @@ export default function PelaHoraPage() {
       await deletePelaHora.mutateAsync(id);
       setToast({ text: "Plano removido com sucesso.", type: "success" });
     } catch (_error) {
-      setToast({ text: "N�o foi possivel remover esse plano agora.", type: "error" });
+      setToast({ text: "Não foi possível remover esse plano agora.", type: "error" });
     }
   }
 
@@ -137,20 +137,20 @@ export default function PelaHoraPage() {
     <section className="screen screen-explore">
       <header className="page-header">
         <h2>Pela Hora</h2>
-        <p>Monte seu plano do dia com 2 ou mais sambas, em ordem de horario. Eu sei que vai dar bololo.</p>
+        <p>Monte seu plano do dia com 2 ou mais sambas, em ordem de horário. Eu sei que vai dar bololo.</p>
       </header>
 
       <section className="clean-card pela-hora-howto">
         <h4>Como funciona</h4>
         <p className="meta-line helper-text">1. Escolha uma data.</p>
-        <p className="meta-line helper-text">2. Escolha os sambas manualmente ou receba uma sugest�o pronta.</p>
+        <p className="meta-line helper-text">2. Escolha os sambas manualmente ou receba uma sugestão pronta.</p>
         <p className="meta-line helper-text">3. Salve seu plano e acompanhe o roteiro do dia.</p>
         <p className="meta-line helper-text">4. Delete um plano. Apague as provas, quem viu, mentiu.</p>
       </section>
 
       {!user ? (
         <div className="empty login-gate">
-          <p>O Plano do Dia fica disponivel quando voce entra na conta.</p>
+          <p>O Plano do Dia fica disponível quando você entra na conta.</p>
           <Link to="/settings" className="inline-login-cta">Entrar agora</Link>
         </div>
       ) : null}
@@ -158,11 +158,11 @@ export default function PelaHoraPage() {
       {user ? (
         <div className="venue-form pela-hora-setup">
           <h3 className="section-title">Passo 1 - Nome e data do plano</h3>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="De um nome ao seu plano" />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Dê um nome ao seu plano" />
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           <div className="chip-row">
             <button className={`chip ${mode === "manual" ? "active" : ""}`} type="button" onClick={() => setMode("manual")}>Escolher eu mesmo</button>
-            <button className={`chip ${mode === "automatic" ? "active" : ""}`} type="button" onClick={() => setMode("automatic")}>Receber sugest�o</button>
+            <button className={`chip ${mode === "automatic" ? "active" : ""}`} type="button" onClick={() => setMode("automatic")}>Receber sugestão</button>
           </div>
         </div>
       ) : null}
@@ -175,7 +175,7 @@ export default function PelaHoraPage() {
           {filteredByDate.length === 0 ? (
             <div className="empty helper-empty">
               <p>Sem sambas nessa data.</p>
-              <small className="meta-line">Tente outra data ou use a sugest�o automatica.</small>
+              <small className="meta-line">Tente outra data ou use a sugestão automática.</small>
             </div>
           ) : null}
           <div className="venue-list">
@@ -211,7 +211,7 @@ export default function PelaHoraPage() {
           </div>
           {selectedTimeline.items.length > 0 ? (
             <div className="clean-card schedule-card">
-              <h4>Programa��o</h4>
+              <h4>Programação</h4>
               <p className="meta-line">
                 {selectedTimeline.items.length} {selectedTimeline.items.length === 1 ? "samba" : "sambas"} | deslocamento estimado {selectedTimeline.totalTransit} min
               </p>
@@ -241,11 +241,11 @@ export default function PelaHoraPage() {
 
       {user && mode === "automatic" ? (
         <>
-          <h3 className="section-title">Sugest�o automatica de plano</h3>
+          <h3 className="section-title">Sugestão automática de plano</h3>
           {suggestionLoading ? <p className="empty helper-empty">Gerando seu Pela Hora...</p> : null}
           {!suggestionLoading && !suggestion ? (
             <div className="empty helper-empty">
-              <p>Sem sugest�o pronta para essa data.</p>
+              <p>Sem sugestão pronta para essa data.</p>
               <small className="meta-line">Troque a data ou monte manualmente pelo menos 2 sambas.</small>
             </div>
           ) : null}
@@ -270,7 +270,7 @@ export default function PelaHoraPage() {
       {user ? <AppToast toast={toast} onClose={() => setToast({ text: "", type: "info" })} /> : null}
 
       <h3 className="section-title">Planos salvos</h3>
-      {user && itinerariesLoading ? <p className="empty">Carregando hist�rico de Pela Hora...</p> : null}
+      {user && itinerariesLoading ? <p className="empty">Carregando histórico de Pela Hora...</p> : null}
       {user && !itinerariesLoading && itineraries.length === 0 ? (
         <div className="empty empty-highlight">
           <p>Nenhum plano salvo ainda.</p>
@@ -297,7 +297,7 @@ export default function PelaHoraPage() {
               </div>
             </div>
             <p className="meta-line">
-              {new Date(itinerary.date).toLocaleDateString("pt-BR")} · {itinerary.mode === "manual" ? "manual" : "autom�tico"}
+              {new Date(itinerary.date).toLocaleDateString("pt-BR")} · {itinerary.mode === "manual" ? "manual" : "automático"}
             </p>
             <p className="meta-line">{itinerary.items.length} sambas · deslocamento {itinerary.totalTransitMinutes} min</p>
             <div className="saved-mini-timeline">

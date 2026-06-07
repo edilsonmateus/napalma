@@ -48,7 +48,7 @@ export const venues = [
     name: "Bar do Bixiga",
     neighborhood: "Bela Vista",
     region: "Centro",
-    city: "Sao Paulo",
+    city: "São Paulo",
     state: "SP",
     imageUrl: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1400&q=80"
   },
@@ -57,7 +57,7 @@ export const venues = [
     name: "Quintal da Vila",
     neighborhood: "Vila Mariana",
     region: "Zona Sul",
-    city: "Sao Paulo",
+    city: "São Paulo",
     state: "SP",
     imageUrl: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=1400&q=80"
   },
@@ -66,7 +66,7 @@ export const venues = [
     name: "Salao Aurora",
     neighborhood: "Vila Madalena",
     region: "Zona Oeste",
-    city: "Sao Paulo",
+    city: "São Paulo",
     state: "SP",
     imageUrl: "https://images.unsplash.com/photo-1464375117522-1311d6a5b81f?auto=format&fit=crop&w=1400&q=80"
   }

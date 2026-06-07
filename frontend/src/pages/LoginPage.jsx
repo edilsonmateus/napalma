@@ -12,7 +12,7 @@ const DEMO_ACCOUNTS = [
   { label: "Admin", email: "admin@napalma.app" },
   { label: "Produtor", email: "produtor@napalma.app" },
   { label: "Casa", email: "casa@napalma.app" },
-  { label: "P˙blico", email: "lia@napalma.app" }
+  { label: "P√∫blico", email: "lia@napalma.app" }
 ];
 
 export default function LoginPage() {
@@ -45,7 +45,7 @@ export default function LoginPage() {
   }
 
   useEffect(() => {
-    // iOS Safari n„o dispara beforeinstallprompt.
+    // iOS Safari n√£o dispara beforeinstallprompt.
     // Nesses casos, compartilhamento nativo e QR Code sao os caminhos principais.
     return subscribeInstallPrompt(setShowInstallBtn);
   }, []);

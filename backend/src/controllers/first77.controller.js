@@ -99,7 +99,7 @@ function inferArticleFromName(name) {
   if (!normalized) return "";
   if (/^(roda|feijoada|noite|turma|resenha|bateria|velha guarda)\b/.test(normalized)) return "a";
   if (/^(samba|pagode|show|baile|terreiro|festival|encontro|projeto)\b/.test(normalized)) return "o";
-  if (/^(zona|regiÃ£o|regiao)\b/.test(normalized)) return "a";
+  if (/^(zona|região|regiao)\b/.test(normalized)) return "a";
   if (/^(centro|bairro)\b/.test(normalized)) return "o";
   return "";
 }
@@ -125,7 +125,7 @@ function withDeRelation(name, article) {
 }
 
 function withTimePreposition(time) {
-  return time ? `Ã s ${time}` : "em horÃ¡rio a confirmar";
+  return time ? `às ${time}` : "em horário a confirmar";
 }
 
 function pickLocalName(formal, local) {
@@ -139,7 +139,7 @@ function priceLabel(event) {
   if (event.ticketType === "free") {
     parts.push("Gratuito");
   } else if (event.ticketType === "consumacao") {
-    parts.push(event.consumacaoValue ? `ConsumaÃ§Ã£o R$ ${event.consumacaoValue}` : "ConsumaÃ§Ã£o");
+    parts.push(event.consumacaoValue ? `Consumação R$ ${event.consumacaoValue}` : "Consumação");
   } else if (event.priceMin && event.priceMax && event.priceMin !== event.priceMax) {
     parts.push(`R$ ${event.priceMin} a R$ ${event.priceMax}`);
   } else if (event.priceMin || event.priceMax) {
@@ -149,7 +149,7 @@ function priceLabel(event) {
   }
 
   if (event.couvertArtistico) {
-    parts.push(`couvert artÃ­stico R$ ${event.couvertArtistico}`);
+    parts.push(`couvert artístico R$ ${event.couvertArtistico}`);
   }
 
   return parts.join(" + ");
@@ -200,7 +200,7 @@ function buildKit(event, requestedBy, regionMeta) {
   const longDate = formatLongDate(event.startDate);
   const weekday = formatWeekday(event.startDate);
   const dayNumber = formatDayNumber(event.startDate);
-  const friendlyDateLead = weekday ? `Na prÃ³xima ${weekday}` : "Em data a confirmar";
+  const friendlyDateLead = weekday ? `Na próxima ${weekday}` : "Em data a confirmar";
   const startTime = formatTime(event.startDate);
   const endTime = formatTime(event.endDate);
   const humanStartTime = formatHumanTime(event.startDate);
@@ -208,53 +208,53 @@ function buildKit(event, requestedBy, regionMeta) {
   const price = priceLabel(event);
   const cityState = [event.venue.city, event.venue.state].filter(Boolean).join(" - ");
   const serviceDate = longDate ? sentenceCase(longDate) : date || "Data a confirmar";
-  const serviceTime = humanStartTime || startTime || "HorÃ¡rio a confirmar";
+  const serviceTime = humanStartTime || startTime || "Horário a confirmar";
   const titleLineRegion = regionWithPreposition || venueWithPreposition;
 
   const captionShort = [
-    `${event.title} ${titleLineRegion} ðŸŽ¤ðŸ¥`,
+    `${event.title} ${titleLineRegion} 🎤🥁`,
     "",
-    `${friendlyDateLead}, dia ${dayNumber || shortDate || "a confirmar"}, ${eventTitleWithArticle} desembarca ${venueLocalWithPreposition} para mais um dia de samba. Uma roda daquelas: gogÃ³, palma da mÃ£o, aquela gelada e gente bonita.`,
+    `${friendlyDateLead}, dia ${dayNumber || shortDate || "a confirmar"}, ${eventTitleWithArticle} desembarca ${venueLocalWithPreposition} para mais um dia de samba. Uma roda daquelas: gogó, palma da mão, aquela gelada e gente bonita.`,
     "",
-    `O evento comeÃ§a ${startTimeWithPreposition}. Chama os seus e vem pra essa resenha${regionWithPreposition ? ` ${regionWithPreposition}` : ""}.`,
+    `O evento começa ${startTimeWithPreposition}. Chama os seus e vem pra essa resenha${regionWithPreposition ? ` ${regionWithPreposition}` : ""}.`,
     "",
-    "ServiÃ§o:",
-    `ðŸ—“ï¸ ${serviceDate}`,
-    `ðŸ•™ ${serviceTime}`,
-    `ðŸ“ ${venueName}${regionName ? ` (${regionName})` : ""}`,
-    `ðŸŽ« Ingresso: ${price}`,
+    "Serviço:",
+    `🗓️ ${serviceDate}`,
+    `🕙 ${serviceTime}`,
+    `📍 ${venueName}${regionName ? ` (${regionName})` : ""}`,
+    `🎫 Ingresso: ${price}`,
     "",
     eventUrl
   ].join("\n");
 
   const whatsappText = [
-    `${event.title} ${venueLocalWithPreposition} ðŸ¥`,
+    `${event.title} ${venueLocalWithPreposition} 🥁`,
     "",
     `${friendlyDateLead}, dia ${shortDate || "a confirmar"}, a partir ${startTimeWithPreposition}, tem ${event.title}${regionWithPreposition ? ` ${regionWithPreposition}` : ""}. Uma roda com muito samba de raiz.`,
     "",
     "Bora colar? Compartilha essa mensagem com os seus e vamos encostar.",
     "",
     "Confira os detalhes completos no 77Gira:",
-    `ðŸ‘‰ ${eventUrl}`
+    `👉 ${eventUrl}`
   ].join("\n");
 
   const releaseText = [
-    `${venueName} recebe ${eventTitleWithArticle}${weekday && dayNumber ? ` na prÃ³xima ${weekday} (${dayNumber})` : ""}`,
+    `${venueName} recebe ${eventTitleWithArticle}${weekday && dayNumber ? ` na próxima ${weekday} (${dayNumber})` : ""}`,
     "",
-    `${regionWithArticle || regionName || event.venue.city} de ${event.venue.city || "SÃ£o Paulo"} terÃ¡ uma nova ediÃ§Ã£o ${eventTitleWithDeRelation}${longDate ? ` no dia ${longDate}` : ""}. O evento acontece ${venueWithPreposition}, com inÃ­cio programado para ${startTimeWithPreposition}.`,
+    `${regionWithArticle || regionName || event.venue.city} de ${event.venue.city || "São Paulo"} terá uma nova edição ${eventTitleWithDeRelation}${longDate ? ` no dia ${longDate}` : ""}. O evento acontece ${venueWithPreposition}, com início programado para ${startTimeWithPreposition}.`,
     "",
     event.description ||
-      "O projeto apresenta um repertÃ³rio focado em clÃ¡ssicos do samba de raiz e grandes composiÃ§Ãµes. O ambiente Ã© estruturado para receber o pÃºblico em um formato de roda de samba bem raiz, valorizando a proximidade entre mÃºsicos e frequentadores.",
+      "O projeto apresenta um repertório focado em clássicos do samba de raiz e grandes composições. O ambiente é estruturado para receber o público em um formato de roda de samba bem raiz, valorizando a proximidade entre músicos e frequentadores.",
     "",
-    `As apresentaÃ§Ãµes ao vivo se estendem ao longo da noite, reforÃ§ando o circuito cultural e de lazer${regionWithPreposition ? ` ${regionWithPreposition}` : ""}.`,
+    `As apresentações ao vivo se estendem ao longo da noite, reforçando o circuito cultural e de lazer${regionWithPreposition ? ` ${regionWithPreposition}` : ""}.`,
     "",
-    "ServiÃ§o:",
+    "Serviço:",
     "",
     `- Evento: ${event.title}`,
     `- Artista: ${artistName}`,
     `- Data: ${serviceDate}`,
-    `- HorÃ¡rio: ${serviceTime}`,
-    `- Local: ${venueName}${regionName ? ` â€“ ${regionName}` : ""}${cityState ? `, ${cityState}` : ""}`,
+    `- Horário: ${serviceTime}`,
+    `- Local: ${venueName}${regionName ? ` - ${regionName}` : ""}${cityState ? `, ${cityState}` : ""}`,
     `- Ingresso: ${price}`,
     `- Link: ${eventUrl}`
   ].join("\n");
@@ -263,11 +263,11 @@ function buildKit(event, requestedBy, regionMeta) {
     `Evento: ${event.title}`,
     `Artista: ${artistName}`,
     `Casa: ${event.venue.name}`,
-    `RegiÃ£o: ${event.venue.region || "-"}`,
+    `Região: ${event.venue.region || "-"}`,
     `Cidade: ${cityState || "-"}`,
-    `InÃ­cio: ${date && startTime ? `${date} ${startTime}` : "-"}`,
+    `Início: ${date && startTime ? `${date} ${startTime}` : "-"}`,
     `Fim: ${date && endTime ? `${date} ${endTime}` : "-"}`,
-    `PreÃ§o: ${price}`,
+    `Preço: ${price}`,
     `Link: ${eventUrl}`
   ].join("\n");
 
@@ -433,11 +433,11 @@ export async function request77FirstKit(req, res, next) {
     });
 
     if (!event) {
-      return res.status(404).json({ error: "event_not_found", message: "Evento nÃ£o encontrado." });
+      return res.status(404).json({ error: "event_not_found", message: "Evento não encontrado." });
     }
 
     if (!canManageEvent(req.user, event)) {
-      return res.status(403).json({ error: "forbidden", message: "VocÃª nÃ£o pode gerar kit deste evento." });
+      return res.status(403).json({ error: "forbidden", message: "Você não pode gerar kit deste evento." });
     }
 
     const regionMeta = event.venue.region

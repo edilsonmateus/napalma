@@ -29,7 +29,7 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    // iOS Safari n„o dispara beforeinstallprompt.
+    // iOS Safari n√£o dispara beforeinstallprompt.
     // Nesses casos, compartilhamento nativo e QR Code sao os caminhos principais.
     return subscribeInstallPrompt(setShowInstallBtn);
   }, []);

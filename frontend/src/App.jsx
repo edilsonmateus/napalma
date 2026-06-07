@@ -142,7 +142,7 @@ export default function App() {
 
   return (
     <div className={`app-shell ${isBackofficeMode ? "app-shell-admin" : ""}`}>
-      {isOffline ? <div className="offline-banner">Voce esta offline. Algumas acoes podem falhar.</div> : null}
+      {isOffline ? <div className="offline-banner">Você está offline. Algumas ações podem falhar.</div> : null}
       <main className="app-content">
         <Suspense fallback={<div className="empty">Carregando pagina...</div>}>
           <Routes>

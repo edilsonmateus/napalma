@@ -29,7 +29,7 @@ function isHiddenRegionName(value) {
 
 const createRegionSchema = z.object({
   name: z.string().trim().min(2).max(80),
-  city: z.string().trim().min(2).max(80).default("Sao Paulo"),
+  city: z.string().trim().min(2).max(80).default("São Paulo"),
   state: z.string().trim().length(2).transform((v) => v.toUpperCase()).default("SP"),
   grammarArticle: z.enum(["", "o", "a", "os", "as"]).optional(),
   grammarPreposition: z.enum(["em", "no", "na"]).optional(),
@@ -171,7 +171,7 @@ export async function listRegionsAdmin(req, res, next) {
           item: mapRegionAdmin({
             id: `legacy-${idx}-${key.replace(/\s+/g, "-")}`,
             name,
-            city: String(row.city || "Sao Paulo").trim() || "Sao Paulo",
+            city: String(row.city || "São Paulo").trim() || "São Paulo",
             state: String(row.state || "SP").trim().toUpperCase() || "SP",
             isActive: true,
             sortOrder: 1000 + idx,
@@ -194,7 +194,7 @@ export async function listRegionsAdmin(req, res, next) {
         mapRegionAdmin({
           id: `base-${item.idx}-${item.key.replace(/\s+/g, "-")}`,
           name: item.name,
-          city: "Sao Paulo",
+          city: "São Paulo",
           state: "SP",
           isActive: true,
           sortOrder: 2000 + item.idx,
@@ -234,7 +234,7 @@ export async function createRegion(req, res, next) {
     res.status(201).json({ item: mapRegionAdmin(item) });
   } catch (error) {
     if (error?.code === "P2002") {
-      return res.status(409).json({ error: "region_already_exists", message: "Regiao ja cadastrada para esta cidade." });
+      return res.status(409).json({ error: "region_already_exists", message: "Região ja cadastrada para esta cidade." });
     }
     next(error);
   }
@@ -247,7 +247,7 @@ export async function updateRegion(req, res, next) {
 
     const existing = await prisma.region.findUnique({ where: { id }, select: { id: true } });
     if (!existing) {
-      return res.status(404).json({ error: "region_not_found", message: "Regiao nao encontrada." });
+      return res.status(404).json({ error: "region_not_found", message: "Região nao encontrada." });
     }
 
     const item = await prisma.region.update({
@@ -265,7 +265,7 @@ export async function updateRegion(req, res, next) {
     res.json({ item: mapRegionAdmin(item) });
   } catch (error) {
     if (error?.code === "P2002") {
-      return res.status(409).json({ error: "region_already_exists", message: "Regiao ja cadastrada para esta cidade." });
+      return res.status(409).json({ error: "region_already_exists", message: "Região ja cadastrada para esta cidade." });
     }
     next(error);
   }
@@ -276,7 +276,7 @@ export async function deleteRegion(req, res, next) {
     const { id } = idSchema.parse(req.params);
     const existing = await prisma.region.findUnique({ where: { id } });
     if (!existing) {
-      return res.status(404).json({ error: "region_not_found", message: "Regiao nao encontrada." });
+      return res.status(404).json({ error: "region_not_found", message: "Região nao encontrada." });
     }
 
     const linkedVenues = await prisma.venue.count({
@@ -290,7 +290,7 @@ export async function deleteRegion(req, res, next) {
     if (linkedVenues > 0) {
       return res.status(409).json({
         error: "region_in_use",
-        message: "Regiao com casas vinculadas nao pode ser excluida."
+        message: "Região com casas vinculadas nao pode ser excluida."
       });
     }
 

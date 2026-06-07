@@ -31,7 +31,7 @@ export default function SignupPage() {
       setAuth({ token: data.accessToken, refreshToken: data.refreshToken, user: data.user });
       navigate(getRoleHome(data.user.role), { replace: true });
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Não foi possível criar conta agora.");
+      setMessage(error?.response?.data?.message || "NÃ£o foi possÃ­vel criar conta agora.");
     } finally {
       setIsLoading(false);
     }
@@ -41,7 +41,7 @@ export default function SignupPage() {
     <section className="auth-screen clean-card">
       <header className="page-header">
         <h2>Criar conta</h2>
-        <p>Cadastre seu acesso para salvar radar, histórico e planos.</p>
+        <p>Cadastre seu acesso para salvar radar, histÃ³rico e planos.</p>
       </header>
 
       <form className="venue-form" onSubmit={handleSubmit}>
@@ -63,7 +63,7 @@ export default function SignupPage() {
           type="text"
           value={form.username}
           onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
-          placeholder="Usuário (mínimo 3 caracteres)"
+          placeholder="UsuÃ¡rio (mÃ­nimo 3 caracteres)"
           minLength={3}
           required
         />
@@ -78,7 +78,7 @@ export default function SignupPage() {
           type="password"
           value={form.password}
           onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-          placeholder="Senha (mínimo 6 caracteres)"
+          placeholder="Senha (mÃ­nimo 6 caracteres)"
           minLength={6}
           required
         />
@@ -87,7 +87,7 @@ export default function SignupPage() {
           <button type="submit" className="auth-btn auth-btn-primary" disabled={isLoading}>
             {isLoading ? "Criando..." : "Criar conta"}
           </button>
-          <Link to="/login" className="auth-btn">Já tenho conta</Link>
+          <Link to="/login" className="auth-btn">JÃ¡ tenho conta</Link>
           <Link to="/explore" className="auth-btn">Continuar sem conta</Link>
         </div>
       </form>
@@ -96,7 +96,7 @@ export default function SignupPage() {
 
       <footer className="auth-settings-footer">
         <strong>77Gira v1.0.0</strong>
-        <p>Feito em casa, feito com alma. Desenhado e codificado por 77 Giramundo © 2026. Todos os direitos reservados.</p>
+        <p>Feito em casa, feito com alma. Desenhado e codificado por 77 Giramundo Â© 2026. Todos os direitos reservados.</p>
       </footer>
     </section>
   );

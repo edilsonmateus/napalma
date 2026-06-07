@@ -1,5 +1,9 @@
 import { prisma } from "../lib/prisma.js";
 
+const ACHIEVEMENT_DISPLAY_OVERRIDES = {
+  pe_de_valsa: "Pé de Valsa"
+};
+
 export async function listMyAchievements(req, res, next) {
   try {
     const [radarCount, historyCount, historyByType] = await Promise.all([
@@ -60,7 +64,7 @@ export async function listMyAchievements(req, res, next) {
       items: items.map((achievement) => ({
         id: achievement.id,
         key: achievement.key,
-        name: achievement.name,
+        name: ACHIEVEMENT_DISPLAY_OVERRIDES[achievement.key] || achievement.name,
         description: achievement.description,
         icon: achievement.icon,
         points: achievement.points,

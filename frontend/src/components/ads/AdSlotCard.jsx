@@ -58,7 +58,7 @@ export default function AdSlotCard({ ad, slot, compact = false, venueId = null }
         {ad.imageUrl ? <img src={ad.imageUrl} alt={ad.altText || ad.title || "Publicidade"} /> : null}
       </div>
       <div className="ad-slot-body">
-        <small>{isPlaceholder ? "Espaco Publicitario" : "Patrocinado"}</small>
+        <small>{isPlaceholder ? "Espaço Publicitário" : "Patrocinado"}</small>
         <strong>{ad.title || ad.campaignName}</strong>
       </div>
     </>

@@ -29,7 +29,7 @@ const catalog = [
   },
   {
     key: "pe_de_valsa",
-    name: "Pe de Valsa",
+    name: "Pé de Valsa",
     description: "Foi em 2 gafieiras",
     icon: "💃",
     points: 20,

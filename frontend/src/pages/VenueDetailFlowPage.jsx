@@ -32,7 +32,7 @@ function getLiveStatus(startsAt, endsAt) {
   if (now < start) {
     const mins = Math.ceil((start - now) / 60000);
     return mins <= 90
-      ? { label: `Vai comecar em ${mins} min`, tone: "soon" }
+      ? { label: `Vai começar em ${mins} min`, tone: "soon" }
       : { label: "Programado", tone: "programmed" };
   }
   if (now <= end) {
@@ -62,7 +62,7 @@ export default function VenueDetailFlowPage() {
   const [actionFeedback, setActionFeedback] = useState("");
 
   if (venueLoading) return <p className="empty">Carregando casa...</p>;
-  if (!venue) return <p className="empty">Casa n�o encontrada.</p>;
+  if (!venue) return <p className="empty">Casa não encontrada.</p>;
 
   const sortedEvents = [...events].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
   const googleMapsUrl = buildGoogleMapsLink(venue);
@@ -76,7 +76,7 @@ export default function VenueDetailFlowPage() {
       await toggleRadar.mutateAsync({ eventId: eventItem.id, currentlyMarked });
       setActionFeedback(currentlyMarked ? "Removido do seu Radar." : "Salvo no seu Radar.");
     } catch (_error) {
-      setActionFeedback("N�o foi possivel atualizar o Radar agora.");
+      setActionFeedback("Não foi possível atualizar o Radar agora.");
     }
   }
 
@@ -93,7 +93,7 @@ export default function VenueDetailFlowPage() {
           <span>{venue.name}</span>
           {venue.goldPartner ? <VerifiedBadge className="artist-verified-dot gold-partner-badge" title="Casa Gold Partner" iconSrc="/goldenVerificado.svg" /> : null}
         </h2>
-        <p className="decision-artist">{venue.description || "Casa de samba em destaque na regi�o."}</p>
+        <p className="decision-artist">{venue.description || "Casa de samba em destaque na região."}</p>
         <div className="decision-meta">
           <div className="venue-location-muted">
             <div className="meta-line"><MapPin size={14} /> {venue.address}</div>
@@ -108,7 +108,7 @@ export default function VenueDetailFlowPage() {
         </div>
       </div>
 
-      <h3 className="section-title">Pr�ximas atracoes</h3>
+      <h3 className="section-title">Próximas atrações</h3>
       {eventsLoading ? <p className="empty">Carregando eventos da casa...</p> : null}
       {!eventsLoading && sortedEvents.length === 0 ? (
         <div className="empty empty-highlight">
@@ -157,7 +157,7 @@ export default function VenueDetailFlowPage() {
                   ) : null}
                 </div>
                 {event.priceSecondaryLabel ? <small className="meta-line">{event.priceSecondaryLabel}</small> : null}
-                <small className="meta-line">Comeca {formatHour(event.startsAt)} - Termina {formatHour(event.endsAt)}</small>
+                <small className="meta-line">Começa {formatHour(event.startsAt)} - Termina {formatHour(event.endsAt)}</small>
                 {getAudienceBadges(event).length > 0 ? (
                   <div className="event-audience-row">
                     {getAudienceBadges(event).map((badge) => (

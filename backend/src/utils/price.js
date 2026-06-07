@@ -7,7 +7,7 @@ function formatCurrencyValue(value) {
 
 export function formatPriceLabel(priceMin, priceMax, ticketType) {
   if (ticketType === "free") return "Gratuito";
-  if (ticketType === "consumacao") return "Consumacao";
+  if (ticketType === "consumacao") return "Consumação";
   if (priceMin == null && priceMax == null) return "Consulte valores";
   if (priceMin != null && priceMax != null && Number(priceMin) !== Number(priceMax)) {
     return `R$ ${formatCurrencyValue(priceMin)} - R$ ${formatCurrencyValue(priceMax)}`;

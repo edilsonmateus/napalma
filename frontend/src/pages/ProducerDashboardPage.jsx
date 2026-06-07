@@ -99,7 +99,7 @@ export default function ProducerDashboardPage() {
         officialInstagram: officialInstagram || undefined,
         officialWebsite: officialWebsite || undefined
       });
-      setClaimFeedback("ReivindicaÁ„o enviada para analise do admin.");
+      setClaimFeedback("Reivindica√ß√£o enviada para analise do admin.");
       setClaimTargetId("");
       setClaimJustification("");
       setResponsibleName("");
@@ -110,7 +110,7 @@ export default function ProducerDashboardPage() {
       setOfficialInstagram("");
       setOfficialWebsite("");
     } catch (error) {
-      setClaimFeedback(error?.response?.data?.message || "N„o foi possivel enviar reivindicaÁ„o.");
+      setClaimFeedback(error?.response?.data?.message || "N√£o foi possivel enviar reivindica√ß√£o.");
     }
   }
 
@@ -133,7 +133,7 @@ export default function ProducerDashboardPage() {
       <div className="ads-layout">
         <aside className="ads-sidebar">
           <button className={`chip ${activeSection === "overview" ? "active" : ""}`} onClick={() => setSearchParams({ section: "overview" })}>
-            Visao Geral
+            Vis√£o Geral
           </button>
           <button className={`chip ${activeSection === "claims" ? "active" : ""}`} onClick={() => setSearchParams({ section: "claims" })}>
             Reivindicar carteira
@@ -142,7 +142,7 @@ export default function ProducerDashboardPage() {
             Minhas reivindicacoes
           </button>
           <button className={`chip ${activeSection === "events" ? "active" : ""}`} onClick={() => setSearchParams({ section: "events" })}>
-            PrÛximos eventos
+            Pr√≥ximos eventos
           </button>
           <button className="chip" onClick={clearProducerFilters}>
             Limpar filtros
@@ -169,7 +169,7 @@ export default function ProducerDashboardPage() {
                 <p>{eventsThisWeek(events)}</p>
               </article>
               <article className="clean-card">
-                <h4>P˙blico ativo (30d)</h4>
+                <h4>P√∫blico ativo (30d)</h4>
                 <p>{audienceSummary?.global?.activeAudience ?? 0}</p>
               </article>
               <article className="clean-card">
@@ -188,14 +188,14 @@ export default function ProducerDashboardPage() {
           ) : null}
 
           <div className="admin-shortcuts producer-shortcuts">
-            <Link to="/settings/venues" className="btn-primary">Abrir Gest„o Completa</Link>
+            <Link to="/settings/venues" className="btn-primary">Abrir Gest√£o Completa</Link>
             <Link to="/settings/venues?section=events" className="chip">Criar Evento</Link>
           </div>
 
           {showOverview ? (
             <article className="clean-card admin-overview-card">
-              <h4>Visao Geral do Produtor</h4>
-              <p className="meta-line">Use o menu lateral para reivindicar carteira, acompanhar suas solicitacoes e acessar os prÛximos eventos.</p>
+              <h4>Vis√£o Geral do Produtor</h4>
+              <p className="meta-line">Use o menu lateral para reivindicar carteira, acompanhar suas solicita√ß√µes e acessar os pr√≥ximos eventos.</p>
             </article>
           ) : null}
 
@@ -216,7 +216,7 @@ export default function ProducerDashboardPage() {
                 <textarea
                   value={claimJustification}
                   onChange={(e) => setClaimJustification(e.target.value)}
-                  placeholder="Justificativa: contrato, parceria, gest„o de agenda..."
+                  placeholder="Justificativa: contrato, parceria, gest√£o de agenda..."
                   rows={2}
                   required
                 />
@@ -262,7 +262,7 @@ export default function ProducerDashboardPage() {
                   placeholder="Site oficial (opcional)"
                 />
                 <button className="btn-primary" type="submit" disabled={createClaim.isPending}>
-                  {createClaim.isPending ? "Enviando..." : "Enviar reivindicaÁ„o"}
+                  {createClaim.isPending ? "Enviando..." : "Enviar reivindica√ß√£o"}
                 </button>
               </form>
               {claimFeedback ? <p className="empty">{claimFeedback}</p> : null}
@@ -288,7 +288,7 @@ export default function ProducerDashboardPage() {
 
           {showEvents ? (
             <>
-              <h3 className="section-title">PrÛximos eventos</h3>
+              <h3 className="section-title">Pr√≥ximos eventos</h3>
               {nextEvents.length === 0 ? <p className="empty">Sem eventos futuros no momento.</p> : null}
               <div className="venue-list">
                 {nextEvents.map((event) => (

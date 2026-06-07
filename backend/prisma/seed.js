@@ -232,12 +232,12 @@ async function main() {
     prisma.user.create({ data: { email: "lia@napalma.app", username: "lia.samba", firstName: "Lia", lastName: "Campos", passwordHash, role: UserRole.attendee } })
   ]);
 
-  const defaultRegions = ["Centro", "Zona Norte", "Zona Sul", "Zona Leste", "Zona Oeste", "Grande Sao Paulo"];
+  const defaultRegions = ["Centro", "Zona Norte", "Zona Sul", "Zona Leste", "Zona Oeste", "Grande São Paulo"];
 
   await prisma.region.createMany({
     data: defaultRegions.map((name, index) => ({
       name,
-      city: "Sao Paulo",
+      city: "São Paulo",
       state: "SP",
       sortOrder: index,
       isActive: true,
@@ -266,7 +266,7 @@ async function main() {
         address: safeText(row.enderecoCasa) || `Endereco de ${name}`,
         neighborhood,
         region: mapRegion(neighborhood),
-        city: "Sao Paulo",
+        city: "São Paulo",
         state: "SP",
         imageUrl: safeText(row.imgCasa) || undefined,
         openDays: parseOpenDays(row.diasFunciona),
@@ -368,7 +368,7 @@ async function main() {
       { key: "first_radar", name: "No Radar", description: "Marcou seu primeiro samba no Radar", icon: "target", points: 5, requirement: { type: "marked_events", count: 1 } },
       { key: "samba_lover", name: "Sambista Raiz", description: "Foi em 5 sambas diferentes", icon: "music", points: 30, requirement: { type: "history_events", count: 5 } },
       { key: "pagodeiro_assumido", name: "Pagodeiro Assumido", description: "Foi em 3 pagodes", icon: "mic", points: 20, requirement: { type: "event_type", eventType: "pagode", count: 3 } },
-      { key: "pe_de_valsa", name: "Pe de Valsa", description: "Foi em 2 gafieiras", icon: "dance", points: 20, requirement: { type: "event_type", eventType: "gafieira", count: 2 } }
+      { key: "pe_de_valsa", name: "Pé de Valsa", description: "Foi em 2 gafieiras", icon: "dance", points: 20, requirement: { type: "event_type", eventType: "gafieira", count: 2 } }
     ]
   });
 

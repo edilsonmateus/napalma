@@ -60,7 +60,7 @@ const initialVenueForm = {
   neighborhoodDisplayNameWithArticle: "",
   neighborhoodDisplayNameWithPreposition: "",
   region: "",
-  city: "Sao Paulo",
+  city: "São Paulo",
   state: "SP",
   imageUrl: "",
   openDays: ""
@@ -108,9 +108,9 @@ const publishChecklistModel = [
   { key: "title", label: "Revisei titulo/artista do evento." },
   { key: "schedule", label: "Revisei data e horario (inicio e fim)." },
   { key: "venue", label: "Revisei casa/unidade selecionada." },
-  { key: "region", label: "Revisei regiÃ£o da casa para o filtro correto." },
-  { key: "pricing", label: "Revisei politica de preco e valores." },
-  { key: "media", label: "Revisei imagem, descriÃ§Ã£o e link (se houver)." }
+  { key: "region", label: "Revisei região da casa para o filtro correto." },
+  { key: "pricing", label: "Revisei política de preço e valores." },
+  { key: "media", label: "Revisei imagem, descrição e link (se houver)." }
 ];
 
 const initialManagerForm = {
@@ -139,7 +139,7 @@ const initialRegionForm = {
   grammarPreposition: "em",
   displayNameWithArticle: "",
   displayNameWithPreposition: "",
-  city: "Sao Paulo",
+  city: "São Paulo",
   state: "SP",
   sortOrder: "",
   isActive: true
@@ -163,7 +163,7 @@ function previewArticle(article, name) {
   const cleanName = String(name || "").trim();
   if (!cleanName) return "";
   const cleanArticle = String(article || "").trim();
-  return cleanArticle ? cleanArticle + " " + cleanName : cleanName;
+  return cleanArticle ?cleanArticle + " " + cleanName : cleanName;
 }
 
 function previewPreposition(preposition, name) {
@@ -207,12 +207,12 @@ function formatKitTime(value, human = false) {
   });
   if (!human) return time;
   const [hour, minute] = time.split(":");
-  return minute === "00" ? `${Number(hour)}h` : `${Number(hour)}h${minute}`;
+  return minute === "00" ?`${Number(hour)}h` : `${Number(hour)}h${minute}`;
 }
 
 function sentenceCaseKit(value) {
   const text = String(value || "").trim();
-  return text ? text.charAt(0).toUpperCase() + text.slice(1) : "";
+  return text ?text.charAt(0).toUpperCase() + text.slice(1) : "";
 }
 
 function inferKitArticle(name) {
@@ -220,7 +220,7 @@ function inferKitArticle(name) {
   if (!normalized || /^(o|a|os|as)\s+/.test(normalized)) return "";
   if (/^(roda|feijoada|noite|turma|resenha|bateria)\b/.test(normalized)) return "a";
   if (/^(samba|pagode|show|baile|terreiro|festival|encontro|projeto)\b/.test(normalized)) return "o";
-  if (/^(zona|regiao|regiÃ£o)\b/.test(normalized)) return "a";
+  if (/^(zona|regiao|região)\b/.test(normalized)) return "a";
   if (/^(centro|bairro)\b/.test(normalized)) return "o";
   return "";
 }
@@ -228,7 +228,7 @@ function inferKitArticle(name) {
 function kitWithArticle(name, article) {
   const cleanName = String(name || "").trim();
   const cleanArticle = String(article || inferKitArticle(cleanName)).trim();
-  return cleanArticle ? `${cleanArticle} ${cleanName}` : cleanName;
+  return cleanArticle ?`${cleanArticle} ${cleanName}` : cleanName;
 }
 
 function kitWithDeRelation(name, article) {
@@ -267,11 +267,11 @@ function build77FirstKit(eventItem) {
   const titleWithArticle = kitWithArticle(title);
   const titleWithDeRelation = kitWithDeRelation(title);
   const venueWithPreposition = eventItem?.venueDisplayNameWithPreposition || `em ${venue}`;
-  const regionWithPreposition = eventItem?.regionDisplayNameWithPreposition || (region ? `${region.toLowerCase().includes("centro") ? "no" : "na"} ${region}` : "");
+  const regionWithPreposition = eventItem?.regionDisplayNameWithPreposition || (region ?`${region.toLowerCase().includes("centro") ?"no" : "na"} ${region}` : "");
   const regionWithArticle = eventItem?.regionDisplayNameWithArticle || kitWithArticle(region);
-  const friendlyDateLead = weekday ? `Na pr\u00f3xima ${weekday}` : "Em data a confirmar";
-  const startTimeWithPreposition = humanStartTime ? `\u00e0s ${humanStartTime}` : "em hor\u00e1rio a confirmar";
-  const serviceDate = longDate ? sentenceCaseKit(longDate) : shortDate || "Data a confirmar";
+  const friendlyDateLead = weekday ?`Na pr\u00f3xima ${weekday}` : "Em data a confirmar";
+  const startTimeWithPreposition = humanStartTime ?`\u00e0s ${humanStartTime}` : "em hor\u00e1rio a confirmar";
+  const serviceDate = longDate ?sentenceCaseKit(longDate) : shortDate || "Data a confirmar";
   const cityState = [eventItem?.city, eventItem?.state].filter(Boolean).join(" - ");
 
   const captionShort = [
@@ -279,12 +279,12 @@ function build77FirstKit(eventItem) {
     "",
     `${friendlyDateLead}, dia ${dayNumber || shortDate || "a confirmar"}, ${titleWithArticle} desembarca ${venueWithPreposition} para mais um dia de samba. Uma roda daquelas: gog\u00f3, palma da m\u00e3o, aquela gelada e gente bonita.`,
     "",
-    `O evento come\u00e7a ${startTimeWithPreposition}. Chama os seus e vem pra essa resenha${regionWithPreposition ? ` ${regionWithPreposition}` : ""}.`,
+    `O evento come\u00e7a ${startTimeWithPreposition}. Chama os seus e vem pra essa resenha${regionWithPreposition ?` ${regionWithPreposition}` : ""}.`,
     "",
     "Servi\u00e7o:",
     `\u{1F5D3}\uFE0F ${serviceDate}`,
     `\u{1F559} ${humanStartTime || startTime || "Hor\u00e1rio a confirmar"}`,
-    `\u{1F4CD} ${venue}${region ? ` (${region})` : ""}`,
+    `\u{1F4CD} ${venue}${region ?` (${region})` : ""}`,
     `\u{1F3AB} Ingresso: ${price}`,
     "",
     eventUrl
@@ -293,7 +293,7 @@ function build77FirstKit(eventItem) {
   const whatsappText = [
     `${title} ${venueWithPreposition} \u{1F941}`,
     "",
-    `${friendlyDateLead}, dia ${shortDate || "a confirmar"}, a partir ${startTimeWithPreposition}, tem ${title}${regionWithPreposition ? ` ${regionWithPreposition}` : ""}. Uma roda com muito samba de raiz.`,
+    `${friendlyDateLead}, dia ${shortDate || "a confirmar"}, a partir ${startTimeWithPreposition}, tem ${title}${regionWithPreposition ?` ${regionWithPreposition}` : ""}. Uma roda com muito samba de raiz.`,
     "",
     "Bora colar? Compartilha essa mensagem com os seus e vamos encostar.",
     "",
@@ -302,14 +302,14 @@ function build77FirstKit(eventItem) {
   ].join("\n");
 
   const releaseText = [
-    `${venue} recebe ${titleWithArticle}${weekday && dayNumber ? ` na pr\u00f3xima ${weekday} (${dayNumber})` : ""}`,
+    `${venue} recebe ${titleWithArticle}${weekday && dayNumber ?` na pr\u00f3xima ${weekday} (${dayNumber})` : ""}`,
     "",
-    `${regionWithArticle || region || eventItem?.city || "A cidade"} ter\u00e1 uma nova edi\u00e7\u00e3o ${titleWithDeRelation}${longDate ? ` no dia ${longDate}` : ""}. O evento acontece ${venueWithPreposition}, com in\u00edcio programado para ${startTimeWithPreposition}.`,
+    `${regionWithArticle || region || eventItem?.city || "A cidade"} ter\u00e1 uma nova edi\u00e7\u00e3o ${titleWithDeRelation}${longDate ?` no dia ${longDate}` : ""}. O evento acontece ${venueWithPreposition}, com in\u00edcio programado para ${startTimeWithPreposition}.`,
     "",
     eventItem?.description ||
       "O projeto apresenta um repert\u00f3rio focado em cl\u00e1ssicos do samba de raiz e grandes composi\u00e7\u00f5es. O ambiente \u00e9 estruturado para receber o p\u00fablico em um formato de roda de samba bem raiz, valorizando a proximidade entre m\u00fasicos e frequentadores.",
     "",
-    `As apresenta\u00e7\u00f5es ao vivo se estendem ao longo da noite, refor\u00e7ando o circuito cultural e de lazer${regionWithPreposition ? ` ${regionWithPreposition}` : ""}.`,
+    `As apresenta\u00e7\u00f5es ao vivo se estendem ao longo da noite, refor\u00e7ando o circuito cultural e de lazer${regionWithPreposition ?` ${regionWithPreposition}` : ""}.`,
     "",
     "Servi\u00e7o:",
     "",
@@ -317,7 +317,7 @@ function build77FirstKit(eventItem) {
     `- Artista: ${artist}`,
     `- Data: ${serviceDate}`,
     `- Hor\u00e1rio: ${humanStartTime || startTime || "Hor\u00e1rio a confirmar"}`,
-    `- Local: ${venue}${region ? ` \u2013 ${region}` : ""}${cityState ? `, ${cityState}` : ""}`,
+    `- Local: ${venue}${region ?` \u2013 ${region}` : ""}${cityState ?`, ${cityState}` : ""}`,
     `- Ingresso: ${price}`,
     `- Link: ${eventUrl}`
   ].join("\n");
@@ -359,8 +359,8 @@ function build77FirstKit(eventItem) {
 function build77FirstWebhookPayload(eventItem, kit) {
   const startValue = eventItem?.startsAt || eventItem?.startDate || "";
   const endValue = eventItem?.endsAt || eventItem?.endDate || "";
-  const startDate = startValue ? new Date(startValue) : null;
-  const endDate = endValue ? new Date(endValue) : null;
+  const startDate = startValue ?new Date(startValue) : null;
+  const endDate = endValue ?new Date(endValue) : null;
   const validStart = startDate && !Number.isNaN(startDate.getTime());
   const validEnd = endDate && !Number.isNaN(endDate.getTime());
 
@@ -375,9 +375,9 @@ function build77FirstWebhookPayload(eventItem, kit) {
     venueName: kit.venue,
     region: kit.region,
     address: eventItem?.address || eventItem?.venueAddress || "",
-    date: validStart ? startDate.toISOString().slice(0, 10) : "",
-    startTime: validStart ? startDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "",
-    endTime: validEnd ? endDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "",
+    date: validStart ?startDate.toISOString().slice(0, 10) : "",
+    startTime: validStart ?startDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "",
+    endTime: validEnd ?endDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "",
     priceLabel: kit.price,
     audienceBadges: eventItem?.audienceBadges || [],
     description: eventItem?.description || "",
@@ -510,29 +510,29 @@ export default function VenuesAdminPage() {
       return;
     }
     const normalized = String(text).toLowerCase();
-    const autoType = normalized.includes("nÃ£o foi possivel")
+    const autoType = normalized.includes("não foi possível")
       || normalized.includes("revise")
       || normalized.includes("sem permissao")
-      || normalized.includes("voce nÃ£o pode")
+      || normalized.includes("você não pode")
       || normalized.includes("forbidden")
       || normalized.includes("erro")
-      ? "error"
+      ?"error"
       : text.includes("Carregando")
-        ? "info"
+        ?"info"
         : "success";
     setToast({ text, type: forcedType || autoType });
   }
 
   const isHouseRole = isVenueRole(user?.role);
   const { data: regions = [] } = useRegionsQuery();
-  const { data: venues = [], isLoading: venuesLoading } = useVenuesQuery(regionFilter ? { region: regionFilter } : {});
+  const { data: venues = [], isLoading: venuesLoading } = useVenuesQuery(regionFilter ?{ region: regionFilter } : {});
   const { data: publicVenues = [] } = useVenuesQuery({ scope: "public" });
   const { data: adminRegions = [] } = useAdminRegionsQuery({ includeInactive: "true" }, isAdminRole(user?.role));
   const { data: artists = [], isLoading: artistsLoading } = useArtistsQuery();
   const eventsQueryFilters = useMemo(
     () => ({
-      ...(regionFilter ? { region: regionFilter } : {}),
-      ...(user ? { includeDrafts: "true" } : {})
+      ...(regionFilter ?{ region: regionFilter } : {}),
+      ...(user ?{ includeDrafts: "true" } : {})
     }),
     [regionFilter, user]
   );
@@ -571,7 +571,7 @@ export default function VenuesAdminPage() {
   const canManageCatalog = isAdminRole(user?.role) || isProducerRole(user?.role);
   const canManageProducers = isAdminRole(user?.role) || isHouseRole;
   const isAdmin = isAdminRole(user?.role);
-  const houseVenues = useMemo(() => (isHouseRole ? venues : []), [isHouseRole, venues]);
+  const houseVenues = useMemo(() => (isHouseRole ?venues : []), [isHouseRole, venues]);
   const houseActiveVenue = useMemo(() => {
     if (!isHouseRole) return null;
     return houseVenues.find((venue) => venue.id === houseActiveVenueId) || houseVenues[0] || null;
@@ -589,17 +589,17 @@ export default function VenuesAdminPage() {
   const filteredEvents = useMemo(() => {
     const q = eventSearch.trim().toLowerCase();
     const base = q
-      ? events.filter((item) => `${item.title} ${item.artist} ${item.venue}`.toLowerCase().includes(q))
+      ?events.filter((item) => `${item.title} ${item.artist} ${item.venue}`.toLowerCase().includes(q))
       : events;
     const baseByHouse = isHouseRole && houseActiveVenue
-      ? base.filter((item) => item.venue === houseActiveVenue.name)
+      ?base.filter((item) => item.venue === houseActiveVenue.name)
       : base;
-    const scoped = isHouseRole ? baseByHouse : base;
+    const scoped = isHouseRole ?baseByHouse : base;
     if (eventTimeFilter === "all") return scoped;
     const now = Date.now();
     return scoped.filter((item) => {
       const startsAt = new Date(item.startsAt || item.startDate || 0).getTime();
-      return eventTimeFilter === "upcoming" ? startsAt >= now : startsAt < now;
+      return eventTimeFilter === "upcoming" ?startsAt >= now : startsAt < now;
     });
   }, [events, eventSearch, eventTimeFilter, isHouseRole, houseActiveVenue]);
   const activeSection = searchParams.get("section") || "overview";
@@ -615,7 +615,7 @@ export default function VenuesAdminPage() {
   const showAdminRegions = isAdmin && effectiveSection === "regions";
   const showHouseClaims = isHouseRole && effectiveSection === "claims";
   const showHouseProfile = isHouseRole && effectiveSection === "profile";
-  const isHouseProgramacaoClean = isHouseRole && showEvents && searchParams.get("layout") === "clean";
+  const isHouseProgramaçãoClean = isHouseRole && showEvents && searchParams.get("layout") === "clean";
 
   useEffect(() => {
     if (showEvents) return;
@@ -658,10 +658,10 @@ export default function VenuesAdminPage() {
     return claims;
   }, [claimViewFilter, claims]);
   const houseDisplayName = isHouseRole
-    ? houseActiveVenue
-      ? houseActiveVenue.name
+    ?houseActiveVenue
+      ?houseActiveVenue.name
       : venues.length > 1
-        ? `${venues.length} casas vinculadas`
+        ?`${venues.length} casas vinculadas`
         : "Sua casa"
     : "";
   const houseClaimOptions = useMemo(() => {
@@ -706,31 +706,31 @@ export default function VenuesAdminPage() {
   );
   const previewVenue = venues.find((venue) => venue.id === eventForm.venueId) || houseActiveVenue || null;
   const previewPriceLabel = eventForm.ticketType === "free"
-    ? "Gratuito"
+    ?"Gratuito"
     : eventForm.ticketType === "consumacao"
-      ? "ConsumaÃ§Ã£o"
+      ?"Consumação"
       : eventForm.priceMin || eventForm.priceMax
-        ? `R$ ${eventForm.priceMin || eventForm.priceMax}`
+        ?`R$ ${eventForm.priceMin || eventForm.priceMax}`
         : "Consulte valores";
   const roleHeader = useMemo(() => {
     if (isAdminRole(user?.role)) {
       return {
-        title: "Administracao Geral de Casas, Artistas e Eventos",
-        subtitle: "Voce pode operar toda a base da plataforma.",
+        title: "Administração Geral de Casas, Artistas e Eventos",
+        subtitle: "Você pode operar toda a base da plataforma.",
         badge: "Perfil ativo: ADMIN"
       };
     }
     if (isProducerRole(user?.role)) {
       return {
-        title: "GestÃ£o de Casas, Artistas e Eventos do Produtor",
-        subtitle: "Voce edita somente carteira aprovada e reivindicacoes.",
+        title: "Gestão de Casas, Artistas e Eventos do Produtor",
+        subtitle: "Você edita somente carteira aprovada e reivindicações.",
         badge: "Perfil ativo: PRODUTOR"
       };
     }
     return {
-      title: "GestÃ£o de Agenda da Casa",
+      title: "Gestão de Agenda da Casa",
       subtitle: houseDisplayName
-        ? `Unidade ativa: ${houseDisplayName}. Aqui voce cuida da agenda, produtores e dados da sua casa.`
+        ?`Unidade ativa: ${houseDisplayName}. Aqui você cuida da agenda, produtores e dados da sua casa.`
         : "Para operar a agenda, primeiro solicite acesso a uma filial cadastrada.",
       badge: "Perfil ativo: CASA"
     };
@@ -753,7 +753,7 @@ export default function VenuesAdminPage() {
   useEffect(() => {
     if (isHouseRole) return;
     if (!searchParams.get("section") && prefs.section) {
-      setSearchParams({ section: prefs.section === "all" ? "overview" : prefs.section });
+      setSearchParams({ section: prefs.section === "all" ?"overview" : prefs.section });
     }
   }, [searchParams, setSearchParams, prefs.section, isHouseRole]);
   useEffect(() => {
@@ -847,7 +847,7 @@ export default function VenuesAdminPage() {
       await navigator.clipboard.writeText(text);
       showToast(successMessage || "Copiado.");
     } catch (_error) {
-      showToast("Nao foi possivel copiar agora.");
+      showToast("Não foi possível copiar agora.");
     }
   }
   function close77FirstKit() {
@@ -889,7 +889,7 @@ export default function VenuesAdminPage() {
     }
   }
   function exportVenuesCsv() {
-    downloadCsv("casas.csv", ["Nome", "Bairro", "RegiÃ£o", "Eventos"], filteredVenues.map((v) => [v.name, v.neighborhood, v.region, v.eventsCount]));
+    downloadCsv("casas.csv", ["Nome", "Bairro", "Região", "Eventos"], filteredVenues.map((v) => [v.name, v.neighborhood, v.region, v.eventsCount]));
     showToast("CSV de casas exportado.");
   }
   function exportArtistsCsv() {
@@ -897,7 +897,7 @@ export default function VenuesAdminPage() {
     showToast("CSV de artistas exportado.");
   }
   function exportEventsCsv() {
-    downloadCsv("eventos.csv", ["Titulo", "Artista", "Casa", "RegiÃ£o", "Inicio"], filteredEvents.map((e) => [e.title, e.artist, e.venue, e.region, e.startsAt || e.startDate]));
+    downloadCsv("eventos.csv", ["Titulo", "Artista", "Casa", "Região", "Inicio"], filteredEvents.map((e) => [e.title, e.artist, e.venue, e.region, e.startsAt || e.startDate]));
     showToast("CSV de eventos exportado.");
   }
   useEffect(() => {
@@ -908,7 +908,7 @@ export default function VenuesAdminPage() {
 
   function handleVenueChange(event) {
     const { name, value, type, checked } = event.target;
-    const nextValue = type === "checkbox" ? checked : value;
+    const nextValue = type === "checkbox" ?checked : value;
     setVenueForm((prev) => ({ ...prev, [name]: nextValue }));
     setVenueErrors((prev) => ({ ...prev, [name]: undefined }));
   }
@@ -929,7 +929,7 @@ export default function VenuesAdminPage() {
 
   function handleArtistChange(event) {
     const { name, value, type, checked } = event.target;
-    const nextValue = type === "checkbox" ? checked : value;
+    const nextValue = type === "checkbox" ?checked : value;
     setArtistForm((prev) => ({ ...prev, [name]: nextValue }));
     setArtistErrors((prev) => ({ ...prev, [name]: undefined }));
   }
@@ -959,16 +959,16 @@ export default function VenuesAdminPage() {
       return;
     }
 
-    const nextValue = type === "checkbox" ? checked : value;
+    const nextValue = type === "checkbox" ?checked : value;
     setEventForm((prev) => ({ ...prev, [name]: nextValue }));
     setEventErrors((prev) => ({ ...prev, [name]: undefined }));
   }
 
   function toggleRecurrenceDay(day) {
     setEventForm((prev) => {
-      const currentDays = Array.isArray(prev.recurrenceDays) ? prev.recurrenceDays : [];
+      const currentDays = Array.isArray(prev.recurrenceDays) ?prev.recurrenceDays : [];
       const nextDays = currentDays.includes(day)
-        ? currentDays.filter((item) => item !== day)
+        ?currentDays.filter((item) => item !== day)
         : [...currentDays, day];
       return {
         ...prev,
@@ -987,7 +987,7 @@ export default function VenuesAdminPage() {
     setEventForm((prev) => {
       const tags = parseTagList(prev.tags);
       const next = tags.includes(tag)
-        ? tags.filter((item) => item !== tag)
+        ?tags.filter((item) => item !== tag)
         : [...tags, tag];
       return { ...prev, tags: next.join(", ") };
     });
@@ -1032,13 +1032,13 @@ export default function VenuesAdminPage() {
       errors.endDate = ["Termino precisa ser depois do inicio."];
     }
     if (eventForm.ticketType === "free" && (eventForm.priceMin || eventForm.priceMax)) {
-      errors.ticketType = ["Evento gratuito nÃ£o deve ter preco."];
+      errors.ticketType = ["Evento gratuito não deve ter preço."];
     }
     if (eventForm.ticketType === "consumacao" && eventForm.consumacaoValue && Number(eventForm.consumacaoValue) < 0) {
-      errors.consumacaoValue = ["ConsumaÃ§Ã£o minima nÃ£o pode ser negativa."];
+      errors.consumacaoValue = ["Consumação mínima não pode ser negativa."];
     }
     if (eventForm.priceMin && eventForm.priceMax && Number(eventForm.priceMax) < Number(eventForm.priceMin)) {
-      errors.priceMax = ["Preco mÃ¡ximo deve ser maior ou igual ao mÃ­nimo."];
+      errors.priceMax = ["Preço máximo deve ser maior ou igual ao mínimo."];
     }
     if (eventForm.isRecurring && (!Array.isArray(eventForm.recurrenceDays) || eventForm.recurrenceDays.length === 0)) {
       errors.recurrenceDays = ["Selecione ao menos um dia da semana."];
@@ -1056,10 +1056,10 @@ export default function VenuesAdminPage() {
       displayNameWithArticle: previewArticle(venueForm.grammarArticle, venueForm.name),
       displayNameWithPreposition: previewPreposition(venueForm.grammarPreposition, venueForm.name),
       nicknameDisplayNameWithArticle: venueForm.nickname
-        ? previewArticle(venueForm.nicknameGrammarArticle, venueForm.nickname)
+        ?previewArticle(venueForm.nicknameGrammarArticle, venueForm.nickname)
         : "",
       nicknameDisplayNameWithPreposition: venueForm.nickname
-        ? previewPreposition(venueForm.nicknameGrammarPreposition, venueForm.nickname)
+        ?previewPreposition(venueForm.nicknameGrammarPreposition, venueForm.nickname)
         : "",
       neighborhoodDisplayNameWithArticle: previewArticle(venueForm.neighborhoodGrammarArticle, venueForm.neighborhood),
       neighborhoodDisplayNameWithPreposition: previewPreposition(venueForm.neighborhoodGrammarPreposition, venueForm.neighborhood),
@@ -1099,14 +1099,14 @@ export default function VenuesAdminPage() {
           "openDays"
         ];
         for (const key of trackKeys) {
-          const nextValue = key === "openDays" ? payload.openDays : (payload[key] ?? "");
-          const prevValue = key === "openDays" ? (current.openDays || []) : (current[key] ?? "");
+          const nextValue = key === "openDays" ?payload.openDays : (payload[key] ?? "");
+          const prevValue = key === "openDays" ?(current.openDays || []) : (current[key] ?? "");
           if (JSON.stringify(nextValue) !== JSON.stringify(prevValue)) {
             diff[key] = nextValue;
           }
         }
         if (Object.keys(diff).length === 0) {
-          showToast("Nenhuma alteracao detectada para enviar ao admin.", "info");
+          showToast("Nenhuma alteração detectada para enviar ao admin.", "info");
           return;
         }
         await createClaimMutation.mutateAsync({
@@ -1116,7 +1116,7 @@ export default function VenuesAdminPage() {
           justification: venueEditJustification.trim(),
           requestedChanges: diff
         });
-        showToast("Solicitacao de alteracao enviada para aprovacao do admin.");
+        showToast("Solicitação de alteração enviada para aprovação do admin.");
         resetVenueForm();
         return;
       }
@@ -1131,7 +1131,7 @@ export default function VenuesAdminPage() {
     } catch (error) {
       const parsed = parseApiErrors(error);
       setVenueErrors(parsed.fieldErrors);
-      showToast(parsed.message || "NÃ£o foi possivel salvar a casa.");
+      showToast(parsed.message || "Não foi possível salvar a casa.");
     }
   }
 
@@ -1162,7 +1162,7 @@ export default function VenuesAdminPage() {
           contactName: updated.contactName || "",
           contactPhone: updated.contactPhone || "",
           imageUrl: updated.imageUrl || "",
-          genres: Array.isArray(updated.genres) ? updated.genres.join(", ") : "samba",
+          genres: Array.isArray(updated.genres) ?updated.genres.join(", ") : "samba",
           isVerified: Boolean(updated.isVerified),
           spotifyUrl: updated.spotifyUrl || "",
           youtubeUrl: updated.youtubeUrl || "",
@@ -1177,7 +1177,7 @@ export default function VenuesAdminPage() {
     } catch (error) {
       const parsed = parseApiErrors(error);
       setArtistErrors(parsed.fieldErrors);
-      showToast(parsed.message || "NÃ£o foi possivel salvar o artista.");
+      showToast(parsed.message || "Não foi possível salvar o artista.");
     }
   }
 
@@ -1214,12 +1214,12 @@ export default function VenuesAdminPage() {
         city: detail.city || "",
         state: detail.state || "SP",
         imageUrl: detail.imageUrl || "",
-        openDays: Array.isArray(detail.openDays) ? detail.openDays.join(", ") : ""
+        openDays: Array.isArray(detail.openDays) ?detail.openDays.join(", ") : ""
       });
       setVenueEditJustification("");
       showToast("Casa carregada. Edite os campos e salve.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel carregar os dados completos da casa.");
+      showToast(error?.response?.data?.message || "Não foi possível carregar os dados completos da casa.");
     }
   }
 
@@ -1236,7 +1236,7 @@ export default function VenuesAdminPage() {
         contactName: detail.contactName || "",
         contactPhone: detail.contactPhone || "",
         imageUrl: detail.imageUrl || "",
-        genres: Array.isArray(detail.genres) ? detail.genres.join(", ") : "samba",
+        genres: Array.isArray(detail.genres) ?detail.genres.join(", ") : "samba",
         isVerified: Boolean(detail.isVerified),
         spotifyUrl: detail.spotifyUrl || "",
         youtubeUrl: detail.youtubeUrl || "",
@@ -1244,15 +1244,15 @@ export default function VenuesAdminPage() {
       });
       showToast("Artista carregado. Edite os campos e salve.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel carregar os dados completos do artista.");
+      showToast(error?.response?.data?.message || "Não foi possível carregar os dados completos do artista.");
     }
   }
 
   async function handleVenueDelete(venueId) {
     const ok = window.confirm(
       isProducer
-        ? "Deseja remover esta casa da sua carteira?"
-        : "Deseja excluir esta casa? Essa acao nÃ£o pode ser desfeita."
+        ?"Deseja remover esta casa da sua carteira?"
+        : "Deseja excluir esta casa? Essa ação não pode ser desfeita."
     );
     if (!ok) return;
 
@@ -1260,9 +1260,9 @@ export default function VenuesAdminPage() {
     try {
       await deleteVenueMutation.mutateAsync(venueId);
       if (editingVenueId === venueId) resetVenueForm();
-      showToast(isProducer ? "Casa removida da sua carteira." : "Casa excluida com sucesso.");
+      showToast(isProducer ?"Casa removida da sua carteira." : "Casa excluída com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel excluir a casa.");
+      showToast(error?.response?.data?.message || "Não foi possível excluir a casa.");
     }
   }
 
@@ -1276,7 +1276,7 @@ export default function VenuesAdminPage() {
       if (editingArtistId === artistId) resetArtistForm();
       showToast("Artista excluido com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel excluir o artista.");
+      showToast(error?.response?.data?.message || "Não foi possível excluir o artista.");
     }
   }
 
@@ -1294,23 +1294,23 @@ export default function VenuesAdminPage() {
     const payload = {
       ...eventForm,
       status: nextStatus,
-      artistName: eventForm.artistName?.trim() ? eventForm.artistName.trim() : undefined,
+      artistName: eventForm.artistName?.trim() ?eventForm.artistName.trim() : undefined,
       tags: eventForm.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-      priceMin: eventForm.priceMin ? Number(eventForm.priceMin) : undefined,
-      priceMax: eventForm.priceMax ? Number(eventForm.priceMax) : undefined,
-      consumacaoValue: eventForm.consumacaoValue ? Number(eventForm.consumacaoValue) : undefined,
-      couvertArtistico: eventForm.couvertArtistico ? Number(eventForm.couvertArtistico) : undefined,
+      priceMin: eventForm.priceMin ?Number(eventForm.priceMin) : undefined,
+      priceMax: eventForm.priceMax ?Number(eventForm.priceMax) : undefined,
+      consumacaoValue: eventForm.consumacaoValue ?Number(eventForm.consumacaoValue) : undefined,
+      couvertArtistico: eventForm.couvertArtistico ?Number(eventForm.couvertArtistico) : undefined,
       ticketUrl: eventForm.ticketUrl || undefined,
       imageUrl: eventForm.imageUrl || undefined,
       isRecurring: Boolean(eventForm.isRecurring),
-      recurrenceDays: eventForm.isRecurring ? eventForm.recurrenceDays : [],
-      recurrenceStartTime: eventForm.isRecurring ? (eventForm.recurrenceStartTime || undefined) : undefined,
-      recurrenceEndTime: eventForm.isRecurring ? (eventForm.recurrenceEndTime || undefined) : undefined,
+      recurrenceDays: eventForm.isRecurring ?eventForm.recurrenceDays : [],
+      recurrenceStartTime: eventForm.isRecurring ?(eventForm.recurrenceStartTime || undefined) : undefined,
+      recurrenceEndTime: eventForm.isRecurring ?(eventForm.recurrenceEndTime || undefined) : undefined,
       recurrenceUntil: eventForm.isRecurring && eventForm.recurrenceUntil
-        ? new Date(`${eventForm.recurrenceUntil}T23:59:59`)
+        ?new Date(`${eventForm.recurrenceUntil}T23:59:59`)
         : undefined,
       recurrenceExceptions: eventForm.isRecurring
-        ? eventForm.recurrenceExceptions
+        ?eventForm.recurrenceExceptions
           .split(",")
           .map((item) => item.trim())
           .filter(Boolean)
@@ -1330,17 +1330,17 @@ export default function VenuesAdminPage() {
 
       if (isEditingEvent) {
         await updateEventMutation.mutateAsync({ id: editingEventId, payload });
-        showToast(nextStatus === "confirmed" ? "Evento publicado com sucesso." : "Rascunho atualizado com sucesso.");
+        showToast(nextStatus === "confirmed" ?"Evento publicado com sucesso." : "Rascunho atualizado com sucesso.");
       } else {
         await createEventMutation.mutateAsync(payload);
-        showToast(nextStatus === "confirmed" ? "Evento publicado com sucesso." : "Rascunho salvo com sucesso.");
+        showToast(nextStatus === "confirmed" ?"Evento publicado com sucesso." : "Rascunho salvo com sucesso.");
       }
       resetEventForm();
       return true;
     } catch (error) {
       const parsed = parseApiErrors(error);
       setEventErrors(parsed.fieldErrors);
-      showToast(parsed.message || "NÃ£o foi possivel salvar o evento.", "error");
+      showToast(parsed.message || "Não foi possível salvar o evento.", "error");
       return false;
     }
   }
@@ -1381,7 +1381,7 @@ export default function VenuesAdminPage() {
         description: detail.description || "",
         imageUrl: detail.imageUrl || "",
         type: detail.type || "roda_samba",
-        tags: Array.isArray(detail.tags) ? detail.tags.join(", ") : "samba",
+        tags: Array.isArray(detail.tags) ?detail.tags.join(", ") : "samba",
         startDate: toLocalDateTimeInput(detail.startDate),
         endDate: toLocalDateTimeInput(detail.endDate),
         ticketType: detail.ticketType || "paid",
@@ -1398,15 +1398,15 @@ export default function VenuesAdminPage() {
         recurrenceStartTime: detail.recurrenceStartTime || "",
         recurrenceEndTime: detail.recurrenceEndTime || "",
         recurrenceUntil: detail.recurrenceUntil
-          ? new Date(detail.recurrenceUntil).toISOString().slice(0, 10)
+          ?new Date(detail.recurrenceUntil).toISOString().slice(0, 10)
           : "",
         recurrenceExceptions: Array.isArray(detail.recurrenceExceptions)
-          ? detail.recurrenceExceptions.map((value) => new Date(value).toISOString().slice(0, 10)).join(", ")
+          ?detail.recurrenceExceptions.map((value) => new Date(value).toISOString().slice(0, 10)).join(", ")
           : ""
       });
       showToast("Evento carregado. Edite os campos e salve.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel carregar os dados completos do evento.");
+      showToast(error?.response?.data?.message || "Não foi possível carregar os dados completos do evento.");
     }
   }
 
@@ -1420,7 +1420,7 @@ export default function VenuesAdminPage() {
       if (editingEventId === eventId) resetEventForm();
       showToast("Evento excluido com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel excluir o evento.");
+      showToast(error?.response?.data?.message || "Não foi possível excluir o evento.");
     }
   }
 
@@ -1444,7 +1444,7 @@ export default function VenuesAdminPage() {
       showToast(`Data ${trimmed} cancelada na serie.`);
       setCancellationTarget(null);
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel cancelar esta data.");
+      showToast(error?.response?.data?.message || "Não foi possível cancelar esta data.");
     }
   }
 
@@ -1453,7 +1453,7 @@ export default function VenuesAdminPage() {
     setCancellationTarget({
       id: eventItem.id,
       title: eventItem.title,
-      selectedDate: /^\d{4}-\d{2}-\d{2}$/.test(suggested) ? suggested : "",
+      selectedDate: /^\d{4}-\d{2}-\d{2}$/.test(suggested) ?suggested : "",
       recurrenceExceptions: eventItem.recurrenceExceptions || []
     });
   }
@@ -1473,10 +1473,10 @@ export default function VenuesAdminPage() {
       setReactivationTarget((prev) => {
         if (!prev || prev.id !== eventItem.id) return null;
         const updatedDates = (prev.dates || []).filter((date) => date !== targetDate);
-        return updatedDates.length > 0 ? { ...prev, dates: updatedDates } : null;
+        return updatedDates.length > 0 ?{ ...prev, dates: updatedDates } : null;
       });
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel reativar esta data.");
+      showToast(error?.response?.data?.message || "Não foi possível reativar esta data.");
     }
   }
 
@@ -1486,7 +1486,7 @@ export default function VenuesAdminPage() {
       .sort();
 
     if (currentExceptions.length === 0) {
-      showToast("Este evento nÃ£o possui datas canceladas.");
+      showToast("Este evento não possui datas canceladas.");
       return;
     }
 
@@ -1513,7 +1513,7 @@ export default function VenuesAdminPage() {
       setSelectedManagerUserId("");
       showToast("Produtor vinculado com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel vincular produtor.");
+      showToast(error?.response?.data?.message || "Não foi possível vincular produtor.");
     }
   }
 
@@ -1538,7 +1538,7 @@ export default function VenuesAdminPage() {
       setSelectedManagerUserId("");
       showToast("Produtor criado com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel criar produtor.");
+      showToast(error?.response?.data?.message || "Não foi possível criar produtor.");
     }
   }
 
@@ -1550,9 +1550,9 @@ export default function VenuesAdminPage() {
         venueId: selectedVenueForManagers,
         userId
       });
-      showToast("Vinculo removido com sucesso.");
+      showToast("Vínculo removido com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel remover vinculo.");
+      showToast(error?.response?.data?.message || "Não foi possível remover vínculo.");
     }
   }
 
@@ -1562,9 +1562,9 @@ export default function VenuesAdminPage() {
         id: claimId,
         payload: { status }
       });
-      showToast(status === "approved" ? "ReivindicaÃ§Ã£o aprovada." : "ReivindicaÃ§Ã£o rejeitada.");
+      showToast(status === "approved" ?"Reivindicação aprovada." : "Reivindicação rejeitada.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel decidir a reivindicaÃ§Ã£o.");
+      showToast(error?.response?.data?.message || "Não foi possível decidir a reivindicação.");
     }
   }
 
@@ -1577,7 +1577,7 @@ export default function VenuesAdminPage() {
     const { name, value, type, checked } = event.target;
     setRegionForm((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value
+      [name]: type === "checkbox" ?checked : value
     }));
   }
 
@@ -1589,7 +1589,7 @@ export default function VenuesAdminPage() {
       grammarPreposition: item.grammarPreposition || "em",
       displayNameWithArticle: item.displayNameWithArticle || "",
       displayNameWithPreposition: item.displayNameWithPreposition || "",
-      city: item.city || "Sao Paulo",
+      city: item.city || "São Paulo",
       state: item.state || "SP",
       sortOrder: item.sortOrder ?? "",
       isActive: Boolean(item.isActive)
@@ -1605,39 +1605,39 @@ export default function VenuesAdminPage() {
       grammarPreposition: regionForm.grammarPreposition || "em",
       displayNameWithArticle: previewArticle(regionForm.grammarArticle, regionForm.name),
       displayNameWithPreposition: previewPreposition(regionForm.grammarPreposition, regionForm.name),
-      city: regionForm.city.trim() || "Sao Paulo",
+      city: regionForm.city.trim() || "São Paulo",
       state: (regionForm.state || "SP").trim().toUpperCase(),
-      sortOrder: regionForm.sortOrder === "" ? 0 : Number(regionForm.sortOrder),
+      sortOrder: regionForm.sortOrder === "" ?0 : Number(regionForm.sortOrder),
       isActive: Boolean(regionForm.isActive)
     };
     try {
       if (editingRegionId) {
         await updateRegionMutation.mutateAsync({ id: editingRegionId, payload });
-        showToast("RegiÃ£o atualizada com sucesso.");
+        showToast("Região atualizada com sucesso.");
       } else {
         await createRegionMutation.mutateAsync(payload);
-        showToast("RegiÃ£o criada com sucesso.");
+        showToast("Região criada com sucesso.");
       }
       resetRegionForm();
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel salvar a regiÃ£o.");
+      showToast(error?.response?.data?.message || "Não foi possível salvar a região.");
     }
   }
 
   async function handleRegionDelete(regionItem) {
     if ((regionItem?.venuesCount || 0) > 0) {
-      showToast("RegiÃ£o com casas vinculadas nÃ£o pode ser excluida.", "error");
+      showToast("Região com casas vinculadas não pode ser excluída.", "error");
       return;
     }
-    const ok = window.confirm("Deseja excluir esta regiÃ£o?");
+    const ok = window.confirm("Deseja excluir esta região?");
     if (!ok) return;
     showToast("");
     try {
       await deleteRegionMutation.mutateAsync(regionItem.id);
       if (editingRegionId === regionItem.id) resetRegionForm();
-      showToast("RegiÃ£o excluida com sucesso.");
+      showToast("Região excluída com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel excluir a regiÃ£o.");
+      showToast(error?.response?.data?.message || "Não foi possível excluir a região.");
     }
   }
 
@@ -1648,8 +1648,8 @@ export default function VenuesAdminPage() {
     showToast("");
     setUploadingTarget(target);
     try {
-      const folder = target === "venue" ? "venues" : target === "artist" ? "artists" : "events";
-      const nameHint = target === "venue" ? venueForm.name : target === "artist" ? artistForm.name : eventForm.title;
+      const folder = target === "venue" ?"venues" : target === "artist" ?"artists" : "events";
+      const nameHint = target === "venue" ?venueForm.name : target === "artist" ?artistForm.name : eventForm.title;
       const uploaded = await uploadImageMutation.mutateAsync({
         file,
         folder,
@@ -1664,7 +1664,7 @@ export default function VenuesAdminPage() {
       }
       showToast("Imagem enviada com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel enviar a imagem.");
+      showToast(error?.response?.data?.message || "Não foi possível enviar a imagem.");
     } finally {
       setUploadingTarget("");
     }
@@ -1672,7 +1672,7 @@ export default function VenuesAdminPage() {
 
   async function handleRevokeMyHouseAccess(venueId, venueName) {
     const ok = window.confirm(
-      `Deseja abrir mao da filial "${venueName}"? Voce perdera acesso imediato a esta unidade.`
+      `Deseja abrir mão da filial "${venueName}"? Você perderá acesso imediato a esta unidade.`
     );
     if (!ok) return;
     showToast("");
@@ -1683,7 +1683,7 @@ export default function VenuesAdminPage() {
       }
       showToast("Acesso da filial revogado com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel revogar este acesso.");
+      showToast(error?.response?.data?.message || "Não foi possível revogar este acesso.");
     }
   }
 
@@ -1708,7 +1708,7 @@ export default function VenuesAdminPage() {
         officialInstagram: houseClaimOfficialInstagram.trim() || undefined,
         officialWebsite: houseClaimOfficialWebsite.trim() || undefined
       });
-      showToast("ReivindicaÃ§Ã£o enviada. Aguarde aprovacao do admin.");
+      showToast("Reivindicação enviada. Aguarde aprovação do admin.");
       setHouseClaimTargetId("");
       setHouseClaimJustification("");
       setHouseClaimResponsibleName("");
@@ -1719,7 +1719,7 @@ export default function VenuesAdminPage() {
       setHouseClaimOfficialInstagram("");
       setHouseClaimOfficialWebsite("");
     } catch (error) {
-      showToast(error?.response?.data?.message || "NÃ£o foi possivel enviar reivindicaÃ§Ã£o.", "error");
+      showToast(error?.response?.data?.message || "Não foi possível enviar reivindicação.", "error");
     }
   }
 
@@ -1736,7 +1736,7 @@ export default function VenuesAdminPage() {
       address: houseActiveVenue.address || "",
       neighborhood: houseActiveVenue.neighborhood || "",
       region: houseActiveVenue.region || "",
-      city: houseActiveVenue.city || "Sao Paulo",
+      city: houseActiveVenue.city || "São Paulo",
       state: houseActiveVenue.state || "SP",
       imageUrl: houseActiveVenue.imageUrl || "",
       openDays: (houseActiveVenue.openDays || []).join(", ")
@@ -1755,8 +1755,8 @@ export default function VenuesAdminPage() {
             <div className="role-session-badge">{roleHeader.badge}</div>
             <span className="role-live-indicator" aria-label="Perfil ativo ao vivo">LIVE</span>
           </div>
-          {isHouseRole ? <p className="meta-line"><strong>Casa:</strong> {houseDisplayName}</p> : null}
-          {isHouseRole && houseVenues.length > 1 ? (
+          {isHouseRole ?<p className="meta-line"><strong>Casa:</strong> {houseDisplayName}</p> : null}
+          {isHouseRole && houseVenues.length > 1 ?(
             <div className="house-selector-wrap">
               <label htmlFor="house-active-select" className="meta-line"><strong>Unidade ativa</strong></label>
               <select
@@ -1774,55 +1774,55 @@ export default function VenuesAdminPage() {
         <img src="/assets/brand/icon_mono_77Gira.svg" alt="77Gira" className="admin-page-icon" />
       </header>
 
-      {toast.text ? <p className={`toast toast-${toast.type}`}>{toast.text}</p> : null}
+      {toast.text ?<p className={`toast toast-${toast.type}`}>{toast.text}</p> : null}
 
-      {!isHouseRole ? (
+      {!isHouseRole ?(
         <div className="ads-layout">
           <aside className="ads-sidebar">
-            <button className={`chip ${activeSection === "overview" ? "active" : ""}`} onClick={() => setSearchParams({ section: "overview" })}>
-              Visao Geral
+            <button className={`chip ${activeSection === "overview" ?"active" : ""}`} onClick={() => setSearchParams({ section: "overview" })}>
+              Visão Geral
             </button>
-            {canManageCatalog ? <button className={`chip ${activeSection === "venues" ? "active" : ""}`} onClick={() => setSearchParams({ section: "venues" })}>Casas</button> : null}
-            {canManageCatalog ? <button className={`chip ${activeSection === "artists" ? "active" : ""}`} onClick={() => setSearchParams({ section: "artists" })}>Artistas</button> : null}
-            {isAdmin ? <button className={`chip ${activeSection === "regions" ? "active" : ""}`} onClick={() => setSearchParams({ section: "regions" })}>Regioes</button> : null}
-            {isAdmin ? <button className={`chip ${activeSection === "managers" ? "active" : ""}`} onClick={() => setSearchParams({ section: "managers" })}>Produtores</button> : null}
-            {isAdmin ? <button className={`chip ${activeSection === "claims" ? "active" : ""}`} onClick={() => setSearchParams({ section: "claims" })}>Reivindicacoes</button> : null}
-            <button className={`chip ${activeSection === "events" ? "active" : ""}`} onClick={() => setSearchParams({ section: "events" })}>Eventos</button>
+            {canManageCatalog ?<button className={`chip ${activeSection === "venues" ?"active" : ""}`} onClick={() => setSearchParams({ section: "venues" })}>Casas</button> : null}
+            {canManageCatalog ?<button className={`chip ${activeSection === "artists" ?"active" : ""}`} onClick={() => setSearchParams({ section: "artists" })}>Artistas</button> : null}
+            {isAdmin ?<button className={`chip ${activeSection === "regions" ?"active" : ""}`} onClick={() => setSearchParams({ section: "regions" })}>Regiões</button> : null}
+            {isAdmin ?<button className={`chip ${activeSection === "managers" ?"active" : ""}`} onClick={() => setSearchParams({ section: "managers" })}>Produtores</button> : null}
+            {isAdmin ?<button className={`chip ${activeSection === "claims" ?"active" : ""}`} onClick={() => setSearchParams({ section: "claims" })}>Reivindicações</button> : null}
+            <button className={`chip ${activeSection === "events" ?"active" : ""}`} onClick={() => setSearchParams({ section: "events" })}>Eventos</button>
             <button className="chip" onClick={clearAdminFilters}>Limpar filtros</button>
           </aside>
           <div className="ads-content">
             <div className="chip-row admin-filter-row">
-              <button className={`chip ${regionFilter === "" ? "active" : ""}`} onClick={() => setRegionFilter("")}>Todas</button>
+              <button className={`chip ${regionFilter === "" ?"active" : ""}`} onClick={() => setRegionFilter("")}>Todas</button>
               {regions.map((region) => (
-                <button key={region} className={`chip ${regionFilter === region ? "active" : ""}`} onClick={() => setRegionFilter(region)}>
+                <button key={region} className={`chip ${regionFilter === region ?"active" : ""}`} onClick={() => setRegionFilter(region)}>
                   {region}
                 </button>
               ))}
             </div>
 
             <div className="admin-kpis">
-              {showVenues ? <article className="clean-card"><h4>Casas</h4><p>{filteredVenues.length}</p></article> : null}
-              {showArtists ? <article className="clean-card"><h4>Artistas</h4><p>{filteredArtists.length}</p></article> : null}
-              {showEvents ? <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
-              {showManagers ? <article className="clean-card"><h4>Produtores</h4><p>{totalManagers}</p></article> : null}
-              {showClaims ? <article className="clean-card"><h4>Reivindicacoes</h4><p>{pendingClaimsCount} pendentes</p></article> : null}
-              {showAdminRegions ? <article className="clean-card"><h4>Regioes</h4><p>{adminRegions.length}</p></article> : null}
-              {showOverview ? <article className="clean-card"><h4>Casas</h4><p>{filteredVenues.length}</p></article> : null}
-              {showOverview ? <article className="clean-card"><h4>Artistas</h4><p>{filteredArtists.length}</p></article> : null}
-              {showOverview ? <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
-              {showOverview ? <article className="clean-card"><h4>Reivindicacoes</h4><p>{pendingClaimsCount} pendentes</p></article> : null}
-              {showOverview ? <article className="clean-card"><h4>Visitantes (30d)</h4><p>{audienceSummary?.global?.activeAudience ?? 0}</p></article> : null}
-              {showOverview ? <article className="clean-card"><h4>Conversao (30d)</h4><p>{audienceSummary?.global?.conversionRate ?? 0}%</p></article> : null}
+              {showVenues ?<article className="clean-card"><h4>Casas</h4><p>{filteredVenues.length}</p></article> : null}
+              {showArtists ?<article className="clean-card"><h4>Artistas</h4><p>{filteredArtists.length}</p></article> : null}
+              {showEvents ?<article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
+              {showManagers ?<article className="clean-card"><h4>Produtores</h4><p>{totalManagers}</p></article> : null}
+              {showClaims ?<article className="clean-card"><h4>Reivindicações</h4><p>{pendingClaimsCount} pendentes</p></article> : null}
+              {showAdminRegions ?<article className="clean-card"><h4>Regiões</h4><p>{adminRegions.length}</p></article> : null}
+              {showOverview ?<article className="clean-card"><h4>Casas</h4><p>{filteredVenues.length}</p></article> : null}
+              {showOverview ?<article className="clean-card"><h4>Artistas</h4><p>{filteredArtists.length}</p></article> : null}
+              {showOverview ?<article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
+              {showOverview ?<article className="clean-card"><h4>Reivindicações</h4><p>{pendingClaimsCount} pendentes</p></article> : null}
+              {showOverview ?<article className="clean-card"><h4>Visitantes (30d)</h4><p>{audienceSummary?.global?.activeAudience ?? 0}</p></article> : null}
+              {showOverview ?<article className="clean-card"><h4>Conversão (30d)</h4><p>{audienceSummary?.global?.conversionRate ?? 0}%</p></article> : null}
             </div>
-            {showOverview ? (
+            {showOverview ?(
               <article className="clean-card admin-overview-card">
-                <h4>Visao Geral</h4>
-                <p className="meta-line">Use o menu lateral para abrir Casas, Artistas, Produtores, Reivindicacoes e Eventos sem rolagem infinita.</p>
+                <h4>Visão Geral</h4>
+                <p className="meta-line">Use o menu lateral para abrir Casas, Artistas, Produtores, Reivindicações e Eventos sem rolagem infinita.</p>
               </article>
             ) : null}
           </div>
         </div>
-      ) : isHouseProgramacaoClean ? (
+      ) : isHouseProgramaçãoClean ?(
         <div className="ads-content">
           <div className="admin-kpis">
             <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article>
@@ -1831,63 +1831,63 @@ export default function VenuesAdminPage() {
       ) : (
         <div className="ads-layout">
           <aside className="ads-sidebar">
-            <button className={`chip ${activeSection === "overview" ? "active" : ""}`} onClick={() => setSearchParams({ section: "overview" })}>
-              Visao Geral
+            <button className={`chip ${activeSection === "overview" ?"active" : ""}`} onClick={() => setSearchParams({ section: "overview" })}>
+              Visão Geral
             </button>
-            <button className={`chip ${activeSection === "events" ? "active" : ""}`} onClick={() => setSearchParams({ section: "events" })}>
+            <button className={`chip ${activeSection === "events" ?"active" : ""}`} onClick={() => setSearchParams({ section: "events" })}>
               Eventos
             </button>
-            <button className={`chip ${activeSection === "profile" ? "active" : ""}`} onClick={() => setSearchParams({ section: "profile" })}>
+            <button className={`chip ${activeSection === "profile" ?"active" : ""}`} onClick={() => setSearchParams({ section: "profile" })}>
               Dados da Casa
             </button>
-            <button className={`chip ${activeSection === "managers" ? "active" : ""}`} onClick={() => setSearchParams({ section: "managers" })}>
+            <button className={`chip ${activeSection === "managers" ?"active" : ""}`} onClick={() => setSearchParams({ section: "managers" })}>
               Produtores
             </button>
-            <button className={`chip ${activeSection === "claims" ? "active" : ""}`} onClick={() => setSearchParams({ section: "claims" })}>
+            <button className={`chip ${activeSection === "claims" ?"active" : ""}`} onClick={() => setSearchParams({ section: "claims" })}>
               Solicitar Acesso
             </button>
             <button className="chip" onClick={clearAdminFilters}>Limpar filtros</button>
           </aside>
           <div className="ads-content">
             <div className="admin-kpis">
-              {showOverview ? <article className="clean-card"><h4>Casa em foco</h4><p>{houseDisplayName || "Sem unidade ativa"}</p></article> : null}
-              {showOverview ? <article className="clean-card"><h4>Eventos da casa</h4><p>{houseEvents.length}</p></article> : null}
-              {showOverview ? <article className="clean-card"><h4>Hoje</h4><p>{houseTodayEventsCount} evento(s)</p></article> : null}
-              {showOverview ? <article className="clean-card"><h4>Solicitacoes</h4><p>{pendingMyHouseClaims} pendente(s)</p></article> : null}
-              {showOverview ? <article className="clean-card"><h4>Impressoes (30d)</h4><p>{houseAdsSummary?.summary?.impressions ?? 0}</p></article> : null}
-              {showOverview ? <article className="clean-card"><h4>Cliques (30d)</h4><p>{houseAdsSummary?.summary?.clicks ?? 0}</p></article> : null}
-              {showOverview ? <article className="clean-card"><h4>CTR (30d)</h4><p>{houseAdsSummary?.summary?.ctr ?? 0}%</p></article> : null}
-              {showOverview ? <article className="clean-card"><h4>Radar da casa (30d)</h4><p>{audienceSummary?.scoped?.radarUsers ?? 0}</p></article> : null}
-              {showOverview ? <article className="clean-card"><h4>PÃºblico presente (30d)</h4><p>{audienceSummary?.scoped?.attendeesUsers ?? 0}</p></article> : null}
-              {showEvents && !isHouseProgramacaoClean ? <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
-              {showHouseProfile ? <article className="clean-card"><h4>Dados da Casa</h4><p>{houseDisplayName || "Sem unidade ativa"}</p></article> : null}
-              {showManagers ? <article className="clean-card"><h4>Produtores</h4><p>{totalManagers}</p></article> : null}
-              {showHouseClaims ? <article className="clean-card"><h4>Solicitacoes</h4><p>{myClaims.filter((c) => c.status === "pending").length} pendentes</p></article> : null}
+              {showOverview ?<article className="clean-card"><h4>Casa em foco</h4><p>{houseDisplayName || "Sem unidade ativa"}</p></article> : null}
+              {showOverview ?<article className="clean-card"><h4>Eventos da casa</h4><p>{houseEvents.length}</p></article> : null}
+              {showOverview ?<article className="clean-card"><h4>Hoje</h4><p>{houseTodayEventsCount} evento(s)</p></article> : null}
+              {showOverview ?<article className="clean-card"><h4>Solicitacoes</h4><p>{pendingMyHouseClaims} pendente(s)</p></article> : null}
+              {showOverview ?<article className="clean-card"><h4>Impressões (30d)</h4><p>{houseAdsSummary?.summary?.impressions ?? 0}</p></article> : null}
+              {showOverview ?<article className="clean-card"><h4>Cliques (30d)</h4><p>{houseAdsSummary?.summary?.clicks ?? 0}</p></article> : null}
+              {showOverview ?<article className="clean-card"><h4>CTR (30d)</h4><p>{houseAdsSummary?.summary?.ctr ?? 0}%</p></article> : null}
+              {showOverview ?<article className="clean-card"><h4>Radar da casa (30d)</h4><p>{audienceSummary?.scoped?.radarUsers ?? 0}</p></article> : null}
+              {showOverview ?<article className="clean-card"><h4>Público presente (30d)</h4><p>{audienceSummary?.scoped?.attendeesUsers ?? 0}</p></article> : null}
+              {showEvents && !isHouseProgramaçãoClean ?<article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
+              {showHouseProfile ?<article className="clean-card"><h4>Dados da Casa</h4><p>{houseDisplayName || "Sem unidade ativa"}</p></article> : null}
+              {showManagers ?<article className="clean-card"><h4>Produtores</h4><p>{totalManagers}</p></article> : null}
+              {showHouseClaims ?<article className="clean-card"><h4>Solicitacoes</h4><p>{myClaims.filter((c) => c.status === "pending").length} pendentes</p></article> : null}
             </div>
-            {showEvents && !isHouseProgramacaoClean ? <div className="admin-content-divider" /> : null}
+            {showEvents && !isHouseProgramaçãoClean ?<div className="admin-content-divider" /> : null}
           </div>
         </div>
       )}
 
-      <div className={`admin-section-stack${isHouseRole ? " house-section-stack" : ""}${isHouseRole && (showOverview || showEvents) ? " no-divider" : ""}${isHouseProgramacaoClean ? " house-events-focus" : ""}`}>
-      {showOverview && isHouseRole ? (
+      <div className={`admin-section-stack${isHouseRole ?" house-section-stack" : ""}${isHouseRole && (showOverview || showEvents) ?" no-divider" : ""}${isHouseProgramaçãoClean ?" house-events-focus" : ""}`}>
+      {showOverview && isHouseRole ?(
         <>
-          {!houseActiveVenue ? (
-            <p className="empty">Sem filial aprovada. Abra "Solicitar Acesso" no menu lateral para liberar a operacao.</p>
+          {!houseActiveVenue ?(
+            <p className="empty">Sem filial aprovada. Abra "Solicitar Acesso" no menu lateral para liberar a operação.</p>
           ) : null}
-          {houseActiveVenue ? (
+          {houseActiveVenue ?(
             <>
-              {houseAdsLoading ? <p className="empty">Carregando mÃ©tricas de anuncios...</p> : null}
+              {houseAdsLoading ?<p className="empty">Carregando métricas de anúncios...</p> : null}
             </>
           ) : null}
         </>
       ) : null}
 
-      {showVenues && isProducer ? (
+      {showVenues && isProducer ?(
         <article className="danger-zone-card">
           <h3>Zona de Perigo</h3>
           <p className="meta-line">Remova uma casa da sua carteira sem apagar a casa da plataforma.</p>
-          {venues.length === 0 ? (
+          {venues.length === 0 ?(
             <p className="empty">Nenhuma casa vinculada para revogar.</p>
           ) : (
             <div className="danger-zone-list">
@@ -1908,8 +1908,8 @@ export default function VenuesAdminPage() {
           )}
         </article>
       ) : null}
-      {showVenues ? <h3 className="section-title">Casas</h3> : null}
-      {showVenues && canManageCatalog ? <form className="venue-form" onSubmit={handleVenueSubmit}>
+      {showVenues ?<h3 className="section-title">Casas</h3> : null}
+      {showVenues && canManageCatalog ?<form className="venue-form" onSubmit={handleVenueSubmit}>
         <input name="name" value={venueForm.name} onChange={handleVenueChange} placeholder="Nome da casa" required />
         <div className="clean-card grammar-preview-card">
           <strong>Tratamento textual da casa</strong>
@@ -1925,7 +1925,7 @@ export default function VenuesAdminPage() {
               ))}
             </select>
           </div>
-          <p className="meta-line">Previa: {previewArticle(venueForm.grammarArticle, venueForm.name) || "Nome da casa"} - {previewPreposition(venueForm.grammarPreposition, venueForm.name) || "em Nome da casa"}</p>
+          <p className="meta-line">Prévia: {previewArticle(venueForm.grammarArticle, venueForm.name) || "Nome da casa"} - {previewPreposition(venueForm.grammarPreposition, venueForm.name) || "em Nome da casa"}</p>
         </div>
         <input name="nickname" value={venueForm.nickname} onChange={handleVenueChange} placeholder="Apelido local da casa (ex: Cruz, Francisca, Baixo)" />
         <div className="clean-card grammar-preview-card">
@@ -1943,18 +1943,18 @@ export default function VenuesAdminPage() {
             </select>
           </div>
           <p className="meta-line">
-            Previa informal: {venueForm.nickname
-              ? `${previewArticle(venueForm.nicknameGrammarArticle, venueForm.nickname)} - ${previewPreposition(venueForm.nicknameGrammarPreposition, venueForm.nickname)}`
+            Prévia informal: {venueForm.nickname
+              ?`${previewArticle(venueForm.nicknameGrammarArticle, venueForm.nickname)} - ${previewPreposition(venueForm.nicknameGrammarPreposition, venueForm.nickname)}`
               : "Sem apelido cadastrado"}
           </p>
         </div>
-        {venueErrors.name?.[0] ? <p className="field-error">{venueErrors.name[0]}</p> : null}
-        <input name="description" value={venueForm.description} onChange={handleVenueChange} placeholder="DescriÃ§Ã£o" required />
-        {venueErrors.description?.[0] ? <p className="field-error">{venueErrors.description[0]}</p> : null}
-        <input name="contactName" value={venueForm.contactName} onChange={handleVenueChange} placeholder="Responsavel da casa (opcional)" />
+        {venueErrors.name?.[0] ?<p className="field-error">{venueErrors.name[0]}</p> : null}
+        <input name="description" value={venueForm.description} onChange={handleVenueChange} placeholder="Descrição" required />
+        {venueErrors.description?.[0] ?<p className="field-error">{venueErrors.description[0]}</p> : null}
+        <input name="contactName" value={venueForm.contactName} onChange={handleVenueChange} placeholder="Responsável da casa (opcional)" />
         <input name="contactPhone" value={venueForm.contactPhone} onChange={handleVenueChange} placeholder="Telefone da casa (opcional)" />
         <input name="instagramUrl" value={venueForm.instagramUrl} onChange={handleVenueChange} placeholder="Instagram da casa (URL, opcional)" />
-        <input name="address" value={venueForm.address} onChange={handleVenueChange} placeholder="Endereco" required />
+        <input name="address" value={venueForm.address} onChange={handleVenueChange} placeholder="Endereço" required />
         <input name="neighborhood" value={venueForm.neighborhood} onChange={handleVenueChange} placeholder="Bairro" required />
         <div className="clean-card grammar-preview-card">
           <strong>Tratamento textual do bairro</strong>
@@ -1970,10 +1970,10 @@ export default function VenuesAdminPage() {
               ))}
             </select>
           </div>
-          <p className="meta-line">Previa: {previewArticle(venueForm.neighborhoodGrammarArticle, venueForm.neighborhood) || "Bairro"} - {previewPreposition(venueForm.neighborhoodGrammarPreposition, venueForm.neighborhood) || "em Bairro"}</p>
+          <p className="meta-line">Prévia: {previewArticle(venueForm.neighborhoodGrammarArticle, venueForm.neighborhood) || "Bairro"} - {previewPreposition(venueForm.neighborhoodGrammarPreposition, venueForm.neighborhood) || "em Bairro"}</p>
         </div>
         <select name="region" value={venueForm.region} onChange={handleVenueChange} required>
-          <option value="">RegiÃ£o</option>
+          <option value="">Região</option>
           {venueRegionOptions.map((regionName) => (
             <option key={`region-option-create-${regionName}`} value={regionName}>
               {regionName}
@@ -2001,14 +2001,14 @@ export default function VenuesAdminPage() {
             disabled={uploadingTarget === "venue"}
           />
         </label>
-        {uploadingTarget === "venue" ? <p className="meta-line">Enviando imagem...</p> : null}
+        {uploadingTarget === "venue" ?<p className="meta-line">Enviando imagem...</p> : null}
         <input
           name="openDays"
           value={venueForm.openDays}
           onChange={handleVenueChange}
           placeholder="Dias de funcionamento (ex: Seg, Qua, Sex, Sab)"
         />
-        {!isAdmin && isEditingVenue ? (
+        {!isAdmin && isEditingVenue ?(
           <textarea
             value={venueEditJustification}
             onChange={(e) => setVenueEditJustification(e.target.value)}
@@ -2024,17 +2024,17 @@ export default function VenuesAdminPage() {
             disabled={createVenueMutation.isPending || updateVenueMutation.isPending || (isProducer && !isEditingVenue)}
           >
             {isEditingVenue
-              ? (isAdmin ? "Salvar casa" : "Enviar para aprovacao")
+              ?(isAdmin ?"Salvar casa" : "Enviar para aprovação")
               : isAdmin
-                ? "Criar casa"
+                ?"Criar casa"
                 : "Selecione uma casa para editar"}
           </button>
-          {isEditingVenue ? <button type="button" className="chip" onClick={resetVenueForm}>Cancelar</button> : null}
+          {isEditingVenue ?<button type="button" className="chip" onClick={resetVenueForm}>Cancelar</button> : null}
         </div>
       </form> : null}
 
-      {showVenues && venuesLoading ? <p className="empty">Carregando casas...</p> : null}
-      {showVenues ? <div className="admin-list-header">
+      {showVenues && venuesLoading ?<p className="empty">Carregando casas...</p> : null}
+      {showVenues ?<div className="admin-list-header">
         <strong>Casas cadastradas ({filteredVenues.length})</strong>
         <div className="admin-actions-row admin-filter-row">
           <button className="chip" onClick={exportVenuesCsv}>Exportar CSV</button>
@@ -2045,46 +2045,46 @@ export default function VenuesAdminPage() {
         </select>
         <input
           className="search-input"
-          placeholder="Buscar casa por nome, bairro ou regiÃ£o..."
+          placeholder="Buscar casa por nome, bairro ou região..."
           value={venueSearch}
           onChange={(e) => setVenueSearch(e.target.value)}
         />
       </div> : null}
-      {showVenues && !venuesLoading && filteredVenues.length === 0 ? (
+      {showVenues && !venuesLoading && filteredVenues.length === 0 ?(
         <p className="empty">Nenhuma casa encontrada para esta busca. <button className="btn-link" onClick={clearAdminFilters}>Limpar filtros</button></p>
       ) : null}
-      {showVenues ? <div className="venue-list admin-entity-grid">
+      {showVenues ?<div className="venue-list admin-entity-grid">
         {pagedVenues.map((venue) => (
           <article key={venue.id} className="venue-card">
             <div>
               <h3>{venue.name}</h3>
               <p className="meta-line">{venue.neighborhood} - {venue.region}</p>
               <p className="meta-line">Eventos vinculados: {venue.eventsCount}</p>
-              {venue.contactName ? <p className="meta-line">Responsavel: {venue.contactName}</p> : null}
-              {venue.contactPhone ? <p className="meta-line">Telefone: {venue.contactPhone}</p> : null}
-              {Array.isArray(venue.openDays) && venue.openDays.length > 0 ? (
+              {venue.contactName ?<p className="meta-line">Responsável: {venue.contactName}</p> : null}
+              {venue.contactPhone ?<p className="meta-line">Telefone: {venue.contactPhone}</p> : null}
+              {Array.isArray(venue.openDays) && venue.openDays.length > 0 ?(
                 <p className="meta-line">Funciona: {venue.openDays.join(", ")}</p>
               ) : null}
             </div>
             <div className="venue-actions">
               <button className="chip" onClick={() => handleVenueEdit(venue)}>Editar</button>
               <button className="chip" onClick={() => handleVenueDelete(venue.id)} disabled={deleteVenueMutation.isPending}>
-                {isProducer ? "Remover da carteira" : "Excluir"}
+                {isProducer ?"Remover da carteira" : "Excluir"}
               </button>
             </div>
           </article>
         ))}
       </div> : null}
-      {showVenues && venueTotalPages > 1 ? (
+      {showVenues && venueTotalPages > 1 ?(
         <div className="pagination-row">
           <button className="chip" onClick={() => setVenuePage((p) => Math.max(1, p - 1))} disabled={venuePage === 1}>Anterior</button>
-          <small className="meta-line">PÃ¡gina {venuePage} de {venueTotalPages}</small>
-          <button className="chip" onClick={() => setVenuePage((p) => Math.min(venueTotalPages, p + 1))} disabled={venuePage === venueTotalPages}>PrÃ³xima</button>
+          <small className="meta-line">Página {venuePage} de {venueTotalPages}</small>
+          <button className="chip" onClick={() => setVenuePage((p) => Math.min(venueTotalPages, p + 1))} disabled={venuePage === venueTotalPages}>Próxima</button>
         </div>
       ) : null}
 
-      {showManagers ? <h3 className="section-title">Produtores por Casa</h3> : null}
-      {showManagers && canManageProducers ? <form className="venue-form" onSubmit={handleCreateManager}>
+      {showManagers ?<h3 className="section-title">Produtores por Casa</h3> : null}
+      {showManagers && canManageProducers ?<form className="venue-form" onSubmit={handleCreateManager}>
         <input
           name="firstName"
           value={managerForm.firstName}
@@ -2103,7 +2103,7 @@ export default function VenuesAdminPage() {
           name="username"
           value={managerForm.username}
           onChange={handleManagerFormChange}
-          placeholder="UsuÃ¡rio de acesso"
+          placeholder="Usuário de acesso"
           required
         />
         <input
@@ -2130,12 +2130,12 @@ export default function VenuesAdminPage() {
         />
         <div className="form-actions-inline">
           <button className="btn-primary" type="submit" disabled={createVenueManagerUserMutation.isPending}>
-            {createVenueManagerUserMutation.isPending ? "Criando..." : "Criar produtor"}
+            {createVenueManagerUserMutation.isPending ?"Criando..." : "Criar produtor"}
           </button>
         </div>
       </form> : null}
-      {showManagers && canManageProducers ? <form className="venue-form" onSubmit={handleAddManager}>
-        {!isHouseRole ? (
+      {showManagers && canManageProducers ?<form className="venue-form" onSubmit={handleAddManager}>
+        {!isHouseRole ?(
           <select value={selectedVenueForManagers} onChange={(e) => setSelectedVenueForManagers(e.target.value)} required>
             <option value="">Selecione a casa</option>
             {venues.map((venue) => (
@@ -2151,7 +2151,7 @@ export default function VenuesAdminPage() {
             setManagerSearch(e.target.value);
             setSelectedManagerUserId("");
           }}
-          placeholder="Buscar produtor por nome, email ou usuÃ¡rio"
+          placeholder="Buscar produtor por nome, email ou usuário"
           required
         />
         <select
@@ -2166,7 +2166,7 @@ export default function VenuesAdminPage() {
             </option>
           ))}
         </select>
-        {managerCandidatesLoading ? <p className="empty">Buscando produtores...</p> : null}
+        {managerCandidatesLoading ?<p className="empty">Buscando produtores...</p> : null}
         <div className="form-actions-inline">
           <button className="btn-primary" type="submit" disabled={addVenueManagerMutation.isPending}>
             Vincular produtor
@@ -2174,16 +2174,16 @@ export default function VenuesAdminPage() {
         </div>
       </form> : null}
 
-      {showManagers && selectedVenueForManagers && managersLoading ? <p className="empty">Carregando produtores...</p> : null}
-      {showManagers && selectedVenueForManagers ? (
+      {showManagers && selectedVenueForManagers && managersLoading ?<p className="empty">Carregando produtores...</p> : null}
+      {showManagers && selectedVenueForManagers ?(
         <div className="venue-list">
-          {venueManagers.length === 0 ? <p className="empty">Nenhum produtor vinculado.</p> : null}
+          {venueManagers.length === 0 ?<p className="empty">Nenhum produtor vinculado.</p> : null}
           {venueManagers.map((entry) => (
             <article key={entry.id} className="venue-card">
               <div>
                 <h3>{entry.user.firstName} {entry.user.lastName}</h3>
                 <p className="meta-line">{entry.user.email}</p>
-                {entry.user.phone ? <p className="meta-line">Telefone: {entry.user.phone}</p> : null}
+                {entry.user.phone ?<p className="meta-line">Telefone: {entry.user.phone}</p> : null}
                 <p className="meta-line">Perfil: {entry.user.role}</p>
               </div>
               <div className="venue-actions">
@@ -2200,49 +2200,49 @@ export default function VenuesAdminPage() {
         </div>
       ) : null}
 
-      {showClaims ? <h3 className="section-title">Reivindicacoes de produtores e casas</h3> : null}
-      {showClaims ? (
+      {showClaims ?<h3 className="section-title">Reivindicações de produtores e casas</h3> : null}
+      {showClaims ?(
         <div className="admin-actions-row">
-          <button className={`chip ${claimViewFilter === "all" ? "active" : ""}`} onClick={() => setClaimViewFilter("all")}>Todas</button>
-          <button className={`chip ${claimViewFilter === "pending_updates" ? "active" : ""}`} onClick={() => setClaimViewFilter("pending_updates")}>
-            Pendentes de alteracao
+          <button className={`chip ${claimViewFilter === "all" ?"active" : ""}`} onClick={() => setClaimViewFilter("all")}>Todas</button>
+          <button className={`chip ${claimViewFilter === "pending_updates" ?"active" : ""}`} onClick={() => setClaimViewFilter("pending_updates")}>
+            Pendentes de alteração
           </button>
-          <button className={`chip ${claimViewFilter === "pending_ownership" ? "active" : ""}`} onClick={() => setClaimViewFilter("pending_ownership")}>
+          <button className={`chip ${claimViewFilter === "pending_ownership" ?"active" : ""}`} onClick={() => setClaimViewFilter("pending_ownership")}>
             Pendentes de carteira
           </button>
         </div>
       ) : null}
-      {showClaims && claimsLoading ? <p className="empty">Carregando reivindicacoes...</p> : null}
-      {showClaims && !claimsLoading && filteredClaims.length === 0 ? <p className="empty">Nenhuma reivindicaÃ§Ã£o no filtro atual.</p> : null}
-      {showClaims ? (
+      {showClaims && claimsLoading ?<p className="empty">Carregando reivindicações...</p> : null}
+      {showClaims && !claimsLoading && filteredClaims.length === 0 ?<p className="empty">Nenhuma reivindicação no filtro atual.</p> : null}
+      {showClaims ?(
         <div className="venue-list">
           {filteredClaims.map((claim) => (
             <article key={claim.id} className={`venue-card claim-card claim-status-${claim.status}`}>
               <div>
-                <h3>{claim.targetType === "venue" ? "Casa" : "Artista"}: {claim.venue?.name || claim.artist?.name}</h3>
+                <h3>{claim.targetType === "venue" ?"Casa" : "Artista"}: {claim.venue?.name || claim.artist?.name}</h3>
                 <p className="meta-line">Produtor: {claim.requestedBy?.name || claim.requestedBy?.email}</p>
-                <p className="meta-line">Tipo: {claim.requestType === "venue_update" ? "Alteracao de dados da casa" : "ReivindicaÃ§Ã£o de carteira"}</p>
+                <p className="meta-line">Tipo: {claim.requestType === "venue_update" ?"Alteração de dados da casa" : "Reivindicação de carteira"}</p>
                 <p className="meta-line">Status: {claim.status}</p>
-                {claim.venue?.contactName ? <p className="meta-line">Responsavel da casa: {claim.venue.contactName}</p> : null}
-                {claim.venue?.contactPhone ? <p className="meta-line">Telefone da casa: {claim.venue.contactPhone}</p> : null}
-                {claim.justification ? <p className="meta-line">Motivo: {claim.justification}</p> : null}
-                {claim.requestType === "ownership" ? (
+                {claim.venue?.contactName ?<p className="meta-line">Responsável da casa: {claim.venue.contactName}</p> : null}
+                {claim.venue?.contactPhone ?<p className="meta-line">Telefone da casa: {claim.venue.contactPhone}</p> : null}
+                {claim.justification ?<p className="meta-line">Motivo: {claim.justification}</p> : null}
+                {claim.requestType === "ownership" ?(
                   <div className="claim-evidence-block">
                     <p className="meta-line"><strong>Atencao: validar prova de propriedade antes de aprovar.</strong></p>
-                    {claim.evidence?.responsibleName ? <p className="meta-line">Responsavel legal: {claim.evidence.responsibleName}</p> : null}
-                    {claim.evidence?.responsiblePhone ? <p className="meta-line">Telefone do solicitante: {claim.evidence.responsiblePhone}</p> : null}
-                    {claim.evidence?.claimantDocument ? <p className="meta-line">Documento (CNPJ/CPF): {claim.evidence.claimantDocument}</p> : null}
-                    {claim.evidence?.relationshipRole ? <p className="meta-line">Vinculo declarado: {claim.evidence.relationshipRole}</p> : null}
-                    {claim.evidence?.officialEmail ? <p className="meta-line">Email oficial: {claim.evidence.officialEmail}</p> : null}
-                    {claim.evidence?.officialInstagram ? <p className="meta-line">Instagram oficial: {claim.evidence.officialInstagram}</p> : null}
-                    {claim.evidence?.officialWebsite ? <p className="meta-line">Site oficial: {claim.evidence.officialWebsite}</p> : null}
+                    {claim.evidence?.responsibleName ?<p className="meta-line">Responsável legal: {claim.evidence.responsibleName}</p> : null}
+                    {claim.evidence?.responsiblePhone ?<p className="meta-line">Telefone do solicitante: {claim.evidence.responsiblePhone}</p> : null}
+                    {claim.evidence?.claimantDocument ?<p className="meta-line">Documento (CNPJ/CPF): {claim.evidence.claimantDocument}</p> : null}
+                    {claim.evidence?.relationshipRole ?<p className="meta-line">Vínculo declarado: {claim.evidence.relationshipRole}</p> : null}
+                    {claim.evidence?.officialEmail ?<p className="meta-line">Email oficial: {claim.evidence.officialEmail}</p> : null}
+                    {claim.evidence?.officialInstagram ?<p className="meta-line">Instagram oficial: {claim.evidence.officialInstagram}</p> : null}
+                    {claim.evidence?.officialWebsite ?<p className="meta-line">Site oficial: {claim.evidence.officialWebsite}</p> : null}
                   </div>
                 ) : null}
-                {claim.requestType === "venue_update" && claim.requestedChanges ? (
-                  <p className="meta-line">Resumo da alteracao: {Object.keys(claim.requestedChanges).join(", ")}</p>
+                {claim.requestType === "venue_update" && claim.requestedChanges ?(
+                  <p className="meta-line">Resumo da alteração: {Object.keys(claim.requestedChanges).join(", ")}</p>
                 ) : null}
               </div>
-              {claim.status === "pending" ? (
+              {claim.status === "pending" ?(
                 <div className="venue-actions">
                   <button className="chip" onClick={() => handleClaimDecision(claim.id, "approved")} disabled={decideClaimMutation.isPending}>Aprovar</button>
                   <button className="chip" onClick={() => handleClaimDecision(claim.id, "rejected")} disabled={decideClaimMutation.isPending}>Rejeitar</button>
@@ -2257,14 +2257,14 @@ export default function VenuesAdminPage() {
         </div>
       ) : null}
 
-      {showAdminRegions ? <h3 className="section-title">Regioes</h3> : null}
-      {showAdminRegions ? (
-        <p className="meta-line">Gerencie as regioes que alimentam filtros de cidade e cadastro de casas.</p>
+      {showAdminRegions ?<h3 className="section-title">Regiões</h3> : null}
+      {showAdminRegions ?(
+        <p className="meta-line">Gerencie as regiões que alimentam filtros de cidade e cadastro de casas.</p>
       ) : null}
-      {showAdminRegions ? (
+      {showAdminRegions ?(
         <article className="danger-zone-card">
           <h3>Zonas cadastradas</h3>
-          <p className="meta-line">Hover vermelho apenas nas zonas sem casas vinculadas (prontas para exclusao).</p>
+          <p className="meta-line">Hover vermelho apenas nas zonas sem casas vinculadas (prontas para exclusão).</p>
           <div className="region-demo-grid">
             {adminRegions.map((item) => {
               const isDeletable = (item.venuesCount || 0) === 0;
@@ -2272,31 +2272,31 @@ export default function VenuesAdminPage() {
                 <button
                   key={`region-demo-${item.id}`}
                   type="button"
-                  className={`region-demo-chip ${isDeletable ? "is-deletable" : "is-locked"}`}
-                  onClick={() => (isDeletable && !item.readOnly ? handleRegionDelete(item) : null)}
+                  className={`region-demo-chip ${isDeletable ?"is-deletable" : "is-locked"}`}
+                  onClick={() => (isDeletable && !item.readOnly ?handleRegionDelete(item) : null)}
                   title={
                     item.readOnly
-                      ? "RegiÃ£o legada: crie uma regiÃ£o oficial para gerenciar exclusao."
+                      ?"Região legada: crie uma região oficial para gerenciar exclusão."
                       : isDeletable
-                        ? "Pronta para exclusao"
+                        ?"Pronta para exclusão"
                         : "Com casas vinculadas"
                   }
                 >
                   <span>{item.name}</span>
-                  {isDeletable && !item.readOnly ? <strong>x</strong> : null}
+                  {isDeletable && !item.readOnly ?<strong>x</strong> : null}
                 </button>
               );
             })}
           </div>
         </article>
       ) : null}
-      {showAdminRegions ? (
+      {showAdminRegions ?(
         <form className="venue-form" onSubmit={handleRegionSubmit}>
           <input
             name="name"
             value={regionForm.name}
             onChange={handleRegionFormChange}
-            placeholder="RegiÃ£o"
+            placeholder="Região"
             required
           />
           <div className="clean-card grammar-preview-card">
@@ -2313,7 +2313,7 @@ export default function VenuesAdminPage() {
                 ))}
               </select>
             </div>
-            <p className="meta-line">Previa: {previewArticle(regionForm.grammarArticle, regionForm.name) || "Regiao"} - {previewPreposition(regionForm.grammarPreposition, regionForm.name) || "em Regiao"}</p>
+            <p className="meta-line">Prévia: {previewArticle(regionForm.grammarArticle, regionForm.name) || "Região"} - {previewPreposition(regionForm.grammarPreposition, regionForm.name) || "em Região"}</p>
           </div>
           <input
             name="city"
@@ -2345,7 +2345,7 @@ export default function VenuesAdminPage() {
               checked={Boolean(regionForm.isActive)}
               onChange={handleRegionFormChange}
             />
-            RegiÃ£o ativa
+            Região ativa
           </label>
           <div className="form-actions-inline">
             <button
@@ -2353,9 +2353,9 @@ export default function VenuesAdminPage() {
               type="submit"
               disabled={createRegionMutation.isPending || updateRegionMutation.isPending}
             >
-              {isEditingRegion ? "Salvar regiÃ£o" : "Criar regiÃ£o"}
+              {isEditingRegion ?"Salvar região" : "Criar região"}
             </button>
-            {isEditingRegion ? (
+            {isEditingRegion ?(
               <button type="button" className="chip" onClick={resetRegionForm}>
                 Cancelar
               </button>
@@ -2363,21 +2363,21 @@ export default function VenuesAdminPage() {
           </div>
         </form>
       ) : null}
-      {showAdminRegions ? (
+      {showAdminRegions ?(
         <div className="venue-list admin-entity-grid">
           {adminRegions.map((item) => (
             <article
               key={item.id}
-              className={`venue-card region-admin-card ${(item.venuesCount || 0) === 0 ? "is-deletable" : "is-locked"}`}
+              className={`venue-card region-admin-card ${(item.venuesCount || 0) === 0 ?"is-deletable" : "is-locked"}`}
             >
               <div>
                 <h3>{item.name}</h3>
                 <p className="meta-line">{item.city} - {item.state}</p>
                 <p className="meta-line">Ordem: {item.sortOrder}</p>
-                <p className="meta-line">Status: {item.isActive ? "Ativa" : "Inativa"}</p>
+                <p className="meta-line">Status: {item.isActive ?"Ativa" : "Inativa"}</p>
                 <p className="meta-line">Casas vinculadas: {item.venuesCount || 0}</p>
-                {item.readOnly ? <p className="meta-line">Origem: legado (vinda das casas cadastradas)</p> : null}
-                {item.source === "base" ? <p className="meta-line">Origem: base padrao da cidade (somente leitura)</p> : null}
+                {item.readOnly ?<p className="meta-line">Origem: legado (vinda das casas cadastradas)</p> : null}
+                {item.source === "base" ?<p className="meta-line">Origem: base padrão da cidade (somente leitura)</p> : null}
               </div>
               <div className="venue-actions">
                 <button className="chip" onClick={() => handleRegionEdit(item)} disabled={Boolean(item.readOnly)}>Editar</button>
@@ -2387,10 +2387,10 @@ export default function VenuesAdminPage() {
                   disabled={Boolean(item.readOnly) || deleteRegionMutation.isPending || (item.venuesCount || 0) > 0}
                   title={
                     item.readOnly
-                      ? "RegiÃ£o legada: cadastre em Regioes para editar/excluir."
+                      ?"Região legada: cadastre em Regiões para editar/excluir."
                       : (item.venuesCount || 0) > 0
-                        ? "Remova as casas vinculadas antes de excluir."
-                        : "Excluir regiÃ£o"
+                        ?"Remova as casas vinculadas antes de excluir."
+                        : "Excluir região"
                   }
                 >
                   Excluir
@@ -2401,26 +2401,26 @@ export default function VenuesAdminPage() {
         </div>
       ) : null}
 
-      {showHouseProfile ? <h3 className="section-title">{`Dados da casa - ${houseDisplayName || "sem unidade ativa"}`}</h3> : null}
-      {showHouseProfile ? (
-        <p className="meta-line">Confira os dados publicados da sua casa. Para ajustar qualquer campo, envie uma solicitacao para aprovacao do admin.</p>
+      {showHouseProfile ?<h3 className="section-title">{`Dados da casa - ${houseDisplayName || "sem unidade ativa"}`}</h3> : null}
+      {showHouseProfile ?(
+        <p className="meta-line">Confira os dados publicados da sua casa. Para ajustar qualquer campo, envie uma solicitação para aprovação do admin.</p>
       ) : null}
-      {showHouseProfile && !houseActiveVenue ? (
+      {showHouseProfile && !houseActiveVenue ?(
         <p className="empty">Nenhuma filial aprovada para esta conta. Solicite acesso na aba "Solicitar Acesso".</p>
       ) : null}
-      {showHouseProfile && houseActiveVenue ? (
+      {showHouseProfile && houseActiveVenue ?(
         <>
           <article className="clean-card">
             <p className="meta-line"><strong>Nome:</strong> {houseActiveVenue.name}</p>
-            <p className="meta-line"><strong>Responsavel:</strong> {houseActiveVenue.contactName || "NÃ£o informado"}</p>
-            <p className="meta-line"><strong>Telefone:</strong> {houseActiveVenue.contactPhone || "NÃ£o informado"}</p>
-            <p className="meta-line"><strong>Instagram:</strong> {houseActiveVenue.instagramUrl || "NÃ£o informado"}</p>
-            <p className="meta-line"><strong>Endereco:</strong> {houseActiveVenue.address}</p>
-            <p className="meta-line"><strong>Bairro/RegiÃ£o:</strong> {houseActiveVenue.neighborhood} - {houseActiveVenue.region}</p>
+            <p className="meta-line"><strong>Responsável:</strong> {houseActiveVenue.contactName || "Não informado"}</p>
+            <p className="meta-line"><strong>Telefone:</strong> {houseActiveVenue.contactPhone || "Não informado"}</p>
+            <p className="meta-line"><strong>Instagram:</strong> {houseActiveVenue.instagramUrl || "Não informado"}</p>
+            <p className="meta-line"><strong>Endereço:</strong> {houseActiveVenue.address}</p>
+            <p className="meta-line"><strong>Bairro/Região:</strong> {houseActiveVenue.neighborhood} - {houseActiveVenue.region}</p>
             <p className="meta-line"><strong>Cidade:</strong> {houseActiveVenue.city} - {houseActiveVenue.state}</p>
-            <p className="meta-line"><strong>Funcionamento:</strong> {(houseActiveVenue.openDays || []).join(", ") || "NÃ£o informado"}</p>
+            <p className="meta-line"><strong>Funcionamento:</strong> {(houseActiveVenue.openDays || []).join(", ") || "Não informado"}</p>
             <div className="form-actions-inline">
-              <button className="chip" type="button" onClick={startHouseProfileEdit}>Solicitar alteracao de dados</button>
+              <button className="chip" type="button" onClick={startHouseProfileEdit}>Solicitar alteração de dados</button>
             </div>
           </article>
           <article className="danger-zone-card">
@@ -2440,7 +2440,7 @@ export default function VenuesAdminPage() {
               </div>
             </div>
           </article>
-          {isEditingVenue ? (
+          {isEditingVenue ?(
             <form className="venue-form" onSubmit={handleVenueSubmit}>
               <input name="name" value={venueForm.name} onChange={handleVenueChange} placeholder="Nome da casa" required />
         <div className="clean-card grammar-preview-card">
@@ -2457,7 +2457,7 @@ export default function VenuesAdminPage() {
               ))}
             </select>
           </div>
-          <p className="meta-line">Previa: {previewArticle(venueForm.grammarArticle, venueForm.name) || "Nome da casa"} - {previewPreposition(venueForm.grammarPreposition, venueForm.name) || "em Nome da casa"}</p>
+          <p className="meta-line">Prévia: {previewArticle(venueForm.grammarArticle, venueForm.name) || "Nome da casa"} - {previewPreposition(venueForm.grammarPreposition, venueForm.name) || "em Nome da casa"}</p>
         </div>
               <input name="nickname" value={venueForm.nickname} onChange={handleVenueChange} placeholder="Apelido local da casa (ex: Cruz, Francisca, Baixo)" />
         <div className="clean-card grammar-preview-card">
@@ -2475,16 +2475,16 @@ export default function VenuesAdminPage() {
             </select>
           </div>
           <p className="meta-line">
-            Previa informal: {venueForm.nickname
-              ? `${previewArticle(venueForm.nicknameGrammarArticle, venueForm.nickname)} - ${previewPreposition(venueForm.nicknameGrammarPreposition, venueForm.nickname)}`
+            Prévia informal: {venueForm.nickname
+              ?`${previewArticle(venueForm.nicknameGrammarArticle, venueForm.nickname)} - ${previewPreposition(venueForm.nicknameGrammarPreposition, venueForm.nickname)}`
               : "Sem apelido cadastrado"}
           </p>
         </div>
-              <input name="description" value={venueForm.description} onChange={handleVenueChange} placeholder="DescriÃ§Ã£o" required />
-              <input name="contactName" value={venueForm.contactName} onChange={handleVenueChange} placeholder="Responsavel da casa" />
+              <input name="description" value={venueForm.description} onChange={handleVenueChange} placeholder="Descrição" required />
+              <input name="contactName" value={venueForm.contactName} onChange={handleVenueChange} placeholder="Responsável da casa" />
               <input name="contactPhone" value={venueForm.contactPhone} onChange={handleVenueChange} placeholder="Telefone da casa" />
               <input name="instagramUrl" value={venueForm.instagramUrl} onChange={handleVenueChange} placeholder="Instagram (URL)" />
-              <input name="address" value={venueForm.address} onChange={handleVenueChange} placeholder="Endereco" required />
+              <input name="address" value={venueForm.address} onChange={handleVenueChange} placeholder="Endereço" required />
               <input name="neighborhood" value={venueForm.neighborhood} onChange={handleVenueChange} placeholder="Bairro" required />
         <div className="clean-card grammar-preview-card">
           <strong>Tratamento textual do bairro</strong>
@@ -2500,10 +2500,10 @@ export default function VenuesAdminPage() {
               ))}
             </select>
           </div>
-          <p className="meta-line">Previa: {previewArticle(venueForm.neighborhoodGrammarArticle, venueForm.neighborhood) || "Bairro"} - {previewPreposition(venueForm.neighborhoodGrammarPreposition, venueForm.neighborhood) || "em Bairro"}</p>
+          <p className="meta-line">Prévia: {previewArticle(venueForm.neighborhoodGrammarArticle, venueForm.neighborhood) || "Bairro"} - {previewPreposition(venueForm.neighborhoodGrammarPreposition, venueForm.neighborhood) || "em Bairro"}</p>
         </div>
               <select name="region" value={venueForm.region} onChange={handleVenueChange} required>
-                <option value="">RegiÃ£o</option>
+                <option value="">Região</option>
                 {venueRegionOptions.map((regionName) => (
                   <option key={`region-option-edit-${regionName}`} value={regionName}>
                     {regionName}
@@ -2531,17 +2531,17 @@ export default function VenuesAdminPage() {
                   disabled={uploadingTarget === "venue"}
                 />
               </label>
-              {uploadingTarget === "venue" ? <p className="meta-line">Enviando imagem...</p> : null}
+              {uploadingTarget === "venue" ?<p className="meta-line">Enviando imagem...</p> : null}
               <input name="openDays" value={venueForm.openDays} onChange={handleVenueChange} placeholder="Dias de funcionamento (ex: Seg, Qua, Sex, Sab)" />
               <textarea
                 value={venueEditJustification}
                 onChange={(e) => setVenueEditJustification(e.target.value)}
-                placeholder="Explique por que esta alteracao e necessaria (obrigatorio)"
+                placeholder="Explique por que esta alteração ? necessária (obrigatório)"
                 rows={2}
                 required
               />
               <div className="form-actions-inline">
-                <button className="btn-primary" type="submit" disabled={createClaimMutation.isPending}>Enviar solicitacao</button>
+                <button className="btn-primary" type="submit" disabled={createClaimMutation.isPending}>Enviar solicitação</button>
                 <button type="button" className="chip" onClick={resetVenueForm}>Cancelar</button>
               </div>
             </form>
@@ -2549,36 +2549,36 @@ export default function VenuesAdminPage() {
         </>
       ) : null}
 
-      {showHouseClaims ? <h3 className="section-title">Solicitar acesso a filial</h3> : null}
-      {showHouseClaims ? (
-        <p className="meta-line">Escolha a filial cadastrada no 77Gira e envie comprovacao de vinculo. O admin vai revisar e aprovar.</p>
+      {showHouseClaims ?<h3 className="section-title">Solicitar acesso a filial</h3> : null}
+      {showHouseClaims ?(
+        <p className="meta-line">Escolha a filial cadastrada no 77Gira e envie comprovação de vínculo. O admin vai revisar e aprovar.</p>
       ) : null}
-      {showHouseClaims ? (
+      {showHouseClaims ?(
         <form className="venue-form" onSubmit={handleHouseOwnershipClaimSubmit}>
           <select value={houseClaimTargetId} onChange={(e) => setHouseClaimTargetId(e.target.value)} required>
-            <option value="">Selecione a filial que voce quer operar</option>
+            <option value="">Selecione a filial que você quer operar</option>
             {houseClaimOptions.map((venue) => (
               <option key={venue.id} value={venue.id}>{venue.name} - {venue.region}</option>
             ))}
           </select>
-          <input value={houseClaimResponsibleName} onChange={(e) => setHouseClaimResponsibleName(e.target.value)} placeholder="Nome do responsavel legal" required />
+          <input value={houseClaimResponsibleName} onChange={(e) => setHouseClaimResponsibleName(e.target.value)} placeholder="Nome do responsável legal" required />
           <input value={houseClaimResponsiblePhone} onChange={(e) => setHouseClaimResponsiblePhone(e.target.value)} placeholder="Telefone de contato" required />
           <input value={houseClaimDocument} onChange={(e) => setHouseClaimDocument(e.target.value)} placeholder="CNPJ/CPF do solicitante" required />
-          <input value={houseClaimRelationship} onChange={(e) => setHouseClaimRelationship(e.target.value)} placeholder="Vinculo com a filial (socio, diretor, representante...)" required />
-          <textarea value={houseClaimJustification} onChange={(e) => setHouseClaimJustification(e.target.value)} placeholder="Justificativa da solicitacao (ex: sou responsavel pela agenda e operacao da casa)" rows={2} required />
+          <input value={houseClaimRelationship} onChange={(e) => setHouseClaimRelationship(e.target.value)} placeholder="Vínculo com a filial (socio, diretor, representante...)" required />
+          <textarea value={houseClaimJustification} onChange={(e) => setHouseClaimJustification(e.target.value)} placeholder="Justificativa da solicitação (ex: sou responsável pela agenda e operação da casa)" rows={2} required />
           <input type="email" value={houseClaimOfficialEmail} onChange={(e) => setHouseClaimOfficialEmail(e.target.value)} placeholder="Email oficial (opcional)" />
           <input value={houseClaimOfficialInstagram} onChange={(e) => setHouseClaimOfficialInstagram(e.target.value)} placeholder="Instagram oficial (opcional)" />
           <input type="url" value={houseClaimOfficialWebsite} onChange={(e) => setHouseClaimOfficialWebsite(e.target.value)} placeholder="Site oficial (opcional)" />
           <button className="btn-primary" type="submit" disabled={createClaimMutation.isPending}>
-            {createClaimMutation.isPending ? "Enviando..." : "Enviar solicitacao de acesso"}
+            {createClaimMutation.isPending ?"Enviando..." : "Enviar solicitação de acesso"}
           </button>
         </form>
       ) : null}
-      {showHouseClaims && houseClaimOptions.length === 0 ? (
-        <p className="empty">No momento nÃ£o ha novas filiais disponiveis para esta conta.</p>
+      {showHouseClaims && houseClaimOptions.length === 0 ?(
+        <p className="empty">No momento não há novas filiais disponíveis para esta conta.</p>
       ) : null}
-      {showHouseClaims && myClaimsLoading ? <p className="empty">Carregando suas solicitacoes...</p> : null}
-      {showHouseClaims ? (
+      {showHouseClaims && myClaimsLoading ?<p className="empty">Carregando suas solicitações...</p> : null}
+      {showHouseClaims ?(
         <div className="venue-list">
           {myClaims
             .filter((claim) => claim.targetType === "venue")
@@ -2587,8 +2587,8 @@ export default function VenuesAdminPage() {
                 <div>
                   <h3>Filial: {claim.venue?.name || "Casa"}</h3>
                   <p className="meta-line">Status: {claim.status}</p>
-                  <p className="meta-line">Tipo: {claim.requestType === "ownership" ? "ReivindicaÃ§Ã£o de propriedade" : "Alteracao de dados"}</p>
-                  {claim.justification ? <p className="meta-line">Justificativa: {claim.justification}</p> : null}
+                  <p className="meta-line">Tipo: {claim.requestType === "ownership" ?"Reivindicação de propriedade" : "Alteração de dados"}</p>
+                  {claim.justification ?<p className="meta-line">Justificativa: {claim.justification}</p> : null}
                 </div>
                 <small className="meta-line">{new Date(claim.createdAt).toLocaleString("pt-BR")}</small>
               </article>
@@ -2596,15 +2596,15 @@ export default function VenuesAdminPage() {
         </div>
       ) : null}
 
-      {showArtists ? <h3 className="section-title">Artistas</h3> : null}
-      {showArtists && canManageCatalog ? <form className="venue-form" onSubmit={handleArtistSubmit}>
+      {showArtists ?<h3 className="section-title">Artistas</h3> : null}
+      {showArtists && canManageCatalog ?<form className="venue-form" onSubmit={handleArtistSubmit}>
         <input name="name" value={artistForm.name} onChange={handleArtistChange} placeholder="Nome do artista" required />
-        {artistErrors.name?.[0] ? <p className="field-error">{artistErrors.name[0]}</p> : null}
+        {artistErrors.name?.[0] ?<p className="field-error">{artistErrors.name[0]}</p> : null}
         <textarea name="bio" value={artistForm.bio} onChange={handleArtistChange} placeholder="Bio" rows={2} />
-        <input name="contactName" value={artistForm.contactName} onChange={handleArtistChange} placeholder="Responsavel do artista (opcional)" />
+        <input name="contactName" value={artistForm.contactName} onChange={handleArtistChange} placeholder="Responsável do artista (opcional)" />
         <input name="contactPhone" value={artistForm.contactPhone} onChange={handleArtistChange} placeholder="Telefone do artista (opcional)" />
         <input name="genres" value={artistForm.genres} onChange={handleArtistChange} placeholder="Generos separados por virgula" />
-        {isAdmin ? (
+        {isAdmin ?(
           <label className="meta-line form-checkbox-inline">
             <input
               type="checkbox"
@@ -2625,7 +2625,7 @@ export default function VenuesAdminPage() {
             disabled={uploadingTarget === "artist"}
           />
         </label>
-        {uploadingTarget === "artist" ? <p className="meta-line">Enviando imagem...</p> : null}
+        {uploadingTarget === "artist" ?<p className="meta-line">Enviando imagem...</p> : null}
         <input name="spotifyUrl" type="url" value={artistForm.spotifyUrl} onChange={handleArtistChange} placeholder="URL Spotify" />
         <input name="youtubeUrl" type="url" value={artistForm.youtubeUrl} onChange={handleArtistChange} placeholder="URL YouTube" />
         <input name="instagramUrl" type="url" value={artistForm.instagramUrl} onChange={handleArtistChange} placeholder="URL Instagram" />
@@ -2635,14 +2635,14 @@ export default function VenuesAdminPage() {
             type="submit"
             disabled={createArtistMutation.isPending || updateArtistMutation.isPending || (isProducer && !isEditingArtist)}
           >
-            {isEditingArtist ? "Salvar artista" : isAdmin ? "Criar artista" : "Selecione um artista para editar"}
+            {isEditingArtist ?"Salvar artista" : isAdmin ?"Criar artista" : "Selecione um artista para editar"}
           </button>
-          {isEditingArtist ? <button type="button" className="chip" onClick={resetArtistForm}>Cancelar</button> : null}
+          {isEditingArtist ?<button type="button" className="chip" onClick={resetArtistForm}>Cancelar</button> : null}
         </div>
       </form> : null}
 
-      {showArtists && artistsLoading ? <p className="empty">Carregando artistas...</p> : null}
-      {showArtists ? <div className="admin-list-header">
+      {showArtists && artistsLoading ?<p className="empty">Carregando artistas...</p> : null}
+      {showArtists ?<div className="admin-list-header">
         <strong>Artistas cadastrados ({filteredArtists.length})</strong>
         <div className="admin-actions-row">
           <button className="chip" onClick={exportArtistsCsv}>Exportar CSV</button>
@@ -2658,23 +2658,23 @@ export default function VenuesAdminPage() {
           onChange={(e) => setArtistSearch(e.target.value)}
         />
       </div> : null}
-      {showArtists && !artistsLoading && filteredArtists.length === 0 ? (
+      {showArtists && !artistsLoading && filteredArtists.length === 0 ?(
         <p className="empty">Nenhum artista encontrado para esta busca. <button className="btn-link" onClick={clearAdminFilters}>Limpar filtros</button></p>
       ) : null}
-      {showArtists ? <div className="venue-list admin-entity-grid">
+      {showArtists ?<div className="venue-list admin-entity-grid">
         {pagedArtists.map((artist) => (
           <article key={artist.id} className="venue-card">
             <div>
               <h3>{artist.name}</h3>
-              {artist.isVerified ? (
+              {artist.isVerified ?(
                 <p className="meta-line artist-inline-with-badge">
                   <span>Perfil oficial verificado</span>
                   <VerifiedBadge className="artist-verified-dot" title="Artista verificado" />
                 </p>
               ) : null}
               <p className="meta-line">Generos: {artist.genres.join(", ")}</p>
-              {artist.contactName ? <p className="meta-line">Responsavel: {artist.contactName}</p> : null}
-              {artist.contactPhone ? <p className="meta-line">Telefone: {artist.contactPhone}</p> : null}
+              {artist.contactName ?<p className="meta-line">Responsável: {artist.contactName}</p> : null}
+              {artist.contactPhone ?<p className="meta-line">Telefone: {artist.contactPhone}</p> : null}
               <p className="meta-line">Eventos vinculados: {artist.eventsCount}</p>
             </div>
             <div className="venue-actions">
@@ -2684,52 +2684,52 @@ export default function VenuesAdminPage() {
           </article>
         ))}
       </div> : null}
-      {showArtists && artistTotalPages > 1 ? (
+      {showArtists && artistTotalPages > 1 ?(
         <div className="pagination-row">
           <button className="chip" onClick={() => setArtistPage((p) => Math.max(1, p - 1))} disabled={artistPage === 1}>Anterior</button>
-          <small className="meta-line">PÃ¡gina {artistPage} de {artistTotalPages}</small>
-          <button className="chip" onClick={() => setArtistPage((p) => Math.min(artistTotalPages, p + 1))} disabled={artistPage === artistTotalPages}>PrÃ³xima</button>
+          <small className="meta-line">Página {artistPage} de {artistTotalPages}</small>
+          <button className="chip" onClick={() => setArtistPage((p) => Math.min(artistTotalPages, p + 1))} disabled={artistPage === artistTotalPages}>Próxima</button>
         </div>
       ) : null}
 
-      {showEventsBlocked ? (
-        <p className="empty">Sua conta ainda nÃ£o tem filial aprovada. Abra "Solicitar Acesso", envie os dados de comprovacao e aguarde aprovacao do admin.</p>
+      {showEventsBlocked ?(
+        <p className="empty">Sua conta ainda não tem filial aprovada. Abra "Solicitar Acesso", envie os dados de comprovação e aguarde aprovação do admin.</p>
       ) : null}
-      {showEvents ? <h3 className="section-title">{isHouseRole ? `Eventos da casa - ${houseDisplayName}` : "Eventos"}</h3> : null}
-      {showEvents && (!isHouseRole || !isHouseProgramacaoClean) ? (
+      {showEvents ?<h3 className="section-title">{isHouseRole ?`Eventos da casa - ${houseDisplayName}` : "Eventos"}</h3> : null}
+      {showEvents && (!isHouseRole || !isHouseProgramaçãoClean) ?(
         <article className="venue-card">
           <div>
-            <h3>Previa do card</h3>
-            <h3>{eventForm.title?.trim() || "Titulo do evento"}</h3>
-            {eventForm.artistName?.trim() ? (
+            <h3>Prévia do card</h3>
+            <h3>{eventForm.title?.trim() || "Título do evento"}</h3>
+            {eventForm.artistName?.trim() ?(
               <p className="meta-line artist-inline-with-badge">
                 <span>{eventForm.artistName.trim()}</span>
               </p>
             ) : null}
-            <p className="meta-line">{previewVenue?.name || "Casa"} - {previewVenue?.region || "RegiÃ£o"}</p>
+            <p className="meta-line">{previewVenue?.name || "Casa"} - {previewVenue?.region || "Região"}</p>
             <p className="meta-line">{formatPreviewDateTime(eventForm.startDate)}</p>
             <p className="meta-line">{previewPriceLabel}</p>
           </div>
         </article>
       ) : null}
-      {showEvents && (!isHouseRole || !isHouseProgramacaoClean) ? <form className="venue-form" onSubmit={handleEventSubmit}>
+      {showEvents && (!isHouseRole || !isHouseProgramaçãoClean) ?<form className="venue-form" onSubmit={handleEventSubmit}>
         <input
           name="title"
           value={eventForm.title}
           onChange={handleEventChange}
-          placeholder="Titulo do evento (ou artista, se for show solo)"
+          placeholder="Título do evento (ou artista, se for show solo)"
           required
         />
-        {eventErrors.title?.[0] ? <p className="field-error">{eventErrors.title[0]}</p> : null}
+        {eventErrors.title?.[0] ?<p className="field-error">{eventErrors.title[0]}</p> : null}
         <input name="artistName" list="artists-list" value={eventForm.artistName} onChange={handleEventChange} placeholder="Artista principal (opcional)" />
         <datalist id="artists-list">
           {artists.map((artist) => (
             <option key={artist.id} value={artist.name} />
           ))}
         </datalist>
-        {eventErrors.artistName?.[0] ? <p className="field-error">{eventErrors.artistName[0]}</p> : null}
-        <textarea name="description" value={eventForm.description} onChange={handleEventChange} placeholder="DescriÃ§Ã£o" rows={3} required />
-        {eventErrors.description?.[0] ? <p className="field-error">{eventErrors.description[0]}</p> : null}
+        {eventErrors.artistName?.[0] ?<p className="field-error">{eventErrors.artistName[0]}</p> : null}
+        <textarea name="description" value={eventForm.description} onChange={handleEventChange} placeholder="Descrição" rows={3} required />
+        {eventErrors.description?.[0] ?<p className="field-error">{eventErrors.description[0]}</p> : null}
         <select name="type" value={eventForm.type} onChange={handleEventChange} required>
           <option value="roda_samba">Roda de Samba</option>
           <option value="pagode">Pagode</option>
@@ -2749,11 +2749,11 @@ export default function VenuesAdminPage() {
             <option key={venue.id} value={venue.id}>{venue.name}</option>
           ))}
         </select>
-        {eventErrors.venueId?.[0] ? <p className="field-error">{eventErrors.venueId[0]}</p> : null}
+        {eventErrors.venueId?.[0] ?<p className="field-error">{eventErrors.venueId[0]}</p> : null}
         <input name="startDate" type="datetime-local" value={eventForm.startDate} onChange={handleEventChange} required />
-        {eventErrors.startDate?.[0] ? <p className="field-error">{eventErrors.startDate[0]}</p> : null}
+        {eventErrors.startDate?.[0] ?<p className="field-error">{eventErrors.startDate[0]}</p> : null}
         <input name="endDate" type="datetime-local" value={eventForm.endDate} onChange={handleEventChange} required />
-        {eventErrors.endDate?.[0] ? <p className="field-error">{eventErrors.endDate[0]}</p> : null}
+        {eventErrors.endDate?.[0] ?<p className="field-error">{eventErrors.endDate[0]}</p> : null}
         <label className="meta-line form-checkbox-inline">
           <input
             type="checkbox"
@@ -2763,11 +2763,11 @@ export default function VenuesAdminPage() {
           />
           Evento recorrente semanal
         </label>
-        {eventForm.isRecurring ? (
+        {eventForm.isRecurring ?(
           <div className="recurrence-panel">
             <small className="meta-line">
               {eventForm.recurrenceDays.length > 0
-                ? `Recorrencia ativa: ${eventForm.recurrenceDays.join(", ")}`
+                ?`Recorrência ativa: ${eventForm.recurrenceDays.join(", ")}`
                 : "Selecione os dias da semana para repetir o evento."}
             </small>
             <div className="chip-row recurrence-day-row">
@@ -2777,7 +2777,7 @@ export default function VenuesAdminPage() {
                   <button
                     key={day.value}
                     type="button"
-                    className={`chip recurrence-day-chip ${active ? "active" : ""}`}
+                    className={`chip recurrence-day-chip ${active ?"active" : ""}`}
                     onClick={() => toggleRecurrenceDay(day.value)}
                   >
                     {day.label}
@@ -2785,7 +2785,7 @@ export default function VenuesAdminPage() {
                 );
               })}
             </div>
-            {eventErrors.recurrenceDays?.[0] ? <p className="field-error">{eventErrors.recurrenceDays[0]}</p> : null}
+            {eventErrors.recurrenceDays?.[0] ?<p className="field-error">{eventErrors.recurrenceDays[0]}</p> : null}
             <div className="date-row">
               <input
                 type="time"
@@ -2820,13 +2820,13 @@ export default function VenuesAdminPage() {
         <select name="ticketType" value={eventForm.ticketType} onChange={handleEventChange} required>
           <option value="paid">Pago</option>
           <option value="free">Gratuito</option>
-          <option value="consumacao">ConsumaÃ§Ã£o</option>
+          <option value="consumacao">Consumação</option>
         </select>
-        {eventErrors.ticketType?.[0] ? <p className="field-error">{eventErrors.ticketType[0]}</p> : null}
-        <input name="priceMin" type="number" min="0" step="0.01" value={eventForm.priceMin} onChange={handleEventChange} placeholder="Preco mÃ­nimo" />
-        <input name="priceMax" type="number" min="0" step="0.01" value={eventForm.priceMax} onChange={handleEventChange} placeholder="Preco mÃ¡ximo" />
-        {eventErrors.priceMax?.[0] ? <p className="field-error">{eventErrors.priceMax[0]}</p> : null}
-        {eventForm.ticketType === "consumacao" ? (
+        {eventErrors.ticketType?.[0] ?<p className="field-error">{eventErrors.ticketType[0]}</p> : null}
+        <input name="priceMin" type="number" min="0" step="0.01" value={eventForm.priceMin} onChange={handleEventChange} placeholder="Preço mínimo" />
+        <input name="priceMax" type="number" min="0" step="0.01" value={eventForm.priceMax} onChange={handleEventChange} placeholder="Preço máximo" />
+        {eventErrors.priceMax?.[0] ?<p className="field-error">{eventErrors.priceMax[0]}</p> : null}
+        {eventForm.ticketType === "consumacao" ?(
           <input
             name="consumacaoValue"
             type="number"
@@ -2834,10 +2834,10 @@ export default function VenuesAdminPage() {
             step="0.01"
             value={eventForm.consumacaoValue}
             onChange={handleEventChange}
-            placeholder="ConsumaÃ§Ã£o minima (opcional)"
+            placeholder="Consumação mínima (opcional)"
           />
         ) : null}
-        {eventErrors.consumacaoValue?.[0] ? <p className="field-error">{eventErrors.consumacaoValue[0]}</p> : null}
+        {eventErrors.consumacaoValue?.[0] ?<p className="field-error">{eventErrors.consumacaoValue[0]}</p> : null}
         <input
           name="couvertArtistico"
           type="number"
@@ -2858,20 +2858,20 @@ export default function VenuesAdminPage() {
             disabled={uploadingTarget === "event"}
           />
         </label>
-        {uploadingTarget === "event" ? <p className="meta-line">Enviando imagem...</p> : null}
+        {uploadingTarget === "event" ?<p className="meta-line">Enviando imagem...</p> : null}
         <div className="audience-tag-panel">
-          <small className="meta-line">Sinalizacoes do evento</small>
+          <small className="meta-line">Sinalizações do evento</small>
           <div className="chip-row recurrence-day-row">
             <button
               type="button"
-              className={`chip recurrence-day-chip ${hasEventTag("samba_familiar") ? "active" : ""}`}
+              className={`chip recurrence-day-chip ${hasEventTag("samba_familiar") ?"active" : ""}`}
               onClick={() => toggleEventTag("samba_familiar")}
             >
               Samba Familiar
             </button>
             <button
               type="button"
-              className={`chip recurrence-day-chip ${hasEventTag("kids_friendly") ? "active" : ""}`}
+              className={`chip recurrence-day-chip ${hasEventTag("kids_friendly") ?"active" : ""}`}
               onClick={() => toggleEventTag("kids_friendly")}
             >
               Kids Friendly
@@ -2881,7 +2881,7 @@ export default function VenuesAdminPage() {
         <input name="tags" value={eventForm.tags} onChange={handleEventChange} placeholder="Outras tags (opcional), separadas por virgula" />
         <div className="form-actions-inline">
           <button className="chip" type="submit" disabled={createEventMutation.isPending || updateEventMutation.isPending}>
-            {isEditingEvent ? "Salvar rascunho" : "Criar rascunho"}
+            {isEditingEvent ?"Salvar rascunho" : "Criar rascunho"}
           </button>
           <button
             className="btn-primary publish-warning-btn"
@@ -2891,22 +2891,22 @@ export default function VenuesAdminPage() {
           >
             Publicar evento
           </button>
-          {isEditingEvent ? <button type="button" className="chip" onClick={resetEventForm}>Cancelar</button> : null}
+          {isEditingEvent ?<button type="button" className="chip" onClick={resetEventForm}>Cancelar</button> : null}
         </div>
       </form> : null}
-      {showEvents && publishReviewOpen ? (
+      {showEvents && publishReviewOpen ?(
         <div className="publish-review-overlay" role="dialog" aria-modal="true">
           <div className="publish-review-modal">
             <h4>Revisao obrigatoria antes de publicar</h4>
             <p className="meta-line">
-              Marque todos os itens para liberar a publicacao deste evento.
+              Marque todos os itens para liberar a publicação deste evento.
             </p>
             <div className="publish-review-summary">
               <p><strong>Titulo:</strong> {eventForm.title || "-"}</p>
               <p><strong>Casa:</strong> {previewVenue?.name || "-"}</p>
               <p><strong>Inicio:</strong> {formatPreviewDateTime(eventForm.startDate)}</p>
               <p><strong>Fim:</strong> {formatPreviewDateTime(eventForm.endDate)}</p>
-              <p><strong>Preco:</strong> {previewPriceLabel}</p>
+              <p><strong>Preço:</strong> {previewPriceLabel}</p>
             </div>
             <div className="publish-review-checks">
               {publishChecklistModel.map((item) => (
@@ -2937,58 +2937,58 @@ export default function VenuesAdminPage() {
         </div>
       ) : null}
 
-      {showEvents && eventsLoading ? <p className="empty">Carregando eventos...</p> : null}
-      {showEvents ? <div className="admin-list-header">
-        <strong>{isHouseRole ? `Agenda da casa - ${houseDisplayName} (${filteredEvents.length})` : `Eventos cadastrados (${filteredEvents.length})`}</strong>
+      {showEvents && eventsLoading ?<p className="empty">Carregando eventos...</p> : null}
+      {showEvents ?<div className="admin-list-header">
+        <strong>{isHouseRole ?`Agenda da casa - ${houseDisplayName} (${filteredEvents.length})` : `Eventos cadastrados (${filteredEvents.length})`}</strong>
         <div className="admin-actions-row">
-          <button className={`chip ${eventTimeFilter === "all" ? "active" : ""}`} onClick={() => setEventTimeFilter("all")}>Todos</button>
-          <button className={`chip ${eventTimeFilter === "upcoming" ? "active" : ""}`} onClick={() => setEventTimeFilter("upcoming")}>Futuros</button>
-          <button className={`chip ${eventTimeFilter === "past" ? "active" : ""}`} onClick={() => setEventTimeFilter("past")}>Passados</button>
-          {!isHouseRole ? <button className="chip" onClick={exportEventsCsv}>Exportar CSV</button> : null}
+          <button className={`chip ${eventTimeFilter === "all" ?"active" : ""}`} onClick={() => setEventTimeFilter("all")}>Todos</button>
+          <button className={`chip ${eventTimeFilter === "upcoming" ?"active" : ""}`} onClick={() => setEventTimeFilter("upcoming")}>Futuros</button>
+          <button className={`chip ${eventTimeFilter === "past" ?"active" : ""}`} onClick={() => setEventTimeFilter("past")}>Passados</button>
+          {!isHouseRole ?<button className="chip" onClick={exportEventsCsv}>Exportar CSV</button> : null}
         </div>
-        {!isHouseRole ? <select value={eventSort} onChange={(e) => setEventSort(e.target.value)}>
+        {!isHouseRole ?<select value={eventSort} onChange={(e) => setEventSort(e.target.value)}>
           <option value="recent">Mais recentes</option>
           <option value="az">A-Z</option>
         </select> : null}
         <input
           className="search-input"
-          placeholder={isHouseRole ? "Buscar evento ou artista..." : "Buscar evento, artista ou casa..."}
+          placeholder={isHouseRole ?"Buscar evento ou artista..." : "Buscar evento, artista ou casa..."}
           value={eventSearch}
           onChange={(e) => setEventSearch(e.target.value)}
         />
       </div> : null}
-      {showEvents && !eventsLoading && filteredEvents.length === 0 ? (
+      {showEvents && !eventsLoading && filteredEvents.length === 0 ?(
         <p className="empty">Nenhum evento encontrado para esta busca. <button className="btn-link" onClick={clearAdminFilters}>Limpar filtros</button></p>
       ) : null}
-      {showEvents ? <div className="venue-list admin-entity-grid">
+      {showEvents ?<div className="venue-list admin-entity-grid">
         {pagedEvents.map((eventItem) => (
           <article key={eventItem.id} className="venue-card">
             <div>
-              {isHouseRole ? <small className="live-status live-status-live">Unidade ativa</small> : null}
+              {isHouseRole ?<small className="live-status live-status-live">Unidade ativa</small> : null}
               <h3>{eventItem.title}</h3>
               <p className="meta-line artist-inline-with-badge">
                 <span>{eventItem.artist}</span>
-                {eventItem.artistVerified ? <VerifiedBadge className="artist-verified-dot" title="Artista verificado" /> : null}
+                {eventItem.artistVerified ?<VerifiedBadge className="artist-verified-dot" title="Artista verificado" /> : null}
               </p>
               <p className="meta-line">{eventItem.venue} - {eventItem.region}</p>
-              <p className={`meta-line ${eventItem.status === "draft" ? "status-draft" : "live-status-live"}`}>
-                {eventItem.status === "draft" ? "Rascunho" : "Publicado"}
+              <p className={`meta-line ${eventItem.status === "draft" ?"status-draft" : "live-status-live"}`}>
+                {eventItem.status === "draft" ?"Rascunho" : "Publicado"}
               </p>
-              {eventItem.isRecurring ? (
+              {eventItem.isRecurring ?(
                 <p className="meta-line">Recorrente: {(eventItem.recurrenceDays || []).join(", ") || "semanal"}</p>
               ) : null}
             </div>
             <div className="venue-actions">
               <button className="chip" onClick={() => prepare77FirstKit(eventItem)} disabled={firstKitLoadingId === eventItem.id}>
-                {firstKitLoadingId === eventItem.id ? "Preparando..." : "77First"}
+                {firstKitLoadingId === eventItem.id ?"Preparando..." : "77First"}
               </button>
               <button className="chip" onClick={() => handleEventEdit(eventItem)}>Editar</button>
-              {eventItem.isRecurring ? (
+              {eventItem.isRecurring ?(
                 <button className="chip" onClick={() => handleCancelOccurrence(eventItem)}>
                   Cancelar data
                 </button>
               ) : null}
-              {eventItem.isRecurring ? (
+              {eventItem.isRecurring ?(
                 <button className="chip" onClick={() => handleReactivateOccurrence(eventItem)}>
                   Reativar data
                 </button>
@@ -2998,7 +2998,7 @@ export default function VenuesAdminPage() {
           </article>
         ))}
       </div> : null}
-      {showEvents && firstKitEvent ? (
+      {showEvents && firstKitEvent ?(
         <div className="modal-backdrop" onClick={close77FirstKit}>
           <article className="modal-card first77-modal-card" onClick={(event) => event.stopPropagation()}>
             {(() => {
@@ -3019,12 +3019,12 @@ export default function VenuesAdminPage() {
                 "",
                 `Release: ${kit.releaseText}`,
                 "",
-                "Ficha tecnica:",
+                "Ficha técnica:",
                 kit.techSheet
               ].join("\n");
               const mailtoSubject = encodeURIComponent(`77First | ${kit.title}`);
               const mailtoBody = encodeURIComponent(
-                `Legenda curta:\n${kit.captionShort}\n\nWhatsApp:\n${kit.whatsappText}\n\nRelease:\n${kit.releaseText}\n\nFicha tecnica:\n${kit.techSheet}`
+                `Legenda curta:\n${kit.captionShort}\n\nWhatsApp:\n${kit.whatsappText}\n\nRelease:\n${kit.releaseText}\n\nFicha técnica:\n${kit.techSheet}`
               );
               const webhookPayload = kit.payload || build77FirstWebhookPayload(firstKitEvent, kit);
 
@@ -3032,7 +3032,7 @@ export default function VenuesAdminPage() {
                 <>
                   <h3>77First - Kit do evento</h3>
                   <p className="meta-line"><strong>{kit.title}</strong> - {kit.venue}</p>
-                  {firstKitLoadingId === firstKitEvent.id && !firstKitData ? (
+                  {firstKitLoadingId === firstKitEvent.id && !firstKitData ?(
                     <div className="clean-card" style={{ marginTop: 8 }}>
                       <p>Preparando o kit do evento...</p>
                     </div>
@@ -3051,7 +3051,7 @@ export default function VenuesAdminPage() {
                         <pre>{kit.releaseText}</pre>
                       </section>
                       <section className="first77-text-section">
-                        <small className="meta-line">Ficha tecnica</small>
+                        <small className="meta-line">Ficha técnica</small>
                         <pre>{kit.techSheet}</pre>
                       </section>
                     </div>
@@ -3071,16 +3071,16 @@ export default function VenuesAdminPage() {
           </article>
         </div>
       ) : null}
-      {showEvents && eventTotalPages > 1 ? (
+      {showEvents && eventTotalPages > 1 ?(
         <div className="pagination-row">
           <button className="chip" onClick={() => setEventPage((p) => Math.max(1, p - 1))} disabled={eventPage === 1}>Anterior</button>
-          <small className="meta-line">PÃ¡gina {eventPage} de {eventTotalPages}</small>
-          <button className="chip" onClick={() => setEventPage((p) => Math.min(eventTotalPages, p + 1))} disabled={eventPage === eventTotalPages}>PrÃ³xima</button>
+          <small className="meta-line">Página {eventPage} de {eventTotalPages}</small>
+          <button className="chip" onClick={() => setEventPage((p) => Math.min(eventTotalPages, p + 1))} disabled={eventPage === eventTotalPages}>Próxima</button>
         </div>
       ) : null}
       </div>
 
-      {showEvents && reactivationTarget ? (
+      {showEvents && reactivationTarget ?(
         <div className="modal-backdrop" onClick={() => setReactivationTarget(null)}>
           <article className="modal-card" onClick={(event) => event.stopPropagation()}>
             <h3>Reativar data da serie</h3>
@@ -3103,12 +3103,12 @@ export default function VenuesAdminPage() {
           </article>
         </div>
       ) : null}
-      {showEvents && cancellationTarget ? (
+      {showEvents && cancellationTarget ?(
         <div className="modal-backdrop" onClick={() => setCancellationTarget(null)}>
           <article className="modal-card" onClick={(event) => event.stopPropagation()}>
             <h3>Cancelar data da serie</h3>
             <p className="meta-line"><strong>{cancellationTarget.title}</strong></p>
-            <p className="meta-line">Selecione a data desta edicao que nÃ£o vai acontecer.</p>
+            <p className="meta-line">Selecione a data desta edição que não vai acontecer.</p>
             <input
               type="date"
               value={cancellationTarget.selectedDate}

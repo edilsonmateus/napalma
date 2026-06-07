@@ -33,7 +33,7 @@ export default function VenueOperatorDashboardPage() {
       <header className="page-header admin-page-header">
         <div className="admin-page-header-main">
           <h2>Painel da Casa</h2>
-          <p>Agenda da casa, prÛximos sambas e acesso rapido de operacao.</p>
+          <p>Agenda da casa, pr√≥ximos sambas e acesso rapido de operacao.</p>
           <div className="role-session-wrap">
             <div className="role-session-badge">Perfil ativo: {(user?.role || "venue_manager").toUpperCase()}</div>
             <span className="role-live-indicator" aria-label="Perfil ativo ao vivo">LIVE</span>
@@ -52,7 +52,7 @@ export default function VenueOperatorDashboardPage() {
           </article>
           <article className="clean-card">
             <h4>Eventos ligados</h4>
-            <p>{relatedEvents.length} eventos prÛximos</p>
+            <p>{relatedEvents.length} eventos pr√≥ximos</p>
           </article>
           <article className="clean-card">
             <h4>Hoje</h4>
@@ -67,7 +67,7 @@ export default function VenueOperatorDashboardPage() {
         <Link to="/settings/venues?section=managers" className="chip">Gerenciar Produtores</Link>
       </div>
 
-      <h3 className="section-title">PrÛximos eventos da casa</h3>
+      <h3 className="section-title">Pr√≥ximos eventos da casa</h3>
       {relatedEvents.length === 0 ? <p className="empty">Sem eventos ligados as casas em foco.</p> : null}
       <div className="venue-list">
         {relatedEvents.map((event) => (
@@ -86,7 +86,7 @@ export default function VenueOperatorDashboardPage() {
       </div>
 
       <h3 className="section-title">Ads da casa (30 dias)</h3>
-      {adsLoading ? <p className="empty">Carregando mÈtricas de anuncios...</p> : null}
+      {adsLoading ? <p className="empty">Carregando m√©tricas de an√∫ncios...</p> : null}
       {!adsLoading ? (
         <div className="clean-cards">
           <article className="clean-card">
