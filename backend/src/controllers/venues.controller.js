@@ -17,6 +17,19 @@ const createVenueSchema = z.object({
   instagramUrl: z.string().url().optional(),
   address: z.string().trim().min(5),
   neighborhood: z.string().trim().min(2),
+  nickname: z.string().trim().max(120).optional(),
+  grammarArticle: z.enum(["", "o", "a", "os", "as"]).optional(),
+  grammarPreposition: z.enum(["em", "no", "na"]).optional(),
+  displayNameWithArticle: z.string().trim().max(120).optional(),
+  displayNameWithPreposition: z.string().trim().max(120).optional(),
+  nicknameGrammarArticle: z.enum(["", "o", "a", "os", "as"]).optional(),
+  nicknameGrammarPreposition: z.enum(["em", "no", "na"]).optional(),
+  nicknameDisplayNameWithArticle: z.string().trim().max(120).optional(),
+  nicknameDisplayNameWithPreposition: z.string().trim().max(120).optional(),
+  neighborhoodGrammarArticle: z.enum(["", "o", "a", "os", "as"]).optional(),
+  neighborhoodGrammarPreposition: z.enum(["em", "no", "na"]).optional(),
+  neighborhoodDisplayNameWithArticle: z.string().trim().max(120).optional(),
+  neighborhoodDisplayNameWithPreposition: z.string().trim().max(120).optional(),
   region: z.string().trim().min(2),
   city: z.string().trim().min(2),
   state: z.string().trim().length(2),
@@ -46,7 +59,75 @@ function slugify(value) {
     .replace(/(^-|-$)/g, "");
 }
 
+function buildArticlePreview(article, name) {
+  const cleanName = String(name || "").trim();
+  const cleanArticle = String(article || "").trim();
+  return cleanArticle ? `${cleanArticle} ${cleanName}`.trim() : cleanName;
+}
+
+function buildPrepositionPreview(preposition, name) {
+  const cleanName = String(name || "").trim();
+  if (!cleanName) return "";
+  const cleanPreposition = String(preposition || "em").trim();
+  return `${cleanPreposition} ${cleanName}`.trim();
+}
+
+function buildVenueGrammarData(data) {
+  const venueName = data.name || "";
+  const venueNickname = data.nickname || "";
+  const neighborhoodName = data.neighborhood || "";
+  return {
+    ...(data.nickname !== undefined ? { nickname: data.nickname || null } : {}),
+    ...(data.grammarArticle !== undefined ? { grammarArticle: data.grammarArticle || null } : {}),
+    ...(data.grammarPreposition !== undefined ? { grammarPreposition: data.grammarPreposition || "em" } : {}),
+    ...(data.displayNameWithArticle !== undefined
+      ? { displayNameWithArticle: data.displayNameWithArticle || buildArticlePreview(data.grammarArticle, venueName) }
+      : {}),
+    ...(data.displayNameWithPreposition !== undefined
+      ? { displayNameWithPreposition: data.displayNameWithPreposition || buildPrepositionPreview(data.grammarPreposition, venueName) }
+      : {}),
+    ...(data.nicknameGrammarArticle !== undefined ? { nicknameGrammarArticle: data.nicknameGrammarArticle || null } : {}),
+    ...(data.nicknameGrammarPreposition !== undefined ? { nicknameGrammarPreposition: data.nicknameGrammarPreposition || "em" } : {}),
+    ...(data.nicknameDisplayNameWithArticle !== undefined
+      ? {
+          nicknameDisplayNameWithArticle:
+            data.nicknameDisplayNameWithArticle || buildArticlePreview(data.nicknameGrammarArticle, venueNickname)
+        }
+      : {}),
+    ...(data.nicknameDisplayNameWithPreposition !== undefined
+      ? {
+          nicknameDisplayNameWithPreposition:
+            data.nicknameDisplayNameWithPreposition || buildPrepositionPreview(data.nicknameGrammarPreposition, venueNickname)
+        }
+      : {}),
+    ...(data.neighborhoodGrammarArticle !== undefined
+      ? { neighborhoodGrammarArticle: data.neighborhoodGrammarArticle || null }
+      : {}),
+    ...(data.neighborhoodGrammarPreposition !== undefined
+      ? { neighborhoodGrammarPreposition: data.neighborhoodGrammarPreposition || "em" }
+      : {}),
+    ...(data.neighborhoodDisplayNameWithArticle !== undefined
+      ? {
+          neighborhoodDisplayNameWithArticle:
+            data.neighborhoodDisplayNameWithArticle || buildArticlePreview(data.neighborhoodGrammarArticle, neighborhoodName)
+        }
+      : {}),
+    ...(data.neighborhoodDisplayNameWithPreposition !== undefined
+      ? {
+          neighborhoodDisplayNameWithPreposition:
+            data.neighborhoodDisplayNameWithPreposition || buildPrepositionPreview(data.neighborhoodGrammarPreposition, neighborhoodName)
+        }
+      : {})
+  };
+}
+
 function mapVenuePayload(venue) {
+  const venueArticlePreview = buildArticlePreview(venue.grammarArticle, venue.name);
+  const venuePrepositionPreview = buildPrepositionPreview(venue.grammarPreposition, venue.name);
+  const nicknameArticlePreview = buildArticlePreview(venue.nicknameGrammarArticle, venue.nickname);
+  const nicknamePrepositionPreview = buildPrepositionPreview(venue.nicknameGrammarPreposition, venue.nickname);
+  const neighborhoodArticlePreview = buildArticlePreview(venue.neighborhoodGrammarArticle, venue.neighborhood);
+  const neighborhoodPrepositionPreview = buildPrepositionPreview(venue.neighborhoodGrammarPreposition, venue.neighborhood);
   return {
     id: venue.id,
     name: venue.name,
@@ -58,6 +139,19 @@ function mapVenuePayload(venue) {
     instagramUrl: venue.instagramUrl ?? "",
     address: venue.address,
     neighborhood: venue.neighborhood,
+    nickname: venue.nickname ?? "",
+    grammarArticle: venue.grammarArticle ?? "",
+    grammarPreposition: venue.grammarPreposition ?? "em",
+    displayNameWithArticle: venue.displayNameWithArticle || venueArticlePreview,
+    displayNameWithPreposition: venue.displayNameWithPreposition || venuePrepositionPreview,
+    nicknameGrammarArticle: venue.nicknameGrammarArticle ?? "",
+    nicknameGrammarPreposition: venue.nicknameGrammarPreposition ?? "em",
+    nicknameDisplayNameWithArticle: venue.nicknameDisplayNameWithArticle || nicknameArticlePreview,
+    nicknameDisplayNameWithPreposition: venue.nicknameDisplayNameWithPreposition || nicknamePrepositionPreview,
+    neighborhoodGrammarArticle: venue.neighborhoodGrammarArticle ?? "",
+    neighborhoodGrammarPreposition: venue.neighborhoodGrammarPreposition ?? "em",
+    neighborhoodDisplayNameWithArticle: venue.neighborhoodDisplayNameWithArticle || neighborhoodArticlePreview,
+    neighborhoodDisplayNameWithPreposition: venue.neighborhoodDisplayNameWithPreposition || neighborhoodPrepositionPreview,
     region: venue.region,
     city: venue.city,
     state: venue.state,
@@ -189,6 +283,7 @@ export async function createVenue(req, res, next) {
     const venue = await prisma.venue.create({
       data: {
         ...data,
+        ...buildVenueGrammarData(data),
         slug: baseSlug,
         createdByUserId: req.user.id
       },
@@ -262,6 +357,7 @@ export async function updateVenue(req, res, next) {
       where: { id },
       data: {
         ...data,
+        ...buildVenueGrammarData(data),
         ...(data.name ? { slug: slugify(data.name) } : {})
       },
       include: {

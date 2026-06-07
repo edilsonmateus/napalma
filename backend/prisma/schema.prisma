@@ -91,6 +91,10 @@ model Region {
   name            String
   city            String   @default("Sao Paulo")
   state           String   @default("SP")
+  grammarArticle  String?
+  grammarPreposition String? @default("em")
+  displayNameWithArticle String?
+  displayNameWithPreposition String?
   isActive        Boolean  @default(true)
   sortOrder       Int      @default(0)
   createdByUserId String?
@@ -247,6 +251,19 @@ model Venue {
   instagramUrl String?
   address      String
   neighborhood String
+  nickname     String?
+  grammarArticle  String?
+  grammarPreposition String? @default("em")
+  displayNameWithArticle String?
+  displayNameWithPreposition String?
+  nicknameGrammarArticle  String?
+  nicknameGrammarPreposition String? @default("em")
+  nicknameDisplayNameWithArticle String?
+  nicknameDisplayNameWithPreposition String?
+  neighborhoodGrammarArticle String?
+  neighborhoodGrammarPreposition String? @default("em")
+  neighborhoodDisplayNameWithArticle String?
+  neighborhoodDisplayNameWithPreposition String?
   region       String
   city         String
   state        String

@@ -162,7 +162,12 @@ function mapEventPayload(event) {
     artist: event.artists[0]?.artist.name ?? "",
     artistVerified: Boolean(event.artists[0]?.artist?.isVerified),
     venue: event.venue.name,
+    venueDisplayNameWithArticle: event.venue.displayNameWithArticle ?? event.venue.name,
+    venueDisplayNameWithPreposition: event.venue.displayNameWithPreposition ?? `em ${event.venue.name}`,
     region: event.venue.region,
+    neighborhood: event.venue.neighborhood ?? "",
+    neighborhoodDisplayNameWithArticle: event.venue.neighborhoodDisplayNameWithArticle ?? event.venue.neighborhood ?? "",
+    neighborhoodDisplayNameWithPreposition: event.venue.neighborhoodDisplayNameWithPreposition ?? `em ${event.venue.neighborhood ?? ""}`.trim(),
     venueAddress: event.venue.address ?? "",
     venueCity: event.venue.city ?? "",
     venueState: event.venue.state ?? "",
@@ -238,10 +243,15 @@ function mapEventDetailPayload(event) {
     venue: {
       id: event.venue.id,
       name: event.venue.name,
+      displayNameWithArticle: event.venue.displayNameWithArticle ?? event.venue.name,
+      displayNameWithPreposition: event.venue.displayNameWithPreposition ?? `em ${event.venue.name}`,
       address: event.venue.address ?? "",
       city: event.venue.city ?? "",
       state: event.venue.state ?? "",
       region: event.venue.region,
+      neighborhood: event.venue.neighborhood ?? "",
+      neighborhoodDisplayNameWithArticle: event.venue.neighborhoodDisplayNameWithArticle ?? event.venue.neighborhood ?? "",
+      neighborhoodDisplayNameWithPreposition: event.venue.neighborhoodDisplayNameWithPreposition ?? `em ${event.venue.neighborhood ?? ""}`.trim(),
       openDays: event.venue.openDays ?? []
     }
   };

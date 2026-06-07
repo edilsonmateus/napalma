@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import VerifiedBadge from "../components/common/VerifiedBadge";
 import {
@@ -33,12 +33,21 @@ import {
   useVenueManagersQuery,
   useVenuesQuery
 } from "../hooks/useEventsQuery";
-import { getArtistById, getEventById, getVenueById } from "../services/events.service";
+import { getArtistById, getEventById, getVenueById, request77FirstKit } from "../services/events.service";
 import { useAuthStore } from "../store/authStore";
 import { isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
 
 const initialVenueForm = {
   name: "",
+  grammarArticle: "",
+  grammarPreposition: "em",
+  displayNameWithArticle: "",
+  displayNameWithPreposition: "",
+  nickname: "",
+  nicknameGrammarArticle: "",
+  nicknameGrammarPreposition: "em",
+  nicknameDisplayNameWithArticle: "",
+  nicknameDisplayNameWithPreposition: "",
   goldPartner: false,
   description: "",
   contactName: "",
@@ -46,6 +55,10 @@ const initialVenueForm = {
   instagramUrl: "",
   address: "",
   neighborhood: "",
+  neighborhoodGrammarArticle: "",
+  neighborhoodGrammarPreposition: "em",
+  neighborhoodDisplayNameWithArticle: "",
+  neighborhoodDisplayNameWithPreposition: "",
   region: "",
   city: "Sao Paulo",
   state: "SP",
@@ -95,9 +108,9 @@ const publishChecklistModel = [
   { key: "title", label: "Revisei titulo/artista do evento." },
   { key: "schedule", label: "Revisei data e horario (inicio e fim)." },
   { key: "venue", label: "Revisei casa/unidade selecionada." },
-  { key: "region", label: "Revisei regi�o da casa para o filtro correto." },
+  { key: "region", label: "Revisei regiÃ£o da casa para o filtro correto." },
   { key: "pricing", label: "Revisei politica de preco e valores." },
-  { key: "media", label: "Revisei imagem, descri��o e link (se houver)." }
+  { key: "media", label: "Revisei imagem, descriÃ§Ã£o e link (se houver)." }
 ];
 
 const initialManagerForm = {
@@ -122,11 +135,276 @@ const RECURRENCE_DAYS = [
 const DEFAULT_CITY_REGIONS = ["Centro", "Zona Norte", "Zona Sul", "Zona Leste", "Zona Oeste"];
 const initialRegionForm = {
   name: "",
+  grammarArticle: "",
+  grammarPreposition: "em",
+  displayNameWithArticle: "",
+  displayNameWithPreposition: "",
   city: "Sao Paulo",
   state: "SP",
   sortOrder: "",
   isActive: true
 };
+
+const GRAMMAR_ARTICLE_OPTIONS = [
+  { value: "", label: "Sem artigo" },
+  { value: "o", label: "o" },
+  { value: "a", label: "a" },
+  { value: "os", label: "os" },
+  { value: "as", label: "as" }
+];
+
+const GRAMMAR_PREPOSITION_OPTIONS = [
+  { value: "em", label: "em" },
+  { value: "no", label: "no" },
+  { value: "na", label: "na" }
+];
+
+function previewArticle(article, name) {
+  const cleanName = String(name || "").trim();
+  if (!cleanName) return "";
+  const cleanArticle = String(article || "").trim();
+  return cleanArticle ? cleanArticle + " " + cleanName : cleanName;
+}
+
+function previewPreposition(preposition, name) {
+  const cleanName = String(name || "").trim();
+  if (!cleanName) return "";
+  const cleanPreposition = String(preposition || "em").trim() || "em";
+  return cleanPreposition + " " + cleanName;
+}
+
+function formatDateTimeForKit(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function formatKitDate(value, options = {}) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    ...options
+  });
+}
+
+function formatKitTime(value, human = false) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const time = date.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/Sao_Paulo"
+  });
+  if (!human) return time;
+  const [hour, minute] = time.split(":");
+  return minute === "00" ? `${Number(hour)}h` : `${Number(hour)}h${minute}`;
+}
+
+function sentenceCaseKit(value) {
+  const text = String(value || "").trim();
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : "";
+}
+
+function inferKitArticle(name) {
+  const normalized = String(name || "").trim().toLowerCase();
+  if (!normalized || /^(o|a|os|as)\s+/.test(normalized)) return "";
+  if (/^(roda|feijoada|noite|turma|resenha|bateria)\b/.test(normalized)) return "a";
+  if (/^(samba|pagode|show|baile|terreiro|festival|encontro|projeto)\b/.test(normalized)) return "o";
+  if (/^(zona|regiao|regiÃ£o)\b/.test(normalized)) return "a";
+  if (/^(centro|bairro)\b/.test(normalized)) return "o";
+  return "";
+}
+
+function kitWithArticle(name, article) {
+  const cleanName = String(name || "").trim();
+  const cleanArticle = String(article || inferKitArticle(cleanName)).trim();
+  return cleanArticle ? `${cleanArticle} ${cleanName}` : cleanName;
+}
+
+function kitWithDeRelation(name, article) {
+  const cleanName = String(name || "").trim();
+  const cleanArticle = String(article || inferKitArticle(cleanName)).trim();
+  const contractions = { o: "do", a: "da", os: "dos", as: "das" };
+  return `${contractions[cleanArticle] || "de"} ${cleanName}`;
+}
+
+function clean77FirstText(value) {
+  return String(value || "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*\n]+)\*/g, "$1")
+    .replace(/[ \t]+\n/g, "\n")
+    .trim();
+}
+
+function build77FirstKit(eventItem) {
+  const title = eventItem?.title || "Evento sem t\u00edtulo";
+  const artist = eventItem?.artist || "Artista a confirmar";
+  const venue = eventItem?.venue || "Casa a confirmar";
+  const region = eventItem?.region || "";
+  const startValue = eventItem?.startsAt || eventItem?.startDate;
+  const endValue = eventItem?.endsAt || eventItem?.endDate;
+  const startsAt = formatDateTimeForKit(startValue);
+  const endsAt = formatDateTimeForKit(endValue);
+  const longDate = formatKitDate(startValue, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const shortDate = formatKitDate(startValue, { day: "2-digit", month: "2-digit", year: "numeric" });
+  const weekday = formatKitDate(startValue, { weekday: "long" });
+  const dayNumber = formatKitDate(startValue, { day: "numeric" });
+  const startTime = formatKitTime(startValue);
+  const humanStartTime = formatKitTime(startValue, true);
+  const endTime = formatKitTime(endValue);
+  const price = eventItem?.priceLabel || "Consulte valores";
+  const eventUrl = `${window.location.origin}/events/${eventItem?.id || ""}`;
+  const titleWithArticle = kitWithArticle(title);
+  const titleWithDeRelation = kitWithDeRelation(title);
+  const venueWithPreposition = eventItem?.venueDisplayNameWithPreposition || `em ${venue}`;
+  const regionWithPreposition = eventItem?.regionDisplayNameWithPreposition || (region ? `${region.toLowerCase().includes("centro") ? "no" : "na"} ${region}` : "");
+  const regionWithArticle = eventItem?.regionDisplayNameWithArticle || kitWithArticle(region);
+  const friendlyDateLead = weekday ? `Na pr\u00f3xima ${weekday}` : "Em data a confirmar";
+  const startTimeWithPreposition = humanStartTime ? `\u00e0s ${humanStartTime}` : "em hor\u00e1rio a confirmar";
+  const serviceDate = longDate ? sentenceCaseKit(longDate) : shortDate || "Data a confirmar";
+  const cityState = [eventItem?.city, eventItem?.state].filter(Boolean).join(" - ");
+
+  const captionShort = [
+    `${title} ${regionWithPreposition || venueWithPreposition} \u{1F3A4}\u{1F941}`,
+    "",
+    `${friendlyDateLead}, dia ${dayNumber || shortDate || "a confirmar"}, ${titleWithArticle} desembarca ${venueWithPreposition} para mais um dia de samba. Uma roda daquelas: gog\u00f3, palma da m\u00e3o, aquela gelada e gente bonita.`,
+    "",
+    `O evento come\u00e7a ${startTimeWithPreposition}. Chama os seus e vem pra essa resenha${regionWithPreposition ? ` ${regionWithPreposition}` : ""}.`,
+    "",
+    "Servi\u00e7o:",
+    `\u{1F5D3}\uFE0F ${serviceDate}`,
+    `\u{1F559} ${humanStartTime || startTime || "Hor\u00e1rio a confirmar"}`,
+    `\u{1F4CD} ${venue}${region ? ` (${region})` : ""}`,
+    `\u{1F3AB} Ingresso: ${price}`,
+    "",
+    eventUrl
+  ].join("\n");
+
+  const whatsappText = [
+    `${title} ${venueWithPreposition} \u{1F941}`,
+    "",
+    `${friendlyDateLead}, dia ${shortDate || "a confirmar"}, a partir ${startTimeWithPreposition}, tem ${title}${regionWithPreposition ? ` ${regionWithPreposition}` : ""}. Uma roda com muito samba de raiz.`,
+    "",
+    "Bora colar? Compartilha essa mensagem com os seus e vamos encostar.",
+    "",
+    "Confira os detalhes completos no 77Gira:",
+    `\u{1F449} ${eventUrl}`
+  ].join("\n");
+
+  const releaseText = [
+    `${venue} recebe ${titleWithArticle}${weekday && dayNumber ? ` na pr\u00f3xima ${weekday} (${dayNumber})` : ""}`,
+    "",
+    `${regionWithArticle || region || eventItem?.city || "A cidade"} ter\u00e1 uma nova edi\u00e7\u00e3o ${titleWithDeRelation}${longDate ? ` no dia ${longDate}` : ""}. O evento acontece ${venueWithPreposition}, com in\u00edcio programado para ${startTimeWithPreposition}.`,
+    "",
+    eventItem?.description ||
+      "O projeto apresenta um repert\u00f3rio focado em cl\u00e1ssicos do samba de raiz e grandes composi\u00e7\u00f5es. O ambiente \u00e9 estruturado para receber o p\u00fablico em um formato de roda de samba bem raiz, valorizando a proximidade entre m\u00fasicos e frequentadores.",
+    "",
+    `As apresenta\u00e7\u00f5es ao vivo se estendem ao longo da noite, refor\u00e7ando o circuito cultural e de lazer${regionWithPreposition ? ` ${regionWithPreposition}` : ""}.`,
+    "",
+    "Servi\u00e7o:",
+    "",
+    `- Evento: ${title}`,
+    `- Artista: ${artist}`,
+    `- Data: ${serviceDate}`,
+    `- Hor\u00e1rio: ${humanStartTime || startTime || "Hor\u00e1rio a confirmar"}`,
+    `- Local: ${venue}${region ? ` \u2013 ${region}` : ""}${cityState ? `, ${cityState}` : ""}`,
+    `- Ingresso: ${price}`,
+    `- Link: ${eventUrl}`
+  ].join("\n");
+
+  const techSheet = [
+    `Evento: ${title}`,
+    `Artista: ${artist}`,
+    `Casa: ${venue}`,
+    `Regi\u00e3o: ${region || "-"}`,
+    `In\u00edcio: ${startsAt || "-"}`,
+    `Fim: ${endsAt || "-"}`,
+    `Pre\u00e7o: ${price}`,
+    `Link: ${eventUrl}`
+  ].join("\n");
+
+  return {
+    title,
+    artist,
+    venue,
+    region,
+    startsAt,
+    endsAt,
+    price,
+    eventUrl,
+    grammar: {
+      titleWithArticle,
+      titleWithDeRelation,
+      venueWithPreposition,
+      regionWithArticle,
+      regionWithPreposition,
+      startTimeWithPreposition
+    },
+    captionShort,
+    whatsappText,
+    releaseText,
+    techSheet
+  };
+}
+function build77FirstWebhookPayload(eventItem, kit) {
+  const startValue = eventItem?.startsAt || eventItem?.startDate || "";
+  const endValue = eventItem?.endsAt || eventItem?.endDate || "";
+  const startDate = startValue ? new Date(startValue) : null;
+  const endDate = endValue ? new Date(endValue) : null;
+  const validStart = startDate && !Number.isNaN(startDate.getTime());
+  const validEnd = endDate && !Number.isNaN(endDate.getTime());
+
+  return {
+    source: "77gira",
+    workflow: "77first-one-click-kit",
+    eventId: eventItem?.id || "",
+    venueId: eventItem?.venueId || "",
+    artistId: eventItem?.artistId || "",
+    title: kit.title,
+    artistName: kit.artist,
+    venueName: kit.venue,
+    region: kit.region,
+    address: eventItem?.address || eventItem?.venueAddress || "",
+    date: validStart ? startDate.toISOString().slice(0, 10) : "",
+    startTime: validStart ? startDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "",
+    endTime: validEnd ? endDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "",
+    priceLabel: kit.price,
+    audienceBadges: eventItem?.audienceBadges || [],
+    description: eventItem?.description || "",
+    ticketUrl: eventItem?.ticketUrl || "",
+    coverImageUrl: eventItem?.imageUrl || eventItem?.coverImageUrl || "",
+    appEventUrl: kit.eventUrl,
+    shareUrl: kit.eventUrl,
+    kit: {
+      captionShort: kit.captionShort,
+      whatsappText: kit.whatsappText,
+      releaseText: kit.releaseText,
+      techSheet: kit.techSheet
+    },
+    organizer: {
+      name: eventItem?.organizerName || "",
+      email: eventItem?.organizerEmail || "",
+      phone: eventItem?.organizerPhone || ""
+    },
+    venueContact: {
+      name: eventItem?.venueContactName || "",
+      email: eventItem?.venueContactEmail || "",
+      phone: eventItem?.venueContactPhone || ""
+    },
+    generatedAt: new Date().toISOString(),
+    timezone: "America/Sao_Paulo"
+  };
+}
 
 function loadAdminPrefs() {
   try {
@@ -219,6 +497,9 @@ export default function VenuesAdminPage() {
   const [editingRegionId, setEditingRegionId] = useState("");
   const [uploadingTarget, setUploadingTarget] = useState("");
   const [publishReviewOpen, setPublishReviewOpen] = useState(false);
+  const [firstKitEvent, setFirstKitEvent] = useState(null);
+  const [firstKitData, setFirstKitData] = useState(null);
+  const [firstKitLoadingId, setFirstKitLoadingId] = useState("");
   const [publishChecks, setPublishChecks] = useState(() =>
     Object.fromEntries(publishChecklistModel.map((item) => [item.key, false]))
   );
@@ -229,10 +510,10 @@ export default function VenuesAdminPage() {
       return;
     }
     const normalized = String(text).toLowerCase();
-    const autoType = normalized.includes("n�o foi possivel")
+    const autoType = normalized.includes("nÃ£o foi possivel")
       || normalized.includes("revise")
       || normalized.includes("sem permissao")
-      || normalized.includes("voce n�o pode")
+      || normalized.includes("voce nÃ£o pode")
       || normalized.includes("forbidden")
       || normalized.includes("erro")
       ? "error"
@@ -427,7 +708,7 @@ export default function VenuesAdminPage() {
   const previewPriceLabel = eventForm.ticketType === "free"
     ? "Gratuito"
     : eventForm.ticketType === "consumacao"
-      ? "Consuma��o"
+      ? "ConsumaÃ§Ã£o"
       : eventForm.priceMin || eventForm.priceMax
         ? `R$ ${eventForm.priceMin || eventForm.priceMax}`
         : "Consulte valores";
@@ -441,13 +722,13 @@ export default function VenuesAdminPage() {
     }
     if (isProducerRole(user?.role)) {
       return {
-        title: "Gest�o de Casas, Artistas e Eventos do Produtor",
+        title: "GestÃ£o de Casas, Artistas e Eventos do Produtor",
         subtitle: "Voce edita somente carteira aprovada e reivindicacoes.",
         badge: "Perfil ativo: PRODUTOR"
       };
     }
     return {
-      title: "Gest�o de Agenda da Casa",
+      title: "GestÃ£o de Agenda da Casa",
       subtitle: houseDisplayName
         ? `Unidade ativa: ${houseDisplayName}. Aqui voce cuida da agenda, produtores e dados da sua casa.`
         : "Para operar a agenda, primeiro solicite acesso a uma filial cadastrada.",
@@ -543,8 +824,72 @@ export default function VenuesAdminPage() {
     link.click();
     URL.revokeObjectURL(url);
   }
+  function downloadTextFile(filename, content) {
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+  function downloadJsonFile(filename, payload) {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+  async function copyToClipboard(text, successMessage) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast(successMessage || "Copiado.");
+    } catch (_error) {
+      showToast("Nao foi possivel copiar agora.");
+    }
+  }
+  function close77FirstKit() {
+    setFirstKitEvent(null);
+    setFirstKitData(null);
+  }
+  async function prepare77FirstKit(eventItem) {
+    setFirstKitLoadingId(eventItem.id);
+    setFirstKitEvent(eventItem);
+    setFirstKitData(null);
+    try {
+      const result = await request77FirstKit(eventItem.id);
+      const baseKit = build77FirstKit(eventItem);
+      const remoteKit = result?.payload?.kit || {};
+      setFirstKitData({
+        ...baseKit,
+        captionShort: clean77FirstText(remoteKit.captionShort || baseKit.captionShort),
+        whatsappText: clean77FirstText(remoteKit.whatsappText || baseKit.whatsappText),
+        releaseText: clean77FirstText(remoteKit.releaseText || baseKit.releaseText),
+        techSheet: clean77FirstText(remoteKit.techSheet || baseKit.techSheet),
+        source: result?.source || "fallback",
+        payload: result?.payload || build77FirstWebhookPayload(eventItem, baseKit)
+      });
+      showToast(result?.message || "Kit 77First pronto.");
+    } catch (error) {
+      const baseKit = build77FirstKit(eventItem);
+      setFirstKitData({
+        ...baseKit,
+        captionShort: clean77FirstText(baseKit.captionShort),
+        whatsappText: clean77FirstText(baseKit.whatsappText),
+        releaseText: clean77FirstText(baseKit.releaseText),
+        techSheet: clean77FirstText(baseKit.techSheet),
+        source: "fallback",
+        payload: build77FirstWebhookPayload(eventItem, baseKit)
+      });
+      showToast("Kit pronto com texto base.", "info");
+    } finally {
+      setFirstKitLoadingId("");
+    }
+  }
   function exportVenuesCsv() {
-    downloadCsv("casas.csv", ["Nome", "Bairro", "Regi�o", "Eventos"], filteredVenues.map((v) => [v.name, v.neighborhood, v.region, v.eventsCount]));
+    downloadCsv("casas.csv", ["Nome", "Bairro", "RegiÃ£o", "Eventos"], filteredVenues.map((v) => [v.name, v.neighborhood, v.region, v.eventsCount]));
     showToast("CSV de casas exportado.");
   }
   function exportArtistsCsv() {
@@ -552,7 +897,7 @@ export default function VenuesAdminPage() {
     showToast("CSV de artistas exportado.");
   }
   function exportEventsCsv() {
-    downloadCsv("eventos.csv", ["Titulo", "Artista", "Casa", "Regi�o", "Inicio"], filteredEvents.map((e) => [e.title, e.artist, e.venue, e.region, e.startsAt || e.startDate]));
+    downloadCsv("eventos.csv", ["Titulo", "Artista", "Casa", "RegiÃ£o", "Inicio"], filteredEvents.map((e) => [e.title, e.artist, e.venue, e.region, e.startsAt || e.startDate]));
     showToast("CSV de eventos exportado.");
   }
   useEffect(() => {
@@ -687,13 +1032,13 @@ export default function VenuesAdminPage() {
       errors.endDate = ["Termino precisa ser depois do inicio."];
     }
     if (eventForm.ticketType === "free" && (eventForm.priceMin || eventForm.priceMax)) {
-      errors.ticketType = ["Evento gratuito n�o deve ter preco."];
+      errors.ticketType = ["Evento gratuito nÃ£o deve ter preco."];
     }
     if (eventForm.ticketType === "consumacao" && eventForm.consumacaoValue && Number(eventForm.consumacaoValue) < 0) {
-      errors.consumacaoValue = ["Consuma��o minima n�o pode ser negativa."];
+      errors.consumacaoValue = ["ConsumaÃ§Ã£o minima nÃ£o pode ser negativa."];
     }
     if (eventForm.priceMin && eventForm.priceMax && Number(eventForm.priceMax) < Number(eventForm.priceMin)) {
-      errors.priceMax = ["Preco m�ximo deve ser maior ou igual ao m�nimo."];
+      errors.priceMax = ["Preco mÃ¡ximo deve ser maior ou igual ao mÃ­nimo."];
     }
     if (eventForm.isRecurring && (!Array.isArray(eventForm.recurrenceDays) || eventForm.recurrenceDays.length === 0)) {
       errors.recurrenceDays = ["Selecione ao menos um dia da semana."];
@@ -708,6 +1053,16 @@ export default function VenuesAdminPage() {
 
     const payload = {
       ...venueForm,
+      displayNameWithArticle: previewArticle(venueForm.grammarArticle, venueForm.name),
+      displayNameWithPreposition: previewPreposition(venueForm.grammarPreposition, venueForm.name),
+      nicknameDisplayNameWithArticle: venueForm.nickname
+        ? previewArticle(venueForm.nicknameGrammarArticle, venueForm.nickname)
+        : "",
+      nicknameDisplayNameWithPreposition: venueForm.nickname
+        ? previewPreposition(venueForm.nicknameGrammarPreposition, venueForm.nickname)
+        : "",
+      neighborhoodDisplayNameWithArticle: previewArticle(venueForm.neighborhoodGrammarArticle, venueForm.neighborhood),
+      neighborhoodDisplayNameWithPreposition: previewPreposition(venueForm.neighborhoodGrammarPreposition, venueForm.neighborhood),
       contactName: venueForm.contactName || undefined,
       contactPhone: venueForm.contactPhone || undefined,
       instagramUrl: venueForm.instagramUrl || undefined,
@@ -728,6 +1083,9 @@ export default function VenuesAdminPage() {
         const diff = {};
         const trackKeys = [
           "name",
+          "nickname",
+          "nicknameGrammarArticle",
+          "nicknameGrammarPreposition",
           "description",
           "contactName",
           "contactPhone",
@@ -773,7 +1131,7 @@ export default function VenuesAdminPage() {
     } catch (error) {
       const parsed = parseApiErrors(error);
       setVenueErrors(parsed.fieldErrors);
-      showToast(parsed.message || "N�o foi possivel salvar a casa.");
+      showToast(parsed.message || "NÃ£o foi possivel salvar a casa.");
     }
   }
 
@@ -819,7 +1177,7 @@ export default function VenuesAdminPage() {
     } catch (error) {
       const parsed = parseApiErrors(error);
       setArtistErrors(parsed.fieldErrors);
-      showToast(parsed.message || "N�o foi possivel salvar o artista.");
+      showToast(parsed.message || "NÃ£o foi possivel salvar o artista.");
     }
   }
 
@@ -832,6 +1190,15 @@ export default function VenuesAdminPage() {
       setEditingVenueId(detail.id);
       setVenueForm({
         name: detail.name || "",
+        grammarArticle: detail.grammarArticle || "",
+        grammarPreposition: detail.grammarPreposition || "em",
+        displayNameWithArticle: detail.displayNameWithArticle || "",
+        displayNameWithPreposition: detail.displayNameWithPreposition || "",
+        nickname: detail.nickname || "",
+        nicknameGrammarArticle: detail.nicknameGrammarArticle || "",
+        nicknameGrammarPreposition: detail.nicknameGrammarPreposition || "em",
+        nicknameDisplayNameWithArticle: detail.nicknameDisplayNameWithArticle || "",
+        nicknameDisplayNameWithPreposition: detail.nicknameDisplayNameWithPreposition || "",
         goldPartner: Boolean(detail.goldPartner),
         description: detail.description || "",
         contactName: detail.contactName || "",
@@ -839,6 +1206,10 @@ export default function VenuesAdminPage() {
         instagramUrl: detail.instagramUrl || "",
         address: detail.address || "",
         neighborhood: detail.neighborhood || "",
+        neighborhoodGrammarArticle: detail.neighborhoodGrammarArticle || "",
+        neighborhoodGrammarPreposition: detail.neighborhoodGrammarPreposition || "em",
+        neighborhoodDisplayNameWithArticle: detail.neighborhoodDisplayNameWithArticle || "",
+        neighborhoodDisplayNameWithPreposition: detail.neighborhoodDisplayNameWithPreposition || "",
         region: detail.region || "",
         city: detail.city || "",
         state: detail.state || "SP",
@@ -848,7 +1219,7 @@ export default function VenuesAdminPage() {
       setVenueEditJustification("");
       showToast("Casa carregada. Edite os campos e salve.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel carregar os dados completos da casa.");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel carregar os dados completos da casa.");
     }
   }
 
@@ -873,7 +1244,7 @@ export default function VenuesAdminPage() {
       });
       showToast("Artista carregado. Edite os campos e salve.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel carregar os dados completos do artista.");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel carregar os dados completos do artista.");
     }
   }
 
@@ -881,7 +1252,7 @@ export default function VenuesAdminPage() {
     const ok = window.confirm(
       isProducer
         ? "Deseja remover esta casa da sua carteira?"
-        : "Deseja excluir esta casa? Essa acao n�o pode ser desfeita."
+        : "Deseja excluir esta casa? Essa acao nÃ£o pode ser desfeita."
     );
     if (!ok) return;
 
@@ -891,7 +1262,7 @@ export default function VenuesAdminPage() {
       if (editingVenueId === venueId) resetVenueForm();
       showToast(isProducer ? "Casa removida da sua carteira." : "Casa excluida com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel excluir a casa.");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel excluir a casa.");
     }
   }
 
@@ -905,7 +1276,7 @@ export default function VenuesAdminPage() {
       if (editingArtistId === artistId) resetArtistForm();
       showToast("Artista excluido com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel excluir o artista.");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel excluir o artista.");
     }
   }
 
@@ -969,7 +1340,7 @@ export default function VenuesAdminPage() {
     } catch (error) {
       const parsed = parseApiErrors(error);
       setEventErrors(parsed.fieldErrors);
-      showToast(parsed.message || "N�o foi possivel salvar o evento.", "error");
+      showToast(parsed.message || "NÃ£o foi possivel salvar o evento.", "error");
       return false;
     }
   }
@@ -1035,7 +1406,7 @@ export default function VenuesAdminPage() {
       });
       showToast("Evento carregado. Edite os campos e salve.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel carregar os dados completos do evento.");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel carregar os dados completos do evento.");
     }
   }
 
@@ -1049,7 +1420,7 @@ export default function VenuesAdminPage() {
       if (editingEventId === eventId) resetEventForm();
       showToast("Evento excluido com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel excluir o evento.");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel excluir o evento.");
     }
   }
 
@@ -1073,7 +1444,7 @@ export default function VenuesAdminPage() {
       showToast(`Data ${trimmed} cancelada na serie.`);
       setCancellationTarget(null);
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel cancelar esta data.");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel cancelar esta data.");
     }
   }
 
@@ -1105,7 +1476,7 @@ export default function VenuesAdminPage() {
         return updatedDates.length > 0 ? { ...prev, dates: updatedDates } : null;
       });
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel reativar esta data.");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel reativar esta data.");
     }
   }
 
@@ -1115,7 +1486,7 @@ export default function VenuesAdminPage() {
       .sort();
 
     if (currentExceptions.length === 0) {
-      showToast("Este evento n�o possui datas canceladas.");
+      showToast("Este evento nÃ£o possui datas canceladas.");
       return;
     }
 
@@ -1142,7 +1513,7 @@ export default function VenuesAdminPage() {
       setSelectedManagerUserId("");
       showToast("Produtor vinculado com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel vincular produtor.");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel vincular produtor.");
     }
   }
 
@@ -1167,7 +1538,7 @@ export default function VenuesAdminPage() {
       setSelectedManagerUserId("");
       showToast("Produtor criado com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel criar produtor.");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel criar produtor.");
     }
   }
 
@@ -1181,7 +1552,7 @@ export default function VenuesAdminPage() {
       });
       showToast("Vinculo removido com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel remover vinculo.");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel remover vinculo.");
     }
   }
 
@@ -1191,9 +1562,9 @@ export default function VenuesAdminPage() {
         id: claimId,
         payload: { status }
       });
-      showToast(status === "approved" ? "Reivindica��o aprovada." : "Reivindica��o rejeitada.");
+      showToast(status === "approved" ? "ReivindicaÃ§Ã£o aprovada." : "ReivindicaÃ§Ã£o rejeitada.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel decidir a reivindica��o.");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel decidir a reivindicaÃ§Ã£o.");
     }
   }
 
@@ -1214,6 +1585,10 @@ export default function VenuesAdminPage() {
     setEditingRegionId(item.id);
     setRegionForm({
       name: item.name || "",
+      grammarArticle: item.grammarArticle || "",
+      grammarPreposition: item.grammarPreposition || "em",
+      displayNameWithArticle: item.displayNameWithArticle || "",
+      displayNameWithPreposition: item.displayNameWithPreposition || "",
       city: item.city || "Sao Paulo",
       state: item.state || "SP",
       sortOrder: item.sortOrder ?? "",
@@ -1226,6 +1601,10 @@ export default function VenuesAdminPage() {
     showToast("");
     const payload = {
       name: regionForm.name.trim(),
+      grammarArticle: regionForm.grammarArticle || "",
+      grammarPreposition: regionForm.grammarPreposition || "em",
+      displayNameWithArticle: previewArticle(regionForm.grammarArticle, regionForm.name),
+      displayNameWithPreposition: previewPreposition(regionForm.grammarPreposition, regionForm.name),
       city: regionForm.city.trim() || "Sao Paulo",
       state: (regionForm.state || "SP").trim().toUpperCase(),
       sortOrder: regionForm.sortOrder === "" ? 0 : Number(regionForm.sortOrder),
@@ -1234,31 +1613,31 @@ export default function VenuesAdminPage() {
     try {
       if (editingRegionId) {
         await updateRegionMutation.mutateAsync({ id: editingRegionId, payload });
-        showToast("Regi�o atualizada com sucesso.");
+        showToast("RegiÃ£o atualizada com sucesso.");
       } else {
         await createRegionMutation.mutateAsync(payload);
-        showToast("Regi�o criada com sucesso.");
+        showToast("RegiÃ£o criada com sucesso.");
       }
       resetRegionForm();
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel salvar a regi�o.");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel salvar a regiÃ£o.");
     }
   }
 
   async function handleRegionDelete(regionItem) {
     if ((regionItem?.venuesCount || 0) > 0) {
-      showToast("Regi�o com casas vinculadas n�o pode ser excluida.", "error");
+      showToast("RegiÃ£o com casas vinculadas nÃ£o pode ser excluida.", "error");
       return;
     }
-    const ok = window.confirm("Deseja excluir esta regi�o?");
+    const ok = window.confirm("Deseja excluir esta regiÃ£o?");
     if (!ok) return;
     showToast("");
     try {
       await deleteRegionMutation.mutateAsync(regionItem.id);
       if (editingRegionId === regionItem.id) resetRegionForm();
-      showToast("Regi�o excluida com sucesso.");
+      showToast("RegiÃ£o excluida com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel excluir a regi�o.");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel excluir a regiÃ£o.");
     }
   }
 
@@ -1285,7 +1664,7 @@ export default function VenuesAdminPage() {
       }
       showToast("Imagem enviada com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel enviar a imagem.");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel enviar a imagem.");
     } finally {
       setUploadingTarget("");
     }
@@ -1304,7 +1683,7 @@ export default function VenuesAdminPage() {
       }
       showToast("Acesso da filial revogado com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel revogar este acesso.");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel revogar este acesso.");
     }
   }
 
@@ -1329,7 +1708,7 @@ export default function VenuesAdminPage() {
         officialInstagram: houseClaimOfficialInstagram.trim() || undefined,
         officialWebsite: houseClaimOfficialWebsite.trim() || undefined
       });
-      showToast("Reivindica��o enviada. Aguarde aprovacao do admin.");
+      showToast("ReivindicaÃ§Ã£o enviada. Aguarde aprovacao do admin.");
       setHouseClaimTargetId("");
       setHouseClaimJustification("");
       setHouseClaimResponsibleName("");
@@ -1340,7 +1719,7 @@ export default function VenuesAdminPage() {
       setHouseClaimOfficialInstagram("");
       setHouseClaimOfficialWebsite("");
     } catch (error) {
-      showToast(error?.response?.data?.message || "N�o foi possivel enviar reivindica��o.", "error");
+      showToast(error?.response?.data?.message || "NÃ£o foi possivel enviar reivindicaÃ§Ã£o.", "error");
     }
   }
 
@@ -1479,7 +1858,7 @@ export default function VenuesAdminPage() {
               {showOverview ? <article className="clean-card"><h4>Cliques (30d)</h4><p>{houseAdsSummary?.summary?.clicks ?? 0}</p></article> : null}
               {showOverview ? <article className="clean-card"><h4>CTR (30d)</h4><p>{houseAdsSummary?.summary?.ctr ?? 0}%</p></article> : null}
               {showOverview ? <article className="clean-card"><h4>Radar da casa (30d)</h4><p>{audienceSummary?.scoped?.radarUsers ?? 0}</p></article> : null}
-              {showOverview ? <article className="clean-card"><h4>P�blico presente (30d)</h4><p>{audienceSummary?.scoped?.attendeesUsers ?? 0}</p></article> : null}
+              {showOverview ? <article className="clean-card"><h4>PÃºblico presente (30d)</h4><p>{audienceSummary?.scoped?.attendeesUsers ?? 0}</p></article> : null}
               {showEvents && !isHouseProgramacaoClean ? <article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
               {showHouseProfile ? <article className="clean-card"><h4>Dados da Casa</h4><p>{houseDisplayName || "Sem unidade ativa"}</p></article> : null}
               {showManagers ? <article className="clean-card"><h4>Produtores</h4><p>{totalManagers}</p></article> : null}
@@ -1498,7 +1877,7 @@ export default function VenuesAdminPage() {
           ) : null}
           {houseActiveVenue ? (
             <>
-              {houseAdsLoading ? <p className="empty">Carregando m�tricas de anuncios...</p> : null}
+              {houseAdsLoading ? <p className="empty">Carregando mÃ©tricas de anuncios...</p> : null}
             </>
           ) : null}
         </>
@@ -1532,16 +1911,69 @@ export default function VenuesAdminPage() {
       {showVenues ? <h3 className="section-title">Casas</h3> : null}
       {showVenues && canManageCatalog ? <form className="venue-form" onSubmit={handleVenueSubmit}>
         <input name="name" value={venueForm.name} onChange={handleVenueChange} placeholder="Nome da casa" required />
+        <div className="clean-card grammar-preview-card">
+          <strong>Tratamento textual da casa</strong>
+          <div className="form-actions-inline">
+            <select name="grammarArticle" value={venueForm.grammarArticle} onChange={handleVenueChange}>
+              {GRAMMAR_ARTICLE_OPTIONS.map((option) => (
+                <option key={"venue-article-" + (option.value || "none")} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            <select name="grammarPreposition" value={venueForm.grammarPreposition} onChange={handleVenueChange}>
+              {GRAMMAR_PREPOSITION_OPTIONS.map((option) => (
+                <option key={"venue-preposition-" + option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          <p className="meta-line">Previa: {previewArticle(venueForm.grammarArticle, venueForm.name) || "Nome da casa"} - {previewPreposition(venueForm.grammarPreposition, venueForm.name) || "em Nome da casa"}</p>
+        </div>
+        <input name="nickname" value={venueForm.nickname} onChange={handleVenueChange} placeholder="Apelido local da casa (ex: Cruz, Francisca, Baixo)" />
+        <div className="clean-card grammar-preview-card">
+          <strong>Tratamento textual do apelido</strong>
+          <div className="form-actions-inline">
+            <select name="nicknameGrammarArticle" value={venueForm.nicknameGrammarArticle} onChange={handleVenueChange}>
+              {GRAMMAR_ARTICLE_OPTIONS.map((option) => (
+                <option key={"nickname-article-" + (option.value || "none")} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            <select name="nicknameGrammarPreposition" value={venueForm.nicknameGrammarPreposition} onChange={handleVenueChange}>
+              {GRAMMAR_PREPOSITION_OPTIONS.map((option) => (
+                <option key={"nickname-preposition-" + option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          <p className="meta-line">
+            Previa informal: {venueForm.nickname
+              ? `${previewArticle(venueForm.nicknameGrammarArticle, venueForm.nickname)} - ${previewPreposition(venueForm.nicknameGrammarPreposition, venueForm.nickname)}`
+              : "Sem apelido cadastrado"}
+          </p>
+        </div>
         {venueErrors.name?.[0] ? <p className="field-error">{venueErrors.name[0]}</p> : null}
-        <input name="description" value={venueForm.description} onChange={handleVenueChange} placeholder="Descri��o" required />
+        <input name="description" value={venueForm.description} onChange={handleVenueChange} placeholder="DescriÃ§Ã£o" required />
         {venueErrors.description?.[0] ? <p className="field-error">{venueErrors.description[0]}</p> : null}
         <input name="contactName" value={venueForm.contactName} onChange={handleVenueChange} placeholder="Responsavel da casa (opcional)" />
         <input name="contactPhone" value={venueForm.contactPhone} onChange={handleVenueChange} placeholder="Telefone da casa (opcional)" />
         <input name="instagramUrl" value={venueForm.instagramUrl} onChange={handleVenueChange} placeholder="Instagram da casa (URL, opcional)" />
         <input name="address" value={venueForm.address} onChange={handleVenueChange} placeholder="Endereco" required />
         <input name="neighborhood" value={venueForm.neighborhood} onChange={handleVenueChange} placeholder="Bairro" required />
+        <div className="clean-card grammar-preview-card">
+          <strong>Tratamento textual do bairro</strong>
+          <div className="form-actions-inline">
+            <select name="neighborhoodGrammarArticle" value={venueForm.neighborhoodGrammarArticle} onChange={handleVenueChange}>
+              {GRAMMAR_ARTICLE_OPTIONS.map((option) => (
+                <option key={"neighborhood-article-" + (option.value || "none")} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            <select name="neighborhoodGrammarPreposition" value={venueForm.neighborhoodGrammarPreposition} onChange={handleVenueChange}>
+              {GRAMMAR_PREPOSITION_OPTIONS.map((option) => (
+                <option key={"neighborhood-preposition-" + option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          <p className="meta-line">Previa: {previewArticle(venueForm.neighborhoodGrammarArticle, venueForm.neighborhood) || "Bairro"} - {previewPreposition(venueForm.neighborhoodGrammarPreposition, venueForm.neighborhood) || "em Bairro"}</p>
+        </div>
         <select name="region" value={venueForm.region} onChange={handleVenueChange} required>
-          <option value="">Regi�o</option>
+          <option value="">RegiÃ£o</option>
           {venueRegionOptions.map((regionName) => (
             <option key={`region-option-create-${regionName}`} value={regionName}>
               {regionName}
@@ -1613,7 +2045,7 @@ export default function VenuesAdminPage() {
         </select>
         <input
           className="search-input"
-          placeholder="Buscar casa por nome, bairro ou regi�o..."
+          placeholder="Buscar casa por nome, bairro ou regiÃ£o..."
           value={venueSearch}
           onChange={(e) => setVenueSearch(e.target.value)}
         />
@@ -1646,8 +2078,8 @@ export default function VenuesAdminPage() {
       {showVenues && venueTotalPages > 1 ? (
         <div className="pagination-row">
           <button className="chip" onClick={() => setVenuePage((p) => Math.max(1, p - 1))} disabled={venuePage === 1}>Anterior</button>
-          <small className="meta-line">P�gina {venuePage} de {venueTotalPages}</small>
-          <button className="chip" onClick={() => setVenuePage((p) => Math.min(venueTotalPages, p + 1))} disabled={venuePage === venueTotalPages}>Pr�xima</button>
+          <small className="meta-line">PÃ¡gina {venuePage} de {venueTotalPages}</small>
+          <button className="chip" onClick={() => setVenuePage((p) => Math.min(venueTotalPages, p + 1))} disabled={venuePage === venueTotalPages}>PrÃ³xima</button>
         </div>
       ) : null}
 
@@ -1671,7 +2103,7 @@ export default function VenuesAdminPage() {
           name="username"
           value={managerForm.username}
           onChange={handleManagerFormChange}
-          placeholder="Usu�rio de acesso"
+          placeholder="UsuÃ¡rio de acesso"
           required
         />
         <input
@@ -1719,7 +2151,7 @@ export default function VenuesAdminPage() {
             setManagerSearch(e.target.value);
             setSelectedManagerUserId("");
           }}
-          placeholder="Buscar produtor por nome, email ou usu�rio"
+          placeholder="Buscar produtor por nome, email ou usuÃ¡rio"
           required
         />
         <select
@@ -1781,7 +2213,7 @@ export default function VenuesAdminPage() {
         </div>
       ) : null}
       {showClaims && claimsLoading ? <p className="empty">Carregando reivindicacoes...</p> : null}
-      {showClaims && !claimsLoading && filteredClaims.length === 0 ? <p className="empty">Nenhuma reivindica��o no filtro atual.</p> : null}
+      {showClaims && !claimsLoading && filteredClaims.length === 0 ? <p className="empty">Nenhuma reivindicaÃ§Ã£o no filtro atual.</p> : null}
       {showClaims ? (
         <div className="venue-list">
           {filteredClaims.map((claim) => (
@@ -1789,7 +2221,7 @@ export default function VenuesAdminPage() {
               <div>
                 <h3>{claim.targetType === "venue" ? "Casa" : "Artista"}: {claim.venue?.name || claim.artist?.name}</h3>
                 <p className="meta-line">Produtor: {claim.requestedBy?.name || claim.requestedBy?.email}</p>
-                <p className="meta-line">Tipo: {claim.requestType === "venue_update" ? "Alteracao de dados da casa" : "Reivindica��o de carteira"}</p>
+                <p className="meta-line">Tipo: {claim.requestType === "venue_update" ? "Alteracao de dados da casa" : "ReivindicaÃ§Ã£o de carteira"}</p>
                 <p className="meta-line">Status: {claim.status}</p>
                 {claim.venue?.contactName ? <p className="meta-line">Responsavel da casa: {claim.venue.contactName}</p> : null}
                 {claim.venue?.contactPhone ? <p className="meta-line">Telefone da casa: {claim.venue.contactPhone}</p> : null}
@@ -1844,7 +2276,7 @@ export default function VenuesAdminPage() {
                   onClick={() => (isDeletable && !item.readOnly ? handleRegionDelete(item) : null)}
                   title={
                     item.readOnly
-                      ? "Regi�o legada: crie uma regi�o oficial para gerenciar exclusao."
+                      ? "RegiÃ£o legada: crie uma regiÃ£o oficial para gerenciar exclusao."
                       : isDeletable
                         ? "Pronta para exclusao"
                         : "Com casas vinculadas"
@@ -1864,9 +2296,25 @@ export default function VenuesAdminPage() {
             name="name"
             value={regionForm.name}
             onChange={handleRegionFormChange}
-            placeholder="Regi�o"
+            placeholder="RegiÃ£o"
             required
           />
+          <div className="clean-card grammar-preview-card">
+            <strong>Tratamento textual da regiao</strong>
+            <div className="form-actions-inline">
+              <select name="grammarArticle" value={regionForm.grammarArticle} onChange={handleRegionFormChange}>
+                {GRAMMAR_ARTICLE_OPTIONS.map((option) => (
+                  <option key={"region-article-" + (option.value || "none")} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              <select name="grammarPreposition" value={regionForm.grammarPreposition} onChange={handleRegionFormChange}>
+                {GRAMMAR_PREPOSITION_OPTIONS.map((option) => (
+                  <option key={"region-preposition-" + option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+            <p className="meta-line">Previa: {previewArticle(regionForm.grammarArticle, regionForm.name) || "Regiao"} - {previewPreposition(regionForm.grammarPreposition, regionForm.name) || "em Regiao"}</p>
+          </div>
           <input
             name="city"
             value={regionForm.city}
@@ -1897,7 +2345,7 @@ export default function VenuesAdminPage() {
               checked={Boolean(regionForm.isActive)}
               onChange={handleRegionFormChange}
             />
-            Regi�o ativa
+            RegiÃ£o ativa
           </label>
           <div className="form-actions-inline">
             <button
@@ -1905,7 +2353,7 @@ export default function VenuesAdminPage() {
               type="submit"
               disabled={createRegionMutation.isPending || updateRegionMutation.isPending}
             >
-              {isEditingRegion ? "Salvar regi�o" : "Criar regi�o"}
+              {isEditingRegion ? "Salvar regiÃ£o" : "Criar regiÃ£o"}
             </button>
             {isEditingRegion ? (
               <button type="button" className="chip" onClick={resetRegionForm}>
@@ -1939,10 +2387,10 @@ export default function VenuesAdminPage() {
                   disabled={Boolean(item.readOnly) || deleteRegionMutation.isPending || (item.venuesCount || 0) > 0}
                   title={
                     item.readOnly
-                      ? "Regi�o legada: cadastre em Regioes para editar/excluir."
+                      ? "RegiÃ£o legada: cadastre em Regioes para editar/excluir."
                       : (item.venuesCount || 0) > 0
                         ? "Remova as casas vinculadas antes de excluir."
-                        : "Excluir regi�o"
+                        : "Excluir regiÃ£o"
                   }
                 >
                   Excluir
@@ -1964,13 +2412,13 @@ export default function VenuesAdminPage() {
         <>
           <article className="clean-card">
             <p className="meta-line"><strong>Nome:</strong> {houseActiveVenue.name}</p>
-            <p className="meta-line"><strong>Responsavel:</strong> {houseActiveVenue.contactName || "N�o informado"}</p>
-            <p className="meta-line"><strong>Telefone:</strong> {houseActiveVenue.contactPhone || "N�o informado"}</p>
-            <p className="meta-line"><strong>Instagram:</strong> {houseActiveVenue.instagramUrl || "N�o informado"}</p>
+            <p className="meta-line"><strong>Responsavel:</strong> {houseActiveVenue.contactName || "NÃ£o informado"}</p>
+            <p className="meta-line"><strong>Telefone:</strong> {houseActiveVenue.contactPhone || "NÃ£o informado"}</p>
+            <p className="meta-line"><strong>Instagram:</strong> {houseActiveVenue.instagramUrl || "NÃ£o informado"}</p>
             <p className="meta-line"><strong>Endereco:</strong> {houseActiveVenue.address}</p>
-            <p className="meta-line"><strong>Bairro/Regi�o:</strong> {houseActiveVenue.neighborhood} - {houseActiveVenue.region}</p>
+            <p className="meta-line"><strong>Bairro/RegiÃ£o:</strong> {houseActiveVenue.neighborhood} - {houseActiveVenue.region}</p>
             <p className="meta-line"><strong>Cidade:</strong> {houseActiveVenue.city} - {houseActiveVenue.state}</p>
-            <p className="meta-line"><strong>Funcionamento:</strong> {(houseActiveVenue.openDays || []).join(", ") || "N�o informado"}</p>
+            <p className="meta-line"><strong>Funcionamento:</strong> {(houseActiveVenue.openDays || []).join(", ") || "NÃ£o informado"}</p>
             <div className="form-actions-inline">
               <button className="chip" type="button" onClick={startHouseProfileEdit}>Solicitar alteracao de dados</button>
             </div>
@@ -1995,14 +2443,67 @@ export default function VenuesAdminPage() {
           {isEditingVenue ? (
             <form className="venue-form" onSubmit={handleVenueSubmit}>
               <input name="name" value={venueForm.name} onChange={handleVenueChange} placeholder="Nome da casa" required />
-              <input name="description" value={venueForm.description} onChange={handleVenueChange} placeholder="Descri��o" required />
+        <div className="clean-card grammar-preview-card">
+          <strong>Tratamento textual da casa</strong>
+          <div className="form-actions-inline">
+            <select name="grammarArticle" value={venueForm.grammarArticle} onChange={handleVenueChange}>
+              {GRAMMAR_ARTICLE_OPTIONS.map((option) => (
+                <option key={"venue-article-" + (option.value || "none")} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            <select name="grammarPreposition" value={venueForm.grammarPreposition} onChange={handleVenueChange}>
+              {GRAMMAR_PREPOSITION_OPTIONS.map((option) => (
+                <option key={"venue-preposition-" + option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          <p className="meta-line">Previa: {previewArticle(venueForm.grammarArticle, venueForm.name) || "Nome da casa"} - {previewPreposition(venueForm.grammarPreposition, venueForm.name) || "em Nome da casa"}</p>
+        </div>
+              <input name="nickname" value={venueForm.nickname} onChange={handleVenueChange} placeholder="Apelido local da casa (ex: Cruz, Francisca, Baixo)" />
+        <div className="clean-card grammar-preview-card">
+          <strong>Tratamento textual do apelido</strong>
+          <div className="form-actions-inline">
+            <select name="nicknameGrammarArticle" value={venueForm.nicknameGrammarArticle} onChange={handleVenueChange}>
+              {GRAMMAR_ARTICLE_OPTIONS.map((option) => (
+                <option key={"house-nickname-article-" + (option.value || "none")} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            <select name="nicknameGrammarPreposition" value={venueForm.nicknameGrammarPreposition} onChange={handleVenueChange}>
+              {GRAMMAR_PREPOSITION_OPTIONS.map((option) => (
+                <option key={"house-nickname-preposition-" + option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          <p className="meta-line">
+            Previa informal: {venueForm.nickname
+              ? `${previewArticle(venueForm.nicknameGrammarArticle, venueForm.nickname)} - ${previewPreposition(venueForm.nicknameGrammarPreposition, venueForm.nickname)}`
+              : "Sem apelido cadastrado"}
+          </p>
+        </div>
+              <input name="description" value={venueForm.description} onChange={handleVenueChange} placeholder="DescriÃ§Ã£o" required />
               <input name="contactName" value={venueForm.contactName} onChange={handleVenueChange} placeholder="Responsavel da casa" />
               <input name="contactPhone" value={venueForm.contactPhone} onChange={handleVenueChange} placeholder="Telefone da casa" />
               <input name="instagramUrl" value={venueForm.instagramUrl} onChange={handleVenueChange} placeholder="Instagram (URL)" />
               <input name="address" value={venueForm.address} onChange={handleVenueChange} placeholder="Endereco" required />
               <input name="neighborhood" value={venueForm.neighborhood} onChange={handleVenueChange} placeholder="Bairro" required />
+        <div className="clean-card grammar-preview-card">
+          <strong>Tratamento textual do bairro</strong>
+          <div className="form-actions-inline">
+            <select name="neighborhoodGrammarArticle" value={venueForm.neighborhoodGrammarArticle} onChange={handleVenueChange}>
+              {GRAMMAR_ARTICLE_OPTIONS.map((option) => (
+                <option key={"neighborhood-article-" + (option.value || "none")} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            <select name="neighborhoodGrammarPreposition" value={venueForm.neighborhoodGrammarPreposition} onChange={handleVenueChange}>
+              {GRAMMAR_PREPOSITION_OPTIONS.map((option) => (
+                <option key={"neighborhood-preposition-" + option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          <p className="meta-line">Previa: {previewArticle(venueForm.neighborhoodGrammarArticle, venueForm.neighborhood) || "Bairro"} - {previewPreposition(venueForm.neighborhoodGrammarPreposition, venueForm.neighborhood) || "em Bairro"}</p>
+        </div>
               <select name="region" value={venueForm.region} onChange={handleVenueChange} required>
-                <option value="">Regi�o</option>
+                <option value="">RegiÃ£o</option>
                 {venueRegionOptions.map((regionName) => (
                   <option key={`region-option-edit-${regionName}`} value={regionName}>
                     {regionName}
@@ -2074,7 +2575,7 @@ export default function VenuesAdminPage() {
         </form>
       ) : null}
       {showHouseClaims && houseClaimOptions.length === 0 ? (
-        <p className="empty">No momento n�o ha novas filiais disponiveis para esta conta.</p>
+        <p className="empty">No momento nÃ£o ha novas filiais disponiveis para esta conta.</p>
       ) : null}
       {showHouseClaims && myClaimsLoading ? <p className="empty">Carregando suas solicitacoes...</p> : null}
       {showHouseClaims ? (
@@ -2086,7 +2587,7 @@ export default function VenuesAdminPage() {
                 <div>
                   <h3>Filial: {claim.venue?.name || "Casa"}</h3>
                   <p className="meta-line">Status: {claim.status}</p>
-                  <p className="meta-line">Tipo: {claim.requestType === "ownership" ? "Reivindica��o de propriedade" : "Alteracao de dados"}</p>
+                  <p className="meta-line">Tipo: {claim.requestType === "ownership" ? "ReivindicaÃ§Ã£o de propriedade" : "Alteracao de dados"}</p>
                   {claim.justification ? <p className="meta-line">Justificativa: {claim.justification}</p> : null}
                 </div>
                 <small className="meta-line">{new Date(claim.createdAt).toLocaleString("pt-BR")}</small>
@@ -2186,13 +2687,13 @@ export default function VenuesAdminPage() {
       {showArtists && artistTotalPages > 1 ? (
         <div className="pagination-row">
           <button className="chip" onClick={() => setArtistPage((p) => Math.max(1, p - 1))} disabled={artistPage === 1}>Anterior</button>
-          <small className="meta-line">P�gina {artistPage} de {artistTotalPages}</small>
-          <button className="chip" onClick={() => setArtistPage((p) => Math.min(artistTotalPages, p + 1))} disabled={artistPage === artistTotalPages}>Pr�xima</button>
+          <small className="meta-line">PÃ¡gina {artistPage} de {artistTotalPages}</small>
+          <button className="chip" onClick={() => setArtistPage((p) => Math.min(artistTotalPages, p + 1))} disabled={artistPage === artistTotalPages}>PrÃ³xima</button>
         </div>
       ) : null}
 
       {showEventsBlocked ? (
-        <p className="empty">Sua conta ainda n�o tem filial aprovada. Abra "Solicitar Acesso", envie os dados de comprovacao e aguarde aprovacao do admin.</p>
+        <p className="empty">Sua conta ainda nÃ£o tem filial aprovada. Abra "Solicitar Acesso", envie os dados de comprovacao e aguarde aprovacao do admin.</p>
       ) : null}
       {showEvents ? <h3 className="section-title">{isHouseRole ? `Eventos da casa - ${houseDisplayName}` : "Eventos"}</h3> : null}
       {showEvents && (!isHouseRole || !isHouseProgramacaoClean) ? (
@@ -2205,7 +2706,7 @@ export default function VenuesAdminPage() {
                 <span>{eventForm.artistName.trim()}</span>
               </p>
             ) : null}
-            <p className="meta-line">{previewVenue?.name || "Casa"} - {previewVenue?.region || "Regi�o"}</p>
+            <p className="meta-line">{previewVenue?.name || "Casa"} - {previewVenue?.region || "RegiÃ£o"}</p>
             <p className="meta-line">{formatPreviewDateTime(eventForm.startDate)}</p>
             <p className="meta-line">{previewPriceLabel}</p>
           </div>
@@ -2227,7 +2728,7 @@ export default function VenuesAdminPage() {
           ))}
         </datalist>
         {eventErrors.artistName?.[0] ? <p className="field-error">{eventErrors.artistName[0]}</p> : null}
-        <textarea name="description" value={eventForm.description} onChange={handleEventChange} placeholder="Descri��o" rows={3} required />
+        <textarea name="description" value={eventForm.description} onChange={handleEventChange} placeholder="DescriÃ§Ã£o" rows={3} required />
         {eventErrors.description?.[0] ? <p className="field-error">{eventErrors.description[0]}</p> : null}
         <select name="type" value={eventForm.type} onChange={handleEventChange} required>
           <option value="roda_samba">Roda de Samba</option>
@@ -2319,11 +2820,11 @@ export default function VenuesAdminPage() {
         <select name="ticketType" value={eventForm.ticketType} onChange={handleEventChange} required>
           <option value="paid">Pago</option>
           <option value="free">Gratuito</option>
-          <option value="consumacao">Consuma��o</option>
+          <option value="consumacao">ConsumaÃ§Ã£o</option>
         </select>
         {eventErrors.ticketType?.[0] ? <p className="field-error">{eventErrors.ticketType[0]}</p> : null}
-        <input name="priceMin" type="number" min="0" step="0.01" value={eventForm.priceMin} onChange={handleEventChange} placeholder="Preco m�nimo" />
-        <input name="priceMax" type="number" min="0" step="0.01" value={eventForm.priceMax} onChange={handleEventChange} placeholder="Preco m�ximo" />
+        <input name="priceMin" type="number" min="0" step="0.01" value={eventForm.priceMin} onChange={handleEventChange} placeholder="Preco mÃ­nimo" />
+        <input name="priceMax" type="number" min="0" step="0.01" value={eventForm.priceMax} onChange={handleEventChange} placeholder="Preco mÃ¡ximo" />
         {eventErrors.priceMax?.[0] ? <p className="field-error">{eventErrors.priceMax[0]}</p> : null}
         {eventForm.ticketType === "consumacao" ? (
           <input
@@ -2333,7 +2834,7 @@ export default function VenuesAdminPage() {
             step="0.01"
             value={eventForm.consumacaoValue}
             onChange={handleEventChange}
-            placeholder="Consuma��o minima (opcional)"
+            placeholder="ConsumaÃ§Ã£o minima (opcional)"
           />
         ) : null}
         {eventErrors.consumacaoValue?.[0] ? <p className="field-error">{eventErrors.consumacaoValue[0]}</p> : null}
@@ -2478,6 +2979,9 @@ export default function VenuesAdminPage() {
               ) : null}
             </div>
             <div className="venue-actions">
+              <button className="chip" onClick={() => prepare77FirstKit(eventItem)} disabled={firstKitLoadingId === eventItem.id}>
+                {firstKitLoadingId === eventItem.id ? "Preparando..." : "77First"}
+              </button>
               <button className="chip" onClick={() => handleEventEdit(eventItem)}>Editar</button>
               {eventItem.isRecurring ? (
                 <button className="chip" onClick={() => handleCancelOccurrence(eventItem)}>
@@ -2494,11 +2998,84 @@ export default function VenuesAdminPage() {
           </article>
         ))}
       </div> : null}
+      {showEvents && firstKitEvent ? (
+        <div className="modal-backdrop" onClick={close77FirstKit}>
+          <article className="modal-card first77-modal-card" onClick={(event) => event.stopPropagation()}>
+            {(() => {
+              const rawKit = firstKitData || build77FirstKit(firstKitEvent);
+              const kit = {
+                ...rawKit,
+                captionShort: clean77FirstText(rawKit.captionShort),
+                whatsappText: clean77FirstText(rawKit.whatsappText),
+                releaseText: clean77FirstText(rawKit.releaseText),
+                techSheet: clean77FirstText(rawKit.techSheet)
+              };
+              const txtPayload = [
+                "77First - One-click kit",
+                "",
+                `Legenda curta: ${kit.captionShort}`,
+                "",
+                `WhatsApp: ${kit.whatsappText}`,
+                "",
+                `Release: ${kit.releaseText}`,
+                "",
+                "Ficha tecnica:",
+                kit.techSheet
+              ].join("\n");
+              const mailtoSubject = encodeURIComponent(`77First | ${kit.title}`);
+              const mailtoBody = encodeURIComponent(
+                `Legenda curta:\n${kit.captionShort}\n\nWhatsApp:\n${kit.whatsappText}\n\nRelease:\n${kit.releaseText}\n\nFicha tecnica:\n${kit.techSheet}`
+              );
+              const webhookPayload = kit.payload || build77FirstWebhookPayload(firstKitEvent, kit);
+
+              return (
+                <>
+                  <h3>77First - Kit do evento</h3>
+                  <p className="meta-line"><strong>{kit.title}</strong> - {kit.venue}</p>
+                  {firstKitLoadingId === firstKitEvent.id && !firstKitData ? (
+                    <div className="clean-card" style={{ marginTop: 8 }}>
+                      <p>Preparando o kit do evento...</p>
+                    </div>
+                  ) : (
+                    <div className="first77-kit-scroll">
+                      <section className="first77-text-section">
+                        <small className="meta-line">Legenda curta</small>
+                        <pre>{kit.captionShort}</pre>
+                      </section>
+                      <section className="first77-text-section">
+                        <small className="meta-line">WhatsApp</small>
+                        <pre>{kit.whatsappText}</pre>
+                      </section>
+                      <section className="first77-text-section">
+                        <small className="meta-line">Release</small>
+                        <pre>{kit.releaseText}</pre>
+                      </section>
+                      <section className="first77-text-section">
+                        <small className="meta-line">Ficha tecnica</small>
+                        <pre>{kit.techSheet}</pre>
+                      </section>
+                    </div>
+                  )}
+                  <div className="form-actions-inline first77-actions">
+                    <button className="chip" onClick={() => copyToClipboard(kit.captionShort, "Legenda curta copiada.")}>Copiar legenda</button>
+                    <button className="chip" onClick={() => copyToClipboard(kit.whatsappText, "Texto de WhatsApp copiado.")}>Copiar WhatsApp</button>
+                    <button className="chip" onClick={() => copyToClipboard(kit.releaseText, "Release copiado.")}>Copiar release</button>
+                    <button className="chip" onClick={() => downloadTextFile(`77first-${firstKitEvent.id}.txt`, txtPayload)}>Baixar TXT</button>
+                    <button className="chip" onClick={() => downloadJsonFile(`77first-${firstKitEvent.id}.json`, webhookPayload)}>Baixar JSON</button>
+                    <a className="chip" href={`mailto:?subject=${mailtoSubject}&body=${mailtoBody}`}>Enviar por e-mail</a>
+                    <button className="chip" onClick={close77FirstKit}>Fechar</button>
+                  </div>
+                </>
+              );
+            })()}
+          </article>
+        </div>
+      ) : null}
       {showEvents && eventTotalPages > 1 ? (
         <div className="pagination-row">
           <button className="chip" onClick={() => setEventPage((p) => Math.max(1, p - 1))} disabled={eventPage === 1}>Anterior</button>
-          <small className="meta-line">P�gina {eventPage} de {eventTotalPages}</small>
-          <button className="chip" onClick={() => setEventPage((p) => Math.min(eventTotalPages, p + 1))} disabled={eventPage === eventTotalPages}>Pr�xima</button>
+          <small className="meta-line">PÃ¡gina {eventPage} de {eventTotalPages}</small>
+          <button className="chip" onClick={() => setEventPage((p) => Math.min(eventTotalPages, p + 1))} disabled={eventPage === eventTotalPages}>PrÃ³xima</button>
         </div>
       ) : null}
       </div>
@@ -2531,7 +3108,7 @@ export default function VenuesAdminPage() {
           <article className="modal-card" onClick={(event) => event.stopPropagation()}>
             <h3>Cancelar data da serie</h3>
             <p className="meta-line"><strong>{cancellationTarget.title}</strong></p>
-            <p className="meta-line">Selecione a data desta edicao que n�o vai acontecer.</p>
+            <p className="meta-line">Selecione a data desta edicao que nÃ£o vai acontecer.</p>
             <input
               type="date"
               value={cancellationTarget.selectedDate}
@@ -2559,6 +3136,7 @@ export default function VenuesAdminPage() {
     </section>
   );
 }
+
 
 
 

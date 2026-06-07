@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireRole } from "../middlewares/rbac.js";
 import { requireAuth } from "../middlewares/auth.js";
 import { createEvent, deleteEvent, getEventById, listEvents, updateEvent } from "../controllers/events.controller.js";
+import { request77FirstKit } from "../controllers/first77.controller.js";
 import { createRegion, deleteRegion, listRegions, listRegionsAdmin, updateRegion } from "../controllers/regions.controller.js";
 import {
   addVenueProducer,
@@ -116,6 +117,7 @@ router.get("/events/:id", getEventById);
 router.post("/events", ...canManageEvents, createEvent);
 router.patch("/events/:id", ...canManageEvents, updateEvent);
 router.delete("/events/:id", ...canManageEvents, deleteEvent);
+router.post("/events/:id/77first", ...canManageEvents, request77FirstKit);
 router.get("/regions", listRegions);
 router.get("/admin/regions", ...canReviewClaims, listRegionsAdmin);
 router.post("/admin/regions", ...canReviewClaims, createRegion);

@@ -31,6 +31,10 @@ const createRegionSchema = z.object({
   name: z.string().trim().min(2).max(80),
   city: z.string().trim().min(2).max(80).default("Sao Paulo"),
   state: z.string().trim().length(2).transform((v) => v.toUpperCase()).default("SP"),
+  grammarArticle: z.enum(["", "o", "a", "os", "as"]).optional(),
+  grammarPreposition: z.enum(["em", "no", "na"]).optional(),
+  displayNameWithArticle: z.string().trim().max(120).optional(),
+  displayNameWithPreposition: z.string().trim().max(120).optional(),
   sortOrder: z.coerce.number().int().min(0).max(999).optional(),
   isActive: z.boolean().optional()
 });
@@ -39,11 +43,17 @@ const updateRegionSchema = createRegionSchema.partial();
 const idSchema = z.object({ id: z.string().uuid() });
 
 function mapRegionAdmin(row) {
+  const articlePreview = buildArticlePreview(row.grammarArticle, row.name);
+  const prepositionPreview = buildPrepositionPreview(row.grammarPreposition, row.name);
   return {
     id: row.id,
     name: row.name,
     city: row.city,
     state: row.state,
+    grammarArticle: row.grammarArticle ?? "",
+    grammarPreposition: row.grammarPreposition ?? "em",
+    displayNameWithArticle: row.displayNameWithArticle || articlePreview,
+    displayNameWithPreposition: row.displayNameWithPreposition || prepositionPreview,
     isActive: row.isActive,
     sortOrder: row.sortOrder,
     venuesCount: row.venuesCount ?? 0,
@@ -51,6 +61,34 @@ function mapRegionAdmin(row) {
     source: row.source || "official",
     createdAt: row.createdAt,
     updatedAt: row.updatedAt
+  };
+}
+
+function buildArticlePreview(article, name) {
+  const cleanName = String(name || "").trim();
+  const cleanArticle = String(article || "").trim();
+  return cleanArticle ? `${cleanArticle} ${cleanName}`.trim() : cleanName;
+}
+
+function buildPrepositionPreview(preposition, name) {
+  const cleanName = String(name || "").trim();
+  const cleanPreposition = String(preposition || "em").trim();
+  return `${cleanPreposition} ${cleanName}`.trim();
+}
+
+function buildRegionGrammarData(data) {
+  const name = data.name || "";
+  const grammarArticle = data.grammarArticle ?? undefined;
+  const grammarPreposition = data.grammarPreposition ?? undefined;
+  return {
+    ...(data.grammarArticle !== undefined ? { grammarArticle: grammarArticle || null } : {}),
+    ...(data.grammarPreposition !== undefined ? { grammarPreposition: grammarPreposition || "em" } : {}),
+    ...(data.displayNameWithArticle !== undefined
+      ? { displayNameWithArticle: data.displayNameWithArticle || buildArticlePreview(grammarArticle, name) }
+      : {}),
+    ...(data.displayNameWithPreposition !== undefined
+      ? { displayNameWithPreposition: data.displayNameWithPreposition || buildPrepositionPreview(grammarPreposition, name) }
+      : {})
   };
 }
 
@@ -187,6 +225,7 @@ export async function createRegion(req, res, next) {
         name: data.name,
         city: data.city,
         state: data.state,
+        ...buildRegionGrammarData(data),
         isActive: data.isActive ?? true,
         sortOrder: data.sortOrder ?? 0,
         createdByUserId: req.user?.id || null
@@ -217,6 +256,7 @@ export async function updateRegion(req, res, next) {
         ...(data.name ? { name: data.name } : {}),
         ...(data.city ? { city: data.city } : {}),
         ...(data.state ? { state: data.state } : {}),
+        ...buildRegionGrammarData(data),
         ...(data.sortOrder != null ? { sortOrder: data.sortOrder } : {}),
         ...(data.isActive != null ? { isActive: data.isActive } : {})
       }

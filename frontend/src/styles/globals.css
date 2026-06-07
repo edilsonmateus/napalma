@@ -3092,6 +3092,53 @@ button.venue-card {
   margin: 0 0 8px;
 }
 
+.first77-modal-card {
+  width: min(760px, 100%);
+  max-height: min(82vh, 760px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.first77-kit-scroll {
+  display: grid;
+  gap: 10px;
+  max-height: min(52vh, 470px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.first77-text-section {
+  background: rgba(30, 43, 56, 0.78);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.first77-text-section .meta-line {
+  display: block;
+  margin-bottom: 8px;
+  color: #9fb2c4;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.first77-text-section pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #c5d4e2;
+}
+
+.first77-actions {
+  margin-top: 2px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
 .route-mini-modal {
   border-radius: 3px;
 }

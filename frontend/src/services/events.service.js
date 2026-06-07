@@ -178,6 +178,11 @@ export async function deleteEvent(id) {
   await api.delete(`/events/${id}`);
 }
 
+export async function request77FirstKit(id) {
+  const { data } = await api.post(`/events/${id}/77first`);
+  return data;
+}
+
 export async function getMyRadar() {
   const { data } = await api.get("/me/radar");
   return data.items || [];
