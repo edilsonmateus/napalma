@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import VerifiedBadge from "../components/common/VerifiedBadge";
+import AcquisitionAdminPanel from "./admin/AcquisitionAdminPanel";
 import {
   useAddVenueManagerMutation,
   useArtistsQuery,
@@ -613,6 +614,7 @@ export default function VenuesAdminPage() {
   const showEventsBlocked = effectiveSection === "events" && !houseCanOperate;
   const showClaims = isAdmin && effectiveSection === "claims";
   const showAdminRegions = isAdmin && effectiveSection === "regions";
+  const showAcquisition = isAdmin && effectiveSection === "acquisition";
   const showHouseClaims = isHouseRole && effectiveSection === "claims";
   const showHouseProfile = isHouseRole && effectiveSection === "profile";
   const isHouseProgramaçãoClean = isHouseRole && showEvents && searchParams.get("layout") === "clean";
@@ -1787,20 +1789,21 @@ export default function VenuesAdminPage() {
             {isAdmin ?<button className={`chip ${activeSection === "regions" ?"active" : ""}`} onClick={() => setSearchParams({ section: "regions" })}>Regiões</button> : null}
             {isAdmin ?<button className={`chip ${activeSection === "managers" ?"active" : ""}`} onClick={() => setSearchParams({ section: "managers" })}>Produtores</button> : null}
             {isAdmin ?<button className={`chip ${activeSection === "claims" ?"active" : ""}`} onClick={() => setSearchParams({ section: "claims" })}>Reivindicações</button> : null}
+            {isAdmin ?<button className={`chip ${activeSection === "acquisition" ?"active" : ""}`} onClick={() => setSearchParams({ section: "acquisition" })}>Aquisição</button> : null}
             <button className={`chip ${activeSection === "events" ?"active" : ""}`} onClick={() => setSearchParams({ section: "events" })}>Eventos</button>
             <button className="chip" onClick={clearAdminFilters}>Limpar filtros</button>
           </aside>
           <div className="ads-content">
-            <div className="chip-row admin-filter-row">
+            {!showAcquisition ? <div className="chip-row admin-filter-row">
               <button className={`chip ${regionFilter === "" ?"active" : ""}`} onClick={() => setRegionFilter("")}>Todas</button>
               {regions.map((region) => (
                 <button key={region} className={`chip ${regionFilter === region ?"active" : ""}`} onClick={() => setRegionFilter(region)}>
                   {region}
                 </button>
               ))}
-            </div>
+            </div> : null}
 
-            <div className="admin-kpis">
+            {!showAcquisition ? <div className="admin-kpis">
               {showVenues ?<article className="clean-card"><h4>Casas</h4><p>{filteredVenues.length}</p></article> : null}
               {showArtists ?<article className="clean-card"><h4>Artistas</h4><p>{filteredArtists.length}</p></article> : null}
               {showEvents ?<article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
@@ -1813,7 +1816,8 @@ export default function VenuesAdminPage() {
               {showOverview ?<article className="clean-card"><h4>Reivindicações</h4><p>{pendingClaimsCount} pendentes</p></article> : null}
               {showOverview ?<article className="clean-card"><h4>Visitantes (30d)</h4><p>{audienceSummary?.global?.activeAudience ?? 0}</p></article> : null}
               {showOverview ?<article className="clean-card"><h4>Conversão (30d)</h4><p>{audienceSummary?.global?.conversionRate ?? 0}%</p></article> : null}
-            </div>
+            </div> : null}
+            {showAcquisition ? <AcquisitionAdminPanel onToast={showToast} /> : null}
             {showOverview ?(
               <article className="clean-card admin-overview-card">
                 <h4>Visão Geral</h4>
@@ -1869,7 +1873,7 @@ export default function VenuesAdminPage() {
         </div>
       )}
 
-      <div className={`admin-section-stack${isHouseRole ?" house-section-stack" : ""}${isHouseRole && (showOverview || showEvents) ?" no-divider" : ""}${isHouseProgramaçãoClean ?" house-events-focus" : ""}`}>
+      <div className={`admin-section-stack${isHouseRole ?" house-section-stack" : ""}${isHouseRole && (showOverview || showEvents) ?" no-divider" : ""}${isHouseProgramaçãoClean ?" house-events-focus" : ""}${showAcquisition ?" acquisition-stack-hidden" : ""}`}>
       {showOverview && isHouseRole ?(
         <>
           {!houseActiveVenue ?(

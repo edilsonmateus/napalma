@@ -298,6 +298,30 @@ export async function getAudienceSummary(params = {}) {
   return data;
 }
 
+export async function getAcquisitionLeads(params = {}) {
+  const { data } = await api.get("/acquisition/leads", { params });
+  return data;
+}
+
+export async function createAcquisitionLead(payload) {
+  const { data } = await api.post("/acquisition/leads", payload);
+  return data.item;
+}
+
+export async function updateAcquisitionLead(id, payload) {
+  const { data } = await api.patch(`/acquisition/leads/${id}`, payload);
+  return data.item;
+}
+
+export async function deleteAcquisitionLead(id) {
+  await api.delete(`/acquisition/leads/${id}`);
+}
+
+export async function createAcquisitionInteraction(leadId, payload) {
+  const { data } = await api.post(`/acquisition/leads/${leadId}/interactions`, payload);
+  return data.item;
+}
+
 export async function getMyClaims() {
   const { data } = await api.get("/me/claims");
   return data.items || [];

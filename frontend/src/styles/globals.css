@@ -701,6 +701,161 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   padding-top: 0;
 }
 
+.admin-section-stack.acquisition-stack-hidden {
+  display: none;
+}
+
+.acquisition-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.acquisition-kpis {
+  margin-bottom: 0;
+}
+
+.acquisition-alert-kpi h4,
+.acquisition-alert-kpi p {
+  color: #e6b06f;
+}
+
+.acquisition-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.acquisition-form {
+  margin: 0;
+}
+
+.acquisition-form h3 {
+  margin: 0 0 4px;
+}
+
+.acquisition-board {
+  display: grid;
+  gap: 12px;
+}
+
+.acquisition-board-header h3 {
+  margin: 0 0 4px;
+}
+
+.acquisition-board-header p {
+  margin: 0;
+}
+
+.acquisition-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(145px, 180px) minmax(145px, 180px) minmax(145px, 180px);
+  gap: 8px;
+}
+
+.acquisition-toolbar input,
+.acquisition-toolbar select {
+  min-height: 38px;
+}
+
+.acquisition-list {
+  display: grid;
+  gap: 10px;
+}
+
+.acquisition-lead-card {
+  display: grid;
+  gap: 10px;
+  border-radius: 3px;
+}
+
+.acquisition-lead-card.overdue {
+  box-shadow: inset 3px 0 0 rgba(229, 92, 92, 0.82);
+}
+
+.acquisition-lead-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.acquisition-lead-main h4 {
+  margin: 4px 0 3px;
+}
+
+.acquisition-lead-main p {
+  margin: 0;
+}
+
+.acquisition-lead-side {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+  text-align: right;
+  min-width: 150px;
+}
+
+.acquisition-status,
+.acquisition-temp {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: rgba(164, 184, 204, 0.12);
+  color: #c9d6e2;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.acquisition-temp.temp-hot {
+  background: rgba(229, 92, 92, 0.18);
+  color: #f1b0b0;
+}
+
+.acquisition-temp.temp-warm {
+  background: rgba(230, 176, 111, 0.18);
+  color: #f0d0a4;
+}
+
+.acquisition-temp.temp-cold {
+  background: rgba(120, 160, 190, 0.16);
+  color: #b7d0e3;
+}
+
+.acquisition-overdue {
+  color: #f0a0a0;
+  font-size: 12px;
+}
+
+.acquisition-contact-line,
+.acquisition-card-actions {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.acquisition-contact-line span {
+  color: #9fb8cd;
+  font-size: 12px;
+}
+
+.acquisition-latest {
+  margin: 0;
+  color: #c6d6e3;
+  font-size: 13px;
+}
+
+.acquisition-interaction-form {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(9, 18, 26, 0.55);
+  border-radius: 3px;
+}
+
 .ads-chart-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -4068,6 +4223,20 @@ button.venue-card {
   .form-actions-inline {
     gap: 6px;
     flex-wrap: wrap;
+  }
+
+  .acquisition-grid,
+  .acquisition-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .acquisition-lead-main {
+    flex-direction: column;
+  }
+
+  .acquisition-lead-side {
+    justify-items: start;
+    text-align: left;
   }
 
   .empty,

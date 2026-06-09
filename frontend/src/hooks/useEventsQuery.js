@@ -5,9 +5,12 @@ import {
   createClaim,
   createVenueManagerUser,
   createAdCreative,
+  createAcquisitionInteraction,
+  createAcquisitionLead,
   createRegion,
   createEvent,
   createVenue,
+  deleteAcquisitionLead,
   deleteArtist,
   deleteEvent,
   deleteVenue,
@@ -17,6 +20,7 @@ import {
   getArtists,
   getArtistProfile,
   getAdCampaigns,
+  getAcquisitionLeads,
   getAdminRegions,
   getAdsActivity,
   getVenueAdsSummary,
@@ -49,6 +53,7 @@ import {
   updateArtist,
   updateAdCampaign,
   updateAdCreative,
+  updateAcquisitionLead,
   updateEvent,
   updateVenue,
   updateRegion,
@@ -155,6 +160,14 @@ export function useAudienceSummaryQuery(params = {}, enabled = true) {
   return useQuery({
     queryKey: ["audience-summary", params],
     queryFn: () => getAudienceSummary(params),
+    enabled
+  });
+}
+
+export function useAcquisitionLeadsQuery(params = {}, enabled = true) {
+  return useQuery({
+    queryKey: ["acquisition-leads", params],
+    queryFn: () => getAcquisitionLeads(params),
     enabled
   });
 }
@@ -289,6 +302,46 @@ export function useCreateArtistMutation() {
 export function useCreateAdCampaignMutation() {
   const queryClient = useQueryClient();
   return useMutation({ mutationFn: createAdCampaign, onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["ad-campaigns"] }); } });
+}
+
+export function useCreateAcquisitionLeadMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createAcquisitionLead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["acquisition-leads"] });
+    }
+  });
+}
+
+export function useUpdateAcquisitionLeadMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => updateAcquisitionLead(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["acquisition-leads"] });
+    }
+  });
+}
+
+export function useDeleteAcquisitionLeadMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteAcquisitionLead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["acquisition-leads"] });
+    }
+  });
+}
+
+export function useCreateAcquisitionInteractionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ leadId, payload }) => createAcquisitionInteraction(leadId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["acquisition-leads"] });
+    }
+  });
 }
 
 export function useUpdateAdCampaignMutation() {

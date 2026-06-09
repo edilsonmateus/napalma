@@ -46,6 +46,13 @@ import {
   updateAdCreative
 } from "../controllers/ads.controller.js";
 import { getAudienceSummary, trackAudienceVisit } from "../controllers/audience.controller.js";
+import {
+  createAcquisitionInteraction,
+  createAcquisitionLead,
+  deleteAcquisitionLead,
+  listAcquisitionLeads,
+  updateAcquisitionLead
+} from "../controllers/acquisition.controller.js";
 import { createClaimRequest, decideClaim, listClaims, listMyClaims } from "../controllers/claims.controller.js";
 import { uploadImage } from "../controllers/uploads.controller.js";
 import { imageUpload } from "../middlewares/upload.js";
@@ -58,6 +65,7 @@ const canManageCatalog = [requireAuth, requireRole(["admin", "producer"])];
 const canManageHouseOps = [requireAuth, requireRole(["admin", "venue_manager"])];
 const canReviewClaims = [requireAuth, requireRole(["admin"])];
 const canManageAds = [requireAuth, requireRole(["admin"])];
+const canManageAcquisition = [requireAuth, requireRole(["admin"])];
 const canUploadImages = [requireAuth, requireRole(["admin", "producer", "venue_manager"])];
 const authLimiter = createRateLimiter({
   keyPrefix: "auth",
@@ -91,6 +99,11 @@ router.post("/auth/logout", authLimiter, logout);
 router.get("/auth/me", requireAuth, me);
 router.post("/analytics/visit", trackAudienceVisit);
 router.get("/analytics/audience-summary", requireAuth, requireRole(["admin", "producer", "venue_manager"]), getAudienceSummary);
+router.get("/acquisition/leads", ...canManageAcquisition, listAcquisitionLeads);
+router.post("/acquisition/leads", ...canManageAcquisition, createAcquisitionLead);
+router.patch("/acquisition/leads/:id", ...canManageAcquisition, updateAcquisitionLead);
+router.delete("/acquisition/leads/:id", ...canManageAcquisition, deleteAcquisitionLead);
+router.post("/acquisition/leads/:id/interactions", ...canManageAcquisition, createAcquisitionInteraction);
 router.get("/me/claims", requireAuth, listMyClaims);
 router.post("/me/claims", requireAuth, claimsLimiter, createClaimRequest);
 router.get("/claims", ...canReviewClaims, listClaims);

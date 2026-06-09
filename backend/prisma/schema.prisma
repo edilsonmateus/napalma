@@ -81,6 +81,8 @@ model User {
   claims ClaimRequest[] @relation("ClaimRequestedBy")
   claimsReviewed ClaimRequest[] @relation("ClaimReviewedBy")
   createdRegions Region[] @relation("RegionCreatedBy")
+  acquisitionLeads AcquisitionLead[] @relation("AcquisitionLeadCreatedBy")
+  acquisitionInteractions AcquisitionInteraction[] @relation("AcquisitionInteractionCreatedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -494,4 +496,55 @@ model ClaimRequest {
 
   @@index([requestedById, status])
   @@index([targetType, status])
+}
+
+model AcquisitionLead {
+  id                 String   @id @default(uuid())
+  venueName          String
+  city               String   @default("São Paulo")
+  region             String?
+  neighborhood       String?
+  instagramUrl       String?
+  phone              String?
+  contactName        String?
+  contactRole        String?
+  email              String?
+  status             String   @default("mapped")
+  temperature        String   @default("warm")
+  nextFollowUpAt     DateTime?
+  presentationAt     DateTime?
+  presentationFormat String?
+  source             String?
+  potential          String?
+  objections         String?
+  notes              String?
+  createdByUserId    String?
+  createdBy          User?    @relation("AcquisitionLeadCreatedBy", fields: [createdByUserId], references: [id])
+  interactions       AcquisitionInteraction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([temperature])
+  @@index([nextFollowUpAt])
+  @@index([city, region])
+}
+
+model AcquisitionInteraction {
+  id              String   @id @default(uuid())
+  leadId          String
+  type            String   @default("note")
+  summary         String
+  nextAction      String?
+  nextFollowUpAt  DateTime?
+  createdByUserId String?
+
+  lead      AcquisitionLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdBy User?           @relation("AcquisitionInteractionCreatedBy", fields: [createdByUserId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([leadId, createdAt])
+  @@index([nextFollowUpAt])
 }
