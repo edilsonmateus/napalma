@@ -175,13 +175,34 @@ function buildEventDates(dayRef, startMinutes, endMinutes) {
 function buildRollingDayRef(index) {
   const base = new Date();
   base.setHours(0, 0, 0, 0);
-  // Sempre ancora os mocks a partir de hoje e distribui pelos proximos 10 dias.
-  const offsetDays = index % 10;
+  // Sempre ancora os mocks a partir de hoje e concentra alguns eventos no mesmo dia
+  // para simular uma agenda mais viva durante testes de feed, filtros e "ao vivo".
+  const mockDayOffsets = [0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 4];
+  const offsetDays = mockDayOffsets[index % mockDayOffsets.length];
   base.setDate(base.getDate() + offsetDays);
   return {
     day: base.getDate(),
     month: base.getMonth() + 1,
     year: base.getFullYear()
+  };
+}
+
+function buildMockEventTimes(index, startMinutes, endMinutes) {
+  const mockDayOffsets = [0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 4];
+  const offsetDays = mockDayOffsets[index % mockDayOffsets.length];
+  const originalDuration = endMinutes <= startMinutes
+    ? endMinutes + 24 * 60 - startMinutes
+    : endMinutes - startMinutes;
+
+  if (offsetDays !== 0) {
+    return { startMinutes, endMinutes };
+  }
+
+  const tonightSlots = [18 * 60, 19 * 60 + 30, 21 * 60, 22 * 60 + 30];
+  const newStart = tonightSlots[index % tonightSlots.length];
+  return {
+    startMinutes: newStart,
+    endMinutes: newStart + originalDuration
   };
 }
 
@@ -306,7 +327,8 @@ async function main() {
       continue;
     }
 
-    const { startDate, endDate } = buildEventDates(dateRef, startMinutes, endMinutes);
+    const mockTimes = buildMockEventTimes(index, startMinutes, endMinutes);
+    const { startDate, endDate } = buildEventDates(dateRef, mockTimes.startMinutes, mockTimes.endMinutes);
     const price = parsePrice(readRowValue(row, ["precoEntrada", "preÃ§oEntrada"]));
     const artistName = title;
     const artistSlug = slugify(artistName);
