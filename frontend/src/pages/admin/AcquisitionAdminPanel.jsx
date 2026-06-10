@@ -267,8 +267,16 @@ export default function AcquisitionAdminPanel({ onToast }) {
             </select>
           </div>
           <div className="form-actions-inline">
-            <input name="nextFollowUpAt" type="datetime-local" value={leadForm.nextFollowUpAt} onChange={handleLeadChange} />
-            <input name="presentationAt" type="datetime-local" value={leadForm.presentationAt} onChange={handleLeadChange} />
+            <label className="field-with-helper">
+              <span>Próximo follow-up</span>
+              <input name="nextFollowUpAt" type="datetime-local" value={leadForm.nextFollowUpAt} onChange={handleLeadChange} />
+              <small>Quando retomar contato com a casa.</small>
+            </label>
+            <label className="field-with-helper">
+              <span>Data da apresentação</span>
+              <input name="presentationAt" type="datetime-local" value={leadForm.presentationAt} onChange={handleLeadChange} />
+              <small>Quando apresentar ou registrar a apresentação do projeto.</small>
+            </label>
           </div>
           <div className="form-actions-inline">
             <input name="presentationFormat" value={leadForm.presentationFormat} onChange={handleLeadChange} placeholder="Presencial, chamada, WhatsApp..." />

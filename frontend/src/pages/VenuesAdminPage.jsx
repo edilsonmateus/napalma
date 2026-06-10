@@ -1785,12 +1785,12 @@ export default function VenuesAdminPage() {
               Visão Geral
             </button>
             {canManageCatalog ?<button className={`chip ${activeSection === "venues" ?"active" : ""}`} onClick={() => setSearchParams({ section: "venues" })}>Casas</button> : null}
-            {canManageCatalog ?<button className={`chip ${activeSection === "artists" ?"active" : ""}`} onClick={() => setSearchParams({ section: "artists" })}>Artistas</button> : null}
-            {isAdmin ?<button className={`chip ${activeSection === "regions" ?"active" : ""}`} onClick={() => setSearchParams({ section: "regions" })}>Regiões</button> : null}
-            {isAdmin ?<button className={`chip ${activeSection === "managers" ?"active" : ""}`} onClick={() => setSearchParams({ section: "managers" })}>Produtores</button> : null}
-            {isAdmin ?<button className={`chip ${activeSection === "claims" ?"active" : ""}`} onClick={() => setSearchParams({ section: "claims" })}>Reivindicações</button> : null}
-            {isAdmin ?<button className={`chip ${activeSection === "acquisition" ?"active" : ""}`} onClick={() => setSearchParams({ section: "acquisition" })}>Aquisição</button> : null}
             <button className={`chip ${activeSection === "events" ?"active" : ""}`} onClick={() => setSearchParams({ section: "events" })}>Eventos</button>
+            {canManageCatalog ?<button className={`chip ${activeSection === "artists" ?"active" : ""}`} onClick={() => setSearchParams({ section: "artists" })}>Artistas</button> : null}
+            {isAdmin ?<button className={`chip ${activeSection === "managers" ?"active" : ""}`} onClick={() => setSearchParams({ section: "managers" })}>Produtores</button> : null}
+            {isAdmin ?<button className={`chip ${activeSection === "regions" ?"active" : ""}`} onClick={() => setSearchParams({ section: "regions" })}>Regiões</button> : null}
+            {isAdmin ?<button className={`chip ${activeSection === "acquisition" ?"active" : ""}`} onClick={() => setSearchParams({ section: "acquisition" })}>Aquisição</button> : null}
+            {isAdmin ?<button className={`chip ${activeSection === "claims" ?"active" : ""}`} onClick={() => setSearchParams({ section: "claims" })}>Reivindicações</button> : null}
             <button className="chip" onClick={clearAdminFilters}>Limpar filtros</button>
           </aside>
           <div className="ads-content">

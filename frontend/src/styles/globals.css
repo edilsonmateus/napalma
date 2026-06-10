@@ -734,6 +734,24 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   margin: 0 0 4px;
 }
 
+.field-with-helper {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field-with-helper span {
+  color: #b7c8d7;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.field-with-helper small {
+  color: rgba(183, 200, 215, 0.58);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 .acquisition-board {
   display: grid;
   gap: 12px;
