@@ -2998,8 +2998,8 @@ button.venue-card {
 
 .explore-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px auto;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 28px auto;
+  gap: 10px;
   margin-bottom: 10px;
   align-items: center;
 }
@@ -3017,9 +3017,37 @@ button.venue-card {
 }
 
 .explore-calendar-trigger {
-  width: 40px;
-  min-width: 40px;
+  width: 28px;
+  min-width: 28px;
+  height: 40px;
   padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  box-shadow: none;
+  cursor: pointer;
+  opacity: 0.82;
+  transition: color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+
+.explore-calendar-trigger:hover,
+.explore-calendar-trigger:focus-visible,
+.explore-calendar-trigger.active {
+  background: transparent;
+  color: var(--primary-gold);
+  opacity: 1;
+  outline: 0;
+  transform: translateY(-1px);
+}
+
+.explore-calendar-trigger svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
 }
 
 .explore-datehour-panel {

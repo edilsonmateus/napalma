@@ -622,9 +622,27 @@ export default function VenuesAdminPage() {
   useEffect(() => {
     if (showEvents) return;
     setPublishReviewOpen(false);
+    setFirstKitEvent(null);
+    setFirstKitData(null);
+    setFirstKitLoadingId("");
     setReactivationTarget(null);
     setCancellationTarget(null);
   }, [showEvents]);
+
+  useEffect(() => {
+    function handleEscape(event) {
+      if (event.key !== "Escape") return;
+      setPublishReviewOpen(false);
+      setFirstKitEvent(null);
+      setFirstKitData(null);
+      setFirstKitLoadingId("");
+      setReactivationTarget(null);
+      setCancellationTarget(null);
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, []);
 
   const sortedVenues = useMemo(() => {
     const list = [...filteredVenues];

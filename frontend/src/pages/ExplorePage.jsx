@@ -249,13 +249,13 @@ export default function ExplorePage() {
           onChange={(e) => setPrefs((prev) => ({ ...prev, query: e.target.value, limit: 8 }))}
         />
         <button
-          className={`chip explore-calendar-trigger ${hasTimeFilter ? "active" : ""}`}
+          className={`explore-calendar-trigger ${hasTimeFilter ? "active" : ""}`}
           onClick={() => setShowDateHourFilter((prev) => !prev)}
           type="button"
           title="Filtrar por dia e hora"
           aria-label="Filtrar por dia e hora"
         >
-          <CalendarDays size={14} />
+          <CalendarDays size={18} />
         </button>
         <button className="chip explore-clear-btn" onClick={() => setPrefs(DEFAULT_PREFS)}>
           Limpar filtros
