@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useAuthStore } from "./store/authStore";
 import BottomNav from "./components/layout/BottomNav";
 import { useTrackAudienceVisitMutation } from "./hooks/useEventsQuery";
+import { me as fetchCurrentUser } from "./services/auth.service";
 import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "./utils/roles";
 import { ONBOARDING_STORAGE_KEY } from "./utils/onboarding";
 import { getOrCreateVisitorId } from "./utils/visitor";
@@ -49,6 +50,11 @@ export default function App() {
     }
   });
   const user = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
+  const refreshToken = useAuthStore((state) => state.refreshToken);
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+  const [authReady, setAuthReady] = useState(() => !useAuthStore.getState().token);
   const { mutate: trackAudienceVisit } = useTrackAudienceVisitMutation();
   const isBackofficeMode = isAdminRole(user?.role) || isProducerRole(user?.role) || isVenueRole(user?.role);
   const isOnboardingRoute = location.pathname === "/onboarding";
@@ -72,6 +78,41 @@ export default function App() {
   useEffect(() => {
     setupInstallPromptCapture();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function syncSession() {
+      if (!token) {
+        clearAuth();
+        if (active) setAuthReady(true);
+        return;
+      }
+
+      try {
+        const currentUser = await fetchCurrentUser();
+        if (!active) return;
+        const latestAuth = useAuthStore.getState();
+        setAuth({
+          token: latestAuth.token || token,
+          refreshToken: latestAuth.refreshToken || refreshToken,
+          user: currentUser
+        });
+      } catch (_error) {
+        if (!active) return;
+        clearAuth();
+      } finally {
+        if (active) setAuthReady(true);
+      }
+    }
+
+    setAuthReady(!token);
+    syncSession();
+
+    return () => {
+      active = false;
+    };
+  }, [clearAuth, refreshToken, setAuth, token]);
 
   useEffect(() => {
     if (!isOnboardingRoute) return;
@@ -138,6 +179,10 @@ export default function App() {
 
   if (shouldForceOnboarding) {
     return <Navigate to="/onboarding" replace />;
+  }
+
+  if (!authReady) {
+    return <div className="empty">Validando sessao...</div>;
   }
 
   return (
