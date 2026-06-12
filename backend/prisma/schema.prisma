@@ -504,6 +504,12 @@ model AcquisitionLead {
   city               String   @default("São Paulo")
   region             String?
   neighborhood       String?
+  address            String?
+  addressNumber      String?
+  addressComplement  String?
+  zipCode            String?
+  latitude           Float?
+  longitude          Float?
   instagramUrl       String?
   phone              String?
   contactName        String?
