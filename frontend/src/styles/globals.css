@@ -988,14 +988,22 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 }
 
 .acquisition-toolbar {
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(145px, 180px) minmax(145px, 180px) minmax(145px, 180px);
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .acquisition-toolbar input,
 .acquisition-toolbar select {
   min-height: 38px;
+}
+
+.acquisition-toolbar input {
+  flex: 1 1 220px;
+}
+
+.acquisition-toolbar select {
+  flex: 1 1 150px;
 }
 
 .acquisition-list {
@@ -1086,6 +1094,201 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   margin: 0;
   color: #c6d6e3;
   font-size: 13px;
+}
+
+.acquisition-lead-compact {
+  gap: 0;
+  padding: 10px 12px;
+}
+
+.acquisition-lead-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(92px, auto) minmax(86px, auto) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.acquisition-lead-title {
+  min-width: 0;
+}
+
+.acquisition-lead-title h4 {
+  margin: 0 0 2px;
+  font-size: 16px;
+  line-height: 1.15;
+}
+
+.acquisition-lead-title p {
+  margin: 0;
+  color: #9fb8cd;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.acquisition-row-actions {
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  position: relative;
+}
+
+.acquisition-pill-stack {
+  display: grid;
+  gap: 5px;
+  justify-items: start;
+}
+
+.acquisition-followup {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  color: #9fb8cd;
+  font-size: 12px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.acquisition-followup-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background: rgba(164, 184, 204, 0.12);
+  color: #c9d6e2;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.acquisition-followup-overdue {
+  color: #f0a0a0;
+}
+
+.acquisition-followup-overdue .acquisition-followup-icon {
+  background: rgba(229, 92, 92, 0.2);
+  color: #f0a0a0;
+}
+
+.acquisition-followup-today,
+.acquisition-followup-soon {
+  color: #f0d0a4;
+}
+
+.acquisition-followup-today .acquisition-followup-icon,
+.acquisition-followup-soon .acquisition-followup-icon {
+  background: rgba(230, 176, 111, 0.18);
+  color: #f0d0a4;
+}
+
+.acquisition-icon-action {
+  position: relative;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0;
+  justify-content: center;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.app-shell-admin .acquisition-row-actions .acquisition-icon-action,
+.app-shell-admin .acquisition-row-actions .acquisition-expand-toggle {
+  flex: 0 0 34px;
+  width: 34px;
+  min-width: 34px;
+  max-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+}
+
+.acquisition-icon-action::before {
+  display: block;
+  color: currentColor;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.acquisition-action-edit::before {
+  content: "\270E";
+}
+
+.acquisition-action-note::before {
+  content: "\25F0";
+}
+
+.acquisition-expand-toggle {
+  position: relative;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .acquisition-icon-action::after,
+  .acquisition-expand-toggle::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    right: 50%;
+    bottom: calc(100% + 8px);
+    z-index: 5;
+    transform: translateX(50%) translateY(2px);
+    padding: 5px 7px;
+    border-radius: 3px;
+    background: rgba(9, 18, 26, 0.96);
+    color: #c9d6e2;
+    font-size: 11px;
+    line-height: 1;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 140ms ease, transform 140ms ease;
+  }
+
+  .acquisition-icon-action:hover::after,
+  .acquisition-expand-toggle:hover::after {
+    opacity: 1;
+    transform: translateX(50%) translateY(0);
+  }
+}
+
+.acquisition-lead-details {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(164, 184, 204, 0.12);
+}
+
+.acquisition-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.acquisition-detail-grid p {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+}
+
+.acquisition-detail-grid strong {
+  color: #c9d6e2;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.acquisition-detail-grid span {
+  color: #9fb8cd;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .acquisition-interaction-form {
@@ -4521,6 +4724,20 @@ button.venue-card {
   .acquisition-lead-side {
     justify-items: start;
     text-align: left;
+  }
+
+  .acquisition-lead-row {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .acquisition-row-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .acquisition-detail-grid {
+    grid-template-columns: 1fr;
   }
 
   .empty,

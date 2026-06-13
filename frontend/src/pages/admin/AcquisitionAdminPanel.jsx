@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
 import {
@@ -8,6 +8,12 @@ import {
   useDeleteAcquisitionLeadMutation,
   useUpdateAcquisitionLeadMutation
 } from "../../hooks/useEventsQuery";
+
+const territoryTileLayer = {
+  attribution:
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+};
 
 const statusOptions = [
   { value: "mapped", label: "Mapeada" },
@@ -207,6 +213,30 @@ function formatDateTime(value) {
   });
 }
 
+function formatFollowUpShort(value) {
+  if (!value) return "Sem data";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Data inválida";
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).replace(",", " ·");
+}
+
+function getFollowUpTone(value, status) {
+  if (!value || ["closed", "lost"].includes(status)) return "none";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "none";
+
+  const diff = date.getTime() - Date.now();
+  if (diff < 0) return "overdue";
+  if (diff <= 24 * 60 * 60 * 1000) return "today";
+  if (diff <= 48 * 60 * 60 * 1000) return "soon";
+  return "later";
+}
+
 function isOverdue(value, status) {
   if (!value || ["closed", "lost"].includes(status)) return false;
   const date = new Date(value);
@@ -292,8 +322,8 @@ function TerritoryMap({ leads }) {
             className="territory-map"
           >
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution={territoryTileLayer.attribution}
+              url={territoryTileLayer.url}
             />
             <TerritoryMapBounds points={points} />
             {points.map(({ lead, coords, pathOptions }) => (
@@ -331,9 +361,11 @@ function TerritoryMap({ leads }) {
 }
 
 export default function AcquisitionAdminPanel({ onToast }) {
+  const leadFormRef = useRef(null);
   const [filters, setFilters] = useState({ q: "", status: "all", temperature: "all", followUp: "all" });
   const [leadForm, setLeadForm] = useState(initialLeadForm);
   const [editingLeadId, setEditingLeadId] = useState("");
+  const [expandedLeadId, setExpandedLeadId] = useState("");
   const [interactionLeadId, setInteractionLeadId] = useState("");
   const [interactionForm, setInteractionForm] = useState(initialInteractionForm);
 
@@ -402,6 +434,7 @@ export default function AcquisitionAdminPanel({ onToast }) {
 
   function handleEditLead(lead) {
     setEditingLeadId(lead.id);
+    setExpandedLeadId(lead.id);
     setLeadForm({
       venueName: lead.venueName || "",
       city: lead.city || "São Paulo",
@@ -429,13 +462,17 @@ export default function AcquisitionAdminPanel({ onToast }) {
       objections: lead.objections || "",
       notes: lead.notes || ""
     });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.requestAnimationFrame(() => {
+      leadFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   async function handleDeleteLead(leadId) {
     if (!window.confirm("Excluir esta oportunidade de aquisição?")) return;
     try {
       await deleteLead.mutateAsync(leadId);
+      if (expandedLeadId === leadId) setExpandedLeadId("");
+      if (interactionLeadId === leadId) setInteractionLeadId("");
       onToast?.("Oportunidade removida.");
     } catch (error) {
       onToast?.(error?.response?.data?.message || "Não foi possível remover a oportunidade.", "error");
@@ -482,7 +519,7 @@ export default function AcquisitionAdminPanel({ onToast }) {
       <TerritoryMap leads={leads} />
 
       <div className="acquisition-grid">
-        <form className="venue-form acquisition-form" onSubmit={handleLeadSubmit}>
+        <form ref={leadFormRef} className="venue-form acquisition-form" onSubmit={handleLeadSubmit}>
           <h3>{editingLeadId ? "Editar oportunidade" : "Nova oportunidade"}</h3>
           <p className="meta-line">Use este bloco para organizar contato comercial com casas ainda fora da carteira.</p>
           <input name="venueName" value={leadForm.venueName} onChange={handleLeadChange} placeholder="Nome da casa" required />
@@ -582,65 +619,97 @@ export default function AcquisitionAdminPanel({ onToast }) {
             {leads.map((lead) => {
               const overdue = isOverdue(lead.nextFollowUpAt, lead.status);
               const interactionOpen = interactionLeadId === lead.id;
+              const expanded = expandedLeadId === lead.id;
+              const followUpTone = getFollowUpTone(lead.nextFollowUpAt, lead.status);
+              const shortLocation = [lead.neighborhood, lead.region].filter(Boolean).join(" - ") || "Local a completar";
               return (
-                <article key={lead.id} className={`clean-card acquisition-lead-card${overdue ? " overdue" : ""}`}>
-                  <div className="acquisition-lead-main">
-                    <div>
-                      <span className={`acquisition-temp temp-${lead.temperature}`}>{temperatureLabelMap[lead.temperature] || lead.temperature}</span>
+                <article key={lead.id} className={`clean-card acquisition-lead-card acquisition-lead-compact${overdue ? " overdue" : ""}${expanded ? " expanded" : ""}`}>
+                  <div className="acquisition-lead-row">
+                    <div className="acquisition-lead-title">
                       <h4>{lead.venueName}</h4>
-                      {getLeadAddressLine(lead) ? <p>{getLeadAddressLine(lead)}</p> : null}
-                      <p>{[lead.neighborhood, lead.region, lead.city].filter(Boolean).join(" - ") || "Local a completar"}</p>
-                      <p className="meta-line">{lead.contactName || "Contato não informado"} {lead.contactRole ? `· ${lead.contactRole}` : ""}</p>
+                      <p>{shortLocation}</p>
                     </div>
-                    <div className="acquisition-lead-side">
+                    <div className="acquisition-pill-stack">
+                      <span className={`acquisition-temp temp-${lead.temperature}`}>{temperatureLabelMap[lead.temperature] || lead.temperature}</span>
                       <span className="acquisition-status">{statusLabelMap[lead.status] || lead.status}</span>
-                      <span className={overdue ? "acquisition-overdue" : "meta-line"}>
-                        Follow-up: {formatDateTime(lead.nextFollowUpAt)}
-                      </span>
+                    </div>
+                    <span className={`acquisition-followup acquisition-followup-${followUpTone}`}>
+                      {followUpTone !== "none" ? <span className="acquisition-followup-icon">!</span> : null}
+                      <span>{formatFollowUpShort(lead.nextFollowUpAt)}</span>
+                    </span>
+                    <div className="acquisition-card-actions acquisition-row-actions">
+                      <button
+                        type="button"
+                        className="chip acquisition-icon-action acquisition-action-edit"
+                        data-tooltip="Editar"
+                        onClick={() => handleEditLead(lead)}
+                      />
+                      <button
+                        type="button"
+                        className="chip acquisition-icon-action acquisition-action-note"
+                        data-tooltip="Registrar contato"
+                        onClick={() => {
+                          setExpandedLeadId(lead.id);
+                          setInteractionLeadId(lead.id);
+                          setInteractionForm(initialInteractionForm);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="chip acquisition-expand-toggle"
+                        data-tooltip={expanded ? "Recolher" : "Abrir detalhes"}
+                        onClick={() => setExpandedLeadId(expanded ? "" : lead.id)}
+                      >
+                        {expanded ? "-" : "+"}
+                      </button>
                     </div>
                   </div>
 
-                  <div className="acquisition-contact-line">
-                    {lead.phone ? <span>{lead.phone}</span> : null}
-                    {lead.instagramUrl ? <span>{lead.instagramUrl}</span> : null}
-                    {lead.email ? <span>{lead.email}</span> : null}
-                  </div>
-
-                  {lead.latestInteraction ? (
-                    <p className="acquisition-latest">Último contato: {lead.latestInteraction.summary}</p>
-                  ) : (
-                    <p className="meta-line">Nenhum contato registrado ainda.</p>
-                  )}
-
-                  {lead.notes ? <p className="meta-line">{lead.notes}</p> : null}
-
-                  {interactionOpen ? (
-                    <form className="acquisition-interaction-form" onSubmit={handleInteractionSubmit}>
-                      <select name="type" value={interactionForm.type} onChange={handleInteractionChange}>
-                        {interactionTypes.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                      </select>
-                      <textarea name="summary" value={interactionForm.summary} onChange={handleInteractionChange} placeholder="Resumo do contato realizado" required />
-                      <input name="nextAction" value={interactionForm.nextAction} onChange={handleInteractionChange} placeholder="Próxima ação combinada" />
-                      <input name="nextFollowUpAt" type="datetime-local" value={interactionForm.nextFollowUpAt} onChange={handleInteractionChange} />
-                      <div className="form-actions">
-                        <button type="submit" className="chip" disabled={createInteraction.isPending}>Salvar contato</button>
-                        <button type="button" className="chip" onClick={() => setInteractionLeadId("")}>Cancelar</button>
+                  {expanded ? (
+                    <div className="acquisition-lead-details">
+                      <div className="acquisition-detail-grid">
+                        <p><strong>Endereço</strong><span>{getLeadAddressLine(lead) || "Endereço a completar"}</span></p>
+                        <p><strong>Local</strong><span>{[lead.neighborhood, lead.region, lead.city].filter(Boolean).join(" - ") || "Local a completar"}</span></p>
+                        <p><strong>Contato</strong><span>{lead.contactName || "Contato não informado"} {lead.contactRole ? `- ${lead.contactRole}` : ""}</span></p>
+                        <p><strong>Próximo passo</strong><span>{lead.latestInteraction?.nextAction || "Sem próxima ação registrada"}</span></p>
                       </div>
-                    </form>
-                  ) : null}
 
-                  <div className="acquisition-card-actions">
-                    <button type="button" className="chip" onClick={() => handleEditLead(lead)}>Editar</button>
-                    <button type="button" className="chip" onClick={() => {
-                      setInteractionLeadId(lead.id);
-                      setInteractionForm(initialInteractionForm);
-                    }}>
-                      Registrar contato
-                    </button>
-                    <button type="button" className="chip chip-danger" onClick={() => handleDeleteLead(lead.id)} disabled={deleteLead.isPending}>
-                      Excluir
-                    </button>
-                  </div>
+                      <div className="acquisition-contact-line">
+                        {lead.phone ? <span>{lead.phone}</span> : null}
+                        {lead.instagramUrl ? <span>{lead.instagramUrl}</span> : null}
+                        {lead.email ? <span>{lead.email}</span> : null}
+                      </div>
+
+                      {lead.latestInteraction ? (
+                        <p className="acquisition-latest">Último contato: {lead.latestInteraction.summary}</p>
+                      ) : (
+                        <p className="meta-line">Nenhum contato registrado ainda.</p>
+                      )}
+
+                      {lead.notes ? <p className="meta-line">{lead.notes}</p> : null}
+
+                      {interactionOpen ? (
+                        <form className="acquisition-interaction-form" onSubmit={handleInteractionSubmit}>
+                          <select name="type" value={interactionForm.type} onChange={handleInteractionChange}>
+                            {interactionTypes.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                          </select>
+                          <textarea name="summary" value={interactionForm.summary} onChange={handleInteractionChange} placeholder="Resumo do contato realizado" required />
+                          <input name="nextAction" value={interactionForm.nextAction} onChange={handleInteractionChange} placeholder="Próxima ação combinada" />
+                          <input name="nextFollowUpAt" type="datetime-local" value={interactionForm.nextFollowUpAt} onChange={handleInteractionChange} />
+                          <div className="form-actions">
+                            <button type="submit" className="chip" disabled={createInteraction.isPending}>Salvar contato</button>
+                            <button type="button" className="chip" onClick={() => setInteractionLeadId("")}>Cancelar</button>
+                          </div>
+                        </form>
+                      ) : null}
+
+                      <div className="acquisition-card-actions">
+                        <button type="button" className="chip chip-danger" onClick={() => handleDeleteLead(lead.id)} disabled={deleteLead.isPending}>
+                          Excluir oportunidade
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                 </article>
               );
             })}
