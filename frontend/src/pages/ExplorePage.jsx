@@ -102,18 +102,10 @@ function getLiveProgress(startsAt, endsAt) {
   if (total <= 0) return null;
   const elapsed = Math.max(0, Math.min(now - start, total));
   const percent = Math.max(0, Math.min(100, (elapsed / total) * 100));
-  const minutesLeft = Math.max(0, Math.ceil((end - now) / 60000));
   let tone = "fresh";
   if (percent >= 86) tone = "last-call";
   else if (percent >= 61) tone = "attention";
-  return { percent, minutesLeft, tone };
-}
-
-function formatMinutesLeft(minutes) {
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  return `${hours}:${String(rest).padStart(2, "0")} h`;
+  return { percent, tone };
 }
 
 function LiveProgressBar({ event }) {
@@ -121,10 +113,6 @@ function LiveProgressBar({ event }) {
   if (!progress) return null;
   return (
     <div className={`live-progress live-progress-${progress.tone}`}>
-      <div className="live-progress-meta">
-        <span>Progresso do samba</span>
-        <strong>faltam {formatMinutesLeft(progress.minutesLeft)}</strong>
-      </div>
       <div className="live-progress-track" aria-hidden="true">
         <span className="live-progress-fill" style={{ width: `${progress.percent}%` }} />
       </div>
@@ -485,9 +473,9 @@ export default function ExplorePage() {
                     <span className="event-region"><MapPin size={12} /> {venue.region}</span>
                     {routeModeVenueId === venue.id ? <span className="event-route-venue">{venue.name}</span> : null}
                   </div>
+                  {routeModeVenueId !== venue.id && isLiveNow ? <LiveProgressBar event={nextEvent} /> : null}
                   {routeModeVenueId !== venue.id ? (
                     <div className="venue-flow-body">
-                      {isLiveNow ? <LiveProgressBar event={nextEvent} /> : null}
                       <div className="venue-flow-head">
                         <h3 className="artist-inline-with-badge">
                           <span>{venue.name}</span>
