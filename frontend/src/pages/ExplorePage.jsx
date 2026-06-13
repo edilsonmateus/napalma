@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarClock, CalendarDays, MapPin } from "lucide-react";
+import { CalendarClock, CalendarDays, Filter, MapPin, X } from "lucide-react";
 import { useAdDeliveryQuery, useEventsQuery, useRegionsQuery, useVenuesQuery } from "../hooks/useEventsQuery";
 import AdSlotCard from "../components/ads/AdSlotCard";
 import VerifiedBadge from "../components/common/VerifiedBadge";
@@ -11,8 +11,17 @@ import wazeIcon from "../assets/routes/waze.svg";
 import uberIcon from "../assets/routes/uber.svg";
 
 const EXPLORE_PREFS_KEY = "napalma:explore:prefs";
-const DEFAULT_PREFS = { region: "Todas", query: "", limit: 8, filterDate: "", filterHour: "", liveOnly: false, timeScope: "semana" };
+const DEFAULT_PREFS = { city: "São Paulo", region: "Todas", query: "", limit: 8, filterDate: "", filterHour: "", liveOnly: false, timeScope: "semana" };
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, "0")}:00`);
+const CITY_OPTIONS = [
+  { label: "São Paulo", state: "SP", available: true },
+  { label: "Rio de Janeiro", state: "RJ", available: false },
+  { label: "Belo Horizonte", state: "MG", available: false },
+  { label: "Salvador", state: "BA", available: false },
+  { label: "Recife", state: "PE", available: false },
+  { label: "Porto Alegre", state: "RS", available: false },
+  { label: "Florianópolis", state: "SC", available: false }
+];
 
 function loadPrefs() {
   try {
@@ -20,6 +29,7 @@ function loadPrefs() {
     if (!raw) return DEFAULT_PREFS;
     const parsed = JSON.parse(raw);
     return {
+      city: parsed.city || "São Paulo",
       region: parsed.region || "Todas",
       query: parsed.query || "",
       limit: Number(parsed.limit || 8),
@@ -65,11 +75,30 @@ function isSameDay(dateA, dateB) {
     && dateA.getDate() === dateB.getDate();
 }
 
+function ExploreSheet({ title, children, onClose }) {
+  return (
+    <div className="explore-sheet-backdrop" role="presentation" onClick={onClose}>
+      <div className="explore-sheet" role="dialog" aria-modal="true" aria-label={title} onClick={(event) => event.stopPropagation()}>
+        <div className="explore-sheet-handle" aria-hidden="true" />
+        <div className="explore-sheet-header">
+          <h3>{title}</h3>
+          <button type="button" className="explore-sheet-close" onClick={onClose} aria-label="Fechar">
+            <X size={18} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function ExplorePage() {
   const [prefs, setPrefs] = useState(loadPrefs);
   const [showDateHourFilter, setShowDateHourFilter] = useState(false);
+  const [showCitySheet, setShowCitySheet] = useState(false);
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState(prefs.query);
-  const { region, query, limit, filterDate, filterHour, liveOnly, timeScope } = prefs;
+  const { city, region, query, limit, filterDate, filterHour, liveOnly, timeScope } = prefs;
   const selectedRegion = region === "Todas" ? undefined : region;
   const { data: events = [], isLoading: eventsLoading, isError } = useEventsQuery(
     selectedRegion ? { region: selectedRegion } : {}
@@ -159,6 +188,7 @@ export default function ExplorePage() {
   }, [events, venueByName, selectedRegion, debouncedQuery, filterDate, filterHour, liveOnly, timeScope]);
   const liveEventsCount = useMemo(() => eventRows.filter((row) => row.isLiveNow).length, [eventRows]);
   const scopeLabel = timeScope === "hoje" ? "Hoje" : "Semana";
+  const hasRefinedFilters = region !== "Todas" || liveOnly || hasTimeFilter || timeScope !== "semana";
   const grouped = useMemo(() => {
     const rows = eventRows.slice(0, limit);
 
@@ -202,21 +232,30 @@ export default function ExplorePage() {
         </div>
       </header>
 
-      <div className="chip-row">
-        <button
-          className={`chip explore-scope-chip ${timeScope === "hoje" ? "active" : ""}`}
-          onClick={() => setPrefs((prev) => ({ ...prev, timeScope: "hoje", limit: 8 }))}
-        >
-          Hoje
+      <div className="explore-top-actions">
+        <button className="explore-top-pill" type="button" onClick={() => setShowCitySheet(true)}>
+          <MapPin size={16} />
+          <span>{city}</span>
         </button>
         <button
-          className={`chip explore-scope-chip ${timeScope === "semana" ? "active" : ""}`}
-          onClick={() => setPrefs((prev) => ({ ...prev, timeScope: "semana", limit: 8 }))}
+          className={`explore-top-icon ${hasTimeFilter ? "active" : ""}`}
+          onClick={() => setShowDateHourFilter(true)}
+          type="button"
+          title="Filtrar por dia e hora"
+          aria-label="Filtrar por dia e hora"
         >
-          Semana
+          <CalendarDays size={18} />
         </button>
         <button
-          className={`chip live-filter-chip ${liveEventsCount > 0 ? "has-live" : "no-live"} ${liveOnly ? "active" : ""}`}
+          className={`explore-top-pill ${hasRefinedFilters ? "active" : ""}`}
+          type="button"
+          onClick={() => setShowFilterSheet(true)}
+        >
+          <Filter size={16} />
+          <span>Filtros</span>
+        </button>
+        <button
+          className={`explore-top-pill live-filter-chip ${liveEventsCount > 0 ? "has-live" : "no-live"} ${liveOnly ? "active" : ""}`}
           onClick={() => setPrefs((prev) => ({ ...prev, liveOnly: liveEventsCount > 0 ? !prev.liveOnly : false, limit: 8 }))}
           disabled={liveEventsCount === 0}
           title={liveEventsCount > 0 ? "Mostrar apenas eventos ao vivo" : "Nenhum evento ao vivo agora"}
@@ -224,21 +263,6 @@ export default function ExplorePage() {
           <span className="live-chip-dot" />
           Ao vivo ({liveEventsCount})
         </button>
-        <button
-          className={`chip ${region === "Todas" ? "active" : ""}`}
-          onClick={() => setPrefs((prev) => ({ ...prev, region: "Todas", limit: 8 }))}
-        >
-          Todas
-        </button>
-        {regionOptions.map((item) => (
-          <button
-            key={item}
-            className={`chip ${region === item ? "active" : ""}`}
-            onClick={() => setPrefs((prev) => ({ ...prev, region: item, limit: 8 }))}
-          >
-            {item}
-          </button>
-        ))}
       </div>
 
       <div className="explore-controls">
@@ -248,38 +272,109 @@ export default function ExplorePage() {
           value={query}
           onChange={(e) => setPrefs((prev) => ({ ...prev, query: e.target.value, limit: 8 }))}
         />
-        <button
-          className={`explore-calendar-trigger ${hasTimeFilter ? "active" : ""}`}
-          onClick={() => setShowDateHourFilter((prev) => !prev)}
-          type="button"
-          title="Filtrar por dia e hora"
-          aria-label="Filtrar por dia e hora"
-        >
-          <CalendarDays size={18} />
-        </button>
         <button className="chip explore-clear-btn" onClick={() => setPrefs(DEFAULT_PREFS)}>
           Limpar filtros
         </button>
       </div>
       {showDateHourFilter ? (
-        <div className="explore-datehour-panel">
-          <input
-            className="search-input"
-            type="date"
-            value={filterDate}
-            onChange={(e) => setPrefs((prev) => ({ ...prev, filterDate: e.target.value, limit: 8 }))}
-          />
-          <select
-            className="search-input"
-            value={filterHour}
-            onChange={(e) => setPrefs((prev) => ({ ...prev, filterHour: e.target.value, limit: 8 }))}
-          >
-            <option value="">Qualquer hora</option>
-            {HOUR_OPTIONS.map((hour) => (
-              <option key={hour} value={hour}>{hour}</option>
+        <ExploreSheet title="Data e hora" onClose={() => setShowDateHourFilter(false)}>
+          <p className="meta-line">Escolha uma data, uma hora cheia ou combine os dois.</p>
+          <div className="explore-sheet-grid">
+            <input
+              className="search-input"
+              type="date"
+              value={filterDate}
+              onChange={(e) => setPrefs((prev) => ({ ...prev, filterDate: e.target.value, limit: 8 }))}
+            />
+            <select
+              className="search-input"
+              value={filterHour}
+              onChange={(e) => setPrefs((prev) => ({ ...prev, filterHour: e.target.value, limit: 8 }))}
+            >
+              <option value="">Qualquer hora</option>
+              {HOUR_OPTIONS.map((hour) => (
+                <option key={hour} value={hour}>{hour}</option>
+              ))}
+            </select>
+          </div>
+          <div className="explore-sheet-actions">
+            <button className="chip" onClick={() => setPrefs((prev) => ({ ...prev, filterDate: "", filterHour: "", limit: 8 }))}>Limpar data</button>
+            <button className="chip active" onClick={() => setShowDateHourFilter(false)}>Aplicar</button>
+          </div>
+        </ExploreSheet>
+      ) : null}
+      {showCitySheet ? (
+        <ExploreSheet title="Escolha a praça" onClose={() => setShowCitySheet(false)}>
+          <input className="search-input" value="" readOnly placeholder="Procurar uma cidade" />
+          <button className="explore-nearby-btn" type="button" disabled>
+            <MapPin size={16} />
+            Perto de mim em breve
+          </button>
+          <div className="explore-city-list">
+            <p className="explore-country-label">Brasil</p>
+            {CITY_OPTIONS.map((item) => (
+              <button
+                key={`${item.label}-${item.state}`}
+                type="button"
+                className={`explore-city-option ${city === item.label ? "active" : ""}`}
+                disabled={!item.available}
+                onClick={() => {
+                  if (!item.available) return;
+                  setPrefs((prev) => ({ ...prev, city: item.label, region: "Todas", limit: 8 }));
+                  setShowCitySheet(false);
+                }}
+              >
+                <span className="city-radio" />
+                <span>{item.label}</span>
+                <small>{item.available ? item.state : "em breve"}</small>
+              </button>
             ))}
-          </select>
-        </div>
+          </div>
+        </ExploreSheet>
+      ) : null}
+      {showFilterSheet ? (
+        <ExploreSheet title="Filtros" onClose={() => setShowFilterSheet(false)}>
+          <div className="explore-sheet-section">
+            <h4>Período</h4>
+            <div className="explore-sheet-chips">
+              {["hoje", "semana"].map((scope) => (
+                <button
+                  key={scope}
+                  className={`chip ${timeScope === scope ? "active" : ""}`}
+                  onClick={() => setPrefs((prev) => ({ ...prev, timeScope: scope, limit: 8 }))}
+                >
+                  {scope === "hoje" ? "Hoje" : "Semana"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="explore-sheet-section">
+            <h4>Regiões</h4>
+            <div className="explore-sheet-chips">
+              <button
+                className={`chip ${region === "Todas" ? "active" : ""}`}
+                onClick={() => setPrefs((prev) => ({ ...prev, region: "Todas", limit: 8 }))}
+              >
+                Todas
+              </button>
+              {regionOptions.map((item) => (
+                <button
+                  key={item}
+                  className={`chip ${region === item ? "active" : ""}`}
+                  onClick={() => setPrefs((prev) => ({ ...prev, region: item, limit: 8 }))}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="explore-sheet-actions">
+            <button className="chip" onClick={() => setPrefs(DEFAULT_PREFS)}>Limpar tudo</button>
+            <button className="chip active" onClick={() => setShowFilterSheet(false)}>
+              Ver {visibleEventsCount} {visibleEventsCount === 1 ? "samba" : "sambas"}
+            </button>
+          </div>
+        </ExploreSheet>
       ) : null}
       {hasTimeFilter ? <p className="meta-line explore-time-filter-active">Filtro ativo: {activeTimeFilterLabel}</p> : null}
       <AdSlotCard ad={adToRender} slot="explore_feed_large" />
