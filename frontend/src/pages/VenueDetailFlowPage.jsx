@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CalendarClock, MapPin } from "lucide-react";
 import { useAdDeliveryQuery, useEventsQuery, useMyRadarQuery, useToggleRadarMutation, useVenuesQuery } from "../hooks/useEventsQuery";
 import AdSlotCard from "../components/ads/AdSlotCard";
@@ -10,6 +10,7 @@ import { getAudienceBadges } from "../utils/eventAudienceBadges";
 import mapsIcon from "../assets/routes/maps.svg";
 import wazeIcon from "../assets/routes/waze.svg";
 import uberIcon from "../assets/routes/uber.svg";
+import { trackAnalyticsEvent } from "../services/analytics.service";
 
 function formatDate(value) {
   return new Date(value).toLocaleString("pt-BR", {
@@ -61,6 +62,17 @@ export default function VenueDetailFlowPage() {
   const [showRouteModal, setShowRouteModal] = useState(false);
   const [actionFeedback, setActionFeedback] = useState("");
 
+  useEffect(() => {
+    if (!venue) return;
+    trackAnalyticsEvent("venue_view", {
+      venueId: venue.id,
+      region: venue.region,
+      city: venue.city,
+      state: venue.state,
+      source: "venue_detail"
+    });
+  }, [venue]);
+
   if (venueLoading) return <p className="empty">Carregando casa...</p>;
   if (!venue) return <p className="empty">Casa não encontrada.</p>;
 
@@ -74,6 +86,13 @@ export default function VenueDetailFlowPage() {
       setActionFeedback("");
       const currentlyMarked = radarEvents.some((row) => row.id === eventItem.id);
       await toggleRadar.mutateAsync({ eventId: eventItem.id, currentlyMarked });
+      trackAnalyticsEvent(currentlyMarked ? "radar_remove" : "radar_save", {
+        eventId: eventItem.id,
+        venueId: eventItem.venueId,
+        artistId: eventItem.artistId,
+        region: eventItem.region,
+        source: "venue_detail"
+      });
       setActionFeedback(currentlyMarked ? "Removido do seu Radar." : "Salvo no seu Radar.");
     } catch (_error) {
       setActionFeedback("Não foi possível atualizar o Radar agora.");
@@ -103,7 +122,16 @@ export default function VenueDetailFlowPage() {
             ) : null}
           </div>
           <div className="share-actions">
-            <button type="button" className="chip" onClick={() => setShowRouteModal(true)}>Como chegar</button>
+            <button
+              type="button"
+              className="chip"
+              onClick={() => {
+                trackAnalyticsEvent("route_click", { venueId: venue.id, region: venue.region, source: "venue_detail" });
+                setShowRouteModal(true);
+              }}
+            >
+              Como chegar
+            </button>
           </div>
         </div>
       </div>
@@ -188,13 +216,13 @@ export default function VenueDetailFlowPage() {
             <p className="meta-line">Escolha o app para rota:</p>
             <div className="route-mini-layout">
               <div className="route-icon-row">
-                <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Maps" aria-label="Abrir rota no Maps">
+                <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Maps" aria-label="Abrir rota no Maps" onClick={() => trackAnalyticsEvent("route_app_click", { venueId: venue.id, region: venue.region, source: "venue_detail", metadata: { provider: "maps" } })}>
                   <img src={mapsIcon} alt="" className="route-icon-img route-icon-img-maps" />
                 </a>
-                <a href={wazeUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Waze" aria-label="Abrir rota no Waze">
+                <a href={wazeUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Waze" aria-label="Abrir rota no Waze" onClick={() => trackAnalyticsEvent("route_app_click", { venueId: venue.id, region: venue.region, source: "venue_detail", metadata: { provider: "waze" } })}>
                   <img src={wazeIcon} alt="" className="route-icon-img route-icon-img-waze" />
                 </a>
-                <a href={uberUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Uber" aria-label="Abrir rota no Uber">
+                <a href={uberUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Uber" aria-label="Abrir rota no Uber" onClick={() => trackAnalyticsEvent("route_app_click", { venueId: venue.id, region: venue.region, source: "venue_detail", metadata: { provider: "uber" } })}>
                   <img src={uberIcon} alt="" className="route-icon-img route-icon-img-uber" />
                 </a>
                 <button type="button" className="chip route-mini-chip route-chip-close route-inline-back" onClick={() => setShowRouteModal(false)}>Fechar</button>

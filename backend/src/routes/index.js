@@ -46,6 +46,7 @@ import {
   updateAdCreative
 } from "../controllers/ads.controller.js";
 import { getAudienceSummary, trackAudienceVisit } from "../controllers/audience.controller.js";
+import { getImpactSummary, trackAnalyticsEvent } from "../controllers/analytics.controller.js";
 import {
   createAcquisitionInteraction,
   createAcquisitionLead,
@@ -91,6 +92,12 @@ const adsTrackLimiter = createRateLimiter({
   max: 120,
   message: "Muitas interacoes de anuncio no momento. Aguarde alguns segundos."
 });
+const analyticsTrackLimiter = createRateLimiter({
+  keyPrefix: "analytics-track",
+  windowMs: 60_000,
+  max: 240,
+  message: "Muitas interacoes no momento. Aguarde alguns segundos."
+});
 
 router.post("/auth/register", authLimiter, register);
 router.post("/auth/login", authLimiter, login);
@@ -98,7 +105,9 @@ router.post("/auth/refresh", authLimiter, refresh);
 router.post("/auth/logout", authLimiter, logout);
 router.get("/auth/me", requireAuth, me);
 router.post("/analytics/visit", trackAudienceVisit);
+router.post("/analytics/events", analyticsTrackLimiter, trackAnalyticsEvent);
 router.get("/analytics/audience-summary", requireAuth, requireRole(["admin", "producer", "venue_manager"]), getAudienceSummary);
+router.get("/analytics/impact-summary", requireAuth, requireRole(["admin", "producer", "venue_manager"]), getImpactSummary);
 router.get("/acquisition/leads", ...canManageAcquisition, listAcquisitionLeads);
 router.post("/acquisition/leads", ...canManageAcquisition, createAcquisitionLead);
 router.patch("/acquisition/leads/:id", ...canManageAcquisition, updateAcquisitionLead);

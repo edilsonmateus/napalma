@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import VerifiedBadge from "../components/common/VerifiedBadge";
+import ImpactSummaryPanel from "../components/admin/ImpactSummaryPanel";
 import AcquisitionAdminPanel from "./admin/AcquisitionAdminPanel";
 import {
   useAddVenueManagerMutation,
@@ -615,6 +616,7 @@ export default function VenuesAdminPage() {
   const showClaims = isAdmin && effectiveSection === "claims";
   const showAdminRegions = isAdmin && effectiveSection === "regions";
   const showAcquisition = isAdmin && effectiveSection === "acquisition";
+  const showImpact = effectiveSection === "impact";
   const showHouseClaims = isHouseRole && effectiveSection === "claims";
   const showHouseProfile = isHouseRole && effectiveSection === "profile";
   const isHouseProgramaçãoClean = isHouseRole && showEvents && searchParams.get("layout") === "clean";
@@ -1802,6 +1804,7 @@ export default function VenuesAdminPage() {
             <button className={`chip ${activeSection === "overview" ?"active" : ""}`} onClick={() => setSearchParams({ section: "overview" })}>
               Visão Geral
             </button>
+            {isAdmin ?<button className={`chip ${activeSection === "impact" ?"active" : ""}`} onClick={() => setSearchParams({ section: "impact" })}>Impacto 77Gira</button> : null}
             {canManageCatalog ?<button className={`chip ${activeSection === "venues" ?"active" : ""}`} onClick={() => setSearchParams({ section: "venues" })}>Casas</button> : null}
             <button className={`chip ${activeSection === "events" ?"active" : ""}`} onClick={() => setSearchParams({ section: "events" })}>Eventos</button>
             {canManageCatalog ?<button className={`chip ${activeSection === "artists" ?"active" : ""}`} onClick={() => setSearchParams({ section: "artists" })}>Artistas</button> : null}
@@ -1812,7 +1815,7 @@ export default function VenuesAdminPage() {
             <button className="chip" onClick={clearAdminFilters}>Limpar filtros</button>
           </aside>
           <div className="ads-content">
-            {!showAcquisition ? <div className="chip-row admin-filter-row">
+            {!showAcquisition && !showImpact ? <div className="chip-row admin-filter-row">
               <button className={`chip ${regionFilter === "" ?"active" : ""}`} onClick={() => setRegionFilter("")}>Todas</button>
               {regions.map((region) => (
                 <button key={region} className={`chip ${regionFilter === region ?"active" : ""}`} onClick={() => setRegionFilter(region)}>
@@ -1821,7 +1824,7 @@ export default function VenuesAdminPage() {
               ))}
             </div> : null}
 
-            {!showAcquisition ? <div className="admin-kpis">
+            {!showAcquisition && !showImpact ? <div className="admin-kpis">
               {showVenues ?<article className="clean-card"><h4>Casas</h4><p>{filteredVenues.length}</p></article> : null}
               {showArtists ?<article className="clean-card"><h4>Artistas</h4><p>{filteredArtists.length}</p></article> : null}
               {showEvents ?<article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
@@ -1836,6 +1839,12 @@ export default function VenuesAdminPage() {
               {showOverview ?<article className="clean-card"><h4>Conversão (30d)</h4><p>{audienceSummary?.global?.conversionRate ?? 0}%</p></article> : null}
             </div> : null}
             {showAcquisition ? <AcquisitionAdminPanel onToast={showToast} /> : null}
+            {showImpact ? (
+              <ImpactSummaryPanel
+                title="Impacto 77Gira"
+                subtitle="Leitura geral do valor gerado pela plataforma: descoberta, rotas, Radar, compartilhamentos e presença."
+              />
+            ) : null}
             {showOverview ?(
               <article className="clean-card admin-overview-card">
                 <h4>Visão Geral</h4>
@@ -1856,6 +1865,9 @@ export default function VenuesAdminPage() {
             <button className={`chip ${activeSection === "overview" ?"active" : ""}`} onClick={() => setSearchParams({ section: "overview" })}>
               Visão Geral
             </button>
+            <button className={`chip ${activeSection === "impact" ?"active" : ""}`} onClick={() => setSearchParams({ section: "impact" })}>
+              Impacto 77Gira
+            </button>
             <button className={`chip ${activeSection === "events" ?"active" : ""}`} onClick={() => setSearchParams({ section: "events" })}>
               Eventos
             </button>
@@ -1871,7 +1883,7 @@ export default function VenuesAdminPage() {
             <button className="chip" onClick={clearAdminFilters}>Limpar filtros</button>
           </aside>
           <div className="ads-content">
-            <div className="admin-kpis">
+            {!showImpact ? <div className="admin-kpis">
               {showOverview ?<article className="clean-card"><h4>Casa em foco</h4><p>{houseDisplayName || "Sem unidade ativa"}</p></article> : null}
               {showOverview ?<article className="clean-card"><h4>Eventos da casa</h4><p>{houseEvents.length}</p></article> : null}
               {showOverview ?<article className="clean-card"><h4>Hoje</h4><p>{houseTodayEventsCount} evento(s)</p></article> : null}
@@ -1885,13 +1897,20 @@ export default function VenuesAdminPage() {
               {showHouseProfile ?<article className="clean-card"><h4>Dados da Casa</h4><p>{houseDisplayName || "Sem unidade ativa"}</p></article> : null}
               {showManagers ?<article className="clean-card"><h4>Produtores</h4><p>{totalManagers}</p></article> : null}
               {showHouseClaims ?<article className="clean-card"><h4>Solicitacoes</h4><p>{myClaims.filter((c) => c.status === "pending").length} pendentes</p></article> : null}
-            </div>
+            </div> : null}
+            {showImpact ? (
+              <ImpactSummaryPanel
+                venueId={houseActiveVenue?.id}
+                title={`Impacto 77Gira - ${houseDisplayName || "Casa"}`}
+                subtitle="Veja como sua casa aparece para o público: visitas, rotas abertas, Radar, compartilhamentos e presenças."
+              />
+            ) : null}
             {showEvents && !isHouseProgramaçãoClean ?<div className="admin-content-divider" /> : null}
           </div>
         </div>
       )}
 
-      <div className={`admin-section-stack${isHouseRole ?" house-section-stack" : ""}${isHouseRole && (showOverview || showEvents) ?" no-divider" : ""}${isHouseProgramaçãoClean ?" house-events-focus" : ""}${showAcquisition ?" acquisition-stack-hidden" : ""}`}>
+      <div className={`admin-section-stack${isHouseRole ?" house-section-stack" : ""}${isHouseRole && (showOverview || showEvents) ?" no-divider" : ""}${isHouseProgramaçãoClean ?" house-events-focus" : ""}${showAcquisition || showImpact ?" acquisition-stack-hidden" : ""}`}>
       {showOverview && isHouseRole ?(
         <>
           {!houseActiveVenue ?(

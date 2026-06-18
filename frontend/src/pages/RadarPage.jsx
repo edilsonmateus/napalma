@@ -6,6 +6,7 @@ import AdSlotCard from "../components/ads/AdSlotCard";
 import VerifiedBadge from "../components/common/VerifiedBadge";
 import { getAudienceBadges } from "../utils/eventAudienceBadges";
 import AppToast from "../components/common/AppToast";
+import { trackAnalyticsEvent } from "../services/analytics.service";
 
 const RADAR_PREFS_KEY = "napalma:radar:prefs";
 
@@ -80,6 +81,13 @@ export default function RadarPage() {
     try {
       setToast({ text: "", type: "info" });
       const result = await toggleHistory.mutateAsync({ eventId: event.id, currentlyMarked: false });
+      trackAnalyticsEvent("attendance_yes", {
+        eventId: event.id,
+        venueId: event.venueId,
+        artistId: event.artistId,
+        region: event.region,
+        source: "radar"
+      });
       const unlocked = result?.unlockedAchievements || [];
       if (unlocked.length > 0) {
         const first = unlocked[0];
@@ -97,6 +105,13 @@ export default function RadarPage() {
     try {
       setToast({ text: "", type: "info" });
       await toggleRadar.mutateAsync({ eventId: event.id, currentlyMarked: true });
+      trackAnalyticsEvent("attendance_no", {
+        eventId: event.id,
+        venueId: event.venueId,
+        artistId: event.artistId,
+        region: event.region,
+        source: "radar"
+      });
       setToast({ text: "Removido do Radar.", type: "success" });
     } catch (_error) {
       setToast({ text: "Não foi possível remover esse samba do Radar agora.", type: "error" });
@@ -136,7 +151,10 @@ export default function RadarPage() {
             <button
               key={region}
               className={`chip ${regionFilter === region ? "active" : ""}`}
-              onClick={() => setRegionFilter(region)}
+              onClick={() => {
+                setRegionFilter(region);
+                trackAnalyticsEvent("region_filter", { region, source: "radar" });
+              }}
             >
               {region}
             </button>

@@ -124,6 +124,31 @@ model AudienceVisitor {
   @@index([linkedAt])
 }
 
+model AnalyticsEvent {
+  id        String   @id @default(uuid())
+  type      String
+  visitorId String?
+  userId    String?
+  venueId   String?
+  eventId   String?
+  artistId  String?
+  region    String?
+  city      String?
+  state     String?
+  source    String?
+  metadata  Json?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+  @@index([visitorId, createdAt])
+  @@index([userId, createdAt])
+  @@index([venueId, type, createdAt])
+  @@index([eventId, type, createdAt])
+  @@index([region, createdAt])
+  @@index([city, createdAt])
+}
+
 model Itinerary {
   id          String   @id @default(uuid())
   userId      String

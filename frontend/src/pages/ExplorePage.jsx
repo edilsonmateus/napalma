@@ -6,6 +6,7 @@ import AdSlotCard from "../components/ads/AdSlotCard";
 import VerifiedBadge from "../components/common/VerifiedBadge";
 import { buildGoogleMapsLink, buildUberLink, buildWazeLink } from "../utils/maps";
 import { getAudienceBadges } from "../utils/eventAudienceBadges";
+import { trackAnalyticsEvent } from "../services/analytics.service";
 import mapsIcon from "../assets/routes/maps.svg";
 import wazeIcon from "../assets/routes/waze.svg";
 import uberIcon from "../assets/routes/uber.svg";
@@ -152,6 +153,10 @@ export default function ExplorePage() {
   const [routeModeVenueId, setRouteModeVenueId] = useState("");
   const { data: exploreAd } = useAdDeliveryQuery("explore_feed_large", true);
   const adToRender = useMemo(() => exploreAd || null, [exploreAd]);
+
+  useEffect(() => {
+    trackAnalyticsEvent("explore_view", { source: "explore" });
+  }, []);
   const venueByName = useMemo(() => {
     const map = new Map();
     for (const venue of venues) {
@@ -284,7 +289,14 @@ export default function ExplorePage() {
         </button>
         <button
           className={`explore-top-pill live-filter-chip ${liveEventsCount > 0 ? "has-live" : "no-live"} ${liveOnly ? "active" : ""}`}
-          onClick={() => setPrefs((prev) => ({ ...prev, liveOnly: liveEventsCount > 0 ? !prev.liveOnly : false, limit: 8 }))}
+          onClick={() => {
+            const nextLiveOnly = liveEventsCount > 0 ? !liveOnly : false;
+            setPrefs((prev) => ({ ...prev, liveOnly: nextLiveOnly, limit: 8 }));
+            trackAnalyticsEvent("live_filter", {
+              source: "explore",
+              metadata: { enabled: nextLiveOnly, liveEventsCount }
+            });
+          }}
           disabled={liveEventsCount === 0}
           title={liveEventsCount > 0 ? "Mostrar apenas eventos ao vivo" : "Nenhum evento ao vivo agora"}
         >
@@ -298,7 +310,15 @@ export default function ExplorePage() {
           className="search-input"
           placeholder="Buscar casa por nome, bairro ou região..."
           value={query}
-          onChange={(e) => setPrefs((prev) => ({ ...prev, query: e.target.value, limit: 8 }))}
+          onChange={(e) => {
+            setPrefs((prev) => ({ ...prev, query: e.target.value, limit: 8 }));
+            if (e.target.value.trim().length >= 3) {
+              trackAnalyticsEvent("search", {
+                source: "explore",
+                metadata: { length: e.target.value.trim().length }
+              });
+            }
+          }}
         />
         <button className="chip explore-clear-btn" onClick={() => setPrefs(DEFAULT_PREFS)}>
           Limpar filtros
@@ -312,12 +332,24 @@ export default function ExplorePage() {
               className="search-input"
               type="date"
               value={filterDate}
-              onChange={(e) => setPrefs((prev) => ({ ...prev, filterDate: e.target.value, limit: 8 }))}
+              onChange={(e) => {
+                setPrefs((prev) => ({ ...prev, filterDate: e.target.value, limit: 8 }));
+                trackAnalyticsEvent("date_filter", {
+                  source: "explore",
+                  metadata: { filterDate: e.target.value }
+                });
+              }}
             />
             <select
               className="search-input"
               value={filterHour}
-              onChange={(e) => setPrefs((prev) => ({ ...prev, filterHour: e.target.value, limit: 8 }))}
+              onChange={(e) => {
+                setPrefs((prev) => ({ ...prev, filterHour: e.target.value, limit: 8 }));
+                trackAnalyticsEvent("hour_filter", {
+                  source: "explore",
+                  metadata: { filterHour: e.target.value }
+                });
+              }}
             >
               <option value="">Qualquer hora</option>
               {HOUR_OPTIONS.map((hour) => (
@@ -349,6 +381,11 @@ export default function ExplorePage() {
                 onClick={() => {
                   if (!item.available) return;
                   setPrefs((prev) => ({ ...prev, city: item.label, region: "Todas", limit: 8 }));
+                  trackAnalyticsEvent("region_filter", {
+                    source: "explore_city",
+                    city: item.label,
+                    state: item.state
+                  });
                   setShowCitySheet(false);
                 }}
               >
@@ -389,7 +426,14 @@ export default function ExplorePage() {
                 <button
                   key={item}
                   className={`chip ${region === item ? "active" : ""}`}
-                  onClick={() => setPrefs((prev) => ({ ...prev, region: item, limit: 8 }))}
+                  onClick={() => {
+                    setPrefs((prev) => ({ ...prev, region: item, limit: 8 }));
+                    trackAnalyticsEvent("region_filter", {
+                      source: "explore",
+                      region: item,
+                      city
+                    });
+                  }}
                 >
                   {item}
                 </button>
@@ -487,6 +531,13 @@ export default function ExplorePage() {
                           onClick={(event) => {
                             event.preventDefault();
                             setRouteModeVenueId(venue.id);
+                            trackAnalyticsEvent("route_click", {
+                              venueId: venue.id,
+                              region: venue.region,
+                              city: venue.city,
+                              state: venue.state,
+                              source: "explore"
+                            });
                           }}
                         >
                           <MapPin size={12} /> Partiu Agora!
@@ -526,13 +577,13 @@ export default function ExplorePage() {
                 {routeModeVenueId === venue.id ? (
                   <div className="venue-flow-body route-options-panel">
                     <div className="route-options-row">
-                      <a href={buildGoogleMapsLink(venue)} target="_blank" rel="noreferrer" className="route-icon-btn" title="Maps" aria-label="Abrir rota no Maps">
+                      <a href={buildGoogleMapsLink(venue)} target="_blank" rel="noreferrer" className="route-icon-btn" title="Maps" aria-label="Abrir rota no Maps" onClick={() => trackAnalyticsEvent("route_app_click", { venueId: venue.id, region: venue.region, city: venue.city, state: venue.state, source: "explore", metadata: { provider: "maps" } })}>
                         <img src={mapsIcon} alt="" className="route-icon-img route-icon-img-maps" />
                       </a>
-                      <a href={buildWazeLink(venue)} target="_blank" rel="noreferrer" className="route-icon-btn" title="Waze" aria-label="Abrir rota no Waze">
+                      <a href={buildWazeLink(venue)} target="_blank" rel="noreferrer" className="route-icon-btn" title="Waze" aria-label="Abrir rota no Waze" onClick={() => trackAnalyticsEvent("route_app_click", { venueId: venue.id, region: venue.region, city: venue.city, state: venue.state, source: "explore", metadata: { provider: "waze" } })}>
                         <img src={wazeIcon} alt="" className="route-icon-img route-icon-img-waze" />
                       </a>
-                      <a href={buildUberLink(venue)} target="_blank" rel="noreferrer" className="route-icon-btn" title="Uber" aria-label="Abrir rota no Uber">
+                      <a href={buildUberLink(venue)} target="_blank" rel="noreferrer" className="route-icon-btn" title="Uber" aria-label="Abrir rota no Uber" onClick={() => trackAnalyticsEvent("route_app_click", { venueId: venue.id, region: venue.region, city: venue.city, state: venue.state, source: "explore", metadata: { provider: "uber" } })}>
                         <img src={uberIcon} alt="" className="route-icon-img route-icon-img-uber" />
                       </a>
                       <button type="button" className="chip route-mini-chip route-chip-close route-inline-back" onClick={() => setRouteModeVenueId("")}>Voltar</button>

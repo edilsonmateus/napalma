@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { CalendarClock, Copy, MapPin, Send, Share2, Star } from "lucide-react";
 import {
@@ -14,6 +14,7 @@ import mapsIcon from "../assets/routes/maps.svg";
 import wazeIcon from "../assets/routes/waze.svg";
 import uberIcon from "../assets/routes/uber.svg";
 import AppToast from "../components/common/AppToast";
+import { trackAnalyticsEvent } from "../services/analytics.service";
 
 function formatDate(value) {
   return new Date(value).toLocaleString("pt-BR");
@@ -59,6 +60,19 @@ export default function EventDetailPage() {
   const event = useMemo(() => events.find((item) => item.id === eventId), [eventId, events]);
   const marked = useMemo(() => radarEvents.some((item) => item.id === eventId), [eventId, radarEvents]);
 
+  useEffect(() => {
+    if (!event) return;
+    trackAnalyticsEvent("event_view", {
+      eventId: event.id,
+      venueId: event.venueId,
+      artistId: event.artistId,
+      region: event.region,
+      city: event.city,
+      state: event.state,
+      source: "event_detail"
+    });
+  }, [event]);
+
   if (isLoading) return <p className="empty">Carregando evento...</p>;
   if (!event) return <p>Evento não encontrado.</p>;
 
@@ -85,10 +99,26 @@ export default function EventDetailPage() {
     try {
       if (navigator.share) {
         await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+        trackAnalyticsEvent("event_share", {
+          eventId: event.id,
+          venueId: event.venueId,
+          artistId: event.artistId,
+          region: event.region,
+          source: "event_detail",
+          metadata: { channel: "native" }
+        });
         setToast({ text: "Compartilhado com sucesso.", type: "success" });
         return;
       }
       await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+      trackAnalyticsEvent("event_share", {
+        eventId: event.id,
+        venueId: event.venueId,
+        artistId: event.artistId,
+        region: event.region,
+        source: "event_detail",
+        metadata: { channel: "copy_fallback" }
+      });
       setToast({ text: "Link copiado para compartilhar.", type: "success" });
     } catch (_error) {
       setToast({ text: "Não foi possível compartilhar agora.", type: "error" });
@@ -98,6 +128,14 @@ export default function EventDetailPage() {
   async function handleCopyLink() {
     try {
       await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+      trackAnalyticsEvent("event_share", {
+        eventId: event.id,
+        venueId: event.venueId,
+        artistId: event.artistId,
+        region: event.region,
+        source: "event_detail",
+        metadata: { channel: "copy" }
+      });
       setToast({ text: "Link copiado para compartilhar.", type: "success" });
     } catch (_error) {
       setToast({ text: "Não foi possível copiar o link.", type: "error" });
@@ -136,6 +174,13 @@ export default function EventDetailPage() {
     try {
       setToast({ text: "", type: "info" });
       const result = await toggleRadar.mutateAsync({ eventId: event.id, currentlyMarked: marked });
+      trackAnalyticsEvent(marked ? "radar_remove" : "radar_save", {
+        eventId: event.id,
+        venueId: event.venueId,
+        artistId: event.artistId,
+        region: event.region,
+        source: "event_detail"
+      });
       const unlocked = result?.unlockedAchievements || [];
       if (unlocked.length > 0) {
         const first = unlocked[0];
@@ -183,7 +228,16 @@ export default function EventDetailPage() {
             </div>
           ) : null}
           <div className="share-actions">
-            <button type="button" className="chip" onClick={() => setShowRouteModal(true)}>Como chegar</button>
+            <button
+              type="button"
+              className="chip"
+              onClick={() => {
+                trackAnalyticsEvent("route_click", { eventId: event.id, venueId: event.venueId, region: event.region, source: "event_detail" });
+                setShowRouteModal(true);
+              }}
+            >
+              Como chegar
+            </button>
           </div>
         </div>
 
@@ -224,9 +278,9 @@ export default function EventDetailPage() {
             </button>
           </div>
           <div className="share-links share-links-primary">
-            <a href={whatsappUrl} target="_blank" rel="noreferrer" className="chip share-link"><Send size={14} /> WhatsApp</a>
-            <a href={telegramUrl} target="_blank" rel="noreferrer" className="chip share-link"><Send size={14} /> Telegram</a>
-            <a href={facebookUrl} target="_blank" rel="noreferrer" className="chip share-link"><Share2 size={14} /> Facebook</a>
+            <a href={whatsappUrl} target="_blank" rel="noreferrer" className="chip share-link" onClick={() => trackAnalyticsEvent("event_share", { eventId: event.id, venueId: event.venueId, artistId: event.artistId, region: event.region, source: "event_detail", metadata: { channel: "whatsapp" } })}><Send size={14} /> WhatsApp</a>
+            <a href={telegramUrl} target="_blank" rel="noreferrer" className="chip share-link" onClick={() => trackAnalyticsEvent("event_share", { eventId: event.id, venueId: event.venueId, artistId: event.artistId, region: event.region, source: "event_detail", metadata: { channel: "telegram" } })}><Send size={14} /> Telegram</a>
+            <a href={facebookUrl} target="_blank" rel="noreferrer" className="chip share-link" onClick={() => trackAnalyticsEvent("event_share", { eventId: event.id, venueId: event.venueId, artistId: event.artistId, region: event.region, source: "event_detail", metadata: { channel: "facebook" } })}><Share2 size={14} /> Facebook</a>
           </div>
           <details className="share-more">
             <summary>Mais opções</summary>
@@ -248,13 +302,13 @@ export default function EventDetailPage() {
             <p className="meta-line">Escolha o app para rota:</p>
             <div className="route-mini-layout">
               <div className="route-icon-row">
-                <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Maps" aria-label="Abrir rota no Maps">
+                <a href={googleMapsUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Maps" aria-label="Abrir rota no Maps" onClick={() => trackAnalyticsEvent("route_app_click", { eventId: event.id, venueId: event.venueId, region: event.region, source: "event_detail", metadata: { provider: "maps" } })}>
                   <img src={mapsIcon} alt="" className="route-icon-img route-icon-img-maps" />
                 </a>
-                <a href={wazeUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Waze" aria-label="Abrir rota no Waze">
+                <a href={wazeUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Waze" aria-label="Abrir rota no Waze" onClick={() => trackAnalyticsEvent("route_app_click", { eventId: event.id, venueId: event.venueId, region: event.region, source: "event_detail", metadata: { provider: "waze" } })}>
                   <img src={wazeIcon} alt="" className="route-icon-img route-icon-img-waze" />
                 </a>
-                <a href={uberUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Uber" aria-label="Abrir rota no Uber">
+                <a href={uberUrl} target="_blank" rel="noreferrer" className="route-icon-btn" title="Uber" aria-label="Abrir rota no Uber" onClick={() => trackAnalyticsEvent("route_app_click", { eventId: event.id, venueId: event.venueId, region: event.region, source: "event_detail", metadata: { provider: "uber" } })}>
                   <img src={uberIcon} alt="" className="route-icon-img route-icon-img-uber" />
                 </a>
                 <button type="button" className="chip route-mini-chip route-chip-close route-inline-back" onClick={() => setShowRouteModal(false)}>Fechar</button>
