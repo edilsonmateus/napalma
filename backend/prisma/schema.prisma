@@ -272,6 +272,9 @@ model Venue {
   name         String
   slug         String  @unique
   goldPartner  Boolean @default(false)
+  analyticsTier String @default("basic")
+  analyticsAccessSource String?
+  analyticsAccessUntil DateTime?
   description  String?
   contactName  String?
   contactPhone String?

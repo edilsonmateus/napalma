@@ -1,0 +1,3 @@
+ALTER TABLE "Venue" ADD COLUMN IF NOT EXISTS "analyticsTier" TEXT NOT NULL DEFAULT 'basic';
+ALTER TABLE "Venue" ADD COLUMN IF NOT EXISTS "analyticsAccessSource" TEXT;
+ALTER TABLE "Venue" ADD COLUMN IF NOT EXISTS "analyticsAccessUntil" TIMESTAMP(3);

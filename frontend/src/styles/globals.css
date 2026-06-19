@@ -2555,6 +2555,39 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   gap: 8px;
 }
 
+.impact-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: var(--admin-text);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.impact-tier-badge.tier-basic {
+  color: var(--admin-muted);
+}
+
+.impact-tier-badge.tier-pro {
+  color: #ffcc66;
+  background: rgba(255, 184, 28, 0.12);
+}
+
+.impact-tier-badge.tier-premium {
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.impact-toolbar button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
 .impact-period-switch button {
   min-width: 42px;
   border: 0;
@@ -2636,6 +2669,163 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 
 .impact-empty {
   border-left: 3px solid rgba(255, 184, 28, 0.55);
+}
+
+.impact-benchmark-card {
+  display: grid;
+  gap: 14px;
+  border-left: 3px solid rgba(0, 183, 74, 0.42);
+}
+
+.impact-benchmark-card.is-muted {
+  border-left-color: rgba(255, 184, 28, 0.45);
+}
+
+.impact-benchmark-card.is-locked {
+  border-left-color: rgba(255, 184, 28, 0.62);
+}
+
+.impact-locked-card {
+  display: grid;
+  gap: 8px;
+  border-left: 3px solid rgba(255, 184, 28, 0.55);
+}
+
+.impact-locked-card h4,
+.impact-locked-card p,
+.impact-locked-card small {
+  margin: 0;
+}
+
+.impact-locked-card p,
+.impact-locked-card small {
+  color: var(--admin-muted);
+}
+
+.impact-lock-badge {
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #ffcc66;
+  background: rgba(255, 184, 28, 0.12);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.impact-benchmark-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.impact-section-eyebrow {
+  display: block;
+  color: var(--admin-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.impact-benchmark-header h4 {
+  margin: 4px 0 0;
+  font-size: 16px;
+  font-weight: 520;
+}
+
+.impact-benchmark-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.impact-benchmark-grid div {
+  padding: 12px;
+  background: rgba(8, 20, 31, 0.45);
+  border-radius: 3px;
+}
+
+.impact-benchmark-grid small {
+  display: block;
+  color: var(--admin-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.impact-benchmark-grid strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--admin-text);
+  font-size: 20px;
+  font-weight: 650;
+}
+
+.impact-benchmark-list {
+  display: grid;
+  gap: 6px;
+}
+
+.impact-benchmark-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background: rgba(8, 20, 31, 0.32);
+  border-radius: 3px;
+  color: var(--admin-muted);
+}
+
+.impact-benchmark-row.is-self {
+  color: var(--admin-text);
+  background: rgba(0, 183, 74, 0.12);
+  box-shadow: inset 2px 0 0 rgba(0, 183, 74, 0.75);
+}
+
+.impact-benchmark-row b {
+  color: inherit;
+  font-weight: 600;
+}
+
+.impact-benchmark-warning {
+  padding: 12px;
+  background: rgba(255, 184, 28, 0.08);
+  border-radius: 3px;
+  color: var(--admin-muted);
+}
+
+.impact-benchmark-warning strong {
+  color: var(--admin-text);
+}
+
+.impact-benchmark-warning p {
+  margin: 6px 0 0;
+}
+
+.impact-guardrail-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+  .impact-benchmark-header {
+    display: grid;
+  }
+
+  .impact-benchmark-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .impact-benchmark-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .impact-columns {
@@ -5183,6 +5373,26 @@ button.venue-card {
   font-size: 26px;
   font-weight: 700;
   line-height: 1.2;
+}
+
+.analytics-access-card {
+  margin: 8px 0 10px;
+}
+
+.analytics-access-card strong {
+  color: var(--admin-text);
+  font-weight: 520;
+}
+
+.analytics-access-fields {
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.analytics-access-fields select,
+.analytics-access-fields input {
+  min-width: 180px;
+  flex: 1 1 180px;
 }
 
 .clean-card small {

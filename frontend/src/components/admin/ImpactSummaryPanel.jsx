@@ -40,6 +40,22 @@ function formatNumber(value) {
   return new Intl.NumberFormat("pt-BR").format(Number(value || 0));
 }
 
+function formatPercent(value) {
+  return `${Number(value || 0).toLocaleString("pt-BR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1
+  })}%`;
+}
+
+function formatTierName(tier) {
+  const names = {
+    basic: "Basic",
+    pro: "Pro",
+    premium: "Premium"
+  };
+  return names[tier] || "Basic";
+}
+
 function csvEscape(value) {
   const stringValue = String(value ?? "");
   return `"${stringValue.replaceAll('"', '""')}"`;
@@ -93,6 +109,18 @@ export default function ImpactSummaryPanel({
   const routeProviders = summary?.routeProviders || [];
   const topEvents = summary?.topEventsDetailed || [];
   const topRegions = summary?.topRegionsDetailed || [];
+  const benchmark = summary?.benchmark;
+  const benchmarkLeaders = benchmark?.leaders || [];
+  const entitlement = summary?.entitlement || {
+    effectiveTier: "premium",
+    canViewPro: true,
+    canViewPremium: true,
+    lockedTiers: { pro: false, premium: false }
+  };
+  const canViewPro = entitlement.canViewPro !== false;
+  const canViewPremium = entitlement.canViewPremium !== false;
+  const proLock = summary?.locks?.pro;
+  const premiumLock = summary?.locks?.premium;
   const reportDate = new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
@@ -124,6 +152,8 @@ export default function ImpactSummaryPanel({
   ];
 
   const handleDownloadCsv = () => {
+    if (!canViewPremium) return;
+
     const rows = [
       ["Relatório", title],
       ["Escopo", reportScope],
@@ -150,6 +180,7 @@ export default function ImpactSummaryPanel({
   };
 
   const handlePrintReport = () => {
+    if (!canViewPremium) return;
     window.print();
   };
 
@@ -183,6 +214,9 @@ export default function ImpactSummaryPanel({
           <p>{subtitle}</p>
         </div>
         <div className="impact-toolbar">
+          <span className={`impact-tier-badge tier-${entitlement.effectiveTier || "basic"}`}>
+            {formatTierName(entitlement.effectiveTier)}
+          </span>
           <div className="impact-period-switch">
             {[7, 30, 90].map((option) => (
               <button
@@ -195,10 +229,22 @@ export default function ImpactSummaryPanel({
               </button>
             ))}
           </div>
-          <button className="admin-secondary-button" type="button" onClick={handleDownloadCsv}>
+          <button
+            className="admin-secondary-button"
+            type="button"
+            onClick={handleDownloadCsv}
+            disabled={!canViewPremium}
+            title={canViewPremium ? "" : "Disponivel no Impacto Premium"}
+          >
             Baixar CSV
           </button>
-          <button className="admin-secondary-button" type="button" onClick={() => setShowReport(true)}>
+          <button
+            className="admin-secondary-button"
+            type="button"
+            onClick={() => canViewPremium && setShowReport(true)}
+            disabled={!canViewPremium}
+            title={canViewPremium ? "" : "Disponivel no Impacto Premium"}
+          >
             Ver relatório
           </button>
         </div>
@@ -223,6 +269,76 @@ export default function ImpactSummaryPanel({
         ))}
       </div>
 
+      {!canViewPro && proLock ? (
+        <article className="clean-card impact-locked-card">
+          <span className="impact-lock-badge">Pro</span>
+          <h4>{proLock.title}</h4>
+          <p>{proLock.message}</p>
+          {entitlement.upgradeHints?.pro ? <small>{entitlement.upgradeHints.pro}</small> : null}
+        </article>
+      ) : null}
+
+      <article className={`clean-card impact-benchmark-card ${benchmark?.available ? "" : "is-muted"} ${!canViewPremium ? "is-locked" : ""}`}>
+        <div className="impact-benchmark-header">
+          <div>
+            <span className="impact-section-eyebrow">Benchmark seguro</span>
+            <h4>Leitura comparativa sem expor concorrentes</h4>
+          </div>
+          <span className="impact-pill">
+            {premiumLock ? "Premium bloqueado" : benchmark?.available ? benchmark.scope : "Aguardando amostra"}
+          </span>
+        </div>
+
+        {premiumLock ? (
+          <div className="impact-benchmark-warning">
+            <strong>{premiumLock.title}</strong>
+            <p>{premiumLock.message}</p>
+            {entitlement.upgradeHints?.premium ? <small>{entitlement.upgradeHints.premium}</small> : null}
+          </div>
+        ) : benchmark?.available ? (
+          <>
+            <div className="impact-benchmark-grid">
+              <div>
+                <small>Posicao relativa</small>
+                <strong>{benchmark.position} de {benchmark.totalComparable}</strong>
+              </div>
+              <div>
+                <small>Percentil</small>
+                <strong>Top {formatPercent(benchmark.percentile)}</strong>
+              </div>
+              <div>
+                <small>Share qualificado</small>
+                <strong>{formatPercent(benchmark.share)}</strong>
+              </div>
+              <div>
+                <small>Amostra</small>
+                <strong>{benchmark.sampleSize} casas</strong>
+              </div>
+            </div>
+
+            <div className="impact-benchmark-list">
+              {benchmarkLeaders.map((item, index) => (
+                <div key={`${item.label}-${index}`} className={`impact-benchmark-row ${item.isSelf ? "is-self" : ""}`}>
+                  <span>{index + 1}. {item.label}</span>
+                  <b>{formatPercent(item.share)}</b>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="impact-benchmark-warning">
+            <strong>Benchmark protegido</strong>
+            <p>{benchmark?.reason || "Ainda nao ha volume suficiente para uma comparacao segura."}</p>
+          </div>
+        )}
+
+        <ul className="impact-guardrail-list">
+          {(benchmark?.guardrails || []).slice(0, 3).map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </article>
+
       {!hasData ? (
         <article className="clean-card impact-empty">
           <h4>Ainda estamos formando a leitura</h4>
@@ -232,6 +348,7 @@ export default function ImpactSummaryPanel({
         </article>
       ) : null}
 
+      {canViewPro ? (
       <div className="impact-columns">
         <article className="clean-card">
           <h4>Eventos que mais puxaram atenção</h4>
@@ -282,8 +399,9 @@ export default function ImpactSummaryPanel({
           </p>
         </article>
       </div>
+      ) : null}
 
-      {showReport ? (
+      {showReport && canViewPremium ? (
         <div className="impact-report-overlay">
           <article className="impact-report-modal impact-report-print">
             <header className="impact-report-header">
@@ -335,6 +453,36 @@ export default function ImpactSummaryPanel({
                   </tr>
                 </tbody>
               </table>
+            </section>
+
+            <section className="impact-report-table">
+              <h3>Benchmark seguro</h3>
+              {benchmark?.available ? (
+                <table>
+                  <tbody>
+                    <tr>
+                      <th>Escopo</th>
+                      <td>{benchmark.scope}</td>
+                    </tr>
+                    <tr>
+                      <th>Posicao relativa</th>
+                      <td>{benchmark.position} de {benchmark.totalComparable}</td>
+                    </tr>
+                    <tr>
+                      <th>Share qualificado</th>
+                      <td>{formatPercent(benchmark.share)}</td>
+                    </tr>
+                    {benchmarkLeaders.slice(0, 5).map((item, index) => (
+                      <tr key={`${item.label}-report-${index}`}>
+                        <th>{index + 1}. {item.label}</th>
+                        <td>{formatPercent(item.share)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="meta-line">{benchmark?.reason || "Sem amostra suficiente para benchmark seguro."}</p>
+              )}
             </section>
 
             <section className="impact-report-grid">

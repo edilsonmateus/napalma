@@ -51,6 +51,9 @@ const initialVenueForm = {
   nicknameDisplayNameWithArticle: "",
   nicknameDisplayNameWithPreposition: "",
   goldPartner: false,
+  analyticsTier: "basic",
+  analyticsAccessSource: "manual",
+  analyticsAccessUntil: "",
   description: "",
   contactName: "",
   contactPhone: "",
@@ -1222,6 +1225,9 @@ export default function VenuesAdminPage() {
         nicknameDisplayNameWithArticle: detail.nicknameDisplayNameWithArticle || "",
         nicknameDisplayNameWithPreposition: detail.nicknameDisplayNameWithPreposition || "",
         goldPartner: Boolean(detail.goldPartner),
+        analyticsTier: detail.analyticsTier || "basic",
+        analyticsAccessSource: detail.analyticsAccessSource || "manual",
+        analyticsAccessUntil: detail.analyticsAccessUntil ? String(detail.analyticsAccessUntil).slice(0, 10) : "",
         description: detail.description || "",
         contactName: detail.contactName || "",
         contactPhone: detail.contactPhone || "",
@@ -1751,6 +1757,11 @@ export default function VenuesAdminPage() {
     setVenueForm({
       name: houseActiveVenue.name || "",
       goldPartner: Boolean(houseActiveVenue.goldPartner),
+      analyticsTier: houseActiveVenue.analyticsTier || "basic",
+      analyticsAccessSource: houseActiveVenue.analyticsAccessSource || "manual",
+      analyticsAccessUntil: houseActiveVenue.analyticsAccessUntil
+        ? String(houseActiveVenue.analyticsAccessUntil).slice(0, 10)
+        : "",
       description: houseActiveVenue.description || "",
       contactName: houseActiveVenue.contactName || "",
       contactPhone: houseActiveVenue.contactPhone || "",
@@ -2033,6 +2044,37 @@ export default function VenuesAdminPage() {
           />
           Casa Gold Partner
         </label>
+        {isAdmin ? (
+          <div className="clean-card analytics-access-card">
+            <strong>Impacto 77Gira</strong>
+            <p className="meta-line">
+              Controle manual dos dados avancados. O gateway podera atualizar este acesso automaticamente depois.
+            </p>
+            <div className="form-actions-inline analytics-access-fields">
+              <select name="analyticsTier" value={venueForm.analyticsTier} onChange={handleVenueChange}>
+                <option value="basic">Basic - metricas essenciais</option>
+                <option value="pro">Pro - rankings e rotas</option>
+                <option value="premium">Premium - benchmark e relatorio</option>
+              </select>
+              <select
+                name="analyticsAccessSource"
+                value={venueForm.analyticsAccessSource}
+                onChange={handleVenueChange}
+              >
+                <option value="manual">Liberacao manual</option>
+                <option value="gateway">Gateway de pagamento</option>
+                <option value="trial">Trial comercial</option>
+              </select>
+              <input
+                type="date"
+                name="analyticsAccessUntil"
+                value={venueForm.analyticsAccessUntil}
+                onChange={handleVenueChange}
+                title="Data limite do acesso avancado"
+              />
+            </div>
+          </div>
+        ) : null}
         <label className="meta-line">
           Upload da imagem da casa (JPG, PNG ou WebP, ate 5MB)
           <input

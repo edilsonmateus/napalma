@@ -8,9 +8,22 @@ const querySchema = z.object({
   scope: z.enum(["managed", "public"]).optional()
 });
 
+const optionalAnalyticsAccessSource = z.preprocess(
+  (value) => value === "" ? null : value,
+  z.enum(["manual", "gateway", "trial"]).optional().nullable()
+);
+
+const optionalDateText = z.preprocess(
+  (value) => value === "" ? null : value,
+  z.string().optional().nullable()
+);
+
 const createVenueSchema = z.object({
   name: z.string().trim().min(3),
   goldPartner: z.boolean().optional().default(false),
+  analyticsTier: z.enum(["basic", "pro", "premium"]).optional().default("basic"),
+  analyticsAccessSource: optionalAnalyticsAccessSource,
+  analyticsAccessUntil: optionalDateText,
   description: z.string().trim().min(3).optional(),
   contactName: z.string().trim().min(2).optional(),
   contactPhone: z.string().trim().min(8).optional(),
@@ -121,6 +134,24 @@ function buildVenueGrammarData(data) {
   };
 }
 
+function normalizeAnalyticsAccessUntil(value) {
+  if (!value) return null;
+  const text = String(value).trim();
+  if (!text) return null;
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(text) ? new Date(`${text}T23:59:59.000Z`) : new Date(text);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function buildVenueAnalyticsData(data) {
+  return {
+    ...(data.analyticsTier !== undefined ? { analyticsTier: data.analyticsTier || "basic" } : {}),
+    ...(data.analyticsAccessSource !== undefined ? { analyticsAccessSource: data.analyticsAccessSource || null } : {}),
+    ...(data.analyticsAccessUntil !== undefined
+      ? { analyticsAccessUntil: normalizeAnalyticsAccessUntil(data.analyticsAccessUntil) }
+      : {})
+  };
+}
+
 function mapVenuePayload(venue) {
   const venueArticlePreview = buildArticlePreview(venue.grammarArticle, venue.name);
   const venuePrepositionPreview = buildPrepositionPreview(venue.grammarPreposition, venue.name);
@@ -133,6 +164,9 @@ function mapVenuePayload(venue) {
     name: venue.name,
     slug: venue.slug,
     goldPartner: Boolean(venue.goldPartner),
+    analyticsTier: venue.analyticsTier || "basic",
+    analyticsAccessSource: venue.analyticsAccessSource || "",
+    analyticsAccessUntil: venue.analyticsAccessUntil ? venue.analyticsAccessUntil.toISOString() : "",
     description: venue.description,
     contactName: venue.contactName ?? "",
     contactPhone: venue.contactPhone ?? "",
@@ -284,6 +318,7 @@ export async function createVenue(req, res, next) {
       data: {
         ...data,
         ...buildVenueGrammarData(data),
+        ...buildVenueAnalyticsData(data),
         slug: baseSlug,
         createdByUserId: req.user.id
       },
@@ -356,8 +391,21 @@ export async function updateVenue(req, res, next) {
     const venue = await prisma.venue.update({
       where: { id },
       data: {
-        ...data,
-        ...buildVenueGrammarData(data),
+        ...(() => {
+          const {
+            analyticsTier,
+            analyticsAccessSource,
+            analyticsAccessUntil,
+            ...safeData
+          } = data;
+          return {
+            ...safeData,
+            ...buildVenueGrammarData(safeData),
+            ...(req.user?.role === "admin"
+              ? buildVenueAnalyticsData({ analyticsTier, analyticsAccessSource, analyticsAccessUntil })
+              : {})
+          };
+        })(),
         ...(data.name ? { slug: slugify(data.name) } : {})
       },
       include: {
