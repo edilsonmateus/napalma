@@ -13,7 +13,8 @@
   "prisma:seed": "node prisma/seed.js",
   "prisma:seed:achievements": "node prisma/seed-achievements.js",
   "prisma:normalize:claims": "node prisma/normalize-claims-fixture.js",
-  "prisma:backfill:event-artists": "node prisma/backfill-event-artists.js"
+  "prisma:backfill:event-artists": "node prisma/backfill-event-artists.js",
+  "admin:bootstrap": "node prisma/bootstrap-admin.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
