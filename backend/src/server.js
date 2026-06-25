@@ -5,7 +5,14 @@ import { ensureAdminBootstrap } from "./lib/adminBootstrap.js";
 const app = createApp();
 
 try {
-  await ensureAdminBootstrap();
+  const adminBootstrap = await ensureAdminBootstrap();
+  if (adminBootstrap?.created) {
+    console.log(`Admin definitivo criado: ${adminBootstrap.email}`);
+  } else if (adminBootstrap?.updated) {
+    console.log(`Admin definitivo atualizado: ${adminBootstrap.email}`);
+  } else if (adminBootstrap?.skipped) {
+    console.log(`Admin definitivo não aplicado: ${adminBootstrap.reason}`);
+  }
 } catch (error) {
   console.error("Erro ao preparar admin definitivo:", error);
 }
