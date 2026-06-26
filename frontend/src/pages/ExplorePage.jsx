@@ -295,7 +295,7 @@ export default function ExplorePage() {
       .slice(0, 3);
   }, [eventRows, onTrackActive, onTrackLocation]);
   const scopeLabel = timeScope === "hoje" ? "Hoje" : "Semana";
-  const hasRefinedFilters = region !== "Todas" || liveOnly || hasTimeFilter || timeScope !== "semana";
+  const hasRefinedFilters = query.trim() || region !== "Todas" || liveOnly || hasTimeFilter || timeScope !== "semana";
   const grouped = useMemo(() => {
     const rows = eventRows.slice(0, limit);
 
@@ -448,25 +448,6 @@ export default function ExplorePage() {
         </button>
       </div>
 
-      <div className="explore-controls">
-        <input
-          className="search-input"
-          placeholder="Buscar casa por nome, bairro ou região..."
-          value={query}
-          onChange={(e) => {
-            setPrefs((prev) => ({ ...prev, query: e.target.value, limit: 8 }));
-            if (e.target.value.trim().length >= 3) {
-              trackAnalyticsEvent("search", {
-                source: "explore",
-                metadata: { length: e.target.value.trim().length }
-              });
-            }
-          }}
-        />
-        <button className="chip explore-clear-btn" onClick={() => setPrefs(DEFAULT_PREFS)}>
-          Limpar filtros
-        </button>
-      </div>
       {showDateHourFilter ? (
         <ExploreSheet title="Data e hora" onClose={() => setShowDateHourFilter(false)}>
           <p className="meta-line">Escolha uma data, uma hora cheia ou combine os dois.</p>
@@ -542,6 +523,23 @@ export default function ExplorePage() {
       ) : null}
       {showFilterSheet ? (
         <ExploreSheet title="Filtros" onClose={() => setShowFilterSheet(false)}>
+          <div className="explore-sheet-section">
+            <h4>Busca</h4>
+            <input
+              className="search-input"
+              placeholder="Buscar casa, bairro, região ou samba..."
+              value={query}
+              onChange={(e) => {
+                setPrefs((prev) => ({ ...prev, query: e.target.value, limit: 8 }));
+                if (e.target.value.trim().length >= 3) {
+                  trackAnalyticsEvent("search", {
+                    source: "explore_filter_sheet",
+                    metadata: { length: e.target.value.trim().length }
+                  });
+                }
+              }}
+            />
+          </div>
           <div className="explore-sheet-section">
             <h4>Período</h4>
             <div className="explore-sheet-chips">
@@ -650,9 +648,12 @@ export default function ExplorePage() {
       <AdSlotCard ad={adToRender} slot="explore_feed_large" />
       {!eventsLoading && !isError ? (
         <div className="explore-summary-bar">
-          <span>{visibleEventsCount} {visibleEventsCount === 1 ? "samba visível" : "sambas visíveis"}</span>
-          <span>Escopo: {scopeLabel}</span>
-          <span>{liveOnly ? "Modo ao vivo" : "Modo geral"}</span>
+          <span>{visibleEventsCount} {visibleEventsCount === 1 ? "samba" : "sambas"}</span>
+          <span>{scopeLabel}</span>
+          <span>{liveOnly ? "Ao vivo" : "Geral"}</span>
+          <button className="explore-summary-clear" type="button" onClick={() => setPrefs(DEFAULT_PREFS)}>
+            Limpar
+          </button>
         </div>
       ) : null}
 
