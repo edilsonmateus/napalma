@@ -59,6 +59,8 @@ const initialVenueForm = {
   contactPhone: "",
   instagramUrl: "",
   address: "",
+  latitude: "",
+  longitude: "",
   neighborhood: "",
   neighborhoodGrammarArticle: "",
   neighborhoodGrammarPreposition: "em",
@@ -1091,6 +1093,8 @@ export default function VenuesAdminPage() {
       contactName: venueForm.contactName || undefined,
       contactPhone: venueForm.contactPhone || undefined,
       instagramUrl: venueForm.instagramUrl || undefined,
+      latitude: venueForm.latitude === "" ? null : Number(venueForm.latitude),
+      longitude: venueForm.longitude === "" ? null : Number(venueForm.longitude),
       state: venueForm.state.toUpperCase()
     };
     payload.openDays = venueForm.openDays
@@ -1233,6 +1237,8 @@ export default function VenuesAdminPage() {
         contactPhone: detail.contactPhone || "",
         instagramUrl: detail.instagramUrl || "",
         address: detail.address || "",
+        latitude: detail.latitude ?? "",
+        longitude: detail.longitude ?? "",
         neighborhood: detail.neighborhood || "",
         neighborhoodGrammarArticle: detail.neighborhoodGrammarArticle || "",
         neighborhoodGrammarPreposition: detail.neighborhoodGrammarPreposition || "em",
@@ -2007,6 +2013,10 @@ export default function VenuesAdminPage() {
         <input name="contactPhone" value={venueForm.contactPhone} onChange={handleVenueChange} placeholder="Telefone da casa (opcional)" />
         <input name="instagramUrl" value={venueForm.instagramUrl} onChange={handleVenueChange} placeholder="Instagram da casa (URL, opcional)" />
         <input name="address" value={venueForm.address} onChange={handleVenueChange} placeholder="Endereço" required />
+        <div className="form-actions-inline">
+          <input name="latitude" type="number" step="any" value={venueForm.latitude} onChange={handleVenueChange} placeholder="Latitude (Tô na Pista)" />
+          <input name="longitude" type="number" step="any" value={venueForm.longitude} onChange={handleVenueChange} placeholder="Longitude (Tô na Pista)" />
+        </div>
         <input name="neighborhood" value={venueForm.neighborhood} onChange={handleVenueChange} placeholder="Bairro" required />
         <div className="clean-card grammar-preview-card">
           <strong>Tratamento textual do bairro</strong>
@@ -2568,6 +2578,10 @@ export default function VenuesAdminPage() {
               <input name="contactPhone" value={venueForm.contactPhone} onChange={handleVenueChange} placeholder="Telefone da casa" />
               <input name="instagramUrl" value={venueForm.instagramUrl} onChange={handleVenueChange} placeholder="Instagram (URL)" />
               <input name="address" value={venueForm.address} onChange={handleVenueChange} placeholder="Endereço" required />
+              <div className="form-actions-inline">
+                <input name="latitude" type="number" step="any" value={venueForm.latitude} onChange={handleVenueChange} placeholder="Latitude (Tô na Pista)" />
+                <input name="longitude" type="number" step="any" value={venueForm.longitude} onChange={handleVenueChange} placeholder="Longitude (Tô na Pista)" />
+              </div>
               <input name="neighborhood" value={venueForm.neighborhood} onChange={handleVenueChange} placeholder="Bairro" required />
         <div className="clean-card grammar-preview-card">
           <strong>Tratamento textual do bairro</strong>

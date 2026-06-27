@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CalendarClock, CalendarDays, Filter, MapPin, X } from "lucide-react";
 import { useAdDeliveryQuery, useEventsQuery, useRegionsQuery, useVenuesQuery } from "../hooks/useEventsQuery";
@@ -7,12 +7,21 @@ import VerifiedBadge from "../components/common/VerifiedBadge";
 import { buildGoogleMapsLink, buildUberLink, buildWazeLink } from "../utils/maps";
 import { getAudienceBadges } from "../utils/eventAudienceBadges";
 import { trackAnalyticsEvent } from "../services/analytics.service";
+import {
+  activateToNaPistaSession,
+  deactivateToNaPistaSession,
+  deliverToNaPistaSuggestion,
+  ensureToNaPistaNotifications,
+  notifyToNaPista
+} from "../utils/toNaPistaNotifications";
 import mapsIcon from "../assets/routes/maps.svg";
 import wazeIcon from "../assets/routes/waze.svg";
 import uberIcon from "../assets/routes/uber.svg";
 
 const EXPLORE_PREFS_KEY = "napalma:explore:prefs";
 const ON_TRACK_KEY = "77gira:on-track-session";
+const ON_TRACK_NOTIFIED_KEY = "77gira:on-track-notified-event";
+const ON_TRACK_DISMISSED_KEY = "77gira:on-track-dismissed-event";
 const ON_TRACK_DURATION_MS = 60 * 60 * 1000;
 const ON_TRACK_RECOMMENDATION_WINDOW_MS = 12 * 60 * 60 * 1000;
 const DEFAULT_PREFS = { city: "São Paulo", region: "Todas", query: "", limit: 8, filterDate: "", filterHour: "", liveOnly: false, timeScope: "semana" };
@@ -178,6 +187,18 @@ export default function ExplorePage() {
   const [showOnTrackInstallSheet, setShowOnTrackInstallSheet] = useState(false);
   const [onTrackSession, setOnTrackSession] = useState(loadOnTrackSession);
   const [onTrackError, setOnTrackError] = useState("");
+  const [onTrackNotifiedIds, setOnTrackNotifiedIds] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem(ON_TRACK_NOTIFIED_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [raw];
+    } catch {
+      const legacyValue = sessionStorage.getItem(ON_TRACK_NOTIFIED_KEY);
+      return legacyValue ? [legacyValue] : [];
+    }
+  });
+  const [dismissedOnTrackSuggestionId, setDismissedOnTrackSuggestionId] = useState(() => sessionStorage.getItem(ON_TRACK_DISMISSED_KEY) || "");
   const [debouncedQuery, setDebouncedQuery] = useState(prefs.query);
   const { city, region, query, limit, filterDate, filterHour, liveOnly, timeScope } = prefs;
   const selectedRegion = region === "Todas" ? undefined : region;
@@ -272,7 +293,11 @@ export default function ExplorePage() {
     return rows.sort((a, b) => new Date(a.nextEvent.startsAt).getTime() - new Date(b.nextEvent.startsAt).getTime());
   }, [events, venueByName, selectedRegion, debouncedQuery, filterDate, filterHour, liveOnly, timeScope]);
   const liveEventsCount = useMemo(() => eventRows.filter((row) => row.isLiveNow).length, [eventRows]);
-  const onTrackActive = Boolean(onTrackSession?.expiresAt && onTrackSession.expiresAt > Date.now());
+  const onTrackActive = Boolean(
+    onTrackSession?.id
+      && onTrackSession?.expiresAt
+      && onTrackSession.expiresAt > Date.now()
+  );
   const onTrackLocation = onTrackSession?.location || null;
   const onTrackRecommendations = useMemo(() => {
     if (!onTrackActive) return [];
@@ -292,8 +317,9 @@ export default function ExplorePage() {
         if (a.isLiveNow !== b.isLiveNow) return a.isLiveNow ? -1 : 1;
         return a.startsAt - b.startsAt;
       })
-      .slice(0, 3);
+      .slice(0, 2);
   }, [eventRows, onTrackActive, onTrackLocation]);
+  const onTrackSuggestion = onTrackRecommendations[0] || null;
   const scopeLabel = timeScope === "hoje" ? "Hoje" : "Semana";
   const hasRefinedFilters = query.trim() || region !== "Todas" || liveOnly || hasTimeFilter || timeScope !== "semana";
   const grouped = useMemo(() => {
@@ -335,34 +361,96 @@ export default function ExplorePage() {
     return () => clearTimeout(timer);
   }, [onTrackActive, onTrackSession]);
 
+  useEffect(() => {
+    if (!onTrackActive || !onTrackSuggestion?.nextEvent?.id) return;
+
+    const eventId = onTrackSuggestion.nextEvent.id;
+    if (!onTrackSession?.id || onTrackNotifiedIds.includes(eventId) || onTrackNotifiedIds.length >= 2) return;
+
+    const startsCopy = onTrackSuggestion.isLiveNow
+      ? "Tá rolando agora"
+      : `Começa às ${formatHour(onTrackSuggestion.nextEvent.startsAt)}`;
+    const targetUrl = `${window.location.origin}/events/${eventId}`;
+
+    deliverToNaPistaSuggestion({
+      sessionId: onTrackSession.id,
+      eventId
+    })
+      .then(async (result) => {
+        if (result.shouldFallback) {
+          await notifyToNaPista({
+            title: "Tô na Pista sugeriu:",
+            body: `${onTrackSuggestion.nextEvent.title} no ${onTrackSuggestion.venue.name} - ${startsCopy}`,
+            url: targetUrl
+          });
+        }
+      })
+      .catch(async (error) => {
+        const code = error?.response?.data?.error;
+        if (code === "session_not_active") {
+          localStorage.removeItem(ON_TRACK_KEY);
+          setOnTrackSession(null);
+          return;
+        }
+        if (["event_already_delivered", "notification_limit_reached"].includes(code)) {
+          return;
+        }
+        await notifyToNaPista({
+          title: "Tô na Pista sugeriu:",
+          body: `${onTrackSuggestion.nextEvent.title} no ${onTrackSuggestion.venue.name} - ${startsCopy}`,
+          url: targetUrl
+        }).catch(() => null);
+      })
+      .finally(() => {
+        setOnTrackNotifiedIds((current) => {
+          const next = Array.from(new Set([...current, eventId])).slice(0, 2);
+          sessionStorage.setItem(ON_TRACK_NOTIFIED_KEY, JSON.stringify(next));
+          return next;
+        });
+      });
+
+    trackAnalyticsEvent("on_track_notification_shown", {
+      source: "explore",
+      eventId,
+      venueId: onTrackSuggestion.venue.id,
+      metadata: {
+        isLiveNow: onTrackSuggestion.isLiveNow,
+        distanceKm: onTrackSuggestion.distance
+      }
+    });
+  }, [onTrackActive, onTrackNotifiedIds, onTrackSession, onTrackSuggestion]);
+
   const requestOnTrack = () => {
     setOnTrackError("");
     if (!navigator.geolocation) {
-      setOnTrackError("Seu navegador nÃ£o liberou localizaÃ§Ã£o para esta funÃ§Ã£o.");
+      setOnTrackError("Seu navegador não liberou localização para esta função.");
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const session = {
-          startedAt: Date.now(),
-          expiresAt: Date.now() + ON_TRACK_DURATION_MS,
-          location: {
+      async (position) => {
+        try {
+          await ensureToNaPistaNotifications().catch(() => null);
+          const session = await activateToNaPistaSession({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude
-          }
-        };
-        localStorage.setItem(ON_TRACK_KEY, JSON.stringify(session));
-        setOnTrackSession(session);
-        setShowOnTrackSheet(false);
-        setShowOnTrackInstallSheet(false);
-        trackAnalyticsEvent("on_track_enabled", {
-          source: "explore",
-          metadata: { durationMinutes: 60 }
-        });
+          });
+          localStorage.setItem(ON_TRACK_KEY, JSON.stringify(session));
+          sessionStorage.removeItem(ON_TRACK_NOTIFIED_KEY);
+          setOnTrackNotifiedIds([]);
+          setOnTrackSession(session);
+          setShowOnTrackSheet(false);
+          setShowOnTrackInstallSheet(false);
+          trackAnalyticsEvent("on_track_enabled", {
+            source: "explore",
+            metadata: { durationMinutes: 60 }
+          });
+        } catch (_error) {
+          setOnTrackError("Não foi possível ativar o Tô na Pista agora. Tente novamente em instantes.");
+        }
       },
       () => {
-        setOnTrackError("NÃ£o conseguimos acessar sua localizaÃ§Ã£o agora. VocÃª pode tentar novamente pelo navegador.");
+        setOnTrackError("Não conseguimos acessar sua localização agora. Você pode tentar novamente pelo navegador.");
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
     );
@@ -370,6 +458,7 @@ export default function ExplorePage() {
 
   const handleOnTrackClick = () => {
     if (onTrackActive) {
+      deactivateToNaPistaSession(onTrackSession?.id).catch(() => null);
       localStorage.removeItem(ON_TRACK_KEY);
       setOnTrackSession(null);
       setOnTrackError("");
@@ -441,10 +530,10 @@ export default function ExplorePage() {
           className={`explore-top-pill on-track-chip ${onTrackActive ? "active" : ""}`}
           type="button"
           onClick={handleOnTrackClick}
-          title={onTrackActive ? "Desligar To na Pista" : "Ativar To na Pista por 1 hora"}
+          title={onTrackActive ? "Desligar Tô na Pista" : "Ativar Tô na Pista por 1 hora"}
         >
           <span className="on-track-dot" />
-          To na Pista
+          Tô na Pista
         </button>
       </div>
 
@@ -590,24 +679,24 @@ export default function ExplorePage() {
         </ExploreSheet>
       ) : null}
       {showOnTrackInstallSheet ? (
-        <ExploreSheet title="To na Pista" onClose={() => setShowOnTrackInstallSheet(false)}>
+        <ExploreSheet title="Tô na Pista" onClose={() => setShowOnTrackInstallSheet(false)}>
           <div className="on-track-copy">
             <p><strong>Para receber avisos mesmo com o app fechado, instale o 77Gira na tela inicial.</strong></p>
-            <p>No Android, use o botao de instalar do navegador. No iPhone, toque em compartilhar e depois em "Adicionar a Tela de Inicio".</p>
-            <p>Enquanto isso, voce pode testar a recomendacao por localizacao nesta sessao.</p>
+            <p>No Android, use o botão de instalar do navegador. No iPhone, toque em compartilhar e depois em "Adicionar à Tela de Início".</p>
+            <p>Enquanto isso, você pode testar a recomendação por localização nesta sessão.</p>
           </div>
           {onTrackError ? <p className="meta-line on-track-error">{onTrackError}</p> : null}
           <div className="explore-sheet-actions on-track-actions">
-            <button className="chip" type="button" onClick={() => setShowOnTrackInstallSheet(false)}>Agora nao</button>
+            <button className="chip" type="button" onClick={() => setShowOnTrackInstallSheet(false)}>Agora não</button>
             <button className="chip active" type="button" onClick={requestOnTrack}>Testar por 1 hora</button>
           </div>
         </ExploreSheet>
       ) : null}
       {showOnTrackSheet ? (
-        <ExploreSheet title="To na Pista" onClose={() => setShowOnTrackSheet(false)}>
+        <ExploreSheet title="Tô na Pista" onClose={() => setShowOnTrackSheet(false)}>
           <div className="on-track-copy">
-            <p><strong>Ta na rua? O 77Gira pode te ajudar a encontrar um samba bom por perto.</strong></p>
-            <p>Durante 1 hora, usamos sua localizacao apenas para sugerir ate 3 sambas proximos.</p>
+            <p><strong>Tá na rua? O 77Gira pode te ajudar a encontrar um samba bom por perto.</strong></p>
+            <p>Durante 1 hora, usamos sua localização apenas para sugerir até 2 sambas próximos.</p>
             <p>Sem spam. Sem te seguir depois. Quando der o tempo, a pista fecha sozinha.</p>
           </div>
           {onTrackError ? <p className="meta-line on-track-error">{onTrackError}</p> : null}
@@ -618,31 +707,67 @@ export default function ExplorePage() {
         </ExploreSheet>
       ) : null}
       {hasTimeFilter ? <p className="meta-line explore-time-filter-active">Filtro ativo: {activeTimeFilterLabel}</p> : null}
-      {onTrackActive ? (
-        <section className="on-track-panel">
-          <div className="on-track-panel-head">
-            <div>
-              <p className="on-track-kicker">To na Pista</p>
-              <h3>Sambas bons para partir agora</h3>
-            </div>
-            <button type="button" className="chip on-track-stop" onClick={handleOnTrackClick}>Desligar</button>
+      {onTrackActive && onTrackSuggestion && dismissedOnTrackSuggestionId !== onTrackSuggestion.nextEvent.id ? (
+        <section className="on-track-strip">
+          <Link
+            to={`/events/${onTrackSuggestion.nextEvent.id}`}
+            className="on-track-strip-copy"
+            onClick={() => {
+              trackAnalyticsEvent("on_track_suggestion_opened", {
+                source: "explore",
+                eventId: onTrackSuggestion.nextEvent.id,
+                venueId: onTrackSuggestion.venue.id
+              });
+            }}
+          >
+            <strong>Tô na Pista sugeriu:</strong>
+            <span>
+              {onTrackSuggestion.nextEvent.title} no {onTrackSuggestion.venue.name} - {onTrackSuggestion.isLiveNow ? "Tá rolando" : `Começa às ${formatHour(onTrackSuggestion.nextEvent.startsAt)}`}
+            </span>
+          </Link>
+          <div className="on-track-strip-actions">
+            <a
+              href={buildGoogleMapsLink(onTrackSuggestion.venue)}
+              target="_blank"
+              rel="noreferrer"
+              className="route-icon-btn on-track-route-btn"
+              title="Maps"
+              onClick={() => trackAnalyticsEvent("route_click", { source: "on_track_strip", routeApp: "maps", venueId: onTrackSuggestion.venue.id, eventId: onTrackSuggestion.nextEvent.id })}
+            >
+              <img src={mapsIcon} alt="" className="route-icon-img" />
+            </a>
+            <a
+              href={buildWazeLink(onTrackSuggestion.venue)}
+              target="_blank"
+              rel="noreferrer"
+              className="route-icon-btn on-track-route-btn"
+              title="Waze"
+              onClick={() => trackAnalyticsEvent("route_click", { source: "on_track_strip", routeApp: "waze", venueId: onTrackSuggestion.venue.id, eventId: onTrackSuggestion.nextEvent.id })}
+            >
+              <img src={wazeIcon} alt="" className="route-icon-img route-icon-img-waze" />
+            </a>
+            <a
+              href={buildUberLink(onTrackSuggestion.venue)}
+              target="_blank"
+              rel="noreferrer"
+              className="route-icon-btn on-track-route-btn"
+              title="Uber"
+              onClick={() => trackAnalyticsEvent("route_click", { source: "on_track_strip", routeApp: "uber", venueId: onTrackSuggestion.venue.id, eventId: onTrackSuggestion.nextEvent.id })}
+            >
+              <img src={uberIcon} alt="" className="route-icon-img" />
+            </a>
+            <button
+              type="button"
+              className="on-track-strip-dismiss"
+              title="Dispensar sugestão"
+              onClick={() => {
+                sessionStorage.setItem(ON_TRACK_DISMISSED_KEY, onTrackSuggestion.nextEvent.id);
+                setDismissedOnTrackSuggestionId(onTrackSuggestion.nextEvent.id);
+              }}
+            >
+              <X size={14} />
+            </button>
           </div>
-          {onTrackRecommendations.length > 0 ? (
-            <div className="on-track-recommendations">
-              {onTrackRecommendations.map(({ venue, nextEvent, isLiveNow, distance }) => (
-                <Link key={`on-track-${nextEvent.id}`} to={`/events/${nextEvent.id}`} className="on-track-card">
-                  <span className={`on-track-status ${isLiveNow ? "live" : ""}`}>
-                    {isLiveNow ? "Ta rolando" : `Comeca as ${formatHour(nextEvent.startsAt)}`}
-                  </span>
-                  <strong>{nextEvent.title}</strong>
-                  <small>{venue.name} - {venue.region}</small>
-                  <small>{formatDistance(distance)}</small>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="meta-line on-track-empty">Ainda nao encontramos sambas proximos nesta janela. Continue de olho no Explorar.</p>
-          )}
         </section>
       ) : null}
       <AdSlotCard ad={adToRender} slot="explore_feed_large" />
@@ -812,4 +937,3 @@ export default function ExplorePage() {
     </section>
   );
 }
-

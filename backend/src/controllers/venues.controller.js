@@ -18,6 +18,11 @@ const optionalDateText = z.preprocess(
   z.string().optional().nullable()
 );
 
+const optionalCoordinate = (min, max) => z.preprocess(
+  (value) => value === "" || value === null || value === undefined ? null : Number(value),
+  z.number().min(min).max(max).optional().nullable()
+);
+
 const createVenueSchema = z.object({
   name: z.string().trim().min(3),
   goldPartner: z.boolean().optional().default(false),
@@ -29,6 +34,8 @@ const createVenueSchema = z.object({
   contactPhone: z.string().trim().min(8).optional(),
   instagramUrl: z.string().url().optional(),
   address: z.string().trim().min(5),
+  latitude: optionalCoordinate(-90, 90),
+  longitude: optionalCoordinate(-180, 180),
   neighborhood: z.string().trim().min(2),
   nickname: z.string().trim().max(120).optional(),
   grammarArticle: z.enum(["", "o", "a", "os", "as"]).optional(),
@@ -172,6 +179,8 @@ function mapVenuePayload(venue) {
     contactPhone: venue.contactPhone ?? "",
     instagramUrl: venue.instagramUrl ?? "",
     address: venue.address,
+    latitude: venue.latitude ?? null,
+    longitude: venue.longitude ?? null,
     neighborhood: venue.neighborhood,
     nickname: venue.nickname ?? "",
     grammarArticle: venue.grammarArticle ?? "",

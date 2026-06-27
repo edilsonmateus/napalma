@@ -48,6 +48,16 @@ import {
 import { getAudienceSummary, trackAudienceVisit } from "../controllers/audience.controller.js";
 import { getImpactSummary, trackAnalyticsEvent } from "../controllers/analytics.controller.js";
 import {
+  activateToNaPista,
+  deactivateToNaPista,
+  deliverToNaPistaSuggestion,
+  getPushStatus,
+  getToNaPistaStatus,
+  sendTestPush,
+  subscribePush,
+  unsubscribePush
+} from "../controllers/push.controller.js";
+import {
   createAcquisitionInteraction,
   createAcquisitionLead,
   deleteAcquisitionLead,
@@ -98,6 +108,12 @@ const analyticsTrackLimiter = createRateLimiter({
   max: 240,
   message: "Muitas interacoes no momento. Aguarde alguns segundos."
 });
+const pushLimiter = createRateLimiter({
+  keyPrefix: "push",
+  windowMs: 60_000,
+  max: 30,
+  message: "Muitas atualizacoes de notificacao no momento. Aguarde alguns segundos."
+});
 
 router.post("/auth/register", authLimiter, register);
 router.post("/auth/login", authLimiter, login);
@@ -108,6 +124,14 @@ router.post("/analytics/visit", trackAudienceVisit);
 router.post("/analytics/events", analyticsTrackLimiter, trackAnalyticsEvent);
 router.get("/analytics/audience-summary", requireAuth, requireRole(["admin", "producer", "venue_manager"]), getAudienceSummary);
 router.get("/analytics/impact-summary", requireAuth, requireRole(["admin", "producer", "venue_manager"]), getImpactSummary);
+router.post("/push/subscribe", pushLimiter, subscribePush);
+router.post("/push/unsubscribe", pushLimiter, unsubscribePush);
+router.get("/push/status", getPushStatus);
+router.post("/push/to-na-pista/activate", pushLimiter, activateToNaPista);
+router.post("/push/to-na-pista/deactivate", pushLimiter, deactivateToNaPista);
+router.get("/push/to-na-pista/status", pushLimiter, getToNaPistaStatus);
+router.post("/push/to-na-pista/notify", pushLimiter, deliverToNaPistaSuggestion);
+router.post("/push/test", requireAuth, requireRole(["admin"]), pushLimiter, sendTestPush);
 router.get("/acquisition/leads", ...canManageAcquisition, listAcquisitionLeads);
 router.post("/acquisition/leads", ...canManageAcquisition, createAcquisitionLead);
 router.patch("/acquisition/leads/:id", ...canManageAcquisition, updateAcquisitionLead);

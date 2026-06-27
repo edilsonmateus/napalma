@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma.js";
 import { env } from "../config/env.js";
 import crypto from "node:crypto";
 import { linkVisitorToUser } from "./audience.controller.js";
+import { linkPushSubscriptionsToUser } from "../services/push.service.js";
 
 const roleSchema = z.enum(["admin", "producer", "venue_manager", "attendee"]);
 
@@ -102,7 +103,10 @@ export async function register(req, res, next) {
 
     const accessToken = signAccessToken(user);
     const refreshToken = await issueRefreshToken(user.id);
-    await linkVisitorToUser(data.visitorId, user.id);
+    await Promise.all([
+      linkVisitorToUser(data.visitorId, user.id),
+      linkPushSubscriptionsToUser(data.visitorId, user.id)
+    ]);
     res.status(201).json({ accessToken, refreshToken, user: sanitizeUser(user) });
   } catch (error) {
     next(error);
@@ -132,7 +136,10 @@ export async function login(req, res, next) {
 
     const accessToken = signAccessToken(user);
     const refreshToken = await issueRefreshToken(user.id);
-    await linkVisitorToUser(data.visitorId, user.id);
+    await Promise.all([
+      linkVisitorToUser(data.visitorId, user.id),
+      linkPushSubscriptionsToUser(data.visitorId, user.id)
+    ]);
     res.json({ accessToken, refreshToken, user: sanitizeUser(user) });
   } catch (error) {
     next(error);
