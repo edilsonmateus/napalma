@@ -1665,11 +1665,24 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 
 .explore-top-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
   align-items: center;
   gap: 10px;
   margin: 0 0 14px;
+}
+
+.explore-filter-count {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 10px;
+  line-height: 1;
 }
 
 .explore-top-pill,
@@ -5710,15 +5723,34 @@ button.venue-card {
   }
 
   .explore-top-actions {
-    gap: 8px;
+    width: 100%;
+    gap: 4px;
     justify-content: center;
   }
 
   .explore-top-pill,
   .explore-top-icon {
-    min-height: 38px;
-    font-size: 13px;
-    padding: 8px 12px;
+    min-height: 34px;
+    font-size: 12px;
+    padding: 6px 8px;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .explore-top-pill svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .explore-top-actions > .explore-top-pill {
+    flex: 0 0 auto;
+  }
+
+  .explore-filter-count {
+    min-width: 15px;
+    height: 15px;
+    padding: 0 4px;
+    font-size: 9px;
   }
 
   .explore-top-icon {
@@ -5909,6 +5941,16 @@ button.venue-card {
   .nav-item svg {
     width: 17px;
     height: 17px;
+  }
+}
+
+@media (max-width: 420px) {
+  .explore-live-count {
+    display: none;
+  }
+
+  .explore-top-actions > .explore-top-pill:nth-child(2) svg {
+    display: none;
   }
 }
 

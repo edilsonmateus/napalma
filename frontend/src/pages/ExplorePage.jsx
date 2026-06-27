@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarClock, CalendarDays, Filter, MapPin, X } from "lucide-react";
+import { CalendarClock, Filter, MapPin, X } from "lucide-react";
 import { useAdDeliveryQuery, useEventsQuery, useRegionsQuery, useVenuesQuery } from "../hooks/useEventsQuery";
 import AdSlotCard from "../components/ads/AdSlotCard";
 import VerifiedBadge from "../components/common/VerifiedBadge";
@@ -180,7 +180,6 @@ function LiveProgressBar({ event }) {
 
 export default function ExplorePage() {
   const [prefs, setPrefs] = useState(loadPrefs);
-  const [showDateHourFilter, setShowDateHourFilter] = useState(false);
   const [showCitySheet, setShowCitySheet] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [showOnTrackSheet, setShowOnTrackSheet] = useState(false);
@@ -266,8 +265,8 @@ export default function ExplorePage() {
       }
       const isLiveNow = Boolean(event.isLiveNow) || (time <= now && endTime >= now);
       if (liveOnly && !isLiveNow) continue;
-      if (timeScope === "hoje" && !isSameDay(eventDate, new Date())) continue;
-      if (timeScope === "semana") {
+      if (!filterDate && timeScope === "hoje" && !isSameDay(eventDate, new Date())) continue;
+      if (!filterDate && timeScope === "semana") {
         const weekLimit = now + (7 * 24 * 60 * 60 * 1000);
         if (time > weekLimit) continue;
       }
@@ -321,7 +320,14 @@ export default function ExplorePage() {
   }, [eventRows, onTrackActive, onTrackLocation]);
   const onTrackSuggestion = onTrackRecommendations[0] || null;
   const scopeLabel = timeScope === "hoje" ? "Hoje" : "Semana";
-  const hasRefinedFilters = query.trim() || region !== "Todas" || liveOnly || hasTimeFilter || timeScope !== "semana";
+  const activeFilterCount = [
+    Boolean(query.trim()),
+    region !== "Todas",
+    Boolean(filterDate),
+    Boolean(filterHour),
+    timeScope !== "semana"
+  ].filter(Boolean).length;
+  const cityShortLabel = CITY_OPTIONS.find((item) => item.label === city)?.state || city;
   const grouped = useMemo(() => {
     const rows = eventRows.slice(0, limit);
 
@@ -491,24 +497,16 @@ export default function ExplorePage() {
       <div className="explore-top-actions">
         <button className="explore-top-pill" type="button" onClick={() => setShowCitySheet(true)}>
           <MapPin size={16} />
-          <span>{city}</span>
+          <span>{cityShortLabel}</span>
         </button>
         <button
-          className={`explore-top-icon ${hasTimeFilter ? "active" : ""}`}
-          onClick={() => setShowDateHourFilter(true)}
-          type="button"
-          title="Filtrar por dia e hora"
-          aria-label="Filtrar por dia e hora"
-        >
-          <CalendarDays size={18} />
-        </button>
-        <button
-          className={`explore-top-pill ${hasRefinedFilters ? "active" : ""}`}
+          className={`explore-top-pill ${activeFilterCount > 0 ? "active" : ""}`}
           type="button"
           onClick={() => setShowFilterSheet(true)}
         >
           <Filter size={16} />
           <span>Filtros</span>
+          {activeFilterCount > 0 ? <span className="explore-filter-count">{activeFilterCount}</span> : null}
         </button>
         <button
           className={`explore-top-pill live-filter-chip ${liveEventsCount > 0 ? "has-live" : "no-live"} ${liveOnly ? "active" : ""}`}
@@ -524,7 +522,8 @@ export default function ExplorePage() {
           title={liveEventsCount > 0 ? "Mostrar apenas eventos ao vivo" : "Nenhum evento ao vivo agora"}
         >
           <span className="live-chip-dot" />
-          Ao vivo ({liveEventsCount})
+          <span>Ao vivo</span>
+          <span className="explore-live-count">({liveEventsCount})</span>
         </button>
         <button
           className={`explore-top-pill on-track-chip ${onTrackActive ? "active" : ""}`}
@@ -537,45 +536,6 @@ export default function ExplorePage() {
         </button>
       </div>
 
-      {showDateHourFilter ? (
-        <ExploreSheet title="Data e hora" onClose={() => setShowDateHourFilter(false)}>
-          <p className="meta-line">Escolha uma data, uma hora cheia ou combine os dois.</p>
-          <div className="explore-sheet-grid">
-            <input
-              className="search-input"
-              type="date"
-              value={filterDate}
-              onChange={(e) => {
-                setPrefs((prev) => ({ ...prev, filterDate: e.target.value, limit: 8 }));
-                trackAnalyticsEvent("date_filter", {
-                  source: "explore",
-                  metadata: { filterDate: e.target.value }
-                });
-              }}
-            />
-            <select
-              className="search-input"
-              value={filterHour}
-              onChange={(e) => {
-                setPrefs((prev) => ({ ...prev, filterHour: e.target.value, limit: 8 }));
-                trackAnalyticsEvent("hour_filter", {
-                  source: "explore",
-                  metadata: { filterHour: e.target.value }
-                });
-              }}
-            >
-              <option value="">Qualquer hora</option>
-              {HOUR_OPTIONS.map((hour) => (
-                <option key={hour} value={hour}>{hour}</option>
-              ))}
-            </select>
-          </div>
-          <div className="explore-sheet-actions">
-            <button className="chip" onClick={() => setPrefs((prev) => ({ ...prev, filterDate: "", filterHour: "", limit: 8 }))}>Limpar data</button>
-            <button className="chip active" onClick={() => setShowDateHourFilter(false)}>Aplicar</button>
-          </div>
-        </ExploreSheet>
-      ) : null}
       {showCitySheet ? (
         <ExploreSheet title="Escolha a praça" onClose={() => setShowCitySheet(false)}>
           <input className="search-input" value="" readOnly placeholder="Procurar uma cidade" />
@@ -641,6 +601,40 @@ export default function ExplorePage() {
                   {scope === "hoje" ? "Hoje" : "Semana"}
                 </button>
               ))}
+            </div>
+          </div>
+          <div className="explore-sheet-section">
+            <h4>Data e hora</h4>
+            <p className="meta-line">Escolha uma data, uma hora cheia ou combine os dois.</p>
+            <div className="explore-sheet-grid">
+              <input
+                className="search-input"
+                type="date"
+                value={filterDate}
+                onChange={(e) => {
+                  setPrefs((prev) => ({ ...prev, filterDate: e.target.value, limit: 8 }));
+                  trackAnalyticsEvent("date_filter", {
+                    source: "explore_filter_sheet",
+                    metadata: { filterDate: e.target.value }
+                  });
+                }}
+              />
+              <select
+                className="search-input"
+                value={filterHour}
+                onChange={(e) => {
+                  setPrefs((prev) => ({ ...prev, filterHour: e.target.value, limit: 8 }));
+                  trackAnalyticsEvent("hour_filter", {
+                    source: "explore_filter_sheet",
+                    metadata: { filterHour: e.target.value }
+                  });
+                }}
+              >
+                <option value="">Qualquer hora</option>
+                {HOUR_OPTIONS.map((hour) => (
+                  <option key={hour} value={hour}>{hour}</option>
+                ))}
+              </select>
             </div>
           </div>
           <div className="explore-sheet-section">
