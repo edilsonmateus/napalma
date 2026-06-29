@@ -40,6 +40,42 @@ enum AdEventType {
   click
 }
 
+enum AdvertiserAccountType {
+  unclassified
+  venue
+  producer
+  artist
+  brand
+  agency
+  group
+  internal
+}
+
+enum AdvertiserAccountStatus {
+  draft
+  pending_review
+  active
+  suspended
+  rejected
+  archived
+}
+
+enum AdvertiserMembershipRole {
+  owner
+  admin
+  campaign_manager
+  analyst
+  billing_manager
+  viewer
+}
+
+enum AdvertiserMembershipStatus {
+  invited
+  active
+  suspended
+  revoked
+}
+
 enum ClaimTargetType {
   venue
   artist
@@ -85,6 +121,10 @@ model User {
   createdRegions Region[] @relation("RegionCreatedBy")
   acquisitionLeads AcquisitionLead[] @relation("AcquisitionLeadCreatedBy")
   acquisitionInteractions AcquisitionInteraction[] @relation("AcquisitionInteractionCreatedBy")
+  advertiserAccountsCreated AdvertiserAccount[] @relation("AdvertiserAccountCreatedBy")
+  advertiserAccountsApproved AdvertiserAccount[] @relation("AdvertiserAccountApprovedBy")
+  advertiserMemberships AdvertiserMembership[] @relation("AdvertiserMembershipUser")
+  advertiserMembershipInvites AdvertiserMembership[] @relation("AdvertiserMembershipInvitedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -256,13 +296,66 @@ model AdCampaign {
   isEnabled     Boolean          @default(true)
   targeting     Json?
   createdByUserId String?
+  advertiserAccountId String?
 
   createdBy User? @relation(fields: [createdByUserId], references: [id])
+  advertiserAccount AdvertiserAccount? @relation(fields: [advertiserAccountId], references: [id], onDelete: SetNull)
   creatives AdCreative[]
   events    AdEventLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([advertiserAccountId, status])
+}
+
+model AdvertiserAccount {
+  id               String                  @id @default(uuid())
+  name             String
+  type             AdvertiserAccountType   @default(unclassified)
+  status           AdvertiserAccountStatus @default(draft)
+  source           String                  @default("manual")
+  legacyKey        String?                 @unique
+  legalName        String?
+  documentNumber   String?
+  contactEmail     String?
+  contactPhone     String?
+  notes            String?
+  createdByUserId  String?
+  approvedByUserId String?
+  approvedAt       DateTime?
+
+  createdBy   User? @relation("AdvertiserAccountCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  approvedBy  User? @relation("AdvertiserAccountApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  memberships AdvertiserMembership[]
+  campaigns   AdCampaign[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, type])
+  @@index([name])
+}
+
+model AdvertiserMembership {
+  id              String                       @id @default(uuid())
+  accountId       String
+  userId          String
+  role            AdvertiserMembershipRole     @default(viewer)
+  status          AdvertiserMembershipStatus   @default(invited)
+  invitedByUserId String?
+  acceptedAt      DateTime?
+
+  account   AdvertiserAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  user      User              @relation("AdvertiserMembershipUser", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy User?             @relation("AdvertiserMembershipInvitedBy", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([accountId, userId])
+  @@index([userId, status])
+  @@index([accountId, status])
 }
 
 model AdCreative {

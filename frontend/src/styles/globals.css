@@ -649,6 +649,107 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   gap: 10px;
 }
 
+.advertiser-readonly-section {
+  display: grid;
+  gap: 12px;
+}
+
+.advertiser-readonly-layout {
+  display: grid;
+  gap: 10px;
+}
+
+.advertiser-readonly-list {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.advertiser-readonly-card {
+  width: 100%;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 3px;
+  background: #14212d;
+  color: #c8d5df;
+  text-align: left;
+  cursor: pointer;
+}
+
+.advertiser-readonly-card:hover,
+.advertiser-readonly-card.active {
+  background: #24384a;
+}
+
+.advertiser-readonly-card span:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.advertiser-readonly-card small,
+.advertiser-readonly-counts {
+  color: #8fa5b7;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.advertiser-readonly-counts {
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.advertiser-readonly-detail {
+  min-height: 180px;
+}
+
+.advertiser-readonly-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.advertiser-readonly-title h3,
+.advertiser-readonly-detail h4 {
+  margin: 0 0 6px;
+}
+
+.advertiser-readonly-detail h4 {
+  margin-top: 14px;
+  color: #aebfcd;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.advertiser-readonly-data {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.advertiser-readonly-data div {
+  min-width: 0;
+}
+
+.advertiser-readonly-data dt {
+  color: #8097aa;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.advertiser-readonly-data dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+  color: #c8d5df;
+  font-size: 12px;
+}
+
 .admin-content-divider {
   height: 1px;
   width: 100%;
@@ -6103,6 +6204,10 @@ button.venue-card {
   .splash-logo-wrap {
     display: none;
   }
+
+  .screen-ads-hard {
+    padding-bottom: 40px;
+  }
 }
 
 @media (min-width: 900px) {
@@ -6141,6 +6246,10 @@ button.venue-card {
   }
   .ads-layout {
     grid-template-columns: 220px minmax(0, 1fr);
+    align-items: start;
+  }
+  .advertiser-readonly-layout {
+    grid-template-columns: minmax(230px, 0.8fr) minmax(0, 1.4fr);
     align-items: start;
   }
   .ads-sidebar {

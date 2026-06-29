@@ -12,6 +12,8 @@ import {
 } from "recharts";
 import {
   useAdCampaignsQuery,
+  useAdvertiserAccountQuery,
+  useAdvertiserAccountsQuery,
   useAdsActivityQuery,
   useAdDeliveryQuery,
   useAdsReportQuery,
@@ -21,6 +23,9 @@ import {
   useUpdateAdCreativeMutation
 } from "../hooks/useEventsQuery";
 import { useAuthStore } from "../store/authStore";
+
+const ADVERTISER_ACCOUNTS_ENABLED =
+  String(import.meta.env.VITE_ADS_ADVERTISER_ACCOUNTS_ENABLED || "").toLowerCase() === "true";
 
 const SLOT_OPTIONS = [
   "explore_feed_large",
@@ -68,10 +73,21 @@ export default function AdsAdminPage() {
   const [simulatorSlot, setSimulatorSlot] = useState("explore_feed_large");
   const [campaignQuery, setCampaignQuery] = useState("");
   const [campaignStatusFilter, setCampaignStatusFilter] = useState("all");
+  const [advertiserQuery, setAdvertiserQuery] = useState("");
+  const [selectedAdvertiserId, setSelectedAdvertiserId] = useState(null);
   const { data: campaigns = [], isLoading } = useAdCampaignsQuery(true);
   const { data: report, isLoading: reportLoading } = useAdsReportQuery(reportDays, true);
   const { data: activity = [], isLoading: activityLoading } = useAdsActivityQuery(25, true);
   const { data: simulatedDelivery, isLoading: simLoading } = useAdDeliveryQuery(simulatorSlot, true);
+  const {
+    data: advertiserAccounts = [],
+    isLoading: advertiserAccountsLoading,
+    isError: advertiserAccountsError
+  } = useAdvertiserAccountsQuery({ limit: 100 }, ADVERTISER_ACCOUNTS_ENABLED);
+  const {
+    data: selectedAdvertiser,
+    isLoading: selectedAdvertiserLoading
+  } = useAdvertiserAccountQuery(selectedAdvertiserId, ADVERTISER_ACCOUNTS_ENABLED);
   const createCampaign = useCreateAdCampaignMutation();
   const updateCampaign = useUpdateAdCampaignMutation();
   const createCreative = useCreateAdCreativeMutation();
@@ -95,6 +111,15 @@ export default function AdsAdminPage() {
       return statusOk && queryOk;
     });
   }, [orderedCampaigns, campaignQuery, campaignStatusFilter]);
+  const filteredAdvertiserAccounts = useMemo(() => {
+    const query = advertiserQuery.trim().toLowerCase();
+    if (!query) return advertiserAccounts;
+    return advertiserAccounts.filter((item) =>
+      `${item.name} ${item.legalName || ""} ${item.contactEmail || ""}`
+        .toLowerCase()
+        .includes(query)
+    );
+  }, [advertiserAccounts, advertiserQuery]);
   const expiredActiveCampaigns = useMemo(() => {
     const now = Date.now();
     return orderedCampaigns.filter((item) => item.status === "active" && item.endsAt && new Date(item.endsAt).getTime() < now);
@@ -367,12 +392,108 @@ export default function AdsAdminPage() {
             ["creatives", "Criativos por Slot"],
             ["health", "Saúde e Alertas"],
             ["activity", "Atividade"],
+            ...(ADVERTISER_ACCOUNTS_ENABLED ? [["advertisers", "Anunciantes"]] : []),
             ["reports", "Relatórios"]
           ].map(([id, label]) => (
             <button key={id} className={`chip ${adsSection === id ? "active" : ""}`} onClick={() => setAdsSection(id)}>{label}</button>
           ))}
         </aside>
         <div className="ads-content">
+
+      {adsSection === "advertisers" && ADVERTISER_ACCOUNTS_ENABLED ? (
+      <section className="advertiser-readonly-section">
+        <div className="admin-list-header">
+          <div>
+            <strong>Contas anunciantes ({filteredAdvertiserAccounts.length})</strong>
+            <p className="meta-line">Consulta administrativa em modo somente leitura.</p>
+          </div>
+          <input
+            className="search-input"
+            placeholder="Buscar anunciante..."
+            value={advertiserQuery}
+            onChange={(event) => setAdvertiserQuery(event.target.value)}
+          />
+        </div>
+
+        {advertiserAccountsLoading ? <p className="empty">Carregando anunciantes...</p> : null}
+        {advertiserAccountsError ? (
+          <p className="empty empty-highlight">Nao foi possivel carregar as contas anunciantes.</p>
+        ) : null}
+        {!advertiserAccountsLoading && !advertiserAccountsError && advertiserAccounts.length === 0 ? (
+          <div className="empty">
+            <strong>Nenhuma conta anunciante cadastrada.</strong>
+            <p className="meta-line">As campanhas legadas continuam funcionando normalmente.</p>
+          </div>
+        ) : null}
+
+        <div className="advertiser-readonly-layout">
+          <div className="advertiser-readonly-list">
+            {filteredAdvertiserAccounts.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`advertiser-readonly-card ${selectedAdvertiserId === item.id ? "active" : ""}`}
+                onClick={() => setSelectedAdvertiserId(item.id)}
+              >
+                <span>
+                  <strong>{item.name}</strong>
+                  <small>{item.type} · {item.status}</small>
+                </span>
+                <span className="advertiser-readonly-counts">
+                  {item.counts?.campaigns || 0} campanhas<br />
+                  {item.counts?.memberships || 0} membros
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <article className="clean-card advertiser-readonly-detail">
+            {!selectedAdvertiserId ? (
+              <p className="meta-line">Selecione uma conta para consultar seus detalhes.</p>
+            ) : null}
+            {selectedAdvertiserLoading ? <p className="meta-line">Carregando detalhes...</p> : null}
+            {selectedAdvertiser ? (
+              <>
+                <div className="advertiser-readonly-title">
+                  <div>
+                    <h3>{selectedAdvertiser.name}</h3>
+                    <p className="meta-line">{selectedAdvertiser.legalName || "Sem razao social informada"}</p>
+                  </div>
+                  <span className={`status-badge status-${selectedAdvertiser.status}`}>
+                    {selectedAdvertiser.status}
+                  </span>
+                </div>
+                <dl className="advertiser-readonly-data">
+                  <div><dt>Tipo</dt><dd>{selectedAdvertiser.type}</dd></div>
+                  <div><dt>Origem</dt><dd>{selectedAdvertiser.source}</dd></div>
+                  <div><dt>E-mail</dt><dd>{selectedAdvertiser.contactEmail || "Nao informado"}</dd></div>
+                  <div><dt>Telefone</dt><dd>{selectedAdvertiser.contactPhone || "Nao informado"}</dd></div>
+                </dl>
+                <div className="admin-content-divider" />
+                <h4>Campanhas ({selectedAdvertiser.campaigns?.length || 0})</h4>
+                {(selectedAdvertiser.campaigns || []).map((campaign) => (
+                  <p key={campaign.id} className="meta-line">
+                    {campaign.name} · {campaign.status} · legado: {campaign.advertiser}
+                  </p>
+                ))}
+                {selectedAdvertiser.campaigns?.length === 0 ? (
+                  <p className="meta-line">Nenhuma campanha vinculada.</p>
+                ) : null}
+                <h4>Membros ({selectedAdvertiser.memberships?.length || 0})</h4>
+                {(selectedAdvertiser.memberships || []).map((membership) => (
+                  <p key={membership.id} className="meta-line">
+                    {membership.user?.email || membership.userId} · {membership.role} · {membership.status}
+                  </p>
+                ))}
+                {selectedAdvertiser.memberships?.length === 0 ? (
+                  <p className="meta-line">Nenhum membro vinculado.</p>
+                ) : null}
+              </>
+            ) : null}
+          </article>
+        </div>
+      </section>
+      ) : null}
 
       {(adsSection === "overview" || adsSection === "reports") ? (
       <>

@@ -1,5 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  getAdvertiserAccount,
+  getAdvertiserAccounts
+} from "../services/advertiserAccounts.service";
+import {
   createArtist,
   createAdCampaign,
   createClaim,
@@ -122,6 +126,22 @@ export function useArtistProfileQuery(artistId) {
 
 export function useAdCampaignsQuery(enabled = true) {
   return useQuery({ queryKey: ["ad-campaigns"], queryFn: getAdCampaigns, enabled });
+}
+
+export function useAdvertiserAccountsQuery(params = {}, enabled = true) {
+  return useQuery({
+    queryKey: ["advertiser-accounts", params],
+    queryFn: () => getAdvertiserAccounts(params),
+    enabled
+  });
+}
+
+export function useAdvertiserAccountQuery(id, enabled = true) {
+  return useQuery({
+    queryKey: ["advertiser-account", id],
+    queryFn: () => getAdvertiserAccount(id),
+    enabled: Boolean(id) && enabled
+  });
 }
 
 export function useAdDeliveryQuery(slot, enabled = true) {

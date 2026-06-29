@@ -15,6 +15,7 @@
     "prisma:seed:achievements": "node prisma/seed-achievements.js",
     "prisma:normalize:claims": "node prisma/normalize-claims-fixture.js",
     "prisma:backfill:event-artists": "node prisma/backfill-event-artists.js",
+    "prisma:backfill:advertisers:dry-run": "node prisma/backfill-advertiser-accounts-dry-run.js",
     "admin:bootstrap": "node prisma/bootstrap-admin.js",
     "push:vapid:generate": "web-push generate-vapid-keys"
   },

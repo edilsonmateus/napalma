@@ -68,6 +68,18 @@ import { createClaimRequest, decideClaim, listClaims, listMyClaims } from "../co
 import { uploadImage } from "../controllers/uploads.controller.js";
 import { imageUpload } from "../middlewares/upload.js";
 import { createRateLimiter } from "../middlewares/rateLimit.js";
+import { requireFeatureFlag } from "../middlewares/featureFlags.js";
+import {
+  createAdvertiserAccount,
+  createAdvertiserMembership,
+  getAdvertiserAccount,
+  listAdvertiserAccounts,
+  listAdvertiserMemberships,
+  revokeAdvertiserMembership,
+  setCampaignAdvertiserAccount,
+  updateAdvertiserAccount,
+  updateAdvertiserMembership
+} from "../controllers/advertiserAccounts.controller.js";
 
 export const router = Router();
 
@@ -76,6 +88,10 @@ const canManageCatalog = [requireAuth, requireRole(["admin", "producer"])];
 const canManageHouseOps = [requireAuth, requireRole(["admin", "venue_manager"])];
 const canReviewClaims = [requireAuth, requireRole(["admin"])];
 const canManageAds = [requireAuth, requireRole(["admin"])];
+const canManageAdvertiserAccounts = [
+  ...canManageAds,
+  requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED")
+];
 const canManageAcquisition = [requireAuth, requireRole(["admin"])];
 const canUploadImages = [requireAuth, requireRole(["admin", "producer", "venue_manager"])];
 const authLimiter = createRateLimiter({
@@ -201,3 +217,12 @@ router.post("/ads/campaigns", ...canManageAds, createAdCampaign);
 router.patch("/ads/campaigns/:id", ...canManageAds, updateAdCampaign);
 router.post("/ads/campaigns/:campaignId/creatives", ...canManageAds, createAdCreative);
 router.patch("/ads/creatives/:id", ...canManageAds, updateAdCreative);
+router.get("/ads/advertiser-accounts", ...canManageAdvertiserAccounts, listAdvertiserAccounts);
+router.get("/ads/advertiser-accounts/:id", ...canManageAdvertiserAccounts, getAdvertiserAccount);
+router.post("/ads/advertiser-accounts", ...canManageAdvertiserAccounts, createAdvertiserAccount);
+router.patch("/ads/advertiser-accounts/:id", ...canManageAdvertiserAccounts, updateAdvertiserAccount);
+router.get("/ads/advertiser-accounts/:accountId/memberships", ...canManageAdvertiserAccounts, listAdvertiserMemberships);
+router.post("/ads/advertiser-accounts/:accountId/memberships", ...canManageAdvertiserAccounts, createAdvertiserMembership);
+router.patch("/ads/advertiser-memberships/:id", ...canManageAdvertiserAccounts, updateAdvertiserMembership);
+router.delete("/ads/advertiser-memberships/:id", ...canManageAdvertiserAccounts, revokeAdvertiserMembership);
+router.patch("/ads/campaigns/:id/advertiser-account", ...canManageAdvertiserAccounts, setCampaignAdvertiserAccount);
