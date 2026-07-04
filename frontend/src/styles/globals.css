@@ -649,6 +649,13 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   gap: 10px;
 }
 
+.ads-review-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 16px 0; }
+.ads-review-card textarea { width: 100%; min-height: 74px; margin: 10px 0; }
+.ads-review-image { width: 100%; max-height: 180px; object-fit: cover; border-radius: 10px; }
+.ads-review-history { margin: 12px 0 0; padding-left: 18px; color: var(--text-muted); font-size: .85rem; }
+.ads-review-drafts { margin-top: 18px; }
+.ads-review-draft-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border-soft); }
+
 .advertiser-readonly-section {
   display: grid;
   gap: 12px;

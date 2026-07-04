@@ -12,6 +12,8 @@ import {
 } from "recharts";
 import {
   useAdCampaignsQuery,
+  useAdReviewHistoryQuery,
+  useAdReviewQueueQuery,
   useAdPlacementsQuery,
   useAdvertiserAccountQuery,
   useAdvertiserAccountsQuery,
@@ -24,6 +26,8 @@ import {
   useCreateAdCreativeMutation,
   useRevokeAdvertiserMembershipMutation,
   useSetCampaignAdvertiserAccountMutation,
+  useSubmitAdReviewMutation,
+  useDecideAdReviewMutation,
   useUpdateAdCampaignMutation,
   useUpdateAdvertiserAccountMutation,
   useUpdateAdvertiserMembershipMutation,
@@ -38,6 +42,8 @@ const PLACEMENT_CATALOG_ENABLED =
   String(import.meta.env.VITE_ADS_PLACEMENT_CATALOG_ENABLED || "").toLowerCase() === "true";
 const R2_CREATIVE_UPLOAD_ENABLED =
   String(import.meta.env.VITE_ADS_R2_CREATIVE_UPLOAD_ENABLED || "").toLowerCase() === "true";
+const REVIEW_WORKFLOW_ENABLED =
+  String(import.meta.env.VITE_ADS_REVIEW_WORKFLOW_ENABLED || "").toLowerCase() === "true";
 
 const SLOT_OPTIONS = [
   "explore_feed_large",
@@ -108,7 +114,11 @@ export default function AdsAdminPage() {
   const [campaignStatusFilter, setCampaignStatusFilter] = useState("all");
   const [advertiserQuery, setAdvertiserQuery] = useState("");
   const [selectedAdvertiserId, setSelectedAdvertiserId] = useState(null);
+  const [selectedReview, setSelectedReview] = useState(null);
+  const [reviewReason, setReviewReason] = useState("");
   const { data: campaigns = [], isLoading } = useAdCampaignsQuery(true);
+  const { data: reviewQueue = { campaigns: [], creatives: [] }, isLoading: reviewQueueLoading } = useAdReviewQueueQuery(REVIEW_WORKFLOW_ENABLED);
+  const { data: reviewHistory = [] } = useAdReviewHistoryQuery(selectedReview?.entityType, selectedReview?.id, REVIEW_WORKFLOW_ENABLED && Boolean(selectedReview));
   const { data: report, isLoading: reportLoading } = useAdsReportQuery(reportDays, true);
   const { data: activity = [], isLoading: activityLoading } = useAdsActivityQuery(25, true);
   const { data: simulatedDelivery, isLoading: simLoading } = useAdDeliveryQuery(simulatorSlot, true);
@@ -137,6 +147,8 @@ export default function AdsAdminPage() {
   const updateAdvertiserMembership = useUpdateAdvertiserMembershipMutation();
   const revokeAdvertiserMembership = useRevokeAdvertiserMembershipMutation();
   const setCampaignAdvertiserAccount = useSetCampaignAdvertiserAccountMutation();
+  const submitReview = useSubmitAdReviewMutation();
+  const decideReview = useDecideAdReviewMutation();
 
   const [campaignForm, setCampaignForm] = useState(INITIAL_CAMPAIGN);
   const [creativeForm, setCreativeForm] = useState(INITIAL_CREATIVE);
@@ -147,6 +159,26 @@ export default function AdsAdminPage() {
   const [campaignToLinkId, setCampaignToLinkId] = useState("");
   const [message, setMessage] = useState("");
   const [confirmEndCampaign, setConfirmEndCampaign] = useState(null);
+
+  async function handleReviewDecision(item, decision) {
+    try {
+      await decideReview.mutateAsync({ entityType: item.entityType, id: item.id, decision, reason: reviewReason });
+      setMessage(decision === "approve" ? "Item aprovado." : "Item rejeitado.");
+      setReviewReason("");
+    } catch (error) {
+      setMessage(error?.response?.data?.message || "Nao foi possivel registrar a decisao.");
+    }
+  }
+
+  async function handleSubmitReview(entityType, id) {
+    try {
+      await submitReview.mutateAsync({ entityType, id });
+      setMessage("Item enviado para revisao.");
+      setAdsSection("reviews");
+    } catch (error) {
+      setMessage(error?.response?.data?.message || "Nao foi possivel enviar para revisao.");
+    }
+  }
 
   const orderedCampaigns = useMemo(
     () => [...campaigns].sort((a, b) => (b.priority || 0) - (a.priority || 0)),
@@ -597,6 +629,7 @@ export default function AdsAdminPage() {
             ["creatives", "Criativos por Slot"],
             ["health", "Saúde e Alertas"],
             ["activity", "Atividade"],
+            ...(REVIEW_WORKFLOW_ENABLED ? [["reviews", "Revisao"]] : []),
             ...(ADVERTISER_ACCOUNTS_ENABLED ? [["advertisers", "Anunciantes"]] : []),
             ...(PLACEMENT_CATALOG_ENABLED ? [["inventory", "Inventario"]] : []),
             ["reports", "Relatórios"]
@@ -605,6 +638,52 @@ export default function AdsAdminPage() {
           ))}
         </aside>
         <div className="ads-content">
+
+      {adsSection === "reviews" && REVIEW_WORKFLOW_ENABLED ? (
+      <section className="ads-review-section">
+        <div className="admin-list-header">
+          <div>
+            <strong>Fila de revisao ({reviewQueue.campaigns.length + reviewQueue.creatives.length})</strong>
+            <p className="meta-line">Campanhas e criativos aguardando decisao administrativa.</p>
+          </div>
+        </div>
+        {reviewQueueLoading ? <p className="empty">Carregando fila...</p> : null}
+        {!reviewQueueLoading && reviewQueue.campaigns.length + reviewQueue.creatives.length === 0 ? <p className="empty">Nenhum item aguardando revisao.</p> : null}
+        <div className="ads-review-grid">
+          {[
+            ...reviewQueue.campaigns.map((item) => ({ ...item, entityType: "campaign", label: item.name, detail: item.advertiser })),
+            ...reviewQueue.creatives.map((item) => ({ ...item, entityType: "creative", label: item.title || item.slot, detail: item.campaign?.name || "Criativo" }))
+          ].map((item) => (
+            <article key={`${item.entityType}-${item.id}`} className="clean-card ads-review-card">
+              <div className="advertiser-readonly-title">
+                <div><h3>{item.label}</h3><p className="meta-line">{item.entityType === "campaign" ? "Campanha" : "Criativo"} · {item.detail}</p></div>
+                <span className="status-badge status-pending_review">pendente</span>
+              </div>
+              {item.imageUrl ? <img className="ads-review-image" src={item.imageUrl} alt={item.altText || item.label} /> : null}
+              <p className="meta-line">Enviado em {item.submittedAt ? new Date(item.submittedAt).toLocaleString("pt-BR") : "agora"}</p>
+              <textarea placeholder="Motivo (obrigatorio para rejeitar)" value={selectedReview?.id === item.id ? reviewReason : ""} onFocus={() => setSelectedReview(item)} onChange={(event) => { setSelectedReview(item); setReviewReason(event.target.value); }} />
+              <div className="form-actions-inline">
+                <button type="button" className="chip active" disabled={decideReview.isPending} onClick={() => handleReviewDecision(item, "approve")}>Aprovar</button>
+                <button type="button" className="chip" disabled={decideReview.isPending || (selectedReview?.id === item.id && reviewReason.trim().length < 3)} onClick={() => handleReviewDecision(item, "reject")}>Rejeitar</button>
+                <button type="button" className="chip" onClick={() => setSelectedReview(item)}>Historico</button>
+              </div>
+              {selectedReview?.entityType === item.entityType && selectedReview?.id === item.id && reviewHistory.length ? (
+                <ul className="ads-review-history">{reviewHistory.map((entry) => <li key={entry.id}>{entry.action} · {new Date(entry.createdAt).toLocaleString("pt-BR")}{entry.reason ? ` · ${entry.reason}` : ""}</li>)}</ul>
+              ) : null}
+            </article>
+          ))}
+        </div>
+        <div className="clean-card ads-review-drafts">
+          <h3>Prontos para envio</h3>
+          {campaigns.filter((item) => ["draft", "rejected", "changes_requested"].includes(item.reviewStatus)).map((item) => (
+            <div key={item.id} className="ads-review-draft-row"><span><strong>{item.name}</strong> · campanha · {item.reviewStatus}</span><button type="button" className="chip" onClick={() => handleSubmitReview("campaign", item.id)}>Enviar</button></div>
+          ))}
+          {campaigns.flatMap((campaign) => campaign.creatives.map((item) => ({ ...item, campaignName: campaign.name }))).filter((item) => ["draft", "rejected", "changes_requested"].includes(item.reviewStatus)).map((item) => (
+            <div key={item.id} className="ads-review-draft-row"><span><strong>{item.title || item.slot}</strong> · {item.campaignName} · {item.reviewStatus}</span><button type="button" className="chip" onClick={() => handleSubmitReview("creative", item.id)}>Enviar</button></div>
+          ))}
+        </div>
+      </section>
+      ) : null}
 
       {adsSection === "inventory" && PLACEMENT_CATALOG_ENABLED ? (
       <section className="placement-catalog-section">

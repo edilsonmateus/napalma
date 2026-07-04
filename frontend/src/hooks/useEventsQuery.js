@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAdPlacements } from "../services/adPlacements.service";
 import { uploadAdCreativeAsset } from "../services/adCreativeAssets.service";
+import { decideAdReview, getAdReviewHistory, getAdReviewQueue, submitAdReview } from "../services/adReviews.service";
 import {
   createAdvertiserAccount,
   createAdvertiserMembership,
@@ -135,6 +136,26 @@ export function useArtistProfileQuery(artistId) {
 export function useAdCampaignsQuery(enabled = true) {
   return useQuery({ queryKey: ["ad-campaigns"], queryFn: getAdCampaigns, enabled });
 }
+
+export function useAdReviewQueueQuery(enabled = true) {
+  return useQuery({ queryKey: ["ad-review-queue"], queryFn: getAdReviewQueue, enabled });
+}
+
+export function useAdReviewHistoryQuery(entityType, id, enabled = true) {
+  return useQuery({ queryKey: ["ad-review-history", entityType, id], queryFn: () => getAdReviewHistory({ entityType, id }), enabled: enabled && Boolean(entityType && id) });
+}
+
+function reviewMutation(mutationFn) {
+  const queryClient = useQueryClient();
+  return useMutation({ mutationFn, onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["ad-review-queue"] });
+    queryClient.invalidateQueries({ queryKey: ["ad-campaigns"] });
+    queryClient.invalidateQueries({ queryKey: ["ad-review-history"] });
+  } });
+}
+
+export function useSubmitAdReviewMutation() { return reviewMutation(submitAdReview); }
+export function useDecideAdReviewMutation() { return reviewMutation(decideAdReview); }
 
 export function useAdvertiserAccountsQuery(params = {}, enabled = true) {
   return useQuery({
