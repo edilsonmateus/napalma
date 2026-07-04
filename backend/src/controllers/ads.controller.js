@@ -1,6 +1,7 @@
 import { AdSlot } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
+import { isFeatureEnabled } from "../middlewares/featureFlags.js";
 
 const slotEnum = z.nativeEnum(AdSlot);
 
@@ -71,6 +72,9 @@ function mapCampaign(item) {
     runInAllSlots: item.runInAllSlots,
     isEnabled: item.isEnabled,
     targeting: item.targeting,
+    reviewStatus: item.reviewStatus || null,
+    reviewNotes: item.reviewNotes || null,
+    requiresReviewAfterEdit: Boolean(item.requiresReviewAfterEdit),
     createdAt: item.createdAt,
     creatives: item.creatives.map((creative) => ({
       id: creative.id,
@@ -88,6 +92,9 @@ function mapCampaign(item) {
       fileSizeBytes: creative.fileSizeBytes,
       checksum: creative.checksum,
       assetVersion: creative.assetVersion
+      ,reviewStatus: creative.reviewStatus || null,
+      reviewNotes: creative.reviewNotes || null,
+      requiresReviewAfterEdit: Boolean(creative.requiresReviewAfterEdit)
     }))
   };
 }
@@ -110,12 +117,16 @@ export async function listAdCampaigns(_req, res, next) {
 export async function createAdCampaign(req, res, next) {
   try {
     const payload = createCampaignSchema.parse(req.body);
+    if (isFeatureEnabled("ADS_REVIEW_WORKFLOW_ENABLED") && payload.status === "active") {
+      return res.status(409).json({ error: "review_required", message: "Envie e aprove a campanha antes de ativa-la." });
+    }
     const item = await prisma.adCampaign.create({
       data: {
         ...payload,
         startsAt: payload.startsAt ? new Date(payload.startsAt) : null,
         endsAt: payload.endsAt ? new Date(payload.endsAt) : null,
         createdByUserId: req.user?.id || null
+        ,reviewStatus: isFeatureEnabled("ADS_REVIEW_WORKFLOW_ENABLED") ? "draft" : undefined
       },
       include: { creatives: true }
     });
@@ -129,15 +140,27 @@ export async function updateAdCampaign(req, res, next) {
   try {
     const { id } = idSchema.parse(req.params);
     const payload = updateCampaignSchema.parse(req.body);
+    const workflow = isFeatureEnabled("ADS_REVIEW_WORKFLOW_ENABLED");
+    const current = workflow ? await prisma.adCampaign.findUnique({ where: { id } }) : null;
+    if (workflow && payload.status === "active" && current?.reviewStatus && current.reviewStatus !== "approved") {
+      return res.status(409).json({ error: "review_required", message: "A campanha precisa estar aprovada antes da ativacao." });
+    }
+    const sensitive = ["advertiser", "name", "startsAt", "endsAt", "priority", "runInAllSlots", "targeting"].some((key) => Object.prototype.hasOwnProperty.call(payload, key));
+    const reopen = workflow && current?.reviewStatus === "approved" && sensitive;
     const item = await prisma.adCampaign.update({
       where: { id },
       data: {
         ...payload,
         startsAt: payload.startsAt === undefined ? undefined : payload.startsAt ? new Date(payload.startsAt) : null,
         endsAt: payload.endsAt === undefined ? undefined : payload.endsAt ? new Date(payload.endsAt) : null
+        ,reviewStatus: reopen ? "draft" : undefined,
+        approvedAt: reopen ? null : undefined,
+        reviewedByUserId: reopen ? null : undefined,
+        requiresReviewAfterEdit: reopen ? true : undefined
       },
       include: { creatives: true }
     });
+    if (reopen) await prisma.adReviewLog.create({ data: { entityType: "campaign", entityId: id, action: "reopen_after_edit", fromStatus: "approved", toStatus: "draft", actorUserId: req.user.id } });
     res.json({ item: mapCampaign(item) });
   } catch (error) {
     next(error);
@@ -149,7 +172,7 @@ export async function createAdCreative(req, res, next) {
     const { campaignId } = campaignIdSchema.parse(req.params);
     const payload = createCreativeSchema.parse(req.body);
     const item = await prisma.adCreative.create({
-      data: { campaignId, ...payload }
+      data: { campaignId, ...payload, reviewStatus: isFeatureEnabled("ADS_REVIEW_WORKFLOW_ENABLED") ? "draft" : undefined }
     });
     res.status(201).json({ item });
   } catch (error) {
@@ -161,10 +184,15 @@ export async function updateAdCreative(req, res, next) {
   try {
     const { id } = idSchema.parse(req.params);
     const payload = updateCreativeSchema.parse(req.body);
+    const workflow = isFeatureEnabled("ADS_REVIEW_WORKFLOW_ENABLED");
+    const current = workflow ? await prisma.adCreative.findUnique({ where: { id } }) : null;
+    const sensitive = ["slot", "title", "imageUrl", "destinationUrl", "altText", "storageProvider", "storageKey", "checksum"].some((key) => Object.prototype.hasOwnProperty.call(payload, key));
+    const reopen = workflow && current?.reviewStatus === "approved" && sensitive;
     const item = await prisma.adCreative.update({
       where: { id },
-      data: payload
+      data: { ...payload, reviewStatus: reopen ? "draft" : undefined, approvedAt: reopen ? null : undefined, reviewedByUserId: reopen ? null : undefined, requiresReviewAfterEdit: reopen ? true : undefined }
     });
+    if (reopen) await prisma.adReviewLog.create({ data: { entityType: "creative", entityId: id, action: "reopen_after_edit", fromStatus: "approved", toStatus: "draft", actorUserId: req.user.id } });
     res.json({ item });
   } catch (error) {
     next(error);
@@ -184,12 +212,25 @@ export async function getAdDelivery(req, res, next) {
       where: {
         isEnabled: true,
         status: "active",
-        OR: [{ startsAt: null }, { startsAt: { lte: now } }],
-        AND: [{ OR: [{ endsAt: null }, { endsAt: { gte: now } }] }]
+        ...(isFeatureEnabled("ADS_REVIEW_WORKFLOW_ENABLED")
+          ? { OR: [{ reviewStatus: null }, { reviewStatus: "approved" }] }
+          : {}),
+        AND: [
+          { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+          { OR: [{ endsAt: null }, { endsAt: { gte: now } }] }
+        ]
       },
       include: {
         creatives: {
-          where: { isEnabled: true, OR: [{ slot }, { slot: "explore_feed_large" }] }
+          where: {
+            isEnabled: true,
+            AND: [
+              { OR: [{ slot }, { slot: "explore_feed_large" }] },
+              ...(isFeatureEnabled("ADS_REVIEW_WORKFLOW_ENABLED")
+                ? [{ OR: [{ reviewStatus: null }, { reviewStatus: "approved" }] }]
+                : [])
+            ]
+          }
         }
       },
       orderBy: [{ priority: "desc" }, { updatedAt: "desc" }]

@@ -40,6 +40,27 @@ enum AdEventType {
   click
 }
 
+enum AdReviewStatus {
+  draft
+  pending_review
+  approved
+  rejected
+  changes_requested
+}
+
+enum AdReviewEntityType {
+  campaign
+  creative
+}
+
+enum AdReviewAction {
+  submit
+  approve
+  reject
+  request_changes
+  reopen_after_edit
+}
+
 enum AdvertiserAccountType {
   unclassified
   venue
@@ -88,76 +109,79 @@ enum ClaimStatus {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  username     String   @unique
-  firstName    String
-  lastName     String
-  phone        String?
+  id              String   @id @default(uuid())
+  email           String   @unique
+  username        String   @unique
+  firstName       String
+  lastName        String
+  phone           String?
   instagramHandle String?
-  passwordHash String
-  role         UserRole @default(attendee)
+  passwordHash    String
+  role            UserRole @default(attendee)
 
-  markedEvents  MarkedEvent[]
-  historyEntries UserEventHistory[]
-  achievements  UserAchievement[]
-  createdVenues Venue[]        @relation("VenueCreatedBy")
-  managedVenues Venue[]        @relation("VenueManagedBy")
-  venueAccesses VenueManagerAccess[]
-  createdArtists Artist[]      @relation("ArtistCreatedBy")
-  createdEvents Event[]        @relation("EventCreatedBy")
-  refreshTokens RefreshToken[]
-  adCampaigns   AdCampaign[]
-  adEvents      AdEventLog[]
-  itineraries   Itinerary[]
-  audienceVisits AudienceVisitor[]
-  pushSubscriptions PushSubscription[]
-  toNaPistaSessions ToNaPistaSession[]
-  producerVenueAccesses ProducerVenueAccess[]
-  producerArtistAccesses ProducerArtistAccess[]
-  artistFollows ArtistFollow[]
-  claims ClaimRequest[] @relation("ClaimRequestedBy")
-  claimsReviewed ClaimRequest[] @relation("ClaimReviewedBy")
-  createdRegions Region[] @relation("RegionCreatedBy")
-  acquisitionLeads AcquisitionLead[] @relation("AcquisitionLeadCreatedBy")
-  acquisitionInteractions AcquisitionInteraction[] @relation("AcquisitionInteractionCreatedBy")
-  advertiserAccountsCreated AdvertiserAccount[] @relation("AdvertiserAccountCreatedBy")
-  advertiserAccountsApproved AdvertiserAccount[] @relation("AdvertiserAccountApprovedBy")
-  advertiserMemberships AdvertiserMembership[] @relation("AdvertiserMembershipUser")
-  advertiserMembershipInvites AdvertiserMembership[] @relation("AdvertiserMembershipInvitedBy")
+  markedEvents                MarkedEvent[]
+  historyEntries              UserEventHistory[]
+  achievements                UserAchievement[]
+  createdVenues               Venue[]                  @relation("VenueCreatedBy")
+  managedVenues               Venue[]                  @relation("VenueManagedBy")
+  venueAccesses               VenueManagerAccess[]
+  createdArtists              Artist[]                 @relation("ArtistCreatedBy")
+  createdEvents               Event[]                  @relation("EventCreatedBy")
+  refreshTokens               RefreshToken[]
+  adCampaigns                 AdCampaign[]
+  adEvents                    AdEventLog[]
+  itineraries                 Itinerary[]
+  audienceVisits              AudienceVisitor[]
+  pushSubscriptions           PushSubscription[]
+  toNaPistaSessions           ToNaPistaSession[]
+  producerVenueAccesses       ProducerVenueAccess[]
+  producerArtistAccesses      ProducerArtistAccess[]
+  artistFollows               ArtistFollow[]
+  claims                      ClaimRequest[]           @relation("ClaimRequestedBy")
+  claimsReviewed              ClaimRequest[]           @relation("ClaimReviewedBy")
+  createdRegions              Region[]                 @relation("RegionCreatedBy")
+  acquisitionLeads            AcquisitionLead[]        @relation("AcquisitionLeadCreatedBy")
+  acquisitionInteractions     AcquisitionInteraction[] @relation("AcquisitionInteractionCreatedBy")
+  advertiserAccountsCreated   AdvertiserAccount[]      @relation("AdvertiserAccountCreatedBy")
+  advertiserAccountsApproved  AdvertiserAccount[]      @relation("AdvertiserAccountApprovedBy")
+  advertiserMemberships       AdvertiserMembership[]   @relation("AdvertiserMembershipUser")
+  advertiserMembershipInvites AdvertiserMembership[]   @relation("AdvertiserMembershipInvitedBy")
+  adCampaignReviews           AdCampaign[]             @relation("AdCampaignReviewedBy")
+  adCreativeReviews           AdCreative[]             @relation("AdCreativeReviewedBy")
+  adReviewActions             AdReviewLog[]            @relation("AdReviewLogActor")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Region {
-  id              String   @id @default(uuid())
-  name            String
-  city            String   @default("Sao Paulo")
-  state           String   @default("SP")
-  grammarArticle  String?
-  grammarPreposition String? @default("em")
-  displayNameWithArticle String?
+  id                         String   @id @default(uuid())
+  name                       String
+  city                       String   @default("Sao Paulo")
+  state                      String   @default("SP")
+  grammarArticle             String?
+  grammarPreposition         String?  @default("em")
+  displayNameWithArticle     String?
   displayNameWithPreposition String?
-  isActive        Boolean  @default(true)
-  sortOrder       Int      @default(0)
-  createdByUserId String?
-  createdBy       User?    @relation("RegionCreatedBy", fields: [createdByUserId], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  isActive                   Boolean  @default(true)
+  sortOrder                  Int      @default(0)
+  createdByUserId            String?
+  createdBy                  User?    @relation("RegionCreatedBy", fields: [createdByUserId], references: [id])
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 
   @@unique([name, city, state])
   @@index([isActive, sortOrder, name])
 }
 
 model AudienceVisitor {
-  id          String   @id @default(uuid())
-  visitorId   String   @unique
+  id          String    @id @default(uuid())
+  visitorId   String    @unique
   userId      String?
   linkedAt    DateTime?
-  firstSeenAt DateTime @default(now())
-  lastSeenAt  DateTime @default(now())
-  hits        Int      @default(1)
+  firstSeenAt DateTime  @default(now())
+  lastSeenAt  DateTime  @default(now())
+  hits        Int       @default(1)
 
   user User? @relation(fields: [userId], references: [id])
 
@@ -200,7 +224,7 @@ model ToNaPistaSession {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  user       User?                    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user       User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
   deliveries ToNaPistaDelivery[]
 
   @@index([userId, isActive, expiresAt])
@@ -214,7 +238,7 @@ model ToNaPistaDelivery {
   sentAt    DateTime @default(now())
 
   session ToNaPistaSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  event   Event             @relation(fields: [eventId], references: [id])
+  event   Event            @relation(fields: [eventId], references: [id])
 
   @@unique([sessionId, eventId])
   @@index([eventId, sentAt])
@@ -246,16 +270,16 @@ model AnalyticsEvent {
 }
 
 model Itinerary {
-  id          String   @id @default(uuid())
-  userId      String
-  title       String
-  date        DateTime
-  mode        String   @default("manual") // manual | automatic
-  status      String   @default("draft")  // draft | active | completed
-  totalTransitMinutes Int @default(0)
-  riskScore   Int      @default(0)
+  id                  String   @id @default(uuid())
+  userId              String
+  title               String
+  date                DateTime
+  mode                String   @default("manual") // manual | automatic
+  status              String   @default("draft") // draft | active | completed
+  totalTransitMinutes Int      @default(0)
+  riskScore           Int      @default(0)
 
-  user  User @relation(fields: [userId], references: [id])
+  user  User            @relation(fields: [userId], references: [id])
   items ItineraryItem[]
 
   createdAt DateTime @default(now())
@@ -265,12 +289,12 @@ model Itinerary {
 }
 
 model ItineraryItem {
-  id          String   @id @default(uuid())
-  itineraryId String
-  eventId     String
-  position    Int
-  transitMinutesFromPrev Int @default(0)
-  riskLevel   String   @default("ok") // ok | tight | risky
+  id                     String @id @default(uuid())
+  itineraryId            String
+  eventId                String
+  position               Int
+  transitMinutesFromPrev Int    @default(0)
+  riskLevel              String @default("ok") // ok | tight | risky
 
   itinerary Itinerary @relation(fields: [itineraryId], references: [id])
   event     Event     @relation(fields: [eventId], references: [id])
@@ -284,29 +308,38 @@ model ItineraryItem {
 }
 
 model AdCampaign {
-  id            String           @id @default(uuid())
-  advertiser    String
-  name          String
-  status        AdCampaignStatus @default(draft)
-  startsAt      DateTime?
-  endsAt        DateTime?
-  priority      Int              @default(1)
-  frequencyCapDaily Int          @default(3)
-  runInAllSlots Boolean          @default(false)
-  isEnabled     Boolean          @default(true)
-  targeting     Json?
-  createdByUserId String?
-  advertiserAccountId String?
+  id                      String           @id @default(uuid())
+  advertiser              String
+  name                    String
+  status                  AdCampaignStatus @default(draft)
+  startsAt                DateTime?
+  endsAt                  DateTime?
+  priority                Int              @default(1)
+  frequencyCapDaily       Int              @default(3)
+  runInAllSlots           Boolean          @default(false)
+  isEnabled               Boolean          @default(true)
+  targeting               Json?
+  createdByUserId         String?
+  advertiserAccountId     String?
+  reviewStatus            AdReviewStatus?
+  submittedAt             DateTime?
+  approvedAt              DateTime?
+  rejectedAt              DateTime?
+  reviewedByUserId        String?
+  reviewNotes             String?
+  requiresReviewAfterEdit Boolean          @default(false)
 
-  createdBy User? @relation(fields: [createdByUserId], references: [id])
+  createdBy         User?              @relation(fields: [createdByUserId], references: [id])
   advertiserAccount AdvertiserAccount? @relation(fields: [advertiserAccountId], references: [id], onDelete: SetNull)
-  creatives AdCreative[]
-  events    AdEventLog[]
+  reviewedBy        User?              @relation("AdCampaignReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  creatives         AdCreative[]
+  events            AdEventLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([advertiserAccountId, status])
+  @@index([reviewStatus, submittedAt])
 }
 
 model AdvertiserAccount {
@@ -325,8 +358,8 @@ model AdvertiserAccount {
   approvedByUserId String?
   approvedAt       DateTime?
 
-  createdBy   User? @relation("AdvertiserAccountCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  approvedBy  User? @relation("AdvertiserAccountApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  createdBy   User?                  @relation("AdvertiserAccountCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  approvedBy  User?                  @relation("AdvertiserAccountApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
   memberships AdvertiserMembership[]
   campaigns   AdCampaign[]
 
@@ -338,11 +371,11 @@ model AdvertiserAccount {
 }
 
 model AdvertiserMembership {
-  id              String                       @id @default(uuid())
+  id              String                     @id @default(uuid())
   accountId       String
   userId          String
-  role            AdvertiserMembershipRole     @default(viewer)
-  status          AdvertiserMembershipStatus   @default(invited)
+  role            AdvertiserMembershipRole   @default(viewer)
+  status          AdvertiserMembershipStatus @default(invited)
   invitedByUserId String?
   acceptedAt      DateTime?
 
@@ -359,31 +392,58 @@ model AdvertiserMembership {
 }
 
 model AdCreative {
-  id            String   @id @default(uuid())
-  campaignId    String
-  slot          AdSlot
-  title         String?
-  imageUrl      String
-  destinationUrl String?
-  altText       String?
-  width         Int?
-  height        Int?
-  isEnabled     Boolean  @default(true)
-  storageProvider String?
-  storageKey      String?
-  mimeType        String?
-  fileSizeBytes   Int?
-  checksum        String?
-  assetVersion    Int     @default(1)
+  id                      String          @id @default(uuid())
+  campaignId              String
+  slot                    AdSlot
+  title                   String?
+  imageUrl                String
+  destinationUrl          String?
+  altText                 String?
+  width                   Int?
+  height                  Int?
+  isEnabled               Boolean         @default(true)
+  storageProvider         String?
+  storageKey              String?
+  mimeType                String?
+  fileSizeBytes           Int?
+  checksum                String?
+  assetVersion            Int             @default(1)
+  reviewStatus            AdReviewStatus?
+  submittedAt             DateTime?
+  approvedAt              DateTime?
+  rejectedAt              DateTime?
+  reviewedByUserId        String?
+  reviewNotes             String?
+  requiresReviewAfterEdit Boolean         @default(false)
 
-  campaign AdCampaign @relation(fields: [campaignId], references: [id])
-  events   AdEventLog[]
+  campaign   AdCampaign   @relation(fields: [campaignId], references: [id])
+  reviewedBy User?        @relation("AdCreativeReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  events     AdEventLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([slot, isEnabled])
   @@index([storageProvider, storageKey])
+  @@index([reviewStatus, submittedAt])
+}
+
+model AdReviewLog {
+  id          String             @id @default(uuid())
+  entityType  AdReviewEntityType
+  entityId    String
+  action      AdReviewAction
+  fromStatus  AdReviewStatus?
+  toStatus    AdReviewStatus
+  actorUserId String?
+  reason      String?
+  snapshot    Json?
+  createdAt   DateTime           @default(now())
+
+  actor User? @relation("AdReviewLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorUserId, createdAt])
 }
 
 model AdEventLog {
@@ -411,12 +471,12 @@ model AdEventLog {
 }
 
 model RefreshToken {
-  id         String   @id @default(uuid())
-  userId     String
-  tokenHash  String   @unique
-  expiresAt  DateTime
-  revokedAt  DateTime?
-  createdAt  DateTime @default(now())
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id])
 
@@ -424,49 +484,49 @@ model RefreshToken {
 }
 
 model Venue {
-  id           String  @id @default(uuid())
-  name         String
-  slug         String  @unique
-  goldPartner  Boolean @default(false)
-  analyticsTier String @default("basic")
-  analyticsAccessSource String?
-  analyticsAccessUntil DateTime?
-  description  String?
-  contactName  String?
-  contactPhone String?
-  instagramUrl String?
-  address      String
-  latitude     Float?
-  longitude    Float?
-  neighborhood String
-  nickname     String?
-  grammarArticle  String?
-  grammarPreposition String? @default("em")
-  displayNameWithArticle String?
-  displayNameWithPreposition String?
-  nicknameGrammarArticle  String?
-  nicknameGrammarPreposition String? @default("em")
-  nicknameDisplayNameWithArticle String?
-  nicknameDisplayNameWithPreposition String?
-  neighborhoodGrammarArticle String?
-  neighborhoodGrammarPreposition String? @default("em")
-  neighborhoodDisplayNameWithArticle String?
+  id                                     String    @id @default(uuid())
+  name                                   String
+  slug                                   String    @unique
+  goldPartner                            Boolean   @default(false)
+  analyticsTier                          String    @default("basic")
+  analyticsAccessSource                  String?
+  analyticsAccessUntil                   DateTime?
+  description                            String?
+  contactName                            String?
+  contactPhone                           String?
+  instagramUrl                           String?
+  address                                String
+  latitude                               Float?
+  longitude                              Float?
+  neighborhood                           String
+  nickname                               String?
+  grammarArticle                         String?
+  grammarPreposition                     String?   @default("em")
+  displayNameWithArticle                 String?
+  displayNameWithPreposition             String?
+  nicknameGrammarArticle                 String?
+  nicknameGrammarPreposition             String?   @default("em")
+  nicknameDisplayNameWithArticle         String?
+  nicknameDisplayNameWithPreposition     String?
+  neighborhoodGrammarArticle             String?
+  neighborhoodGrammarPreposition         String?   @default("em")
+  neighborhoodDisplayNameWithArticle     String?
   neighborhoodDisplayNameWithPreposition String?
-  region       String
-  city         String
-  state        String
-  imageUrl     String?
-  openDays     String[]
-  createdByUserId String?
-  managerUserId   String?
+  region                                 String
+  city                                   String
+  state                                  String
+  imageUrl                               String?
+  openDays                               String[]
+  createdByUserId                        String?
+  managerUserId                          String?
 
-  events Event[]
-  createdBy User? @relation("VenueCreatedBy", fields: [createdByUserId], references: [id])
-  manager   User? @relation("VenueManagedBy", fields: [managerUserId], references: [id])
-  managerAccesses VenueManagerAccess[]
+  events           Event[]
+  createdBy        User?                 @relation("VenueCreatedBy", fields: [createdByUserId], references: [id])
+  manager          User?                 @relation("VenueManagedBy", fields: [managerUserId], references: [id])
+  managerAccesses  VenueManagerAccess[]
   producerAccesses ProducerVenueAccess[]
-  claimRequests ClaimRequest[] @relation("ClaimVenue")
-  adEvents AdEventLog[]
+  claimRequests    ClaimRequest[]        @relation("ClaimVenue")
+  adEvents         AdEventLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -487,9 +547,9 @@ model ProducerVenueAccess {
 }
 
 model VenueManagerAccess {
-  id       String @id @default(uuid())
-  userId   String
-  venueId  String
+  id        String   @id @default(uuid())
+  userId    String
+  venueId   String
   createdAt DateTime @default(now())
 
   user  User  @relation(fields: [userId], references: [id])
@@ -501,38 +561,38 @@ model VenueManagerAccess {
 }
 
 model Event {
-  id          String    @id @default(uuid())
-  title       String
-  description String?
-  imageUrl    String?
-  type        EventType
-  tags        String[]
-  startDate   DateTime
-  endDate     DateTime
-  isRecurring Boolean   @default(false)
-  recurrenceDays String[] @default([])
-  recurrenceStartTime String?
-  recurrenceEndTime String?
-  recurrenceUntil DateTime?
+  id                   String     @id @default(uuid())
+  title                String
+  description          String?
+  imageUrl             String?
+  type                 EventType
+  tags                 String[]
+  startDate            DateTime
+  endDate              DateTime
+  isRecurring          Boolean    @default(false)
+  recurrenceDays       String[]   @default([])
+  recurrenceStartTime  String?
+  recurrenceEndTime    String?
+  recurrenceUntil      DateTime?
   recurrenceExceptions DateTime[] @default([])
-  ticketType  String
-  ticketUrl   String?
-  priceMin    Float?
-  priceMax    Float?
-  consumacaoValue Float?
-  couvertArtistico Float?
-  pricingPolicy Json?
-  status      String    @default("confirmed")
-  createdByUserId String?
+  ticketType           String
+  ticketUrl            String?
+  priceMin             Float?
+  priceMax             Float?
+  consumacaoValue      Float?
+  couvertArtistico     Float?
+  pricingPolicy        Json?
+  status               String     @default("confirmed")
+  createdByUserId      String?
 
-  venueId String
-  venue   Venue @relation(fields: [venueId], references: [id])
-  createdBy User? @relation("EventCreatedBy", fields: [createdByUserId], references: [id])
+  venueId   String
+  venue     Venue  @relation(fields: [venueId], references: [id])
+  createdBy User?  @relation("EventCreatedBy", fields: [createdByUserId], references: [id])
 
-  artists   EventArtist[]
-  markedBy  MarkedEvent[]
-  historyBy UserEventHistory[]
-  itineraryItems ItineraryItem[]
+  artists             EventArtist[]
+  markedBy            MarkedEvent[]
+  historyBy           UserEventHistory[]
+  itineraryItems      ItineraryItem[]
   toNaPistaDeliveries ToNaPistaDelivery[]
 
   createdAt DateTime @default(now())
@@ -540,25 +600,25 @@ model Event {
 }
 
 model Artist {
-  id           String   @id @default(uuid())
-  name         String
-  slug         String   @unique
-  bio          String?
-  contactName  String?
-  contactPhone String?
-  imageUrl     String?
-  genres       String[]
-  isVerified   Boolean  @default(false)
-  spotifyUrl   String?
-  youtubeUrl   String?
-  instagramUrl String?
+  id              String   @id @default(uuid())
+  name            String
+  slug            String   @unique
+  bio             String?
+  contactName     String?
+  contactPhone    String?
+  imageUrl        String?
+  genres          String[]
+  isVerified      Boolean  @default(false)
+  spotifyUrl      String?
+  youtubeUrl      String?
+  instagramUrl    String?
   createdByUserId String?
 
-  events EventArtist[]
-  createdBy User? @relation("ArtistCreatedBy", fields: [createdByUserId], references: [id])
+  events           EventArtist[]
+  createdBy        User?                  @relation("ArtistCreatedBy", fields: [createdByUserId], references: [id])
   producerAccesses ProducerArtistAccess[]
-  claimRequests ClaimRequest[] @relation("ClaimArtist")
-  followers ArtistFollow[]
+  claimRequests    ClaimRequest[]         @relation("ClaimArtist")
+  followers        ArtistFollow[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -592,9 +652,9 @@ model ProducerArtistAccess {
 }
 
 model EventArtist {
-  eventId String
+  eventId  String
   artistId String
-  order Int @default(0)
+  order    Int    @default(0)
 
   event  Event  @relation(fields: [eventId], references: [id])
   artist Artist @relation(fields: [artistId], references: [id])
@@ -616,9 +676,9 @@ model MarkedEvent {
 }
 
 model UserEventHistory {
-  id      String @id @default(uuid())
-  userId  String
-  eventId String
+  id        String   @id @default(uuid())
+  userId    String
+  eventId   String
   createdAt DateTime @default(now())
 
   user  User  @relation(fields: [userId], references: [id])
@@ -654,11 +714,11 @@ model UserAchievement {
 }
 
 model ClaimRequest {
-  id             String          @id @default(uuid())
-  requestedById  String
-  targetType     ClaimTargetType
-  venueId        String?
-  artistId       String?
+  id                String          @id @default(uuid())
+  requestedById     String
+  targetType        ClaimTargetType
+  venueId           String?
+  artistId          String?
   responsibleName   String?
   responsiblePhone  String?
   claimantDocument  String?
@@ -666,19 +726,19 @@ model ClaimRequest {
   officialEmail     String?
   officialInstagram String?
   officialWebsite   String?
-  justification  String?
-  requestType    String          @default("ownership")
-  requestedChanges Json?
-  status         ClaimStatus     @default(pending)
-  reviewedById   String?
-  reviewedAt     DateTime?
-  decisionNote   String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  justification     String?
+  requestType       String          @default("ownership")
+  requestedChanges  Json?
+  status            ClaimStatus     @default(pending)
+  reviewedById      String?
+  reviewedAt        DateTime?
+  decisionNote      String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
-  requestedBy User @relation("ClaimRequestedBy", fields: [requestedById], references: [id])
-  reviewedBy  User? @relation("ClaimReviewedBy", fields: [reviewedById], references: [id])
-  venue       Venue? @relation("ClaimVenue", fields: [venueId], references: [id])
+  requestedBy User    @relation("ClaimRequestedBy", fields: [requestedById], references: [id])
+  reviewedBy  User?   @relation("ClaimReviewedBy", fields: [reviewedById], references: [id])
+  venue       Venue?  @relation("ClaimVenue", fields: [venueId], references: [id])
   artist      Artist? @relation("ClaimArtist", fields: [artistId], references: [id])
 
   @@index([requestedById, status])
@@ -686,9 +746,9 @@ model ClaimRequest {
 }
 
 model AcquisitionLead {
-  id                 String   @id @default(uuid())
+  id                 String                   @id @default(uuid())
   venueName          String
-  city               String   @default("São Paulo")
+  city               String                   @default("São Paulo")
   region             String?
   neighborhood       String?
   address            String?
@@ -702,8 +762,8 @@ model AcquisitionLead {
   contactName        String?
   contactRole        String?
   email              String?
-  status             String   @default("mapped")
-  temperature        String   @default("warm")
+  status             String                   @default("mapped")
+  temperature        String                   @default("warm")
   nextFollowUpAt     DateTime?
   presentationAt     DateTime?
   presentationFormat String?
@@ -712,7 +772,7 @@ model AcquisitionLead {
   objections         String?
   notes              String?
   createdByUserId    String?
-  createdBy          User?    @relation("AcquisitionLeadCreatedBy", fields: [createdByUserId], references: [id])
+  createdBy          User?                    @relation("AcquisitionLeadCreatedBy", fields: [createdByUserId], references: [id])
   interactions       AcquisitionInteraction[]
 
   createdAt DateTime @default(now())
@@ -725,9 +785,9 @@ model AcquisitionLead {
 }
 
 model AcquisitionInteraction {
-  id              String   @id @default(uuid())
+  id              String    @id @default(uuid())
   leadId          String
-  type            String   @default("note")
+  type            String    @default("note")
   summary         String
   nextAction      String?
   nextFollowUpAt  DateTime?

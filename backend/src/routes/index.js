@@ -82,6 +82,7 @@ import {
   updateAdvertiserAccount,
   updateAdvertiserMembership
 } from "../controllers/advertiserAccounts.controller.js";
+import { approveAdReview, getAdReviewHistory, listAdReviewQueue, rejectAdReview, submitAdReview } from "../controllers/adReviews.controller.js";
 
 export const router = Router();
 
@@ -102,6 +103,7 @@ const canUploadAdCreativeToR2 = [
   ...canManageAds,
   requireFeatureFlag("ADS_R2_CREATIVE_UPLOAD_ENABLED")
 ];
+const canManageAdReviews = [...canManageAds, requireFeatureFlag("ADS_REVIEW_WORKFLOW_ENABLED")];
 const canManageAcquisition = [requireAuth, requireRole(["admin"])];
 const canUploadImages = [requireAuth, requireRole(["admin", "producer", "venue_manager"])];
 const authLimiter = createRateLimiter({
@@ -230,6 +232,11 @@ router.post("/ads/campaigns", ...canManageAds, createAdCampaign);
 router.patch("/ads/campaigns/:id", ...canManageAds, updateAdCampaign);
 router.post("/ads/campaigns/:campaignId/creatives", ...canManageAds, createAdCreative);
 router.patch("/ads/creatives/:id", ...canManageAds, updateAdCreative);
+router.get("/ads/reviews/queue", ...canManageAdReviews, listAdReviewQueue);
+router.get("/ads/reviews/:entityType/:id/history", ...canManageAdReviews, getAdReviewHistory);
+router.post("/ads/reviews/:entityType/:id/submit", ...canManageAdReviews, submitAdReview);
+router.post("/ads/reviews/:entityType/:id/approve", ...canManageAdReviews, approveAdReview);
+router.post("/ads/reviews/:entityType/:id/reject", ...canManageAdReviews, rejectAdReview);
 router.get("/ads/advertiser-accounts", ...canManageAdvertiserAccounts, listAdvertiserAccounts);
 router.get("/ads/advertiser-accounts/:id", ...canManageAdvertiserAccounts, getAdvertiserAccount);
 router.post("/ads/advertiser-accounts", ...canManageAdvertiserAccounts, createAdvertiserAccount);
