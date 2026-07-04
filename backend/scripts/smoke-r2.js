@@ -1,7 +1,7 @@
-import crypto from "node:crypto";
 import dotenv from "dotenv";
 import sharp from "sharp";
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { uploadBufferToR2 } from "../src/services/r2Storage.service.js";
 
 dotenv.config();
 
@@ -9,8 +9,7 @@ const accountId = String(process.env.R2_ACCOUNT_ID || "").trim();
 const endpoint = String(process.env.R2_ENDPOINT || "").trim()
   || `https://${accountId}.r2.cloudflarestorage.com`;
 const bucket = String(process.env.R2_BUCKET || "").trim();
-const publicBaseUrl = String(process.env.R2_PUBLIC_BASE_URL || "").trim().replace(/\/$/, "");
-const key = `temp/smoke-${crypto.randomUUID()}.webp`;
+let uploaded;
 const client = new S3Client({
   region: "auto",
   endpoint,
@@ -25,19 +24,22 @@ const body = await sharp({
 }).webp().toBuffer();
 
 try {
-  await client.send(new PutObjectCommand({
-    Bucket: bucket,
-    Key: key,
-    Body: body,
-    ContentType: "image/webp",
-    CacheControl: "no-store"
-  }));
+  uploaded = await uploadBufferToR2({
+    buffer: body,
+    mimeType: "image/webp",
+    extension: "webp",
+    keyPrefix: "temp/shared-smoke",
+    cacheControl: "no-store",
+    client
+  });
 
-  const response = await fetch(`${publicBaseUrl}/${key}`, { cache: "no-store" });
+  const response = await fetch(uploaded.url, { cache: "no-store" });
   if (!response.ok) throw new Error(`Public URL returned HTTP ${response.status}`);
   const received = Buffer.from(await response.arrayBuffer());
   if (received.length !== body.length) throw new Error("Public object size mismatch");
   console.log("R2 smoke passed: upload, public read and integrity check succeeded.");
 } finally {
-  await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  if (uploaded?.storageKey) {
+    await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: uploaded.storageKey }));
+  }
 }

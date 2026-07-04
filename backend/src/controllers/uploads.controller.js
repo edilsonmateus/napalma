@@ -1,6 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import sharp from "sharp";
+import { isFeatureEnabled } from "../middlewares/featureFlags.js";
+import { uploadBufferToR2 } from "../services/r2Storage.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -8,7 +11,15 @@ const PROJECT_ROOT = path.resolve(__dirname, "../../");
 const UPLOADS_DIR = path.resolve(PROJECT_ROOT, "uploads");
 
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const FOLDER_WHITELIST = new Set(["venues", "artists", "events"]);
+const FOLDER_WHITELIST = new Set([
+  "venues",
+  "artists",
+  "events",
+  "covers",
+  "profiles",
+  "banners",
+  "general"
+]);
 
 function safeSlug(value) {
   return String(value || "")
@@ -34,7 +45,20 @@ export async function uploadImage(req, res, next) {
       });
     }
 
-    if (!ALLOWED_MIME_TYPES.has(req.file.mimetype)) {
+    let imageMetadata;
+    try {
+      imageMetadata = await sharp(req.file.buffer).metadata();
+    } catch (_error) {
+      return res.status(400).json({ error: "invalid_image", message: "Arquivo de imagem invalido." });
+    }
+    const detectedMimeType = imageMetadata.format === "png"
+      ? "image/png"
+      : imageMetadata.format === "webp"
+        ? "image/webp"
+        : imageMetadata.format === "jpeg"
+          ? "image/jpeg"
+          : "";
+    if (!ALLOWED_MIME_TYPES.has(detectedMimeType)) {
       return res.status(400).json({
         error: "invalid_file_type",
         message: "Formato invalido. Use JPG, PNG ou WebP."
@@ -44,9 +68,28 @@ export async function uploadImage(req, res, next) {
     const folderRaw = String(req.body?.folder || "general").trim().toLowerCase();
     const folder = FOLDER_WHITELIST.has(folderRaw) ? folderRaw : "general";
 
+    if (isFeatureEnabled("R2_SHARED_UPLOADS_ENABLED")) {
+      const uploaded = await uploadBufferToR2({
+        buffer: req.file.buffer,
+        mimeType: detectedMimeType,
+        extension: extFromMime(detectedMimeType).slice(1),
+        keyPrefix: folder,
+        metadata: { source: "77gira-shared-upload" }
+      });
+      return res.status(201).json({
+        item: {
+          ...uploaded,
+          path: uploaded.storageKey,
+          size: uploaded.fileSizeBytes,
+          width: imageMetadata.width,
+          height: imageMetadata.height
+        }
+      });
+    }
+
     const stamp = Date.now();
     const baseName = safeSlug(req.body?.name || req.file.originalname || "imagem");
-    const fileName = `${baseName || "imagem"}-${stamp}${extFromMime(req.file.mimetype)}`;
+    const fileName = `${baseName || "imagem"}-${stamp}${extFromMime(detectedMimeType)}`;
     const relativeDir = path.join("uploads", folder);
     const absoluteDir = path.resolve(PROJECT_ROOT, relativeDir);
     await fs.mkdir(absoluteDir, { recursive: true });
@@ -61,7 +104,7 @@ export async function uploadImage(req, res, next) {
       item: {
         url: `${publicBase}${urlPath}`,
         path: urlPath,
-        mimeType: req.file.mimetype,
+        mimeType: detectedMimeType,
         size: req.file.size
       }
     });

@@ -21,7 +21,16 @@ export function isR2Configured(config = getR2Config()) {
   return Boolean(config.endpoint && config.accessKeyId && config.secretAccessKey && config.bucket && config.publicBaseUrl);
 }
 
-export async function uploadCreativeToR2({ buffer, mimeType, extension, campaignId, client, config = getR2Config() }) {
+export async function uploadBufferToR2({
+  buffer,
+  mimeType,
+  extension,
+  keyPrefix,
+  metadata = {},
+  cacheControl = "public, max-age=31536000, immutable",
+  client,
+  config = getR2Config()
+}) {
   if (!isR2Configured(config)) {
     const error = new Error("Cloudflare R2 nao configurado.");
     error.code = "r2_not_configured";
@@ -29,7 +38,8 @@ export async function uploadCreativeToR2({ buffer, mimeType, extension, campaign
   }
 
   const checksum = crypto.createHash("sha256").update(buffer).digest("hex");
-  const storageKey = `ads/creatives/${campaignId}/${crypto.randomUUID()}.${extension}`;
+  const normalizedPrefix = String(keyPrefix || "temp").replace(/^\/+|\/+$/g, "");
+  const storageKey = `${normalizedPrefix}/${crypto.randomUUID()}.${extension}`;
   const r2Client = client || new S3Client({
     region: "auto",
     endpoint: config.endpoint,
@@ -41,8 +51,8 @@ export async function uploadCreativeToR2({ buffer, mimeType, extension, campaign
     Key: storageKey,
     Body: buffer,
     ContentType: mimeType,
-    CacheControl: "public, max-age=31536000, immutable",
-    Metadata: { sha256: checksum }
+    CacheControl: cacheControl,
+    Metadata: { ...metadata, sha256: checksum }
   }));
 
   return {
@@ -54,4 +64,12 @@ export async function uploadCreativeToR2({ buffer, mimeType, extension, campaign
     checksum,
     assetVersion: 1
   };
+}
+
+export function uploadCreativeToR2({ campaignId, ...options }) {
+  return uploadBufferToR2({
+    ...options,
+    keyPrefix: `ads/creatives/${campaignId}`,
+    metadata: { ...(options.metadata || {}), campaignid: campaignId }
+  });
 }

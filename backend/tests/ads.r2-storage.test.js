@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { isR2Configured, uploadCreativeToR2 } from "../src/services/r2Storage.service.js";
+import { isR2Configured, uploadBufferToR2, uploadCreativeToR2 } from "../src/services/r2Storage.service.js";
 
 const CONFIG = {
   endpoint: "https://account.r2.cloudflarestorage.com",
@@ -41,5 +41,19 @@ describe("Cloudflare R2 creative storage", () => {
     expect(item.url).toBe(`https://media.77gira.test/${item.storageKey}`);
     expect(item.fileSizeBytes).toBe(buffer.length);
     expect(item.checksum).toBe(crypto.createHash("sha256").update(buffer).digest("hex"));
+  });
+
+  it("supports shared application prefixes without changing buckets", async () => {
+    const client = { send: vi.fn().mockResolvedValue({}) };
+    const item = await uploadBufferToR2({
+      buffer: Buffer.from("venue-image"),
+      mimeType: "image/jpeg",
+      extension: "jpg",
+      keyPrefix: "/venues/",
+      client,
+      config: CONFIG
+    });
+    expect(item.storageKey).toMatch(/^venues\/.+\.jpg$/);
+    expect(client.send.mock.calls[0][0].input.Bucket).toBe("77gira-ads");
   });
 });
