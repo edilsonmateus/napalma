@@ -69,6 +69,7 @@ import { uploadImage } from "../controllers/uploads.controller.js";
 import { imageUpload } from "../middlewares/upload.js";
 import { createRateLimiter } from "../middlewares/rateLimit.js";
 import { requireFeatureFlag } from "../middlewares/featureFlags.js";
+import { requireAdvertiserCampaignWrite } from "../middlewares/advertiserAccess.js";
 import { listAdPlacements } from "../controllers/adPlacements.controller.js";
 import { uploadAdCreativeAsset } from "../controllers/adCreativeUploads.controller.js";
 import {
@@ -83,6 +84,7 @@ import {
   updateAdvertiserMembership
 } from "../controllers/advertiserAccounts.controller.js";
 import { approveAdReview, getAdReviewHistory, listAdReviewQueue, rejectAdReview, submitAdReview } from "../controllers/adReviews.controller.js";
+import { createMyAdvertiserCampaign, createMyAdvertiserCreative, listMyAdvertiserAccounts, listMyAdvertiserCampaigns, submitMyAdvertiserReview, updateMyAdvertiserCampaign, updateMyAdvertiserCreative } from "../controllers/advertiserPortal.controller.js";
 
 export const router = Router();
 
@@ -177,6 +179,13 @@ router.get("/me/history", requireAuth, listMyHistory);
 router.post("/me/history/:eventId", requireAuth, markEventAsAttended);
 router.delete("/me/history/:eventId", requireAuth, unmarkEventAsAttended);
 router.get("/me/achievements", requireAuth, listMyAchievements);
+router.get("/me/advertiser-accounts", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), listMyAdvertiserAccounts);
+router.get("/me/advertiser-accounts/:accountId/campaigns", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), listMyAdvertiserCampaigns);
+router.post("/me/advertiser-accounts/:accountId/campaigns", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), createMyAdvertiserCampaign);
+router.patch("/me/advertiser-campaigns/:campaignId", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), updateMyAdvertiserCampaign);
+router.post("/me/advertiser-campaigns/:campaignId/creatives", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), createMyAdvertiserCreative);
+router.patch("/me/advertiser-creatives/:creativeId", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), updateMyAdvertiserCreative);
+router.post("/me/advertiser-reviews/:entityType/:id/submit", requireAuth, requireFeatureFlag("ADS_REVIEW_WORKFLOW_ENABLED"), submitMyAdvertiserReview);
 router.get("/me/pela-hora", requireAuth, listPelaHora);
 router.get("/me/pela-hora/suggest", requireAuth, suggestPelaHora);
 router.get("/me/pela-hora/:id", requireAuth, getPelaHoraById);
@@ -217,6 +226,7 @@ router.post("/artists/:id/follow", requireAuth, followArtist);
 router.delete("/artists/:id/follow", requireAuth, unfollowArtist);
 router.post("/uploads/image", ...canUploadImages, uploadLimiter, imageUpload.single("file"), uploadImage);
 router.post("/ads/uploads/creative", ...canUploadAdCreativeToR2, uploadLimiter, imageUpload.single("file"), uploadAdCreativeAsset);
+router.post("/me/advertiser-uploads/creative", requireAuth, requireFeatureFlag("ADS_R2_CREATIVE_UPLOAD_ENABLED"), uploadLimiter, imageUpload.single("file"), requireAdvertiserCampaignWrite, uploadAdCreativeAsset);
 router.post("/artists", ...canManageCatalog, createArtist);
 router.patch("/artists/:id", ...canManageCatalog, updateArtist);
 router.delete("/artists/:id", ...canManageCatalog, deleteArtist);
