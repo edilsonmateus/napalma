@@ -26,7 +26,13 @@ const createCreativeSchema = z.object({
   altText: z.string().optional().nullable(),
   width: z.number().int().positive().optional().nullable(),
   height: z.number().int().positive().optional().nullable(),
-  isEnabled: z.boolean().default(true)
+  isEnabled: z.boolean().default(true),
+  storageProvider: z.string().max(40).optional().nullable(),
+  storageKey: z.string().max(500).optional().nullable(),
+  mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]).optional().nullable(),
+  fileSizeBytes: z.number().int().positive().max(5 * 1024 * 1024).optional().nullable(),
+  checksum: z.string().regex(/^[a-f0-9]{64}$/).optional().nullable(),
+  assetVersion: z.number().int().positive().optional()
 });
 
 const updateCreativeSchema = createCreativeSchema.partial();
@@ -55,6 +61,8 @@ function mapCampaign(item) {
   return {
     id: item.id,
     advertiser: item.advertiser,
+    advertiserAccountId: item.advertiserAccountId || null,
+    advertiserAccount: item.advertiserAccount || null,
     name: item.name,
     status: item.status,
     startsAt: item.startsAt,
@@ -73,7 +81,13 @@ function mapCampaign(item) {
       altText: creative.altText,
       width: creative.width,
       height: creative.height,
-      isEnabled: creative.isEnabled
+      isEnabled: creative.isEnabled,
+      storageProvider: creative.storageProvider,
+      storageKey: creative.storageKey,
+      mimeType: creative.mimeType,
+      fileSizeBytes: creative.fileSizeBytes,
+      checksum: creative.checksum,
+      assetVersion: creative.assetVersion
     }))
   };
 }
@@ -81,7 +95,10 @@ function mapCampaign(item) {
 export async function listAdCampaigns(_req, res, next) {
   try {
     const campaigns = await prisma.adCampaign.findMany({
-      include: { creatives: { orderBy: { createdAt: "desc" } } },
+      include: {
+        advertiserAccount: { select: { id: true, name: true, status: true } },
+        creatives: { orderBy: { createdAt: "desc" } }
+      },
       orderBy: [{ priority: "desc" }, { createdAt: "desc" }]
     });
     res.json({ items: campaigns.map(mapCampaign) });

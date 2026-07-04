@@ -115,6 +115,38 @@ describe("Ads advertiser accounts admin API", () => {
     expect(prismaMock.advertiserMembership.create).not.toHaveBeenCalled();
   });
 
+  it("resolves a membership by exact email without listing users", async () => {
+    prismaMock.advertiserAccount.findUnique.mockResolvedValue(account());
+    prismaMock.user.findUnique.mockResolvedValue({ id: USER_ID });
+    prismaMock.advertiserMembership.findUnique.mockResolvedValue(null);
+    prismaMock.advertiserMembership.create.mockResolvedValue({ id: MEMBERSHIP_ID });
+    const res = response();
+
+    await createAdvertiserMembership(
+      {
+        params: { accountId: ACCOUNT_ID },
+        body: { email: "MEMBRO@EXAMPLE.COM", role: "campaign_manager", status: "active" },
+        user: { id: USER_ID }
+      },
+      res,
+      vi.fn()
+    );
+
+    expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
+      where: { email: "membro@example.com" },
+      select: { id: true }
+    });
+    expect(prismaMock.advertiserMembership.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        accountId: ACCOUNT_ID,
+        userId: USER_ID,
+        role: "campaign_manager",
+        status: "active"
+      })
+    });
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
   it("revokes a membership without deleting it or its user", async () => {
     prismaMock.advertiserMembership.findUnique.mockResolvedValue({ id: MEMBERSHIP_ID });
     prismaMock.advertiserMembership.update.mockResolvedValue({

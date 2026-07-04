@@ -26,7 +26,7 @@ import {
   unfollowArtist,
   updateArtist
 } from "../controllers/artists.controller.js";
-import { login, logout, me, refresh, register } from "../controllers/auth.controller.js";
+import { devLoginAdmin, login, logout, me, refresh, register } from "../controllers/auth.controller.js";
 import { createProducerUser, listProducerUsers } from "../controllers/users.controller.js";
 import { listMyRadar, markEventInRadar, unmarkEventFromRadar } from "../controllers/radar.controller.js";
 import { listMyHistory, markEventAsAttended, unmarkEventAsAttended } from "../controllers/history.controller.js";
@@ -69,6 +69,8 @@ import { uploadImage } from "../controllers/uploads.controller.js";
 import { imageUpload } from "../middlewares/upload.js";
 import { createRateLimiter } from "../middlewares/rateLimit.js";
 import { requireFeatureFlag } from "../middlewares/featureFlags.js";
+import { listAdPlacements } from "../controllers/adPlacements.controller.js";
+import { uploadAdCreativeAsset } from "../controllers/adCreativeUploads.controller.js";
 import {
   createAdvertiserAccount,
   createAdvertiserMembership,
@@ -91,6 +93,14 @@ const canManageAds = [requireAuth, requireRole(["admin"])];
 const canManageAdvertiserAccounts = [
   ...canManageAds,
   requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED")
+];
+const canViewAdPlacementCatalog = [
+  ...canManageAds,
+  requireFeatureFlag("ADS_PLACEMENT_CATALOG_ENABLED")
+];
+const canUploadAdCreativeToR2 = [
+  ...canManageAds,
+  requireFeatureFlag("ADS_R2_CREATIVE_UPLOAD_ENABLED")
 ];
 const canManageAcquisition = [requireAuth, requireRole(["admin"])];
 const canUploadImages = [requireAuth, requireRole(["admin", "producer", "venue_manager"])];
@@ -133,6 +143,7 @@ const pushLimiter = createRateLimiter({
 
 router.post("/auth/register", authLimiter, register);
 router.post("/auth/login", authLimiter, login);
+router.post("/auth/dev/admin", authLimiter, devLoginAdmin);
 router.post("/auth/refresh", authLimiter, refresh);
 router.post("/auth/logout", authLimiter, logout);
 router.get("/auth/me", requireAuth, me);
@@ -203,6 +214,7 @@ router.get("/artists/:id/profile", getArtistProfile);
 router.post("/artists/:id/follow", requireAuth, followArtist);
 router.delete("/artists/:id/follow", requireAuth, unfollowArtist);
 router.post("/uploads/image", ...canUploadImages, uploadLimiter, imageUpload.single("file"), uploadImage);
+router.post("/ads/uploads/creative", ...canUploadAdCreativeToR2, uploadLimiter, imageUpload.single("file"), uploadAdCreativeAsset);
 router.post("/artists", ...canManageCatalog, createArtist);
 router.patch("/artists/:id", ...canManageCatalog, updateArtist);
 router.delete("/artists/:id", ...canManageCatalog, deleteArtist);
@@ -210,6 +222,7 @@ router.get("/ads/slots/:slot/delivery", getAdDelivery);
 router.post("/ads/track/impression", adsTrackLimiter, trackAdImpression);
 router.post("/ads/track/click", adsTrackLimiter, trackAdClick);
 router.get("/ads/report", ...canManageAds, getAdsReport);
+router.get("/ads/placements", ...canViewAdPlacementCatalog, listAdPlacements);
 router.get("/ads/activity", ...canManageAds, getAdsActivity);
 router.get("/ads/venue-summary", requireAuth, requireRole(["admin", "venue_manager"]), getVenueAdsSummary);
 router.get("/ads/campaigns", ...canManageAds, listAdCampaigns);

@@ -132,7 +132,12 @@ describe("Ads controller legacy contracts", () => {
   });
 
   it("keeps the campaign list envelope and mapped creative fields", async () => {
-    prismaMock.adCampaign.findMany.mockResolvedValue([activeCampaign()]);
+    prismaMock.adCampaign.findMany.mockResolvedValue([
+      activeCampaign({
+        advertiserAccountId: "44444444-4444-4444-8444-444444444444",
+        advertiserAccount: { id: "44444444-4444-4444-8444-444444444444", name: "Conta Casa", status: "active" }
+      })
+    ]);
     const res = createResponse();
     const next = vi.fn();
 
@@ -144,6 +149,8 @@ describe("Ads controller legacy contracts", () => {
         expect.objectContaining({
           id: CAMPAIGN_ID,
           advertiser: "Casa Exemplo",
+          advertiserAccountId: "44444444-4444-4444-8444-444444444444",
+          advertiserAccount: expect.objectContaining({ name: "Conta Casa" }),
           name: "Campanha Centro",
           status: "active",
           creatives: [

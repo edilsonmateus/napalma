@@ -5,6 +5,11 @@ export async function login(payload) {
   return data;
 }
 
+export async function loginAsLocalAdmin() {
+  const { data } = await api.post("/auth/dev/admin");
+  return data;
+}
+
 export async function register(payload) {
   const { data } = await api.post("/auth/register", payload);
   return data;

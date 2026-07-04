@@ -12,20 +12,32 @@ import {
 } from "recharts";
 import {
   useAdCampaignsQuery,
+  useAdPlacementsQuery,
   useAdvertiserAccountQuery,
   useAdvertiserAccountsQuery,
   useAdsActivityQuery,
   useAdDeliveryQuery,
   useAdsReportQuery,
   useCreateAdCampaignMutation,
+  useCreateAdvertiserAccountMutation,
+  useCreateAdvertiserMembershipMutation,
   useCreateAdCreativeMutation,
+  useRevokeAdvertiserMembershipMutation,
+  useSetCampaignAdvertiserAccountMutation,
   useUpdateAdCampaignMutation,
-  useUpdateAdCreativeMutation
+  useUpdateAdvertiserAccountMutation,
+  useUpdateAdvertiserMembershipMutation,
+  useUpdateAdCreativeMutation,
+  useUploadAdCreativeAssetMutation
 } from "../hooks/useEventsQuery";
 import { useAuthStore } from "../store/authStore";
 
 const ADVERTISER_ACCOUNTS_ENABLED =
   String(import.meta.env.VITE_ADS_ADVERTISER_ACCOUNTS_ENABLED || "").toLowerCase() === "true";
+const PLACEMENT_CATALOG_ENABLED =
+  String(import.meta.env.VITE_ADS_PLACEMENT_CATALOG_ENABLED || "").toLowerCase() === "true";
+const R2_CREATIVE_UPLOAD_ENABLED =
+  String(import.meta.env.VITE_ADS_R2_CREATIVE_UPLOAD_ENABLED || "").toLowerCase() === "true";
 
 const SLOT_OPTIONS = [
   "explore_feed_large",
@@ -63,8 +75,29 @@ const INITIAL_CREATIVE = {
   altText: "",
   width: "",
   height: "",
-  isEnabled: true
+  isEnabled: true,
+  storageProvider: null,
+  storageKey: null,
+  mimeType: null,
+  fileSizeBytes: null,
+  checksum: null,
+  assetVersion: 1
 };
+
+const INITIAL_ADVERTISER_ACCOUNT = {
+  name: "",
+  type: "unclassified",
+  status: "draft",
+  legalName: "",
+  contactEmail: "",
+  contactPhone: "",
+  notes: ""
+};
+
+const ADVERTISER_TYPES = ["unclassified", "venue", "producer", "artist", "brand", "agency", "group", "internal"];
+const ADVERTISER_STATUSES = ["draft", "pending_review", "active", "suspended", "rejected", "archived"];
+const MEMBERSHIP_ROLES = ["owner", "admin", "campaign_manager", "analyst", "billing_manager", "viewer"];
+const MEMBERSHIP_STATUSES = ["invited", "active", "suspended", "revoked"];
 
 export default function AdsAdminPage() {
   const user = useAuthStore((state) => state.user);
@@ -80,6 +113,11 @@ export default function AdsAdminPage() {
   const { data: activity = [], isLoading: activityLoading } = useAdsActivityQuery(25, true);
   const { data: simulatedDelivery, isLoading: simLoading } = useAdDeliveryQuery(simulatorSlot, true);
   const {
+    data: placements = [],
+    isLoading: placementsLoading,
+    isError: placementsError
+  } = useAdPlacementsQuery(PLACEMENT_CATALOG_ENABLED);
+  const {
     data: advertiserAccounts = [],
     isLoading: advertiserAccountsLoading,
     isError: advertiserAccountsError
@@ -92,9 +130,21 @@ export default function AdsAdminPage() {
   const updateCampaign = useUpdateAdCampaignMutation();
   const createCreative = useCreateAdCreativeMutation();
   const updateCreative = useUpdateAdCreativeMutation();
+  const uploadAdCreativeAsset = useUploadAdCreativeAssetMutation();
+  const createAdvertiserAccount = useCreateAdvertiserAccountMutation();
+  const updateAdvertiserAccount = useUpdateAdvertiserAccountMutation();
+  const createAdvertiserMembership = useCreateAdvertiserMembershipMutation();
+  const updateAdvertiserMembership = useUpdateAdvertiserMembershipMutation();
+  const revokeAdvertiserMembership = useRevokeAdvertiserMembershipMutation();
+  const setCampaignAdvertiserAccount = useSetCampaignAdvertiserAccountMutation();
 
   const [campaignForm, setCampaignForm] = useState(INITIAL_CAMPAIGN);
   const [creativeForm, setCreativeForm] = useState(INITIAL_CREATIVE);
+  const [advertiserForm, setAdvertiserForm] = useState(INITIAL_ADVERTISER_ACCOUNT);
+  const [editingAdvertiserId, setEditingAdvertiserId] = useState(null);
+  const [showAdvertiserForm, setShowAdvertiserForm] = useState(false);
+  const [membershipForm, setMembershipForm] = useState({ email: "", role: "viewer", status: "invited" });
+  const [campaignToLinkId, setCampaignToLinkId] = useState("");
   const [message, setMessage] = useState("");
   const [confirmEndCampaign, setConfirmEndCampaign] = useState(null);
 
@@ -120,6 +170,10 @@ export default function AdsAdminPage() {
         .includes(query)
     );
   }, [advertiserAccounts, advertiserQuery]);
+  const unlinkedCampaigns = useMemo(
+    () => campaigns.filter((campaign) => !campaign.advertiserAccountId),
+    [campaigns]
+  );
   const expiredActiveCampaigns = useMemo(() => {
     const now = Date.now();
     return orderedCampaigns.filter((item) => item.status === "active" && item.endsAt && new Date(item.endsAt).getTime() < now);
@@ -199,6 +253,116 @@ export default function AdsAdminPage() {
       setMessage("Campanha criada.");
     } catch (_error) {
       setMessage("Não foi possivel criar campanha.");
+    }
+  }
+
+  function openCreateAdvertiserForm() {
+    setEditingAdvertiserId(null);
+    setAdvertiserForm(INITIAL_ADVERTISER_ACCOUNT);
+    setShowAdvertiserForm(true);
+  }
+
+  function openEditAdvertiserForm(item) {
+    setEditingAdvertiserId(item.id);
+    setAdvertiserForm({
+      name: item.name || "",
+      type: item.type || "unclassified",
+      status: item.status || "draft",
+      legalName: item.legalName || "",
+      contactEmail: item.contactEmail || "",
+      contactPhone: item.contactPhone || "",
+      notes: item.notes || ""
+    });
+    setShowAdvertiserForm(true);
+  }
+
+  async function handleSaveAdvertiser(event) {
+    event.preventDefault();
+    setMessage("");
+    const payload = Object.fromEntries(
+      Object.entries(advertiserForm).map(([key, value]) => [key, typeof value === "string" && !value.trim() ? null : value])
+    );
+    payload.name = advertiserForm.name.trim();
+    payload.type = advertiserForm.type;
+    payload.status = advertiserForm.status;
+
+    try {
+      const item = editingAdvertiserId
+        ? await updateAdvertiserAccount.mutateAsync({ id: editingAdvertiserId, payload })
+        : await createAdvertiserAccount.mutateAsync(payload);
+      setSelectedAdvertiserId(item.id);
+      setShowAdvertiserForm(false);
+      setEditingAdvertiserId(null);
+      setAdvertiserForm(INITIAL_ADVERTISER_ACCOUNT);
+      setMessage(editingAdvertiserId ? "Conta anunciante atualizada." : "Conta anunciante criada.");
+    } catch (error) {
+      setMessage(error?.response?.data?.message || "Nao foi possivel salvar a conta anunciante.");
+    }
+  }
+
+  async function handleAddMembership(event) {
+    event.preventDefault();
+    if (!selectedAdvertiserId) return;
+    setMessage("");
+    try {
+      await createAdvertiserMembership.mutateAsync({
+        accountId: selectedAdvertiserId,
+        payload: { ...membershipForm, email: membershipForm.email.trim().toLowerCase() }
+      });
+      setMembershipForm({ email: "", role: "viewer", status: "invited" });
+      setMessage("Usuario vinculado a conta anunciante.");
+    } catch (error) {
+      setMessage(error?.response?.data?.message || "Nao foi possivel vincular o usuario.");
+    }
+  }
+
+  async function handleUpdateMembership(membership, payload) {
+    setMessage("");
+    try {
+      await updateAdvertiserMembership.mutateAsync({
+        id: membership.id,
+        accountId: selectedAdvertiserId,
+        payload
+      });
+      setMessage("Permissao do membro atualizada.");
+    } catch (error) {
+      setMessage(error?.response?.data?.message || "Nao foi possivel atualizar o membro.");
+    }
+  }
+
+  async function handleRevokeMembership(membership) {
+    setMessage("");
+    try {
+      await revokeAdvertiserMembership.mutateAsync({ id: membership.id, accountId: selectedAdvertiserId });
+      setMessage("Acesso do membro revogado.");
+    } catch (error) {
+      setMessage(error?.response?.data?.message || "Nao foi possivel revogar o acesso.");
+    }
+  }
+
+  async function handleLinkCampaign(event) {
+    event.preventDefault();
+    if (!campaignToLinkId || !selectedAdvertiserId) return;
+    setMessage("");
+    try {
+      await setCampaignAdvertiserAccount.mutateAsync({
+        campaignId: campaignToLinkId,
+        accountId: selectedAdvertiserId
+      });
+      setCampaignToLinkId("");
+      setMessage("Campanha vinculada a conta anunciante.");
+    } catch (error) {
+      setMessage(error?.response?.data?.message || "Nao foi possivel vincular a campanha.");
+    }
+  }
+
+  async function handleUnlinkCampaign(campaignId) {
+    setMessage("");
+    try {
+      await setCampaignAdvertiserAccount.mutateAsync({ campaignId, accountId: null });
+      setMessage("Campanha desvinculada; o anunciante legado foi preservado.");
+    } catch (error) {
+      setMessage(error?.response?.data?.message || "Nao foi possivel desvincular a campanha.");
     }
   }
 
@@ -303,7 +467,13 @@ export default function AdsAdminPage() {
           altText: creativeForm.altText || null,
           width: creativeForm.width ? Number(creativeForm.width) : null,
           height: creativeForm.height ? Number(creativeForm.height) : null,
-          isEnabled: creativeForm.isEnabled
+          isEnabled: creativeForm.isEnabled,
+          storageProvider: creativeForm.storageProvider,
+          storageKey: creativeForm.storageKey,
+          mimeType: creativeForm.mimeType,
+          fileSizeBytes: creativeForm.fileSizeBytes,
+          checksum: creativeForm.checksum,
+          assetVersion: creativeForm.assetVersion
         }
       });
       setCreativeForm((prev) => ({
@@ -313,6 +483,41 @@ export default function AdsAdminPage() {
       setMessage("Criativo adicionado.");
     } catch (_error) {
       setMessage("Não foi possivel adicionar criativo.");
+    }
+  }
+
+  async function handleCreativeAssetUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!creativeForm.campaignId) {
+      setMessage("Selecione uma campanha antes de enviar o criativo.");
+      event.target.value = "";
+      return;
+    }
+    setMessage("");
+    try {
+      const asset = await uploadAdCreativeAsset.mutateAsync({
+        file,
+        campaignId: creativeForm.campaignId,
+        slot: creativeForm.slot
+      });
+      setCreativeForm((current) => ({
+        ...current,
+        imageUrl: asset.url,
+        width: asset.width,
+        height: asset.height,
+        storageProvider: asset.storageProvider,
+        storageKey: asset.storageKey,
+        mimeType: asset.mimeType,
+        fileSizeBytes: asset.fileSizeBytes,
+        checksum: asset.checksum,
+        assetVersion: asset.assetVersion
+      }));
+      setMessage("Criativo enviado ao Cloudflare R2.");
+    } catch (error) {
+      setMessage(error?.response?.data?.message || "Nao foi possivel enviar o criativo ao R2.");
+    } finally {
+      event.target.value = "";
     }
   }
 
@@ -393,6 +598,7 @@ export default function AdsAdminPage() {
             ["health", "Saúde e Alertas"],
             ["activity", "Atividade"],
             ...(ADVERTISER_ACCOUNTS_ENABLED ? [["advertisers", "Anunciantes"]] : []),
+            ...(PLACEMENT_CATALOG_ENABLED ? [["inventory", "Inventario"]] : []),
             ["reports", "Relatórios"]
           ].map(([id, label]) => (
             <button key={id} className={`chip ${adsSection === id ? "active" : ""}`} onClick={() => setAdsSection(id)}>{label}</button>
@@ -400,12 +606,54 @@ export default function AdsAdminPage() {
         </aside>
         <div className="ads-content">
 
+      {adsSection === "inventory" && PLACEMENT_CATALOG_ENABLED ? (
+      <section className="placement-catalog-section">
+        <div className="admin-list-header">
+          <div>
+            <strong>Inventario canonico ({placements.length})</strong>
+            <p className="meta-line">Catalogo somente leitura; delivery permanece no AdSlot legado.</p>
+          </div>
+        </div>
+        {placementsLoading ? <p className="empty">Carregando placements...</p> : null}
+        {placementsError ? <p className="empty empty-highlight">Nao foi possivel carregar o inventario.</p> : null}
+        <div className="placement-catalog-grid">
+          {placements.map((placement) => (
+            <article key={placement.key} className="clean-card placement-catalog-card">
+              <div className="advertiser-readonly-title">
+                <div>
+                  <h3>{placement.name}</h3>
+                  <p className="meta-line">{placement.key}</p>
+                </div>
+                <span className={`status-badge ${placement.isActive ? "status-active" : "status-archived"}`}>
+                  {placement.isActive ? "ativo" : "inativo"}
+                </span>
+              </div>
+              <p>{placement.description}</p>
+              <dl className="advertiser-readonly-data">
+                <div><dt>Slot legado</dt><dd>{placement.legacySlot}</dd></div>
+                <div><dt>Superficie</dt><dd>{placement.page} / {placement.surface}</dd></div>
+                <div><dt>Dimensao</dt><dd>{placement.recommendedWidth} x {placement.recommendedHeight}</dd></div>
+                <div><dt>Proporcao</dt><dd>{placement.aspectRatio}</dd></div>
+                <div><dt>Formatos</dt><dd>{placement.allowedMimeTypes.join(", ")}</dd></div>
+                <div><dt>Limite</dt><dd>{Math.round(placement.maxFileSizeBytes / 1024 / 1024)} MB</dd></div>
+                <div><dt>Dispositivos</dt><dd>mobile e desktop</dd></div>
+                <div><dt>Compra</dt><dd>{placement.commercialRules.purchaseEnabled ? "habilitada" : "indisponivel"}</dd></div>
+              </dl>
+              <p className="meta-line">
+                Aprovacao: {placement.requiresApproval ? "obrigatoria" : "nao exigida"} · targeting: {placement.supportsTargeting ? "sim" : "nao"} · frequency cap: {placement.supportsFrequencyCap ? "sim" : "nao"}
+              </p>
+            </article>
+          ))}
+        </div>
+      </section>
+      ) : null}
+
       {adsSection === "advertisers" && ADVERTISER_ACCOUNTS_ENABLED ? (
       <section className="advertiser-readonly-section">
         <div className="admin-list-header">
           <div>
             <strong>Contas anunciantes ({filteredAdvertiserAccounts.length})</strong>
-            <p className="meta-line">Consulta administrativa em modo somente leitura.</p>
+            <p className="meta-line">Cadastro e consulta administrativa de contas.</p>
           </div>
           <input
             className="search-input"
@@ -413,7 +661,75 @@ export default function AdsAdminPage() {
             value={advertiserQuery}
             onChange={(event) => setAdvertiserQuery(event.target.value)}
           />
+          <button type="button" className="chip" onClick={openCreateAdvertiserForm}>
+            Nova conta
+          </button>
         </div>
+
+        {showAdvertiserForm ? (
+          <form className="venue-form clean-card advertiser-account-form" onSubmit={handleSaveAdvertiser}>
+            <strong>{editingAdvertiserId ? "Editar conta anunciante" : "Nova conta anunciante"}</strong>
+            <input
+              required
+              minLength={2}
+              maxLength={160}
+              placeholder="Nome da conta"
+              value={advertiserForm.name}
+              onChange={(event) => setAdvertiserForm((current) => ({ ...current, name: event.target.value }))}
+            />
+            <input
+              maxLength={200}
+              placeholder="Razao social (opcional)"
+              value={advertiserForm.legalName}
+              onChange={(event) => setAdvertiserForm((current) => ({ ...current, legalName: event.target.value }))}
+            />
+            <select
+              aria-label="Tipo da conta anunciante"
+              value={advertiserForm.type}
+              onChange={(event) => setAdvertiserForm((current) => ({ ...current, type: event.target.value }))}
+            >
+              {ADVERTISER_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+            </select>
+            <select
+              aria-label="Status da conta anunciante"
+              value={advertiserForm.status}
+              onChange={(event) => setAdvertiserForm((current) => ({ ...current, status: event.target.value }))}
+            >
+              {ADVERTISER_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+            </select>
+            <input
+              type="email"
+              maxLength={200}
+              placeholder="E-mail de contato (opcional)"
+              value={advertiserForm.contactEmail}
+              onChange={(event) => setAdvertiserForm((current) => ({ ...current, contactEmail: event.target.value }))}
+            />
+            <input
+              maxLength={40}
+              placeholder="Telefone (opcional)"
+              value={advertiserForm.contactPhone}
+              onChange={(event) => setAdvertiserForm((current) => ({ ...current, contactPhone: event.target.value }))}
+            />
+            <textarea
+              maxLength={2000}
+              placeholder="Observacoes internas (opcional)"
+              value={advertiserForm.notes}
+              onChange={(event) => setAdvertiserForm((current) => ({ ...current, notes: event.target.value }))}
+            />
+            <div className="form-actions-inline">
+              <button
+                type="submit"
+                className="auth-btn auth-btn-primary"
+                disabled={createAdvertiserAccount.isPending || updateAdvertiserAccount.isPending}
+              >
+                Salvar conta
+              </button>
+              <button type="button" className="auth-btn" onClick={() => setShowAdvertiserForm(false)}>
+                Cancelar
+              </button>
+            </div>
+          </form>
+        ) : null}
 
         {advertiserAccountsLoading ? <p className="empty">Carregando anunciantes...</p> : null}
         {advertiserAccountsError ? (
@@ -463,6 +779,9 @@ export default function AdsAdminPage() {
                     {selectedAdvertiser.status}
                   </span>
                 </div>
+                <button type="button" className="chip" onClick={() => openEditAdvertiserForm(selectedAdvertiser)}>
+                  Editar conta
+                </button>
                 <dl className="advertiser-readonly-data">
                   <div><dt>Tipo</dt><dd>{selectedAdvertiser.type}</dd></div>
                   <div><dt>Origem</dt><dd>{selectedAdvertiser.source}</dd></div>
@@ -471,19 +790,102 @@ export default function AdsAdminPage() {
                 </dl>
                 <div className="admin-content-divider" />
                 <h4>Campanhas ({selectedAdvertiser.campaigns?.length || 0})</h4>
+                <form className="form-actions-inline advertiser-campaign-link" onSubmit={handleLinkCampaign}>
+                  <select
+                    aria-label="Campanha sem conta anunciante"
+                    value={campaignToLinkId}
+                    onChange={(event) => setCampaignToLinkId(event.target.value)}
+                  >
+                    <option value="">Selecionar campanha sem conta...</option>
+                    {unlinkedCampaigns.map((campaign) => (
+                      <option key={campaign.id} value={campaign.id}>
+                        {campaign.name} - {campaign.advertiser}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="submit"
+                    className="chip"
+                    disabled={!campaignToLinkId || setCampaignAdvertiserAccount.isPending}
+                  >
+                    Vincular campanha
+                  </button>
+                </form>
                 {(selectedAdvertiser.campaigns || []).map((campaign) => (
-                  <p key={campaign.id} className="meta-line">
-                    {campaign.name} · {campaign.status} · legado: {campaign.advertiser}
-                  </p>
+                  <div key={campaign.id} className="advertiser-campaign-row">
+                    <span className="meta-line">
+                      {campaign.name} · {campaign.status} · legado: {campaign.advertiser}
+                    </span>
+                    <button
+                      type="button"
+                      className="chip"
+                      disabled={setCampaignAdvertiserAccount.isPending}
+                      onClick={() => handleUnlinkCampaign(campaign.id)}
+                    >
+                      Desvincular
+                    </button>
+                  </div>
                 ))}
                 {selectedAdvertiser.campaigns?.length === 0 ? (
                   <p className="meta-line">Nenhuma campanha vinculada.</p>
                 ) : null}
                 <h4>Membros ({selectedAdvertiser.memberships?.length || 0})</h4>
+                <form className="venue-form advertiser-membership-form" onSubmit={handleAddMembership}>
+                  <input
+                    required
+                    type="email"
+                    placeholder="E-mail do usuario"
+                    value={membershipForm.email}
+                    onChange={(event) => setMembershipForm((current) => ({ ...current, email: event.target.value }))}
+                  />
+                  <select
+                    aria-label="Papel do novo membro"
+                    value={membershipForm.role}
+                    onChange={(event) => setMembershipForm((current) => ({ ...current, role: event.target.value }))}
+                  >
+                    {MEMBERSHIP_ROLES.map((role) => <option key={role} value={role}>{role}</option>)}
+                  </select>
+                  <select
+                    aria-label="Status do novo membro"
+                    value={membershipForm.status}
+                    onChange={(event) => setMembershipForm((current) => ({ ...current, status: event.target.value }))}
+                  >
+                    {MEMBERSHIP_STATUSES.filter((status) => status !== "revoked").map((status) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                  <button type="submit" className="chip" disabled={createAdvertiserMembership.isPending}>
+                    Adicionar membro
+                  </button>
+                </form>
                 {(selectedAdvertiser.memberships || []).map((membership) => (
-                  <p key={membership.id} className="meta-line">
-                    {membership.user?.email || membership.userId} · {membership.role} · {membership.status}
-                  </p>
+                  <div key={membership.id} className="advertiser-membership-row">
+                    <span className="meta-line">{membership.user?.email || membership.userId}</span>
+                    <select
+                      aria-label={`Papel de ${membership.user?.email || membership.userId}`}
+                      value={membership.role}
+                      disabled={membership.status === "revoked" || updateAdvertiserMembership.isPending}
+                      onChange={(event) => handleUpdateMembership(membership, { role: event.target.value })}
+                    >
+                      {MEMBERSHIP_ROLES.map((role) => <option key={role} value={role}>{role}</option>)}
+                    </select>
+                    <select
+                      aria-label={`Status de ${membership.user?.email || membership.userId}`}
+                      value={membership.status}
+                      disabled={membership.status === "revoked" || updateAdvertiserMembership.isPending}
+                      onChange={(event) => handleUpdateMembership(membership, { status: event.target.value })}
+                    >
+                      {MEMBERSHIP_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+                    </select>
+                    <button
+                      type="button"
+                      className="chip"
+                      disabled={membership.status === "revoked" || revokeAdvertiserMembership.isPending}
+                      onClick={() => handleRevokeMembership(membership)}
+                    >
+                      Revogar
+                    </button>
+                  </div>
                 ))}
                 {selectedAdvertiser.memberships?.length === 0 ? (
                   <p className="meta-line">Nenhum membro vinculado.</p>
@@ -772,12 +1174,28 @@ export default function AdsAdminPage() {
         >
           {SLOT_OPTIONS.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
         </select>
+        {R2_CREATIVE_UPLOAD_ENABLED ? (
+          <label className="meta-line">
+            Enviar imagem ao Cloudflare R2
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={!creativeForm.campaignId || uploadAdCreativeAsset.isPending}
+              onChange={handleCreativeAssetUpload}
+            />
+          </label>
+        ) : null}
         <input
           placeholder="URL da imagem"
           value={creativeForm.imageUrl}
           onChange={(e) => setCreativeForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
           required
         />
+        {creativeForm.storageProvider ? (
+          <p className="meta-line">
+            {creativeForm.storageProvider} · {creativeForm.mimeType} · {Math.round(creativeForm.fileSizeBytes / 1024)} KB
+          </p>
+        ) : null}
         <input
           placeholder="Link de destino (opcional)"
           value={creativeForm.destinationUrl}

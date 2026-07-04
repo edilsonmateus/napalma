@@ -1,7 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getAdPlacements } from "../services/adPlacements.service";
+import { uploadAdCreativeAsset } from "../services/adCreativeAssets.service";
 import {
+  createAdvertiserAccount,
+  createAdvertiserMembership,
   getAdvertiserAccount,
-  getAdvertiserAccounts
+  getAdvertiserAccounts,
+  revokeAdvertiserMembership,
+  setCampaignAdvertiserAccount,
+  updateAdvertiserAccount,
+  updateAdvertiserMembership
 } from "../services/advertiserAccounts.service";
 import {
   createArtist,
@@ -136,11 +144,82 @@ export function useAdvertiserAccountsQuery(params = {}, enabled = true) {
   });
 }
 
+export function useAdPlacementsQuery(enabled = true) {
+  return useQuery({ queryKey: ["ad-placements"], queryFn: getAdPlacements, enabled });
+}
+
+export function useUploadAdCreativeAssetMutation() {
+  return useMutation({ mutationFn: uploadAdCreativeAsset });
+}
+
 export function useAdvertiserAccountQuery(id, enabled = true) {
   return useQuery({
     queryKey: ["advertiser-account", id],
     queryFn: () => getAdvertiserAccount(id),
     enabled: Boolean(id) && enabled
+  });
+}
+
+export function useCreateAdvertiserAccountMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createAdvertiserAccount,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["advertiser-accounts"] })
+  });
+}
+
+export function useUpdateAdvertiserAccountMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => updateAdvertiserAccount(id, payload),
+    onSuccess: (item) => {
+      queryClient.invalidateQueries({ queryKey: ["advertiser-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["advertiser-account", item.id] });
+    }
+  });
+}
+
+export function useCreateAdvertiserMembershipMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ accountId, payload }) => createAdvertiserMembership(accountId, payload),
+    onSuccess: (_item, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["advertiser-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["advertiser-account", variables.accountId] });
+    }
+  });
+}
+
+export function useUpdateAdvertiserMembershipMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => updateAdvertiserMembership(id, payload),
+    onSuccess: (_item, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["advertiser-account", variables.accountId] });
+    }
+  });
+}
+
+export function useRevokeAdvertiserMembershipMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }) => revokeAdvertiserMembership(id),
+    onSuccess: (_item, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["advertiser-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["advertiser-account", variables.accountId] });
+    }
+  });
+}
+
+export function useSetCampaignAdvertiserAccountMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ campaignId, accountId }) => setCampaignAdvertiserAccount(campaignId, accountId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ad-campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["advertiser-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["advertiser-account"] });
+    }
   });
 }
 

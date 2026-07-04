@@ -28,11 +28,14 @@ const listAccountsQuerySchema = z.object({
   type: z.nativeEnum(AdvertiserAccountType).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50)
 });
-const createMembershipSchema = z.object({
-  userId: uuid,
-  role: z.nativeEnum(AdvertiserMembershipRole).default("viewer"),
-  status: z.nativeEnum(AdvertiserMembershipStatus).default("invited")
-});
+const createMembershipSchema = z
+  .object({
+    userId: uuid.optional(),
+    email: z.string().trim().email().max(200).optional(),
+    role: z.nativeEnum(AdvertiserMembershipRole).default("viewer"),
+    status: z.nativeEnum(AdvertiserMembershipStatus).default("invited")
+  })
+  .refine((payload) => payload.userId || payload.email, "Informe userId ou email.");
 const updateMembershipSchema = z
   .object({
     role: z.nativeEnum(AdvertiserMembershipRole).optional(),
@@ -188,14 +191,14 @@ export async function createAdvertiserMembership(req, res, next) {
     const payload = createMembershipSchema.parse(req.body);
     if (!(await findAccountOrRespond(accountId, res))) return;
     const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
+      where: payload.userId ? { id: payload.userId } : { email: payload.email.toLowerCase() },
       select: { id: true }
     });
     if (!user) {
       return res.status(404).json({ error: "user_not_found", message: "Usuario nao encontrado." });
     }
     const duplicate = await prisma.advertiserMembership.findUnique({
-      where: { accountId_userId: { accountId, userId: payload.userId } },
+      where: { accountId_userId: { accountId, userId: user.id } },
       select: { id: true }
     });
     if (duplicate) {
@@ -207,7 +210,9 @@ export async function createAdvertiserMembership(req, res, next) {
     const item = await prisma.advertiserMembership.create({
       data: {
         accountId,
-        ...payload,
+        userId: user.id,
+        role: payload.role,
+        status: payload.status,
         invitedByUserId: req.user.id,
         acceptedAt: payload.status === "active" ? new Date() : null
       }

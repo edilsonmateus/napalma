@@ -654,6 +654,27 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   gap: 12px;
 }
 
+.placement-catalog-section,
+.placement-catalog-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.placement-catalog-card h3 {
+  margin: 0 0 4px;
+}
+
+.placement-catalog-card > p {
+  color: #aebfcd;
+  font-size: 12px;
+}
+
+@media (min-width: 1100px) {
+  .placement-catalog-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .advertiser-readonly-layout {
   display: grid;
   gap: 10px;
@@ -724,6 +745,55 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   color: #aebfcd;
   font-size: 13px;
   font-weight: 500;
+}
+
+.advertiser-membership-form,
+.advertiser-membership-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(2, minmax(120px, auto)) auto;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.advertiser-membership-row {
+  padding-top: 8px;
+  border-top: 1px solid #24384a;
+}
+
+.advertiser-membership-row select {
+  min-width: 0;
+}
+
+.advertiser-campaign-link,
+.advertiser-campaign-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.advertiser-campaign-link select,
+.advertiser-campaign-row .meta-line {
+  min-width: 0;
+  flex: 1;
+}
+
+.advertiser-campaign-row {
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid #24384a;
+}
+
+@media (max-width: 899px) {
+  .advertiser-membership-form,
+  .advertiser-membership-row,
+  .advertiser-campaign-link,
+  .advertiser-campaign-row {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 .advertiser-readonly-data {

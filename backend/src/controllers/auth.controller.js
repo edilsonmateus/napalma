@@ -146,6 +146,45 @@ export async function login(req, res, next) {
   }
 }
 
+export async function devLoginAdmin(req, res, next) {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(404).json({
+      error: "not_found",
+      message: "Rota nao encontrada."
+    });
+  }
+
+  try {
+    const email = "admin@napalma.app";
+    let user = await prisma.user.findUnique({ where: { email } });
+
+    if (user) {
+      user = await prisma.user.update({
+        where: { email },
+        data: { role: "admin" }
+      });
+    } else {
+      const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10);
+      user = await prisma.user.create({
+        data: {
+          email,
+          username: `admin.local.${crypto.randomBytes(4).toString("hex")}`,
+          firstName: "Admin",
+          lastName: "Local",
+          passwordHash,
+          role: "admin"
+        }
+      });
+    }
+
+    const accessToken = signAccessToken(user);
+    const refreshToken = await issueRefreshToken(user.id);
+    return res.json({ accessToken, refreshToken, user: sanitizeUser(user) });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 export function me(req, res) {
   if (!req.user) {
     return res.status(401).json({

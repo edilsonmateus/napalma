@@ -369,6 +369,12 @@ model AdCreative {
   width         Int?
   height        Int?
   isEnabled     Boolean  @default(true)
+  storageProvider String?
+  storageKey      String?
+  mimeType        String?
+  fileSizeBytes   Int?
+  checksum        String?
+  assetVersion    Int     @default(1)
 
   campaign AdCampaign @relation(fields: [campaignId], references: [id])
   events   AdEventLog[]
@@ -377,6 +383,7 @@ model AdCreative {
   updatedAt DateTime @updatedAt
 
   @@index([slot, isEnabled])
+  @@index([storageProvider, storageKey])
 }
 
 model AdEventLog {

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Share2 } from "lucide-react";
 import QRCode from "qrcode";
-import { login } from "../services/auth.service";
+import { login, loginAsLocalAdmin } from "../services/auth.service";
 import { useAuthStore } from "../store/authStore";
 import { getRoleHome } from "../utils/roles";
 import { promptInstallApp, subscribeInstallPrompt } from "../utils/installPrompt";
@@ -16,8 +16,7 @@ const DEMO_ACCOUNTS = [
 ];
 
 export default function LoginPage() {
-  const isProductionBuild = import.meta.env.PROD;
-  const allowDemoAuth = import.meta.env.VITE_ENABLE_TEST_LOGIN === "true" || !isProductionBuild;
+  const allowDemoAuth = import.meta.env.DEV && import.meta.env.VITE_ENABLE_TEST_LOGIN === "true";
   const navigate = useNavigate();
   const { user, setAuth } = useAuthStore();
   const [email, setEmail] = useState(allowDemoAuth ? "lia@napalma.app" : "");
@@ -90,6 +89,21 @@ export default function LoginPage() {
     }
   }
 
+  async function handleLocalAdminLogin() {
+    if (!allowDemoAuth) return;
+    setMessage("");
+    setIsLoading(true);
+    try {
+      const data = await loginAsLocalAdmin();
+      setAuth({ token: data.accessToken, refreshToken: data.refreshToken, user: data.user });
+      navigate("/settings/ads", { replace: true });
+    } catch (error) {
+      setMessage(error?.response?.data?.message || "Nao foi possivel iniciar a sessao Admin local.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   async function handleInstallApp() {
     if (!isMobileLike) {
       setShowQrModal(true);
@@ -128,9 +142,14 @@ export default function LoginPage() {
               className="chip"
               type="button"
               onClick={() => {
+                if (account.label === "Admin") {
+                  handleLocalAdminLogin();
+                  return;
+                }
                 setEmail(account.email);
                 setPassword("123456");
               }}
+              disabled={isLoading}
             >
               {account.label}
             </button>

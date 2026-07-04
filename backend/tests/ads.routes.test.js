@@ -20,6 +20,8 @@ describe("Ads route contracts", () => {
     ["/ads/track/impression", "post"],
     ["/ads/track/click", "post"],
     ["/ads/report", "get"],
+    ["/ads/placements", "get"],
+    ["/ads/uploads/creative", "post"],
     ["/ads/activity", "get"],
     ["/ads/venue-summary", "get"],
     ["/ads/campaigns", "get"],
@@ -106,5 +108,54 @@ describe("Ads route contracts", () => {
 
     if (previous === undefined) delete process.env.ADS_ADVERTISER_ACCOUNTS_ENABLED;
     else process.env.ADS_ADVERTISER_ACCOUNTS_ENABLED = previous;
+  });
+
+  it("keeps the placement catalog admin-only and disabled by default", () => {
+    const previous = process.env.ADS_PLACEMENT_CATALOG_ENABLED;
+    delete process.env.ADS_PLACEMENT_CATALOG_ENABLED;
+    const route = findRoute("/ads/placements", "get");
+    expect(route.stack).toHaveLength(4);
+
+    const unauthenticated = createResponse();
+    route.stack[0].handle({ user: null }, unauthenticated, vi.fn());
+    expect(unauthenticated.status).toHaveBeenCalledWith(401);
+
+    const nonAdmin = createResponse();
+    route.stack[1].handle({ userRole: "producer" }, nonAdmin, vi.fn());
+    expect(nonAdmin.status).toHaveBeenCalledWith(403);
+
+    const disabled = createResponse();
+    route.stack[2].handle({}, disabled, vi.fn());
+    expect(disabled.status).toHaveBeenCalledWith(404);
+
+    process.env.ADS_PLACEMENT_CATALOG_ENABLED = "true";
+    const enabledNext = vi.fn();
+    route.stack[2].handle({}, createResponse(), enabledNext);
+    expect(enabledNext).toHaveBeenCalledOnce();
+
+    if (previous === undefined) delete process.env.ADS_PLACEMENT_CATALOG_ENABLED;
+    else process.env.ADS_PLACEMENT_CATALOG_ENABLED = previous;
+  });
+
+  it("keeps R2 creative upload admin-only and disabled by default", () => {
+    const previous = process.env.ADS_R2_CREATIVE_UPLOAD_ENABLED;
+    delete process.env.ADS_R2_CREATIVE_UPLOAD_ENABLED;
+    const route = findRoute("/ads/uploads/creative", "post");
+    expect(route.stack.length).toBeGreaterThanOrEqual(6);
+
+    const unauthenticated = createResponse();
+    route.stack[0].handle({ user: null }, unauthenticated, vi.fn());
+    expect(unauthenticated.status).toHaveBeenCalledWith(401);
+
+    const nonAdmin = createResponse();
+    route.stack[1].handle({ userRole: "producer" }, nonAdmin, vi.fn());
+    expect(nonAdmin.status).toHaveBeenCalledWith(403);
+
+    const disabled = createResponse();
+    route.stack[2].handle({}, disabled, vi.fn());
+    expect(disabled.status).toHaveBeenCalledWith(404);
+
+    if (previous === undefined) delete process.env.ADS_R2_CREATIVE_UPLOAD_ENABLED;
+    else process.env.ADS_R2_CREATIVE_UPLOAD_ENABLED = previous;
   });
 });
