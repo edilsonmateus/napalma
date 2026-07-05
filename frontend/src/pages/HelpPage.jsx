@@ -21,7 +21,7 @@ export default function HelpPage() {
 
       <article className="clean-card legal-card"><h3>Solução de problemas</h3><ul className="legal-list"><li>Atualize a página e confirme sua conexão com a internet.</li><li>Verifique se está na conta e no perfil profissional corretos.</li><li>Para uploads, confirme formato, tamanho e permissões do arquivo.</li><li>Ao pedir ajuda, informe e-mail da conta, tela, horário aproximado e mensagem de erro — nunca envie sua senha.</li></ul></article>
 
-      <article className="clean-card legal-card"><h3>Fale com o suporte</h3><p>Envie sua solicitação para <a href="mailto:suporte@77gira.com.br">suporte@77gira.com.br</a>. Pedidos sobre dados pessoais também podem ser encaminhados por esse canal.</p></article>
+      <article className="clean-card legal-card"><h3>Fale com o suporte</h3><p>Envie sua solicitação para <a href="mailto:77giramundo@gmail.com">77giramundo@gmail.com</a>. Pedidos sobre dados pessoais também podem ser encaminhados por esse canal.</p></article>
 
       <p className="meta-line legal-updated">Última atualização: 05/07/2026</p>
       <p><Link to="/settings" className="btn-link">Voltar para Configurações</Link></p>
