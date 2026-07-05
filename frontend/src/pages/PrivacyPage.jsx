@@ -2,39 +2,30 @@ import { Link } from "react-router-dom";
 
 export default function PrivacyPage() {
   return (
-    <section className="screen">
-      <header className="page-header">
-        <h2>Privacidade</h2>
-        <p>Como coletamos, usamos e protegemos seus dados no 77Gira.</p>
-      </header>
+    <section className="screen legal-screen">
+      <header className="page-header"><h2>Política de Privacidade</h2><p>Transparência sobre como o 77Gira trata dados pessoais para conectar público, artistas, casas, produtores e anunciantes.</p></header>
 
-      <article className="clean-card legal-card">
-        <h3>1. Dados coletados</h3>
-        <p>Coletamos dados de cadastro (nome, email e senha), dados de uso (eventos vistos, radar, histórico, planos) e dados técnicos necessários para funcionamento e segurança da plataforma.</p>
-        <p>Quando permitido pelo navegador, podemos usar informações de localização para melhorar filtros por praça e região.</p>
-      </article>
+      <article className="clean-card legal-card"><h3>1. Sobre esta política</h3><p>Esta política descreve o tratamento de dados realizado pelo 77Gira em seu aplicativo, site, painéis de gestão e canais de suporte. Ela deve ser lida em conjunto com os <Link to="/terms">Termos de Uso</Link>.</p><p>Para dúvidas ou solicitações relacionadas à privacidade, entre em contato pelo canal <a href="mailto:suporte@77gira.com.br">suporte@77gira.com.br</a>.</p></article>
 
-      <article className="clean-card legal-card">
-        <h3>2. Uso dos dados</h3>
-        <p>Usamos seus dados para autenticar acesso, sincronizar sua experiência entre dispositivos, personalizar exibição de eventos e manter a segurança operacional do serviço.</p>
-      </article>
+      <article className="clean-card legal-card"><h3>2. Dados que podemos tratar</h3><ul className="legal-list"><li><strong>Cadastro e conta:</strong> nome, sobrenome, nome de usuário, e-mail, senha protegida por hash, telefone, Instagram e foto de perfil.</li><li><strong>Uso do aplicativo:</strong> eventos visualizados ou salvos, histórico, artistas seguidos, filtros, buscas, compartilhamentos, interações com rotas e preferências armazenadas no dispositivo.</li><li><strong>Localização e notificações:</strong> localização fornecida pelo navegador e dados da assinatura de push quando você ativa recursos como recomendações próximas.</li><li><strong>Gestão profissional:</strong> vínculos com casas, artistas e anunciantes; dados enviados em reivindicações; perfis profissionais, agendas, mídias, campanhas, criativos e registros de revisão.</li><li><strong>Contratações:</strong> nome, e-mail, telefone, cidade, data, público estimado, orçamento e mensagem informados pelo contratante.</li><li><strong>Dados técnicos:</strong> identificadores de visitante e sessão, endereço IP, navegador, dispositivo, data e horário de acesso, registros de segurança e falhas.</li><li><strong>Conteúdo e arquivos:</strong> imagens, banners, capas e demais arquivos enviados, incluindo metadados técnicos necessários ao armazenamento.</li></ul></article>
 
-      <article className="clean-card legal-card">
-        <h3>3. Compartilhamento</h3>
-        <p>Não vendemos dados pessoais. Podemos compartilhar dados com provedores de infraestrutura (hospedagem, banco, analytics) somente para operação da plataforma e dentro de obrigações contratuais de confidencialidade.</p>
-      </article>
+      <article className="clean-card legal-card"><h3>3. Como usamos os dados</h3><ul className="legal-list"><li>Criar, autenticar e proteger contas e sessões.</li><li>Exibir agendas, perfis, recomendações, rotas e experiências compatíveis com suas preferências.</li><li>Sincronizar Radar, histórico, seguidores e configurações entre dispositivos.</li><li>Operar reivindicações, permissões, workspaces e fluxos de aprovação.</li><li>Entregar solicitações de contratação às equipes autorizadas dos artistas.</li><li>Operar campanhas publicitárias, contabilizar impressões e cliques e produzir métricas agregadas.</li><li>Enviar notificações solicitadas e recomendações baseadas em localização quando ativadas.</li><li>Prevenir fraude, abuso, spam e acessos não autorizados; investigar falhas e melhorar o serviço.</li><li>Cumprir obrigações legais, regulatórias e exercer ou defender direitos.</li></ul></article>
 
-      <article className="clean-card legal-card">
-        <h3>4. Retenção e exclusão</h3>
-        <p>Mantemos dados enquanto sua conta estiver ativa ou enquanto forem necessários para cumprimento legal e auditoria. Você pode solicitar exclusão da conta e dados pessoais pelo canal de suporte.</p>
-      </article>
+      <article className="clean-card legal-card"><h3>4. Bases legais</h3><p>Conforme a LGPD, o tratamento pode ocorrer para executar o serviço solicitado e seus procedimentos preliminares, cumprir obrigação legal ou regulatória, exercer direitos, atender interesses legítimos relacionados à segurança e melhoria do produto e, quando necessário, com seu consentimento. Recursos opcionais como localização precisa e notificações dependem também das permissões do navegador ou dispositivo, que podem ser revogadas nas configurações correspondentes.</p></article>
 
-      <article className="clean-card legal-card">
-        <h3>5. Seus direitos</h3>
-        <p>Você pode solicitar acesso, correção, portabilidade e exclusão dos seus dados, conforme legislação aplicável (incluindo LGPD).</p>
-      </article>
+      <article className="clean-card legal-card"><h3>5. Dados públicos e compartilhamento</h3><p>Informações publicadas em páginas de eventos, casas, artistas, EPKs e anúncios podem ficar visíveis ao público. Dados profissionais de contato e solicitações de contratação são disponibilizados somente às contas autorizadas a administrar o perfil correspondente.</p><p>Podemos utilizar operadores de infraestrutura, banco de dados, hospedagem, armazenamento de arquivos, entrega de conteúdo, notificações e monitoramento. Esses fornecedores recebem apenas os dados necessários à sua função. Também poderemos compartilhar informações por determinação legal, ordem de autoridade competente, proteção de direitos ou em operação societária legítima, observadas as salvaguardas aplicáveis.</p></article>
 
-      <p className="meta-line legal-updated">Última atualização: 30/05/2026</p>
+      <article className="clean-card legal-card"><h3>6. Armazenamento e transferências</h3><p>Dados e arquivos podem ser processados em infraestrutura de terceiros, inclusive fora do Brasil. Nesses casos, buscamos fornecedores e medidas compatíveis com a legislação aplicável. O 77Gira utiliza armazenamento local do navegador para sessão, preferências, onboarding e estado da interface; apagar esses dados ou usar navegação privada pode encerrar a sessão ou redefinir preferências.</p></article>
+
+      <article className="clean-card legal-card"><h3>7. Retenção</h3><p>Conservamos dados pelo tempo necessário para prestar o serviço, manter histórico e segurança, atender obrigações legais, solucionar disputas e exercer direitos. Os prazos variam conforme a natureza do dado e o contexto. Após o término, os dados podem ser eliminados, anonimizados ou mantidos quando a lei permitir ou exigir. Conteúdo público poderá permanecer em cópias de segurança por período limitado até sua sobrescrita.</p></article>
+
+      <article className="clean-card legal-card"><h3>8. Segurança</h3><p>Adotamos controles técnicos e organizacionais proporcionais ao serviço, como autenticação, controle de acesso por função, limitação de requisições, validação de arquivos e registros operacionais. Nenhum sistema é absolutamente invulnerável; por isso, mantenha suas credenciais protegidas e comunique qualquer suspeita de uso indevido.</p></article>
+
+      <article className="clean-card legal-card"><h3>9. Seus direitos</h3><p>Nos termos da LGPD, você pode solicitar confirmação e acesso ao tratamento, correção, informação sobre compartilhamento, anonimização, bloqueio ou eliminação quando aplicável, portabilidade conforme regulamentação, revisão de decisões automatizadas, oposição e revogação do consentimento. Poderemos solicitar informações para confirmar sua identidade e proteger a conta antes de atender ao pedido.</p><p>Recomendações e métricas podem usar regras automatizadas, mas o produto não prevê decisões exclusivamente automatizadas com efeito jurídico sobre usuários.</p></article>
+
+      <article className="clean-card legal-card"><h3>10. Atualizações</h3><p>Esta política poderá ser atualizada para refletir novas funcionalidades, práticas operacionais ou exigências legais. Mudanças relevantes serão comunicadas por meios adequados, e a versão vigente permanecerá disponível nesta página.</p></article>
+
+      <p className="meta-line legal-updated">Última atualização: 05/07/2026</p>
       <p><Link to="/settings" className="btn-link">Voltar para Configurações</Link></p>
     </section>
   );
