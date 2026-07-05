@@ -301,6 +301,11 @@ export default function ExplorePage() {
       && onTrackSession.expiresAt > Date.now()
   );
   const onTrackLocation = onTrackSession?.location || null;
+  const userDisplayName = user
+    ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username || "Sua conta"
+    : "";
+  const userHandle = user?.username ? `@${String(user.username).replace(/^@/, "")}` : user?.email || "";
+  const userInitial = userDisplayName?.trim()?.[0]?.toUpperCase() || "7";
   const onTrackRecommendations = useMemo(() => {
     if (!onTrackActive) return [];
     const now = Date.now();
@@ -496,15 +501,32 @@ export default function ExplorePage() {
   return (
     <section className="screen screen-explore">
       <header className="page-header explore-logo-header">
-        <div className="explore-brand-wrap" aria-label="77Gira - Todos os Sambas Aqui">
+        <div className="explore-header-row">
+          <Link className="explore-brand-wrap" to="/explore" aria-label="77Gira">
           <img
             src="/assets/brand/logoBase77Gira.svg"
-            alt="77Gira - Todos os Sambas Aqui"
+            alt="77Gira"
             className="explore-brand-logo"
           />
-          <p className="explore-brand-concept">Todos os Sambas Aqui</p>
-          <div className="explore-brand-separator" aria-hidden="true" />
+          </Link>
+          {user ? (
+            <Link className="explore-user-summary" to="/settings" aria-label="Abrir configurações da conta">
+              <span className="explore-user-copy">
+                <strong>{userDisplayName}</strong>
+                {userHandle ? <small>{userHandle}</small> : null}
+              </span>
+              <span className="explore-user-avatar" aria-hidden="true">
+                {user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : userInitial}
+              </span>
+            </Link>
+          ) : (
+            <Link className="explore-login-invite" to="/login">
+              <strong>Entre no 77Gira</strong>
+              <small>Personalize sua experiência</small>
+            </Link>
+          )}
         </div>
+        <div className="explore-brand-separator" aria-hidden="true" />
       </header>
 
       <div className="explore-top-actions">
