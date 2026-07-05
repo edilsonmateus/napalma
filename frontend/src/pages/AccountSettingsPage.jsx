@@ -126,6 +126,14 @@ export default function AccountSettingsPage() {
           <div className="form-actions-inline"><button className="chip active" disabled={profileBusy}>{profileBusy ? "Salvando..." : "Salvar dados"}</button><button className="chip" type="button" onClick={() => setEditingProfile(false)}>Cancelar</button></div>
         </form> : null}
         {profileMessage ? <small className="account-form-message" role="status">{profileMessage}</small> : null}
+        {editingProfile ? <form className="account-password-form" onSubmit={savePassword}>
+          <strong>Alterar senha</strong>
+          <p>Ao concluir, todas as sessões abertas serão encerradas.</p>
+          <label>Senha atual<input required type="password" autoComplete="current-password" value={passwordForm.currentPassword} onChange={(event) => setPasswordForm({ ...passwordForm, currentPassword: event.target.value })}/></label>
+          <div className="account-form-pair"><label>Nova senha<input required minLength="8" type="password" autoComplete="new-password" value={passwordForm.newPassword} onChange={(event) => setPasswordForm({ ...passwordForm, newPassword: event.target.value })}/></label><label>Confirmar nova senha<input required minLength="8" type="password" autoComplete="new-password" value={passwordForm.confirmPassword} onChange={(event) => setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })}/></label></div>
+          {passwordMessage ? <small className="account-form-error" role="alert">{passwordMessage}</small> : null}
+          <button className="auth-btn" disabled={passwordBusy}>{passwordBusy ? "Alterando..." : "Alterar senha"}</button>
+        </form> : null}
       </section>
 
       <LocationBaseCard user={user} token={token} refreshToken={refreshToken} setAuth={setAuth}/>
@@ -148,14 +156,6 @@ export default function AccountSettingsPage() {
 
       <section className="clean-card account-settings-section account-session-section">
         <h3>Sessão</h3>
-        <form className="account-password-form" onSubmit={savePassword}>
-          <strong>Alterar senha</strong>
-          <p>Ao concluir, todas as sessões abertas serão encerradas.</p>
-          <label>Senha atual<input required type="password" autoComplete="current-password" value={passwordForm.currentPassword} onChange={(event) => setPasswordForm({ ...passwordForm, currentPassword: event.target.value })}/></label>
-          <div className="account-form-pair"><label>Nova senha<input required minLength="8" type="password" autoComplete="new-password" value={passwordForm.newPassword} onChange={(event) => setPasswordForm({ ...passwordForm, newPassword: event.target.value })}/></label><label>Confirmar nova senha<input required minLength="8" type="password" autoComplete="new-password" value={passwordForm.confirmPassword} onChange={(event) => setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })}/></label></div>
-          {passwordMessage ? <small className="account-form-error" role="alert">{passwordMessage}</small> : null}
-          <button className="auth-btn" disabled={passwordBusy}>{passwordBusy ? "Alterando..." : "Alterar senha"}</button>
-        </form>
         <button className="auth-btn account-logout-btn" type="button" onClick={handleLogout}>Sair da conta</button>
       </section>
     </section>

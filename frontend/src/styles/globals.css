@@ -2668,6 +2668,7 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 .account-session-section { margin-bottom: 18px; }
 .account-logout-btn { width: fit-content; color: #fca5a5; border-color: rgba(239,68,68,.25); }
 .account-profile-form, .account-password-form { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.08); }
+.account-password-form { margin-top: 4px; padding-top: 16px; border-top-width: 2px; border-top-color: rgba(255,255,255,.16); }
 .account-profile-form label, .account-password-form label { display: grid; gap: 5px; color: var(--text-secondary); font-size: 12px; }
 .account-profile-form input, .account-password-form input { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid #2e2e2e; border-radius: 10px; background: #111; color: var(--text-primary); color-scheme: dark; font: inherit; }
 .account-profile-form input:focus, .account-password-form input:focus { outline: none; border-color: rgba(255,176,0,.48); box-shadow: 0 0 0 2px rgba(255,176,0,.08); }
