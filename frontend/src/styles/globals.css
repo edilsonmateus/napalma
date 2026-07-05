@@ -2556,6 +2556,7 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 .management-hub:not(.is-collapsed) .management-hub-chevron { transform: rotate(90deg); }
 .management-hub-count { padding: 5px 9px; border: 1px solid rgba(255,176,0,.28); border-radius: 999px; color: #ffbf36; font-size: 11px; font-style: normal; white-space: nowrap; }
 .management-hub-content { display: grid; gap: 12px; padding: 0 14px 14px; }
+.management-hub-content[hidden] { display: none; }
 .management-hub-context { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; padding: 10px 12px; border-radius: 12px; background: rgba(0,0,0,.18); }
 .management-hub-context > span { color: var(--text-muted); font-size: 12px; }
 .management-hub-context strong, .management-hub-context select { color: var(--text-primary); }

@@ -27,5 +27,6 @@ describe("settings management hub", () => {
     expect(hub).toContain("77gira.config.hubGestao.collapsed");
     expect(css).toContain("@media (max-width: 620px)");
     expect(css).toContain(".management-hub-grid { grid-template-columns: 1fr; }");
+    expect(css).toContain(".management-hub-content[hidden] { display: none; }");
   });
 });
