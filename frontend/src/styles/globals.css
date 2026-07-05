@@ -2276,6 +2276,24 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 .artist-workspace-form section > h3 { margin: 0 0 4px; }
 .artist-workspace-form label { display: grid; gap: 5px; color: var(--text-secondary); font-size: 13px; }
 .artist-workspace-form input, .artist-workspace-form textarea { width: 100%; }
+.artist-workspace-form input:not([type="file"]),
+.artist-workspace-form textarea,
+.artist-workspace-form select,
+.artist-workspace-picker select {
+  border: 1px solid #2e2e2e;
+  border-radius: 10px;
+  background: #111;
+  color: var(--text-primary);
+  padding: 10px 12px;
+  font: inherit;
+  color-scheme: dark;
+}
+.artist-workspace-form textarea { resize: vertical; }
+.artist-workspace-form :where(input:not([type="file"]), textarea, select):focus,
+.artist-workspace-picker select:focus { outline: none; border-color: rgba(255,176,0,.48); box-shadow: 0 0 0 2px rgba(255,176,0,.08); }
+.artist-workspace-form :where(input, textarea)::placeholder { color: rgba(157,166,182,.68); }
+.artist-workspace-form input[type="file"] { color: var(--text-secondary); font: inherit; font-size: 12px; }
+.artist-workspace-form input[type="file"]::file-selector-button { margin-right: 9px; padding: 7px 10px; border: 1px solid #2e2e2e; border-radius: 8px; background: #111; color: var(--text-primary); cursor: pointer; }
 .artist-workspace-inline { display: grid; grid-template-columns: 1fr 100px; gap: 8px; }
 .artist-workspace-avatar { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; }
 .artist-workspace-cover { width: 100%; max-height: 190px; border-radius: 10px; object-fit: cover; }
