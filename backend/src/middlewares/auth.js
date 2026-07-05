@@ -23,6 +23,7 @@ export async function attachUser(req, _res, next) {
         username: true,
         firstName: true,
         lastName: true,
+        avatarUrl: true,
         role: true
       }
     });

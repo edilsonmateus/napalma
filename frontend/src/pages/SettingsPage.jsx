@@ -7,16 +7,20 @@ import { useAuthStore } from "../store/authStore";
 import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
 import { promptInstallApp, subscribeInstallPrompt } from "../utils/installPrompt";
 import ManagementHub from "../components/settings/ManagementHub";
+import { uploadProfileAvatar } from "../services/profile.service";
 
 export default function SettingsPage() {
-  const { refreshToken, user, clearAuth } = useAuthStore();
+  const { token, refreshToken, user, setAuth, clearAuth } = useAuthStore();
 
   const roleHome = getRoleHome(user?.role);
   const canOpenVenuesPanel = Boolean(user) && (isAdminRole(user?.role) || isProducerRole(user?.role) || isVenueRole(user?.role));
   const qrCanvasRef = useRef(null);
+  const avatarInputRef = useRef(null);
   const [showInstallBtn, setShowInstallBtn] = useState(false);
   const [showShareBtn, setShowShareBtn] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState("");
   const isMobileLike = useMemo(() => {
     if (typeof window === "undefined" || typeof navigator === "undefined") return false;
     const ua = navigator.userAgent || "";
@@ -94,16 +98,31 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleAvatarChange(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setAvatarBusy(true); setAvatarMessage("");
+    try {
+      const nextUser = await uploadProfileAvatar(file);
+      setAuth({ token, refreshToken, user: nextUser });
+      setAvatarMessage("Foto de perfil atualizada.");
+    } catch (error) {
+      setAvatarMessage(error?.response?.data?.message || "Não foi possível atualizar a foto.");
+    } finally { setAvatarBusy(false); }
+  }
+
   return (
     <section className="settings-screen">
       <header className="page-header">
         <h2>Configurações</h2>
       </header>
       <div className="settings-profile clean-card">
-        <div className="settings-avatar">{user?.firstName?.[0] || "7"}{user ? <span className="settings-avatar-edit" aria-hidden="true"><Camera size={10}/></span> : null}</div>
+        {user ? <><input ref={avatarInputRef} className="settings-avatar-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarChange}/><button className="settings-avatar" type="button" disabled={avatarBusy} onClick={() => avatarInputRef.current?.click()} aria-label="Alterar foto de perfil">{user.avatarUrl ? <img src={user.avatarUrl} alt=""/> : user.firstName?.[0] || "7"}<span className="settings-avatar-edit" aria-hidden="true"><Camera size={10}/></span></button></> : <div className="settings-avatar">7</div>}
         <div>
           <strong>{user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : "Sua conta"}</strong>
           {user ? <p>{user.email}</p> : null}
+          {avatarMessage ? <small className="settings-avatar-message" role="status">{avatarMessage}</small> : null}
           {!user ? (
             <div className="settings-inline-note" role="note" aria-live="polite">
               <span className="settings-info-icon" aria-hidden="true">i</span>

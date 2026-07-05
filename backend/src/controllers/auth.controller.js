@@ -65,6 +65,7 @@ function sanitizeUser(user) {
     lastName: user.lastName,
     phone: user.phone ?? "",
     instagramHandle: user.instagramHandle ?? "",
+    avatarUrl: user.avatarUrl ?? "",
     role: user.role
   };
 }
