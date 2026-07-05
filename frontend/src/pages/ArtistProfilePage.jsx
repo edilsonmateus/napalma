@@ -5,6 +5,7 @@ import { useArtistProfileQuery, useCreateClaimMutation, useToggleArtistFollowMut
 import { useAuthStore } from "../store/authStore";
 import VerifiedBadge from "../components/common/VerifiedBadge";
 import ArtistBookingModal from "../components/artists/ArtistBookingModal";
+import ArtistGallery from "../components/artists/ArtistGallery";
 
 function formatDate(value) {
   return new Date(value).toLocaleString("pt-BR", {
@@ -71,6 +72,7 @@ export default function ArtistProfilePage() {
         {!artist.isClaimed && !artist.pendingClaim ? <aside className="clean-card artist-claim-cta"><div><strong>Este perfil ainda nao foi reivindicado</strong><p>É você ou faz parte da equipe? Transforme este perfil em uma vitrine profissional oficial.</p></div>{user ? <button className="btn-primary" onClick={() => setShowClaim(true)}>Reivindicar perfil</button> : <Link className="btn-primary" to="/login">Entrar para reivindicar</Link>}</aside> : null}
         {artist.pendingClaim ? <aside className="clean-card artist-claim-cta"><div><strong>Reivindicacao em analise</strong><p>A equipe 77Gira esta verificando as informacoes enviadas.</p></div></aside> : null}
         <div className="artist-epk-stats"><article><strong>{artist.followersCount || 0}</strong><span>seguidores</span></article><article><strong>{artist.eventsCount || 0}</strong><span>shows cadastrados</span></article><article><strong>{artist.upcomingEvents?.length || 0}</strong><span>proximos shows</span></article></div>
+        {String(import.meta.env.VITE_ARTIST_MEDIA_GALLERY_ENABLED || "").toLowerCase() === "true" ? <ArtistGallery items={artist.media}/> : null}
         <div className="artist-epk-grid">
           <main>
             {(artist.fullBio || artist.bio) ? <section className="clean-card artist-epk-section"><h2>Sobre</h2><p className="artist-epk-release">{artist.fullBio || artist.bio}</p></section> : null}

@@ -73,6 +73,7 @@ import { requireAdvertiserCampaignWrite } from "../middlewares/advertiserAccess.
 import { requireArtistWrite } from "../middlewares/artistAccess.js";
 import { getArtistEpk, getMyArtistProfile, listMyArtists, updateMyArtistProfile } from "../controllers/artistEpk.controller.js";
 import { createArtistBookingRequest, listArtistBookingRequests, updateArtistBookingStatus } from "../controllers/artistBookings.controller.js";
+import { createArtistMedia, deleteArtistMedia, listMyArtistMedia, updateArtistMedia } from "../controllers/artistMedia.controller.js";
 import { listAdPlacements } from "../controllers/adPlacements.controller.js";
 import { uploadAdCreativeAsset } from "../controllers/adCreativeUploads.controller.js";
 import {
@@ -242,6 +243,10 @@ router.patch("/me/artists/:id/profile", requireAuth, requireFeatureFlag("ARTIST_
 router.post("/me/artists/:artistId/uploads/image", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), uploadLimiter, imageUpload.single("file"), requireArtistWrite, uploadImage);
 router.get("/me/artists/:artistId/bookings", requireAuth, requireFeatureFlag("ARTIST_BOOKING_REQUESTS_ENABLED"), listArtistBookingRequests);
 router.patch("/me/artist-bookings/:id/status", requireAuth, requireFeatureFlag("ARTIST_BOOKING_REQUESTS_ENABLED"), updateArtistBookingStatus);
+router.get("/me/artists/:artistId/media", requireAuth, requireFeatureFlag("ARTIST_MEDIA_GALLERY_ENABLED"), listMyArtistMedia);
+router.post("/me/artists/:artistId/media", requireAuth, requireFeatureFlag("ARTIST_MEDIA_GALLERY_ENABLED"), createArtistMedia);
+router.patch("/me/artist-media/:id", requireAuth, requireFeatureFlag("ARTIST_MEDIA_GALLERY_ENABLED"), updateArtistMedia);
+router.delete("/me/artist-media/:id", requireAuth, requireFeatureFlag("ARTIST_MEDIA_GALLERY_ENABLED"), deleteArtistMedia);
 router.get("/ads/slots/:slot/delivery", getAdDelivery);
 router.post("/ads/track/impression", adsTrackLimiter, trackAdImpression);
 router.post("/ads/track/click", adsTrackLimiter, trackAdClick);

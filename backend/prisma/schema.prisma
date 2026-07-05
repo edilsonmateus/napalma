@@ -132,6 +132,11 @@ enum ArtistBookingStatus {
   spam
 }
 
+enum ArtistMediaType {
+  photo
+  video_external
+}
+
 model User {
   id              String   @id @default(uuid())
   email           String   @unique
@@ -653,6 +658,7 @@ model Artist {
   accesses            ArtistAccess[]
   verifiedBy          User?                      @relation("ArtistVerifiedBy", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
   bookingRequests     ArtistBookingRequest[]
+  media               ArtistMedia[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -733,6 +739,30 @@ model ArtistBookingRequest {
 
   @@index([artistId, status, createdAt])
   @@index([requesterUserId, createdAt])
+}
+
+model ArtistMedia {
+  id              String          @id @default(uuid())
+  artistId        String
+  type            ArtistMediaType
+  url             String
+  thumbnailUrl    String?
+  title           String?
+  caption         String?
+  altText         String?
+  storageProvider String?
+  storageKey      String?
+  mimeType        String?
+  fileSizeBytes   Int?
+  sortOrder       Int             @default(0)
+  isPublished     Boolean         @default(true)
+
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([artistId, type, isPublished, sortOrder])
 }
 
 model ArtistFollow {

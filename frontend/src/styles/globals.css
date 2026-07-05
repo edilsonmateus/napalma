@@ -2276,6 +2276,19 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 .artist-booking-card > div { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .artist-booking-card p { margin: 6px 0; color: var(--text-secondary); }
 .artist-booking-card blockquote { margin: 10px 0; padding-left: 12px; border-left: 2px solid var(--primary-purple); white-space: pre-line; }
+.artist-gallery-public { display: grid; gap: 10px; }
+.artist-gallery-photos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.artist-gallery-photos figure { margin: 0; position: relative; overflow: hidden; border-radius: 10px; background: var(--bg-card); }
+.artist-gallery-photos img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.artist-gallery-photos figcaption { position: absolute; inset: auto 0 0; padding: 18px 8px 6px; color: #fff; font-size: 11px; background: linear-gradient(transparent, rgba(0,0,0,.75)); }
+.artist-gallery-videos { display: grid; gap: 7px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.artist-gallery-videos a { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 9px; min-height: 64px; padding: 7px; border: 1px solid var(--border-default); border-radius: 10px; color: inherit; text-decoration: none; background: var(--bg-card); }
+.artist-gallery-videos img, .artist-gallery-play { width: 64px; height: 50px; object-fit: cover; border-radius: 7px; }
+.artist-gallery-play { display: grid; place-items: center; background: rgba(107,63,160,.2); }
+.artist-media-admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+.artist-media-admin-grid article { display: grid; align-content: start; gap: 7px; }
+.artist-media-admin-grid img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; }
+@media (min-width: 720px) { .artist-gallery-photos { grid-template-columns: repeat(4, minmax(0, 1fr)); } .artist-gallery-photos figure:first-child { grid-column: span 2; grid-row: span 2; } .artist-gallery-photos figure:first-child img { height: 100%; } }
 
 .live-progress {
   width: 100%;

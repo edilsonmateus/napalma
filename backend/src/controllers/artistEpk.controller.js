@@ -80,6 +80,7 @@ function publicArtist(artist) {
     },
     bookingAvailable: Boolean(profile?.professionalEmail || profile?.professionalPhone || profile?.whatsappUrl),
     contactPreference: profile?.contactPreference || ""
+    ,media: artist.media || []
   };
 }
 
@@ -104,6 +105,7 @@ export async function getArtistEpk(req, res, next) {
       where: artistWhere(ref),
       include: {
         professionalProfile: true,
+        media: { where: { isPublished: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }] },
         _count: { select: { events: true, followers: true, producerAccesses: true, accesses: { where: { status: "active" } } } }
       }
     });
