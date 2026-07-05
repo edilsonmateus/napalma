@@ -68,12 +68,12 @@ export default function ArtistProfilePage() {
           <div className="artist-epk-cover" style={artist.coverImageUrl ? { backgroundImage: `url(${artist.coverImageUrl})` } : undefined} />
           <div className="artist-epk-identity">
             {artist.imageUrl ? <img src={artist.imageUrl} alt={artist.name} className="artist-epk-avatar" /> : <div className="artist-epk-avatar artist-profile-avatar-fallback" />}
-            <div className="artist-epk-heading"><h1>{artist.name}{artist.isVerified ? <VerifiedBadge title="Artista verificado" /> : null}</h1><p>{artist.shortBio || "Artista presente na cena do samba."}</p><div className="artist-epk-tags">{(artist.genres || []).map((genre) => <span key={genre}>{genre}</span>)}</div></div>
+            <div className="artist-epk-heading"><h1>{artist.name}{artist.isVerified ? <VerifiedBadge title="Artista verificado" /> : null}</h1>{artist.shortBio ? <p>{artist.shortBio}</p> : null}<div className="artist-epk-tags">{(artist.genres || []).map((genre) => <span key={genre}>{genre}</span>)}</div></div>
           </div>
           <div className="artist-epk-actions">
-            {canFollow ? <button className={`artist-follow-btn ${isFollowing ? "active" : ""}`} onClick={() => toggleFollow.mutate({ artistId: artist.id, currentlyFollowing: isFollowing })}>{isFollowing ? "Seguindo" : "+ Seguir"}</button> : <Link className="artist-follow-btn" to="/login">Entrar para seguir</Link>}
-            <button className="chip" type="button" onClick={shareEpk}><Share2 size={15}/> Compartilhar EPK</button>
-            {String(import.meta.env.VITE_ARTIST_BOOKING_REQUESTS_ENABLED || "").toLowerCase() === "true" && artist.isVerified && artist.isClaimed ? <button className="btn-primary" type="button" onClick={() => { trackAnalyticsEvent("artist_booking_click", { artistId: artist.id, source: "artist_epk" }); setShowBooking(true); }}>Chamar para show</button> : null}
+            {canFollow ? <button className={`artist-epk-action ${isFollowing ? "active" : ""}`} onClick={() => toggleFollow.mutate({ artistId: artist.id, currentlyFollowing: isFollowing })}>{isFollowing ? "Seguindo" : "+ Seguir"}</button> : <Link className="artist-epk-action" to="/login">Entrar para seguir</Link>}
+            <button className="artist-epk-action" type="button" onClick={shareEpk}><Share2 size={15}/> Compartilhar EPK</button>
+            {String(import.meta.env.VITE_ARTIST_BOOKING_REQUESTS_ENABLED || "").toLowerCase() === "true" && artist.isVerified && artist.isClaimed ? <button className="artist-epk-action artist-epk-action-primary" type="button" onClick={() => { trackAnalyticsEvent("artist_booking_click", { artistId: artist.id, source: "artist_epk" }); setShowBooking(true); }}>Contratar {artist.name}</button> : null}
           </div>
         </header>
         {claimMessage ? <p className="clean-card artist-epk-notice">{claimMessage}</p> : null}

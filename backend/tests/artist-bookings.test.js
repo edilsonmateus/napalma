@@ -30,6 +30,6 @@ describe("artist booking requests", () => {
 
   it("shows the public call to action only for verified claimed artists", () => {
     expect(profile).toContain("artist.isVerified && artist.isClaimed");
-    expect(profile).toContain("Chamar para show");
+    expect(profile).toContain("Contratar {artist.name}");
   });
 });

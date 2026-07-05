@@ -52,7 +52,7 @@ function publicArtist(artist) {
     slug: artist.slug,
     name: artist.name,
     bio: artist.bio || "",
-    shortBio: profile?.shortBio || artist.bio || "",
+    shortBio: profile?.shortBio || "",
     fullBio: profile?.fullBio || "",
     imageUrl: artist.imageUrl || "",
     coverImageUrl: profile?.coverImageUrl || "",
