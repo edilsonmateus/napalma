@@ -72,6 +72,7 @@ import { requireFeatureFlag } from "../middlewares/featureFlags.js";
 import { requireAdvertiserCampaignWrite } from "../middlewares/advertiserAccess.js";
 import { requireArtistWrite } from "../middlewares/artistAccess.js";
 import { getArtistEpk, getMyArtistProfile, listMyArtists, updateMyArtistProfile } from "../controllers/artistEpk.controller.js";
+import { createArtistBookingRequest, listArtistBookingRequests, updateArtistBookingStatus } from "../controllers/artistBookings.controller.js";
 import { listAdPlacements } from "../controllers/adPlacements.controller.js";
 import { uploadAdCreativeAsset } from "../controllers/adCreativeUploads.controller.js";
 import {
@@ -134,6 +135,7 @@ const adsTrackLimiter = createRateLimiter({
   max: 120,
   message: "Muitas interacoes de anuncio no momento. Aguarde alguns segundos."
 });
+const artistBookingLimiter = createRateLimiter({ keyPrefix: "artist-booking", windowMs: 60_000, max: 8, message: "Muitas solicitacoes enviadas. Aguarde um minuto." });
 const analyticsTrackLimiter = createRateLimiter({
   keyPrefix: "analytics-track",
   windowMs: 60_000,
@@ -225,6 +227,7 @@ router.get("/artists", listArtists);
 router.get("/artists/:id", getArtistById);
 router.get("/artists/:id/profile", getArtistProfile);
 router.get("/artist-epk/:ref", requireFeatureFlag("ARTIST_EPK_ENABLED"), getArtistEpk);
+router.post("/artist-bookings", requireFeatureFlag("ARTIST_BOOKING_REQUESTS_ENABLED"), artistBookingLimiter, createArtistBookingRequest);
 router.post("/artists/:id/follow", requireAuth, followArtist);
 router.delete("/artists/:id/follow", requireAuth, unfollowArtist);
 router.post("/uploads/image", ...canUploadImages, uploadLimiter, imageUpload.single("file"), uploadImage);
@@ -237,6 +240,8 @@ router.get("/me/artists", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_E
 router.get("/me/artists/:id/profile", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), getMyArtistProfile);
 router.patch("/me/artists/:id/profile", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), updateMyArtistProfile);
 router.post("/me/artists/:artistId/uploads/image", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), uploadLimiter, imageUpload.single("file"), requireArtistWrite, uploadImage);
+router.get("/me/artists/:artistId/bookings", requireAuth, requireFeatureFlag("ARTIST_BOOKING_REQUESTS_ENABLED"), listArtistBookingRequests);
+router.patch("/me/artist-bookings/:id/status", requireAuth, requireFeatureFlag("ARTIST_BOOKING_REQUESTS_ENABLED"), updateArtistBookingStatus);
 router.get("/ads/slots/:slot/delivery", getAdDelivery);
 router.post("/ads/track/impression", adsTrackLimiter, trackAdImpression);
 router.post("/ads/track/click", adsTrackLimiter, trackAdClick);

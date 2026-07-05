@@ -168,6 +168,7 @@ export default function SettingsPage() {
       {isAdminRole(user?.role) ? <p><Link to="/settings/ads" className="btn-link">Gerenciar publicidade</Link></p> : null}
       {user ? <p><Link to="/workspace/anunciante" className="btn-link">Central do Anunciante</Link></p> : null}
       {user && String(import.meta.env.VITE_ARTIST_SELF_SERVICE_ENABLED || "").toLowerCase() === "true" ? <p><Link to="/workspace/artista" className="btn-link">Meu perfil de artista</Link></p> : null}
+      {user && String(import.meta.env.VITE_ARTIST_BOOKING_REQUESTS_ENABLED || "").toLowerCase() === "true" ? <p><Link to="/workspace/artista/contratacoes" className="btn-link">Contratacoes de artistas</Link></p> : null}
       {showQrModal ? (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="qr-title">
           <div className="modal-card route-mini-modal settings-qr-modal">

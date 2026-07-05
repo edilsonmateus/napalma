@@ -2266,6 +2266,16 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 .artist-workspace-cover { width: 100%; max-height: 190px; border-radius: 10px; object-fit: cover; }
 .artist-workspace-save { position: sticky; bottom: 78px; display: flex; justify-content: flex-end; padding: 10px; background: rgba(13,13,13,.9); border-radius: 12px; backdrop-filter: blur(8px); }
 @media (min-width: 900px) { .artist-workspace-form { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } .artist-workspace-save { grid-column: 1 / -1; bottom: 12px; } }
+.artist-booking-form { width: min(580px, calc(100% - 28px)); display: grid; gap: 10px; }
+.artist-booking-form input, .artist-booking-form textarea { width: 100%; }
+.artist-booking-honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.artist-bookings-panel { display: grid; gap: 12px; }
+.artist-bookings-panel .admin-list-header h3 { margin: 0; }
+.artist-booking-list { display: grid; gap: 8px; }
+.artist-booking-card { padding: 12px; border: 1px solid var(--border-default); border-radius: 10px; background: var(--bg-card-soft); }
+.artist-booking-card > div { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.artist-booking-card p { margin: 6px 0; color: var(--text-secondary); }
+.artist-booking-card blockquote { margin: 10px 0; padding-left: 12px; border-left: 2px solid var(--primary-purple); white-space: pre-line; }
 
 .live-progress {
   width: 100%;

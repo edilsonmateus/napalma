@@ -122,6 +122,16 @@ enum ArtistAccessStatus {
   revoked
 }
 
+enum ArtistBookingStatus {
+  new
+  in_conversation
+  proposal_sent
+  won
+  lost
+  archived
+  spam
+}
+
 model User {
   id              String   @id @default(uuid())
   email           String   @unique
@@ -166,6 +176,7 @@ model User {
   artistAccesses              ArtistAccess[]           @relation("ArtistAccessUser")
   artistAccessInvites         ArtistAccess[]           @relation("ArtistAccessInvitedBy")
   artistsVerified             Artist[]                 @relation("ArtistVerifiedBy")
+  artistBookingRequests       ArtistBookingRequest[]   @relation("ArtistBookingRequester")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -641,6 +652,7 @@ model Artist {
   professionalProfile ArtistProfessionalProfile?
   accesses            ArtistAccess[]
   verifiedBy          User?                      @relation("ArtistVerifiedBy", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+  bookingRequests     ArtistBookingRequest[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -693,6 +705,34 @@ model ArtistAccess {
   @@unique([artistId, userId])
   @@index([userId, status])
   @@index([artistId, status])
+}
+
+model ArtistBookingRequest {
+  id                String              @id @default(uuid())
+  artistId          String
+  requesterUserId   String?
+  requesterName     String
+  requesterEmail    String
+  requesterPhone    String?
+  desiredDate       DateTime?
+  city              String
+  neighborhood      String?
+  eventType         String
+  estimatedAudience Int?
+  budgetRange       String?
+  message           String
+  status            ArtistBookingStatus @default(new)
+  source            String              @default("artist_epk")
+  lastStatusAt      DateTime            @default(now())
+
+  artist    Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  requester User?  @relation("ArtistBookingRequester", fields: [requesterUserId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([artistId, status, createdAt])
+  @@index([requesterUserId, createdAt])
 }
 
 model ArtistFollow {

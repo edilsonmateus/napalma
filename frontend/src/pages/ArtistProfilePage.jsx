@@ -4,6 +4,7 @@ import { CalendarClock, ExternalLink, MapPin, Share2 } from "lucide-react";
 import { useArtistProfileQuery, useCreateClaimMutation, useToggleArtistFollowMutation } from "../hooks/useEventsQuery";
 import { useAuthStore } from "../store/authStore";
 import VerifiedBadge from "../components/common/VerifiedBadge";
+import ArtistBookingModal from "../components/artists/ArtistBookingModal";
 
 function formatDate(value) {
   return new Date(value).toLocaleString("pt-BR", {
@@ -22,6 +23,7 @@ export default function ArtistProfilePage() {
   const toggleFollow = useToggleArtistFollowMutation();
   const createClaim = useCreateClaimMutation();
   const [showClaim, setShowClaim] = useState(false);
+  const [showBooking, setShowBooking] = useState(false);
   const [claimMessage, setClaimMessage] = useState("");
   const [claim, setClaim] = useState({ responsibleName: "", responsiblePhone: "", claimantDocument: "", relationshipRole: "", officialEmail: "", officialInstagram: "", officialWebsite: "", justification: "" });
 
@@ -62,6 +64,7 @@ export default function ArtistProfilePage() {
           <div className="artist-epk-actions">
             {canFollow ? <button className={`artist-follow-btn ${isFollowing ? "active" : ""}`} onClick={() => toggleFollow.mutate({ artistId: artist.id, currentlyFollowing: isFollowing })}>{isFollowing ? "Seguindo" : "+ Seguir"}</button> : <Link className="artist-follow-btn" to="/login">Entrar para seguir</Link>}
             <button className="chip" type="button" onClick={shareEpk}><Share2 size={15}/> Compartilhar EPK</button>
+            {String(import.meta.env.VITE_ARTIST_BOOKING_REQUESTS_ENABLED || "").toLowerCase() === "true" && artist.isVerified && artist.isClaimed ? <button className="btn-primary" type="button" onClick={() => setShowBooking(true)}>Chamar para show</button> : null}
           </div>
         </header>
         {claimMessage ? <p className="clean-card artist-epk-notice">{claimMessage}</p> : null}
@@ -81,6 +84,7 @@ export default function ArtistProfilePage() {
           </aside>
         </div>
         {showClaim ? <div className="modal-backdrop"><form className="modal-card artist-claim-form" onSubmit={submitClaim}><h3>Reivindicar {artist.name}</h3><input required placeholder="Nome do responsavel" value={claim.responsibleName} onChange={(e) => setClaim({ ...claim, responsibleName: e.target.value })}/><input required placeholder="Telefone" value={claim.responsiblePhone} onChange={(e) => setClaim({ ...claim, responsiblePhone: e.target.value })}/><input required placeholder="CPF ou CNPJ" value={claim.claimantDocument} onChange={(e) => setClaim({ ...claim, claimantDocument: e.target.value })}/><input required placeholder="Seu vinculo com o artista" value={claim.relationshipRole} onChange={(e) => setClaim({ ...claim, relationshipRole: e.target.value })}/><input type="email" placeholder="Email oficial (opcional)" value={claim.officialEmail} onChange={(e) => setClaim({ ...claim, officialEmail: e.target.value })}/><input placeholder="Instagram oficial (opcional)" value={claim.officialInstagram} onChange={(e) => setClaim({ ...claim, officialInstagram: e.target.value })}/><input type="url" placeholder="Site oficial (opcional)" value={claim.officialWebsite} onChange={(e) => setClaim({ ...claim, officialWebsite: e.target.value })}/><textarea required minLength={5} placeholder="Conte como comprovar este vinculo" value={claim.justification} onChange={(e) => setClaim({ ...claim, justification: e.target.value })}/><div className="form-actions-inline"><button className="btn-primary" disabled={createClaim.isPending}>Enviar para analise</button><button className="chip" type="button" onClick={() => setShowClaim(false)}>Cancelar</button></div></form></div> : null}
+        {showBooking ? <ArtistBookingModal artist={artist} onClose={() => setShowBooking(false)} onSuccess={() => setClaimMessage("Solicitacao enviada para a equipe do artista.")}/> : null}
       </section>
     );
   }
