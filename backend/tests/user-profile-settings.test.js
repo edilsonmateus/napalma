@@ -25,4 +25,11 @@ describe("user account settings", () => {
     expect(page).toContain('value={user.email} readOnly');
     expect(page).toContain("updateProfilePassword");
   });
+
+  it("accepts empty optional profile fields", () => {
+    const controller = read("backend/src/controllers/profile.controller.js");
+    expect(controller).toContain('value.trim() === "" ? null : value');
+    expect(controller).toContain("phone: optionalProfileText");
+    expect(controller).toContain("instagramHandle: optionalProfileText");
+  });
 });

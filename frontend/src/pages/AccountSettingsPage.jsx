@@ -41,7 +41,14 @@ export default function AccountSettingsPage() {
     setProfileBusy(true);
     setProfileMessage("");
     try {
-      const nextUser = await updateProfileDetails(profileForm);
+      const nextUser = await updateProfileDetails({
+        ...profileForm,
+        firstName: profileForm.firstName.trim(),
+        lastName: profileForm.lastName.trim(),
+        username: profileForm.username.trim(),
+        phone: profileForm.phone.trim() || null,
+        instagramHandle: profileForm.instagramHandle.trim() || null
+      });
       setAuth({ token, refreshToken, user: nextUser });
       setEditingProfile(false);
       setProfileMessage("Dados pessoais atualizados.");

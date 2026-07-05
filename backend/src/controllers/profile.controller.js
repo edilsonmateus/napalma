@@ -15,12 +15,16 @@ const locationSchema = z.object({
   neighborhood: z.string().trim().min(2).max(120),
   postalCode: z.string().transform((value) => value.replace(/\D/g, "")).refine((value) => value.length === 8, "CEP inválido.")
 });
+const optionalProfileText = (schema) => z.preprocess(
+  (value) => typeof value === "string" && value.trim() === "" ? null : value,
+  schema.nullable().optional()
+);
 const profileSchema = z.object({
   firstName: z.string().trim().min(2).max(80),
   lastName: z.string().trim().min(2).max(80),
-  username: z.string().trim().min(3).max(40).regex(/^[a-zA-Z0-9._-]+$/, "Use apenas letras, números, ponto, hífen ou underline."),
-  phone: z.string().trim().min(8).max(30).optional().nullable(),
-  instagramHandle: z.string().trim().min(2).max(80).optional().nullable()
+  username: z.string().trim().min(3).max(40),
+  phone: optionalProfileText(z.string().trim().min(8).max(30)),
+  instagramHandle: optionalProfileText(z.string().trim().min(2).max(80))
 });
 const passwordSchema = z.object({
   currentPassword: z.string().min(1),
