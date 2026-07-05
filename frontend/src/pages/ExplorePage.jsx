@@ -25,6 +25,7 @@ const ON_TRACK_NOTIFIED_KEY = "77gira:on-track-notified-event";
 const ON_TRACK_DISMISSED_KEY = "77gira:on-track-dismissed-event";
 const ON_TRACK_DURATION_MS = 60 * 60 * 1000;
 const ON_TRACK_RECOMMENDATION_WINDOW_MS = 12 * 60 * 60 * 1000;
+const ON_TRACK_INITIAL_NOTIFICATION_DELAY_MS = 3 * 60 * 1000;
 const DEFAULT_PREFS = { city: "São Paulo", region: "Todas", query: "", limit: 8, filterDate: "", filterHour: "", liveOnly: false, timeScope: "semana" };
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, "0")}:00`);
 const CITY_OPTIONS = [
@@ -380,17 +381,17 @@ export default function ExplorePage() {
 
     const eventId = onTrackSuggestion.nextEvent.id;
     if (!onTrackSession?.id || onTrackNotifiedIds.includes(eventId) || onTrackNotifiedIds.length >= 2) return;
+    const firstNotificationAt = Number(onTrackSession.startedAt || Date.now()) + ON_TRACK_INITIAL_NOTIFICATION_DELAY_MS;
+    const delay = onTrackNotifiedIds.length === 0 ? Math.max(0, firstNotificationAt - Date.now()) : 0;
+    const timer = window.setTimeout(async () => {
+      const startsCopy = onTrackSuggestion.isLiveNow
+        ? "Tá rolando agora"
+        : `Começa às ${formatHour(onTrackSuggestion.nextEvent.startsAt)}`;
+      const targetUrl = `${window.location.origin}/events/${eventId}`;
+      let shouldRecord = true;
 
-    const startsCopy = onTrackSuggestion.isLiveNow
-      ? "Tá rolando agora"
-      : `Começa às ${formatHour(onTrackSuggestion.nextEvent.startsAt)}`;
-    const targetUrl = `${window.location.origin}/events/${eventId}`;
-
-    deliverToNaPistaSuggestion({
-      sessionId: onTrackSession.id,
-      eventId
-    })
-      .then(async (result) => {
+      try {
+        const result = await deliverToNaPistaSuggestion({ sessionId: onTrackSession.id, eventId });
         if (result.shouldFallback) {
           await notifyToNaPista({
             title: "Tô na Pista sugeriu:",
@@ -398,40 +399,48 @@ export default function ExplorePage() {
             url: targetUrl
           });
         }
-      })
-      .catch(async (error) => {
+      } catch (error) {
         const code = error?.response?.data?.error;
         if (code === "session_not_active") {
+          shouldRecord = false;
           localStorage.removeItem(ON_TRACK_KEY);
           setOnTrackSession(null);
           return;
         }
-        if (["event_already_delivered", "notification_limit_reached"].includes(code)) {
+        if (code === "notification_not_ready") {
+          shouldRecord = false;
           return;
         }
-        await notifyToNaPista({
-          title: "Tô na Pista sugeriu:",
-          body: `${onTrackSuggestion.nextEvent.title} no ${onTrackSuggestion.venue.name} - ${startsCopy}`,
-          url: targetUrl
-        }).catch(() => null);
-      })
-      .finally(() => {
-        setOnTrackNotifiedIds((current) => {
-          const next = Array.from(new Set([...current, eventId])).slice(0, 2);
-          sessionStorage.setItem(ON_TRACK_NOTIFIED_KEY, JSON.stringify(next));
-          return next;
-        });
-      });
-
-    trackAnalyticsEvent("on_track_notification_shown", {
-      source: "explore",
-      eventId,
-      venueId: onTrackSuggestion.venue.id,
-      metadata: {
-        isLiveNow: onTrackSuggestion.isLiveNow,
-        distanceKm: onTrackSuggestion.distance
+        if (!["event_already_delivered", "notification_limit_reached"].includes(code)) {
+          await notifyToNaPista({
+            title: "Tô na Pista sugeriu:",
+            body: `${onTrackSuggestion.nextEvent.title} no ${onTrackSuggestion.venue.name} - ${startsCopy}`,
+            url: targetUrl
+          }).catch(() => null);
+        }
+      } finally {
+        if (shouldRecord) {
+          setOnTrackNotifiedIds((current) => {
+            const next = Array.from(new Set([...current, eventId])).slice(0, 2);
+            sessionStorage.setItem(ON_TRACK_NOTIFIED_KEY, JSON.stringify(next));
+            return next;
+          });
+        }
       }
-    });
+
+      trackAnalyticsEvent("on_track_notification_shown", {
+        source: "explore",
+        eventId,
+        venueId: onTrackSuggestion.venue.id,
+        metadata: {
+          isLiveNow: onTrackSuggestion.isLiveNow,
+          distanceKm: onTrackSuggestion.distance,
+          initialDelaySeconds: onTrackNotifiedIds.length === 0 ? 180 : 0
+        }
+      });
+    }, delay);
+
+    return () => window.clearTimeout(timer);
   }, [onTrackActive, onTrackNotifiedIds, onTrackSession, onTrackSuggestion]);
 
   const requestOnTrack = () => {

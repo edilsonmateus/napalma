@@ -2,6 +2,8 @@ import { env } from "../config/env.js";
 import { prisma } from "../lib/prisma.js";
 import { hasPushConfig, sendPushToSubscriptions } from "./push.service.js";
 
+const INITIAL_NOTIFICATION_DELAY_MS = 3 * 60 * 1000;
+
 export class ToNaPistaServiceError extends Error {
   constructor(code, status = 400) {
     super(code);
@@ -84,6 +86,12 @@ export async function deliverToNaPistaSession({ sessionId, eventId, identities =
     }
   });
   if (!session) throw new ToNaPistaServiceError("session_not_active", 404);
+  if (
+    session.notificationsSent === 0
+    && now.getTime() < session.startsAt.getTime() + INITIAL_NOTIFICATION_DELAY_MS
+  ) {
+    throw new ToNaPistaServiceError("notification_not_ready", 409);
+  }
   if (session.notificationsSent >= session.maxNotifications) {
     await prisma.toNaPistaSession.update({ where: { id: session.id }, data: { isActive: false } });
     throw new ToNaPistaServiceError("notification_limit_reached", 409);
