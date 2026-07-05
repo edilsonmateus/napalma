@@ -2523,6 +2523,7 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 }
 
 .settings-avatar {
+  position: relative;
   width: 46px;
   height: 46px;
   border-radius: 999px;
@@ -2534,6 +2535,8 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   font-weight: var(--weight-title);
 }
 
+.settings-avatar-edit { position: absolute; right: -2px; bottom: -2px; display: grid; place-items: center; width: 18px; height: 18px; border: 2px solid var(--bg-card); border-radius: 50%; background: #ffb000; color: #17120a; }
+
 .settings-profile p {
   margin: 2px 0 0;
   color: var(--text-secondary);
@@ -2543,6 +2546,34 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 .settings-content-stack {
   margin-left: 58px;
 }
+
+.management-hub { margin: 14px 0; overflow: hidden; border: 1px solid rgba(255,255,255,.08); border-radius: 22px; background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025)); }
+.management-hub-toggle { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; min-height: 64px; padding: 14px 16px; border: 0; background: transparent; color: var(--text-primary); text-align: left; cursor: pointer; }
+.management-hub-toggle > span { display: grid; gap: 3px; min-width: 0; }
+.management-hub-toggle strong { font-size: 16px; }
+.management-hub-toggle small { color: var(--text-secondary); line-height: 1.35; }
+.management-hub-chevron { color: #ffb000; transition: transform 220ms ease; }
+.management-hub:not(.is-collapsed) .management-hub-chevron { transform: rotate(90deg); }
+.management-hub-count { padding: 5px 9px; border: 1px solid rgba(255,176,0,.28); border-radius: 999px; color: #ffbf36; font-size: 11px; font-style: normal; white-space: nowrap; }
+.management-hub-content { display: grid; gap: 12px; padding: 0 14px 14px; }
+.management-hub-context { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; padding: 10px 12px; border-radius: 12px; background: rgba(0,0,0,.18); }
+.management-hub-context > span { color: var(--text-muted); font-size: 12px; }
+.management-hub-context strong, .management-hub-context select { color: var(--text-primary); }
+.management-hub-context select { max-width: 230px; padding: 6px 28px 6px 8px; background: var(--bg-surface); }
+.management-hub-context small { color: #ffbf36; font-size: 11px; }
+.management-hub-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.management-card { display: grid; align-content: start; min-height: 156px; padding: 15px; border: 1px solid rgba(255,255,255,.09); border-radius: 16px; background: rgba(255,255,255,.045); color: var(--text-primary); text-decoration: none; transition: transform 180ms ease, border-color 180ms ease, background 180ms ease; }
+.management-card:hover { transform: translateY(-2px); border-color: rgba(255,176,0,.38); background: rgba(255,255,255,.065); }
+.management-card-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; color: #ffb000; }
+.management-card-heading span { padding: 3px 7px; border-radius: 999px; background: rgba(255,176,0,.1); font-size: 10px; }
+.management-card > strong { font-size: 15px; }
+.management-card p { margin: 7px 0 14px; color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
+.management-card > em { display: inline-flex; align-items: center; gap: 3px; margin-top: auto; color: #ffbf36; font-size: 12px; font-style: normal; font-weight: var(--weight-action); }
+.management-hub-summary { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 14px 48px; }
+.management-hub-summary span { padding: 4px 8px; border: 1px solid rgba(255,255,255,.09); border-radius: 999px; color: var(--text-secondary); font-size: 11px; }
+.settings-artist-invite { margin: 14px 0; padding: 15px; border: 1px solid rgba(255,176,0,.16); border-radius: 16px; background: rgba(255,176,0,.045); }
+.settings-artist-invite p { margin: 5px 0 10px; color: var(--text-secondary); font-size: 13px; }
+.settings-artist-invite a { color: #ffbf36; font-size: 13px; }
 
 .settings-list {
   display: grid;
@@ -5654,6 +5685,19 @@ button.venue-card {
   min-height: calc(100dvh - 120px);
   display: flex;
   flex-direction: column;
+}
+
+.settings-screen { padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+
+@media (max-width: 620px) {
+  .settings-content-stack { margin-left: 0; }
+  .management-hub-grid { grid-template-columns: 1fr; }
+  .management-card { min-height: 142px; }
+  .management-hub-count { display: none; }
+  .management-hub-toggle { grid-template-columns: auto minmax(0, 1fr); min-height: 58px; padding: 13px 14px; }
+  .management-hub-summary { padding-left: 46px; }
+  .settings-content-stack > .auth-actions { align-items: stretch; }
+  .settings-content-stack > .auth-actions .auth-btn { justify-content: center; }
 }
 
 .auth-settings-footer {

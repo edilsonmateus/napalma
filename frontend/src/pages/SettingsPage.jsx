@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Share2 } from "lucide-react";
+import { Camera, Share2 } from "lucide-react";
 import QRCode from "qrcode";
 import { logout } from "../services/auth.service";
 import { useAuthStore } from "../store/authStore";
 import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
 import { promptInstallApp, subscribeInstallPrompt } from "../utils/installPrompt";
+import ManagementHub from "../components/settings/ManagementHub";
 
 export default function SettingsPage() {
   const { refreshToken, user, clearAuth } = useAuthStore();
@@ -99,7 +100,7 @@ export default function SettingsPage() {
         <h2>Configurações</h2>
       </header>
       <div className="settings-profile clean-card">
-        <div className="settings-avatar">{user?.firstName?.[0] || "7"}</div>
+        <div className="settings-avatar">{user?.firstName?.[0] || "7"}{user ? <span className="settings-avatar-edit" aria-hidden="true"><Camera size={10}/></span> : null}</div>
         <div>
           <strong>{user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : "Sua conta"}</strong>
           {user ? <p>{user.email}</p> : null}
@@ -148,6 +149,8 @@ export default function SettingsPage() {
           </button>
         </div>
 
+        <ManagementHub user={user} canManageVenues={canOpenVenuesPanel} canManageAds={isAdminRole(user?.role)}/>
+
         <div className="auth-actions">
           {user ? (
             <>
@@ -164,13 +167,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {canOpenVenuesPanel ? <p><Link to="/settings/venues" className="btn-link">Gerenciar casas de samba</Link></p> : null}
-      {isAdminRole(user?.role) ? <p><Link to="/settings/ads" className="btn-link">Gerenciar publicidade</Link></p> : null}
-      {user ? <p><Link to="/workspace/anunciante" className="btn-link">Central do Anunciante</Link></p> : null}
-      {user && String(import.meta.env.VITE_ARTIST_SELF_SERVICE_ENABLED || "").toLowerCase() === "true" ? <p><Link to="/workspace/artista" className="btn-link">Meu perfil de artista</Link></p> : null}
-      {user && String(import.meta.env.VITE_ARTIST_BOOKING_REQUESTS_ENABLED || "").toLowerCase() === "true" ? <p><Link to="/workspace/artista/contratacoes" className="btn-link">Contratacoes de artistas</Link></p> : null}
-      {user && String(import.meta.env.VITE_ARTIST_MEDIA_GALLERY_ENABLED || "").toLowerCase() === "true" ? <p><Link to="/workspace/artista/midia" className="btn-link">Fotos e videos do artista</Link></p> : null}
-      {user && String(import.meta.env.VITE_ARTIST_INSIGHTS_ENABLED || "").toLowerCase() === "true" ? <p><Link to="/workspace/artista/desempenho" className="btn-link">Desempenho do artista</Link></p> : null}
       {showQrModal ? (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="qr-title">
           <div className="modal-card route-mini-modal settings-qr-modal">
