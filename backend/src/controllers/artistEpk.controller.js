@@ -111,13 +111,19 @@ export async function getArtistEpk(req, res, next) {
     });
     if (!artist) return res.status(404).json({ error: "artist_not_found", message: "Artista nao encontrado." });
     const now = new Date();
-    const [upcoming, history, follow, pendingClaim] = await Promise.all([
+    const [upcoming, history, follow, pendingClaim, relatedArtists] = await Promise.all([
       prisma.event.findMany({ where: { status: "confirmed", startDate: { gte: now }, artists: { some: { artistId: artist.id } } }, include: { venue: true }, orderBy: { startDate: "asc" }, take: 30 }),
       prisma.event.findMany({ where: { status: "confirmed", endDate: { lt: now }, artists: { some: { artistId: artist.id } } }, include: { venue: true }, orderBy: { startDate: "desc" }, take: 12 }),
       req.user ? prisma.artistFollow.findUnique({ where: { userId_artistId: { userId: req.user.id, artistId: artist.id } }, select: { id: true } }) : null,
-      req.user ? prisma.claimRequest.findFirst({ where: { requestedById: req.user.id, artistId: artist.id, targetType: "artist", status: "pending" }, select: { id: true, createdAt: true } }) : null
+      req.user ? prisma.claimRequest.findFirst({ where: { requestedById: req.user.id, artistId: artist.id, targetType: "artist", status: "pending" }, select: { id: true, createdAt: true } }) : null,
+      artist.genres?.length ? prisma.artist.findMany({
+        where: { id: { not: artist.id }, isVerified: true, genres: { hasSome: artist.genres } },
+        select: { id: true, slug: true, name: true, imageUrl: true, genres: true, isVerified: true },
+        orderBy: { updatedAt: "desc" },
+        take: 6
+      }) : []
     ]);
-    return res.json({ item: { ...publicArtist(artist), isFollowing: Boolean(follow), pendingClaim: pendingClaim || null, upcomingEvents: upcoming.map(eventPayload), pastEvents: history.map(eventPayload) } });
+    return res.json({ item: { ...publicArtist(artist), isFollowing: Boolean(follow), pendingClaim: pendingClaim || null, upcomingEvents: upcoming.map(eventPayload), pastEvents: history.map(eventPayload), relatedArtists } });
   } catch (error) { return next(error); }
 }
 

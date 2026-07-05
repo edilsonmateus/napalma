@@ -298,6 +298,7 @@ model AnalyticsEvent {
   @@index([userId, createdAt])
   @@index([venueId, type, createdAt])
   @@index([eventId, type, createdAt])
+  @@index([artistId, type, createdAt])
   @@index([region, createdAt])
   @@index([city, createdAt])
 }

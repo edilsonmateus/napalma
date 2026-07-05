@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { CalendarClock, ExternalLink, MapPin, Share2 } from "lucide-react";
 import { useArtistProfileQuery, useCreateClaimMutation, useToggleArtistFollowMutation } from "../hooks/useEventsQuery";
@@ -6,6 +6,8 @@ import { useAuthStore } from "../store/authStore";
 import VerifiedBadge from "../components/common/VerifiedBadge";
 import ArtistBookingModal from "../components/artists/ArtistBookingModal";
 import ArtistGallery from "../components/artists/ArtistGallery";
+import RelatedArtists from "../components/artists/RelatedArtists";
+import { trackAnalyticsEvent } from "../services/analytics.service";
 
 function formatDate(value) {
   return new Date(value).toLocaleString("pt-BR", {
@@ -27,6 +29,12 @@ export default function ArtistProfilePage() {
   const [showBooking, setShowBooking] = useState(false);
   const [claimMessage, setClaimMessage] = useState("");
   const [claim, setClaim] = useState({ responsibleName: "", responsiblePhone: "", claimantDocument: "", relationshipRole: "", officialEmail: "", officialInstagram: "", officialWebsite: "", justification: "" });
+  const epkEnabled = String(import.meta.env.VITE_ARTIST_EPK_ENABLED || "").toLowerCase() === "true";
+
+  useEffect(() => {
+    if (!epkEnabled || !artist?.id) return;
+    trackAnalyticsEvent("artist_profile_view", { artistId: artist.id, source: "artist_epk" });
+  }, [artist?.id, epkEnabled]);
 
   if (isLoading) return <p className="empty">Carregando perfil do artista...</p>;
   if (!artist) return <p className="empty">Artista não encontrado.</p>;
@@ -34,9 +42,9 @@ export default function ArtistProfilePage() {
   const canFollow = Boolean(user);
   const isFollowing = Boolean(artist.isFollowing);
   const postsCount = artist.upcomingEvents?.length || 0;
-  const epkEnabled = String(import.meta.env.VITE_ARTIST_EPK_ENABLED || "").toLowerCase() === "true";
 
   async function shareEpk() {
+    trackAnalyticsEvent("artist_epk_share", { artistId: artist.id, source: "artist_epk" });
     const url = `${window.location.origin}/artistas/${artist.slug || artist.id}`;
     if (navigator.share) return navigator.share({ title: `${artist.name} no 77Gira`, text: `Conheça o perfil oficial de ${artist.name} no 77Gira.`, url }).catch(() => {});
     await navigator.clipboard?.writeText(url);
@@ -65,14 +73,14 @@ export default function ArtistProfilePage() {
           <div className="artist-epk-actions">
             {canFollow ? <button className={`artist-follow-btn ${isFollowing ? "active" : ""}`} onClick={() => toggleFollow.mutate({ artistId: artist.id, currentlyFollowing: isFollowing })}>{isFollowing ? "Seguindo" : "+ Seguir"}</button> : <Link className="artist-follow-btn" to="/login">Entrar para seguir</Link>}
             <button className="chip" type="button" onClick={shareEpk}><Share2 size={15}/> Compartilhar EPK</button>
-            {String(import.meta.env.VITE_ARTIST_BOOKING_REQUESTS_ENABLED || "").toLowerCase() === "true" && artist.isVerified && artist.isClaimed ? <button className="btn-primary" type="button" onClick={() => setShowBooking(true)}>Chamar para show</button> : null}
+            {String(import.meta.env.VITE_ARTIST_BOOKING_REQUESTS_ENABLED || "").toLowerCase() === "true" && artist.isVerified && artist.isClaimed ? <button className="btn-primary" type="button" onClick={() => { trackAnalyticsEvent("artist_booking_click", { artistId: artist.id, source: "artist_epk" }); setShowBooking(true); }}>Chamar para show</button> : null}
           </div>
         </header>
         {claimMessage ? <p className="clean-card artist-epk-notice">{claimMessage}</p> : null}
         {!artist.isClaimed && !artist.pendingClaim ? <aside className="clean-card artist-claim-cta"><div><strong>Este perfil ainda nao foi reivindicado</strong><p>É você ou faz parte da equipe? Transforme este perfil em uma vitrine profissional oficial.</p></div>{user ? <button className="btn-primary" onClick={() => setShowClaim(true)}>Reivindicar perfil</button> : <Link className="btn-primary" to="/login">Entrar para reivindicar</Link>}</aside> : null}
         {artist.pendingClaim ? <aside className="clean-card artist-claim-cta"><div><strong>Reivindicacao em analise</strong><p>A equipe 77Gira esta verificando as informacoes enviadas.</p></div></aside> : null}
         <div className="artist-epk-stats"><article><strong>{artist.followersCount || 0}</strong><span>seguidores</span></article><article><strong>{artist.eventsCount || 0}</strong><span>shows cadastrados</span></article><article><strong>{artist.upcomingEvents?.length || 0}</strong><span>proximos shows</span></article></div>
-        {String(import.meta.env.VITE_ARTIST_MEDIA_GALLERY_ENABLED || "").toLowerCase() === "true" ? <ArtistGallery items={artist.media}/> : null}
+        {String(import.meta.env.VITE_ARTIST_MEDIA_GALLERY_ENABLED || "").toLowerCase() === "true" ? <ArtistGallery items={artist.media} onMediaClick={(item) => trackAnalyticsEvent("artist_media_click", { artistId: artist.id, source: "artist_epk", metadata: { mediaId: item.id, type: item.type } })}/> : null}
         <div className="artist-epk-grid">
           <main>
             {(artist.fullBio || artist.bio) ? <section className="clean-card artist-epk-section"><h2>Sobre</h2><p className="artist-epk-release">{artist.fullBio || artist.bio}</p></section> : null}
@@ -82,9 +90,10 @@ export default function ArtistProfilePage() {
           <aside className="artist-epk-aside">
             {(artist.baseCity || artist.baseState) ? <section className="clean-card"><h2>Base de atuacao</h2><p><MapPin size={15}/> {[artist.baseCity, artist.baseState].filter(Boolean).join(" · ")}</p></section> : null}
             {artist.showFormats?.length ? <section className="clean-card"><h2>Formatos de show</h2><div className="artist-epk-tags">{artist.showFormats.map((item) => <span key={item}>{item}</span>)}</div>{artist.averageDurationMinutes ? <p>Duração média: {artist.averageDurationMinutes} min</p> : null}</section> : null}
-            {links.length ? <section className="clean-card"><h2>Links oficiais</h2><div className="artist-epk-links">{links.map(([label, url]) => <a href={url} key={label} target="_blank" rel="noreferrer">{label}<ExternalLink size={14}/></a>)}</div></section> : null}
+            {links.length ? <section className="clean-card"><h2>Links oficiais</h2><div className="artist-epk-links">{links.map(([label, url]) => <a href={url} key={label} target="_blank" rel="noreferrer" onClick={() => trackAnalyticsEvent("artist_link_click", { artistId: artist.id, source: "artist_epk", metadata: { platform: label } })}>{label}<ExternalLink size={14}/></a>)}</div></section> : null}
           </aside>
         </div>
+        <RelatedArtists items={artist.relatedArtists}/>
         {showClaim ? <div className="modal-backdrop"><form className="modal-card artist-claim-form" onSubmit={submitClaim}><h3>Reivindicar {artist.name}</h3><input required placeholder="Nome do responsavel" value={claim.responsibleName} onChange={(e) => setClaim({ ...claim, responsibleName: e.target.value })}/><input required placeholder="Telefone" value={claim.responsiblePhone} onChange={(e) => setClaim({ ...claim, responsiblePhone: e.target.value })}/><input required placeholder="CPF ou CNPJ" value={claim.claimantDocument} onChange={(e) => setClaim({ ...claim, claimantDocument: e.target.value })}/><input required placeholder="Seu vinculo com o artista" value={claim.relationshipRole} onChange={(e) => setClaim({ ...claim, relationshipRole: e.target.value })}/><input type="email" placeholder="Email oficial (opcional)" value={claim.officialEmail} onChange={(e) => setClaim({ ...claim, officialEmail: e.target.value })}/><input placeholder="Instagram oficial (opcional)" value={claim.officialInstagram} onChange={(e) => setClaim({ ...claim, officialInstagram: e.target.value })}/><input type="url" placeholder="Site oficial (opcional)" value={claim.officialWebsite} onChange={(e) => setClaim({ ...claim, officialWebsite: e.target.value })}/><textarea required minLength={5} placeholder="Conte como comprovar este vinculo" value={claim.justification} onChange={(e) => setClaim({ ...claim, justification: e.target.value })}/><div className="form-actions-inline"><button className="btn-primary" disabled={createClaim.isPending}>Enviar para analise</button><button className="chip" type="button" onClick={() => setShowClaim(false)}>Cancelar</button></div></form></div> : null}
         {showBooking ? <ArtistBookingModal artist={artist} onClose={() => setShowBooking(false)} onSuccess={() => setClaimMessage("Solicitacao enviada para a equipe do artista.")}/> : null}
       </section>

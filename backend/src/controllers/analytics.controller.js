@@ -17,7 +17,12 @@ const TRACKABLE_EVENT_TYPES = new Set([
   "date_filter",
   "hour_filter",
   "live_filter",
-  "search"
+  "search",
+  "artist_profile_view",
+  "artist_link_click",
+  "artist_booking_click",
+  "artist_epk_share",
+  "artist_media_click"
 ]);
 
 const analyticsEventSchema = z.object({

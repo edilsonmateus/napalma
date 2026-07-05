@@ -649,6 +649,18 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   gap: 10px;
 }
 
+.artist-related-grid, .artist-insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.artist-related-card { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+.artist-related-card img, .artist-related-avatar { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; background: var(--surface-muted, #ececec); flex: 0 0 auto; }
+.artist-related-card strong, .artist-related-card small { display: flex; align-items: center; gap: 5px; }
+.artist-related-card small { margin-top: 4px; color: var(--text-muted, #666); }
+.artist-insights-filters { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; }
+.artist-insights-filters label { display: grid; gap: 6px; min-width: 180px; }
+.artist-insights-grid article { display: grid; gap: 6px; }
+.artist-insights-grid article strong { font-size: 1.7rem; }
+.artist-insights-grid article span, .artist-insights-note small { color: var(--text-muted, #666); }
+.artist-insights-note { margin-top: 16px; }
+
 .ads-review-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 16px 0; }
 .ads-review-card textarea { width: 100%; min-height: 74px; margin: 10px 0; }
 .ads-review-image { width: 100%; max-height: 180px; object-fit: cover; border-radius: 10px; }
