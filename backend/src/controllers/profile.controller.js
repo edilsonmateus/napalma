@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
+import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { isFeatureEnabled } from "../middlewares/featureFlags.js";
@@ -14,7 +15,51 @@ const locationSchema = z.object({
   neighborhood: z.string().trim().min(2).max(120),
   postalCode: z.string().transform((value) => value.replace(/\D/g, "")).refine((value) => value.length === 8, "CEP inválido.")
 });
+const profileSchema = z.object({
+  firstName: z.string().trim().min(2).max(80),
+  lastName: z.string().trim().min(2).max(80),
+  username: z.string().trim().min(3).max(40).regex(/^[a-zA-Z0-9._-]+$/, "Use apenas letras, números, ponto, hífen ou underline."),
+  phone: z.string().trim().min(8).max(30).optional().nullable(),
+  instagramHandle: z.string().trim().min(2).max(80).optional().nullable()
+});
+const passwordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(128)
+}).refine((data) => data.currentPassword !== data.newPassword, {
+  message: "A nova senha deve ser diferente da senha atual.",
+  path: ["newPassword"]
+});
 const userSelect = { id: true, email: true, username: true, firstName: true, lastName: true, phone: true, instagramHandle: true, avatarUrl: true, city: true, neighborhood: true, postalCode: true, role: true };
+
+export async function updateMyProfile(req, res, next) {
+  try {
+    const data = profileSchema.parse(req.body || {});
+    const duplicate = await prisma.user.findFirst({ where: { username: data.username, id: { not: req.user.id } }, select: { id: true } });
+    if (duplicate) return res.status(409).json({ error: "username_in_use", message: "Este nome de usuário já está em uso." });
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { ...data, phone: data.phone || null, instagramHandle: data.instagramHandle || null },
+      select: userSelect
+    });
+    return res.json({ item: user });
+  } catch (error) { return next(error); }
+}
+
+export async function updateMyPassword(req, res, next) {
+  try {
+    const data = passwordSchema.parse(req.body || {});
+    const current = await prisma.user.findUnique({ where: { id: req.user.id }, select: { passwordHash: true } });
+    if (!current || !(await bcrypt.compare(data.currentPassword, current.passwordHash))) {
+      return res.status(401).json({ error: "invalid_current_password", message: "A senha atual está incorreta." });
+    }
+    const passwordHash = await bcrypt.hash(data.newPassword, 10);
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: req.user.id }, data: { passwordHash } }),
+      prisma.refreshToken.updateMany({ where: { userId: req.user.id, revokedAt: null }, data: { revokedAt: new Date() } })
+    ]);
+    return res.status(204).send();
+  } catch (error) { return next(error); }
+}
 
 export async function updateMyLocation(req, res, next) {
   try {

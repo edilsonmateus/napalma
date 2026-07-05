@@ -1,27 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Camera, Share2 } from "lucide-react";
+import { MoreVertical, Share2 } from "lucide-react";
 import QRCode from "qrcode";
-import { logout } from "../services/auth.service";
 import { useAuthStore } from "../store/authStore";
-import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
+import { isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
 import { promptInstallApp, subscribeInstallPrompt } from "../utils/installPrompt";
 import ManagementHub from "../components/settings/ManagementHub";
-import { uploadProfileAvatar } from "../services/profile.service";
-import LocationBaseCard from "../components/settings/LocationBaseCard";
 
 export default function SettingsPage() {
-  const { token, refreshToken, user, setAuth, clearAuth } = useAuthStore();
+  const { user } = useAuthStore();
 
-  const roleHome = getRoleHome(user?.role);
   const canOpenVenuesPanel = Boolean(user) && (isAdminRole(user?.role) || isProducerRole(user?.role) || isVenueRole(user?.role));
   const qrCanvasRef = useRef(null);
-  const avatarInputRef = useRef(null);
   const [showInstallBtn, setShowInstallBtn] = useState(false);
   const [showShareBtn, setShowShareBtn] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
-  const [avatarBusy, setAvatarBusy] = useState(false);
-  const [avatarMessage, setAvatarMessage] = useState("");
   const isMobileLike = useMemo(() => {
     if (typeof window === "undefined" || typeof navigator === "undefined") return false;
     const ua = navigator.userAgent || "";
@@ -65,17 +58,6 @@ export default function SettingsPage() {
     });
   }, [appUrl, showQrModal]);
 
-  async function handleLogout() {
-    try {
-      if (refreshToken) {
-        await logout({ refreshToken });
-      }
-    } catch (_error) {
-      // no-op
-    }
-    clearAuth();
-  }
-
   async function handleInstallApp() {
     if (!isMobileLike) {
       setShowQrModal(true);
@@ -99,31 +81,16 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleAvatarChange(event) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    setAvatarBusy(true); setAvatarMessage("");
-    try {
-      const nextUser = await uploadProfileAvatar(file);
-      setAuth({ token, refreshToken, user: nextUser });
-      setAvatarMessage("Foto de perfil atualizada.");
-    } catch (error) {
-      setAvatarMessage(error?.response?.data?.message || "Não foi possível atualizar a foto.");
-    } finally { setAvatarBusy(false); }
-  }
-
   return (
     <section className="settings-screen">
       <header className="page-header">
         <h2>Configurações</h2>
       </header>
       <div className="settings-profile clean-card">
-        {user ? <><input ref={avatarInputRef} className="settings-avatar-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarChange}/><button className="settings-avatar" type="button" disabled={avatarBusy} onClick={() => avatarInputRef.current?.click()} aria-label="Alterar foto de perfil">{user.avatarUrl ? <img src={user.avatarUrl} alt=""/> : user.firstName?.[0] || "7"}<span className="settings-avatar-edit" aria-hidden="true"><Camera size={10}/></span></button></> : <div className="settings-avatar">7</div>}
+        <div className="settings-avatar">{user?.avatarUrl ? <img src={user.avatarUrl} alt=""/> : user?.firstName?.[0] || "7"}</div>
         <div>
           <strong>{user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : "Sua conta"}</strong>
           {user ? <p>{user.email}</p> : null}
-          {avatarMessage ? <small className="settings-avatar-message" role="status">{avatarMessage}</small> : null}
           {!user ? (
             <div className="settings-inline-note" role="note" aria-live="polite">
               <span className="settings-info-icon" aria-hidden="true">i</span>
@@ -131,18 +98,10 @@ export default function SettingsPage() {
             </div>
           ) : null}
         </div>
+        {user ? <Link className="settings-account-menu" to="/settings/account" aria-label="Abrir conta e preferências"><MoreVertical size={22}/></Link> : null}
       </div>
 
       <div className="settings-content-stack">
-        <LocationBaseCard user={user} token={token} refreshToken={refreshToken} setAuth={setAuth}/>
-        <div className="settings-list clean-card">
-          <Link to="/privacy" className="settings-link-row">Privacidade</Link>
-          <Link to="/help" className="settings-link-row">Ajuda</Link>
-          <p className="settings-link-row muted">Avaliar (em breve)</p>
-          <Link to="/terms" className="settings-link-row">Termos de uso</Link>
-          <Link to="/about" className="settings-link-row">Sobre</Link>
-        </div>
-
         <div className="settings-share-actions clean-card">
           {isMobileLike ? (
             showInstallBtn ? (
@@ -172,20 +131,13 @@ export default function SettingsPage() {
 
         <ManagementHub user={user} canManageVenues={canOpenVenuesPanel} canManageAds={isAdminRole(user?.role)}/>
 
-        <div className="auth-actions">
-          {user ? (
-            <>
-              <Link to={roleHome} className="auth-btn">Ir para meu painel</Link>
-              <button className="auth-btn" type="button" onClick={handleLogout}>Sair</button>
-            </>
-          ) : (
+        {!user ? <div className="auth-actions">
             <>
               <Link to="/login" className="auth-btn auth-btn-primary">Entrar</Link>
               <Link to="/signup" className="auth-btn auth-btn-strong">Criar conta</Link>
               <Link to="/explore" className="auth-btn">Continuar sem conta</Link>
             </>
-          )}
-        </div>
+        </div> : null}
       </div>
 
       {showQrModal ? (

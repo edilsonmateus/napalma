@@ -21,7 +21,7 @@ describe("user profile avatar", () => {
   });
 
   it("opens a real image input and refreshes the stored frontend user", () => {
-    const settings = read("frontend/src/pages/SettingsPage.jsx");
+    const settings = read("frontend/src/pages/AccountSettingsPage.jsx");
     expect(settings).toContain('type="file" accept="image/jpeg,image/png,image/webp"');
     expect(settings).toContain("avatarInputRef.current?.click()");
     expect(settings).toContain("setAuth({ token, refreshToken, user: nextUser })");

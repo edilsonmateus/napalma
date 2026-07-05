@@ -17,6 +17,7 @@ const RadarPage = lazy(() => import("./pages/RadarPage"));
 const PelaHoraPage = lazy(() => import("./pages/PelaHoraPage"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const AccountSettingsPage = lazy(() => import("./pages/AccountSettingsPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const HelpPage = lazy(() => import("./pages/HelpPage"));
@@ -212,6 +213,7 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/account" element={user ? <AccountSettingsPage /> : <Navigate to="/login" replace />} />
             <Route path="/workspace/anunciante" element={user ? <AdvertiserPortalPage /> : <Navigate to="/login" replace />} />
             <Route path="/workspace/artista" element={user ? <ArtistWorkspacePage /> : <Navigate to="/login" replace />} />
             <Route path="/workspace/artista/contratacoes" element={user ? <ArtistBookingsPage /> : <Navigate to="/login" replace />} />
