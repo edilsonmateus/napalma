@@ -7,6 +7,7 @@ const schema = fs.readFileSync(path.join(root, "backend/prisma/schema.prisma"), 
 const controller = fs.readFileSync(path.join(root, "backend/src/controllers/artistBookings.controller.js"), "utf8");
 const routes = fs.readFileSync(path.join(root, "backend/src/routes/index.js"), "utf8");
 const profile = fs.readFileSync(path.join(root, "frontend/src/pages/ArtistProfilePage.jsx"), "utf8");
+const modal = fs.readFileSync(path.join(root, "frontend/src/components/artists/ArtistBookingModal.jsx"), "utf8");
 
 describe("artist booking requests", () => {
   it("models a private lead lifecycle without exposing it on Artist", () => {
@@ -31,5 +32,10 @@ describe("artist booking requests", () => {
   it("shows the public call to action only for verified claimed artists", () => {
     expect(profile).toContain("artist.isVerified && artist.isClaimed");
     expect(profile).toContain("Contratar {artist.name}");
+  });
+
+  it("does not report honeypot responses as a successful user submission", () => {
+    expect(modal).toContain("if (!result?.item?.id)");
+    expect(modal).toContain('data-1p-ignore="true"');
   });
 });
