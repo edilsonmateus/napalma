@@ -6,8 +6,8 @@ import { env } from "../config/env.js";
 import crypto from "node:crypto";
 import { linkVisitorToUser } from "./audience.controller.js";
 import { linkPushSubscriptionsToUser } from "../services/push.service.js";
+import { isReservedUsername, isUsernameSyntaxValid, RESERVED_USERNAME_MESSAGE } from "../utils/usernamePolicy.js";
 
-const roleSchema = z.enum(["admin", "producer", "venue_manager", "attendee"]);
 const postalCodeSchema = z.string().transform((value) => value.replace(/\D/g, "")).refine((value) => value.length === 8, "CEP inválido.");
 
 const registerSchema = z.object({
@@ -21,8 +21,7 @@ const registerSchema = z.object({
   neighborhood: z.string().trim().min(2).max(120).optional(),
   postalCode: postalCodeSchema.optional(),
   visitorId: z.string().min(8).max(120).optional(),
-  password: z.string().min(6),
-  role: roleSchema.optional()
+  password: z.string().min(6)
 });
 
 const loginSchema = z.object({
@@ -73,7 +72,8 @@ function sanitizeUser(user) {
     city: user.city ?? "",
     neighborhood: user.neighborhood ?? "",
     postalCode: user.postalCode ?? "",
-    role: user.role
+    role: user.role,
+    canUseReservedBrandUsername: Boolean(user.canUseReservedBrandUsername)
   };
 }
 
@@ -81,6 +81,12 @@ export async function register(req, res, next) {
   try {
     const data = registerSchema.parse(req.body);
     const email = data.email.toLowerCase();
+    if (!isUsernameSyntaxValid(data.username)) {
+      return res.status(400).json({ error: "invalid_username", message: "Use de 3 a 40 caracteres: letras sem acento, números, ponto, hífen ou underline." });
+    }
+    if (isReservedUsername(data.username)) {
+      return res.status(409).json({ error: "reserved_username", message: RESERVED_USERNAME_MESSAGE });
+    }
     const existing = await prisma.user.findFirst({
       where: {
         OR: [{ email }, { username: data.username }]
@@ -108,7 +114,7 @@ export async function register(req, res, next) {
         neighborhood: data.neighborhood,
         postalCode: data.postalCode,
         passwordHash,
-        role: data.role || "attendee"
+        role: "attendee"
       }
     });
 
@@ -172,7 +178,7 @@ export async function devLoginAdmin(req, res, next) {
     if (user) {
       user = await prisma.user.update({
         where: { email },
-        data: { role: "admin" }
+        data: { role: "admin", canUseReservedBrandUsername: true }
       });
     } else {
       const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10);
@@ -183,7 +189,8 @@ export async function devLoginAdmin(req, res, next) {
           firstName: "Admin",
           lastName: "Local",
           passwordHash,
-          role: "admin"
+          role: "admin",
+          canUseReservedBrandUsername: true
         }
       });
     }

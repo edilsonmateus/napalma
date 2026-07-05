@@ -129,7 +129,7 @@ export default function SettingsPage() {
           </button>
         </div>
 
-        <ManagementHub user={user} canManageVenues={canOpenVenuesPanel} canManageAds={isAdminRole(user?.role)}/>
+        <ManagementHub user={user} canManageVenues={canOpenVenuesPanel} canManageAds={isAdminRole(user?.role)} canManageUsers={isAdminRole(user?.role)}/>
 
         {!user ? <div className="auth-actions">
             <>

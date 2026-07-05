@@ -27,7 +27,7 @@ import {
   updateArtist
 } from "../controllers/artists.controller.js";
 import { devLoginAdmin, login, logout, me, refresh, register } from "../controllers/auth.controller.js";
-import { createProducerUser, listProducerUsers } from "../controllers/users.controller.js";
+import { createCommonUser, createProducerUser, listCommonUsers, listProducerUsers, setReservedUsernamePermission } from "../controllers/users.controller.js";
 import { listMyRadar, markEventInRadar, unmarkEventFromRadar } from "../controllers/radar.controller.js";
 import { listMyHistory, markEventAsAttended, unmarkEventAsAttended } from "../controllers/history.controller.js";
 import { listMyAchievements } from "../controllers/achievements.controller.js";
@@ -162,6 +162,9 @@ router.post("/me/profile/avatar", requireAuth, uploadLimiter, imageUpload.single
 router.patch("/me/profile", requireAuth, updateMyProfile);
 router.patch("/me/profile/location", requireAuth, updateMyLocation);
 router.patch("/me/profile/password", requireAuth, authLimiter, updateMyPassword);
+router.get("/admin/users", requireAuth, requireRole(["admin"]), listCommonUsers);
+router.post("/admin/users", requireAuth, requireRole(["admin"]), authLimiter, createCommonUser);
+router.patch("/admin/users/:id/reserved-username-permission", requireAuth, requireRole(["admin"]), setReservedUsernamePermission);
 router.post("/analytics/visit", trackAudienceVisit);
 router.post("/analytics/events", analyticsTrackLimiter, trackAnalyticsEvent);
 router.get("/analytics/audience-summary", requireAuth, requireRole(["admin", "producer", "venue_manager"]), getAudienceSummary);

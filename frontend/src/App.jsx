@@ -33,6 +33,7 @@ const ArtistWorkspacePage = lazy(() => import("./pages/ArtistWorkspacePage"));
 const ArtistBookingsPage = lazy(() => import("./pages/ArtistBookingsPage"));
 const ArtistMediaPage = lazy(() => import("./pages/ArtistMediaPage"));
 const ArtistInsightsPage = lazy(() => import("./pages/ArtistInsightsPage"));
+const UsersAdminPage = lazy(() => import("./pages/UsersAdminPage"));
 
 const VISIT_DAY_KEY = "napalma:last-visit-day";
 const SPLASH_MS_MOBILE = 5000;
@@ -214,6 +215,7 @@ export default function App() {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/account" element={user ? <AccountSettingsPage /> : <Navigate to="/login" replace />} />
+            <Route path="/settings/users" element={isAdminRole(user?.role) ? <UsersAdminPage /> : <Navigate to="/settings" replace />} />
             <Route path="/workspace/anunciante" element={user ? <AdvertiserPortalPage /> : <Navigate to="/login" replace />} />
             <Route path="/workspace/artista" element={user ? <ArtistWorkspacePage /> : <Navigate to="/login" replace />} />
             <Route path="/workspace/artista/contratacoes" element={user ? <ArtistBookingsPage /> : <Navigate to="/login" replace />} />

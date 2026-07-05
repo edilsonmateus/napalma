@@ -27,7 +27,8 @@ export async function attachUser(req, _res, next) {
         city: true,
         neighborhood: true,
         postalCode: true,
-        role: true
+        role: true,
+        canUseReservedBrandUsername: true
       }
     });
 

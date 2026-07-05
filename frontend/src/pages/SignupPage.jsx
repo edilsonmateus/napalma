@@ -4,6 +4,7 @@ import { register } from "../services/auth.service";
 import { useAuthStore } from "../store/authStore";
 import { getRoleHome } from "../utils/roles";
 import { getOrCreateVisitorId } from "../utils/visitor";
+import { isReservedUsername, isUsernameSyntaxValid, RESERVED_USERNAME_MESSAGE } from "../utils/usernamePolicy";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -28,6 +29,14 @@ export default function SignupPage() {
   async function handleSubmit(event) {
     event.preventDefault();
     setMessage("");
+    if (!isUsernameSyntaxValid(form.username)) {
+      setMessage("Use de 3 a 40 caracteres: letras sem acento, números, ponto, hífen ou underline.");
+      return;
+    }
+    if (isReservedUsername(form.username)) {
+      setMessage(RESERVED_USERNAME_MESSAGE);
+      return;
+    }
     const location = { city: form.city.trim(), neighborhood: form.neighborhood.trim(), postalCode: form.postalCode.replace(/\D/g, "") };
     const locationStarted = Object.values(location).some(Boolean);
     if (locationStarted && (!location.city || !location.neighborhood || location.postalCode.length !== 8)) {

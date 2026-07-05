@@ -7,6 +7,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { isFeatureEnabled } from "../middlewares/featureFlags.js";
 import { uploadBufferToR2 } from "../services/r2Storage.service.js";
+import { canUseReservedUsername, isReservedUsername, isUsernameSyntaxValid, RESERVED_USERNAME_MESSAGE } from "../utils/usernamePolicy.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "../../");
@@ -33,11 +34,17 @@ const passwordSchema = z.object({
   message: "A nova senha deve ser diferente da senha atual.",
   path: ["newPassword"]
 });
-const userSelect = { id: true, email: true, username: true, firstName: true, lastName: true, phone: true, instagramHandle: true, avatarUrl: true, city: true, neighborhood: true, postalCode: true, role: true };
+const userSelect = { id: true, email: true, username: true, firstName: true, lastName: true, phone: true, instagramHandle: true, avatarUrl: true, city: true, neighborhood: true, postalCode: true, role: true, canUseReservedBrandUsername: true };
 
 export async function updateMyProfile(req, res, next) {
   try {
     const data = profileSchema.parse(req.body || {});
+    if (data.username !== req.user.username && !isUsernameSyntaxValid(data.username)) {
+      return res.status(400).json({ error: "invalid_username", message: "Use de 3 a 40 caracteres: letras sem acento, números, ponto, hífen ou underline." });
+    }
+    if (data.username !== req.user.username && isReservedUsername(data.username) && !canUseReservedUsername(req.user)) {
+      return res.status(409).json({ error: "reserved_username", message: RESERVED_USERNAME_MESSAGE });
+    }
     const duplicate = await prisma.user.findFirst({ where: { username: data.username, id: { not: req.user.id } }, select: { id: true } });
     if (duplicate) return res.status(409).json({ error: "username_in_use", message: "Este nome de usuário já está em uso." });
     const user = await prisma.user.update({

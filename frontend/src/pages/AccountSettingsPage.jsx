@@ -6,6 +6,7 @@ import { logout } from "../services/auth.service";
 import { updateProfileDetails, updateProfilePassword, uploadProfileAvatar } from "../services/profile.service";
 import { getMyArtists } from "../services/artistWorkspace.service";
 import { useAuthStore } from "../store/authStore";
+import { isReservedUsername, isUsernameSyntaxValid, RESERVED_USERNAME_MESSAGE } from "../utils/usernamePolicy";
 
 export default function AccountSettingsPage() {
   const navigate = useNavigate();
@@ -40,6 +41,16 @@ export default function AccountSettingsPage() {
     event.preventDefault();
     setProfileBusy(true);
     setProfileMessage("");
+    if (profileForm.username !== user.username && !isUsernameSyntaxValid(profileForm.username)) {
+      setProfileMessage("Use de 3 a 40 caracteres: letras sem acento, números, ponto, hífen ou underline.");
+      setProfileBusy(false);
+      return;
+    }
+    if (profileForm.username !== user.username && isReservedUsername(profileForm.username) && !user.canUseReservedBrandUsername) {
+      setProfileMessage(RESERVED_USERNAME_MESSAGE);
+      setProfileBusy(false);
+      return;
+    }
     try {
       const nextUser = await updateProfileDetails({
         ...profileForm,

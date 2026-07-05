@@ -2685,6 +2685,27 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   .account-form-pair { grid-template-columns: 1fr; }
 }
 
+.users-admin-screen { display: grid; gap: 14px; max-width: 860px; margin: 0 auto; }
+.users-admin-form, .users-admin-list { display: grid; gap: 10px; }
+.users-admin-form > input, .users-admin-form .account-form-pair > input, .users-admin-search > input { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid #2e2e2e; border-radius: 10px; background: #111; color: var(--text-primary); font: inherit; color-scheme: dark; }
+.users-admin-form > .chip { width: fit-content; }
+.users-reserved-warning { margin: -3px 0 2px; color: #fbbf24; font-size: 11px; }
+.users-official-check { display: flex; align-items: flex-start; gap: 9px; padding: 11px; border: 1px solid rgba(255,176,0,.18); border-radius: 10px; background: rgba(255,176,0,.04); cursor: pointer; }
+.users-official-check input { margin-top: 2px; accent-color: #ffb000; }
+.users-official-check span { display: grid; gap: 3px; }
+.users-official-check small { color: var(--text-secondary); font-size: 11px; }
+.users-admin-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.users-admin-list article { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-top: 1px solid rgba(255,255,255,.08); }
+.users-admin-list article > span { display: grid; gap: 3px; min-width: 0; }
+.users-admin-list article small { overflow: hidden; color: var(--text-secondary); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.users-admin-list article .chip { display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto; }
+.users-admin-list article .chip.official { border-color: rgba(74,222,128,.4); color: #86efac; background: rgba(34,197,94,.08); }
+
+@media (max-width: 560px) {
+  .users-admin-list article { align-items: stretch; flex-direction: column; }
+  .users-admin-list article .chip { width: fit-content; }
+}
+
 .management-hub { margin: 14px 0; overflow: hidden; border: 1px solid rgba(255,255,255,.08); border-radius: 22px; background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025)); }
 .management-hub-toggle { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; min-height: 64px; padding: 14px 16px; border: 0; background: transparent; color: var(--text-primary); text-align: left; cursor: pointer; }
 .management-hub-toggle > span { display: grid; gap: 3px; min-width: 0; }
