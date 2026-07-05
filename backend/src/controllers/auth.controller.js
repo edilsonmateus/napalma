@@ -8,6 +8,7 @@ import { linkVisitorToUser } from "./audience.controller.js";
 import { linkPushSubscriptionsToUser } from "../services/push.service.js";
 
 const roleSchema = z.enum(["admin", "producer", "venue_manager", "attendee"]);
+const postalCodeSchema = z.string().transform((value) => value.replace(/\D/g, "")).refine((value) => value.length === 8, "CEP inválido.");
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -16,6 +17,9 @@ const registerSchema = z.object({
   lastName: z.string().trim().min(2),
   phone: z.string().trim().min(8).optional(),
   instagramHandle: z.string().trim().min(2).optional(),
+  city: z.string().trim().min(2).max(120).optional(),
+  neighborhood: z.string().trim().min(2).max(120).optional(),
+  postalCode: postalCodeSchema.optional(),
   visitorId: z.string().min(8).max(120).optional(),
   password: z.string().min(6),
   role: roleSchema.optional()
@@ -66,6 +70,9 @@ function sanitizeUser(user) {
     phone: user.phone ?? "",
     instagramHandle: user.instagramHandle ?? "",
     avatarUrl: user.avatarUrl ?? "",
+    city: user.city ?? "",
+    neighborhood: user.neighborhood ?? "",
+    postalCode: user.postalCode ?? "",
     role: user.role
   };
 }
@@ -97,6 +104,9 @@ export async function register(req, res, next) {
         lastName: data.lastName,
         phone: data.phone,
         instagramHandle: data.instagramHandle,
+        city: data.city,
+        neighborhood: data.neighborhood,
+        postalCode: data.postalCode,
         passwordHash,
         role: data.role || "attendee"
       }

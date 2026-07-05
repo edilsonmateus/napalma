@@ -13,7 +13,10 @@ export default function SignupPage() {
     lastName: "",
     username: "",
     email: "",
-    password: ""
+    password: "",
+    city: "",
+    neighborhood: "",
+    postalCode: ""
   });
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -25,9 +28,15 @@ export default function SignupPage() {
   async function handleSubmit(event) {
     event.preventDefault();
     setMessage("");
+    const location = { city: form.city.trim(), neighborhood: form.neighborhood.trim(), postalCode: form.postalCode.replace(/\D/g, "") };
+    const locationStarted = Object.values(location).some(Boolean);
+    if (locationStarted && (!location.city || !location.neighborhood || location.postalCode.length !== 8)) {
+      setMessage("Para salvar sua localização-base, preencha cidade, bairro e um CEP válido.");
+      return;
+    }
     setIsLoading(true);
     try {
-      const data = await register({ ...form, visitorId: getOrCreateVisitorId() });
+      const data = await register({ ...form, city: location.city || undefined, neighborhood: location.neighborhood || undefined, postalCode: location.postalCode || undefined, visitorId: getOrCreateVisitorId() });
       setAuth({ token: data.accessToken, refreshToken: data.refreshToken, user: data.user });
       navigate(getRoleHome(data.user.role), { replace: true });
     } catch (error) {
@@ -82,6 +91,10 @@ export default function SignupPage() {
           minLength={6}
           required
         />
+        <p className="meta-line signup-location-intro">Localização-base opcional — necessária apenas para usar o Tô na Pista. Não pedimos endereço completo.</p>
+        <input type="text" value={form.city} onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))} placeholder="Cidade (opcional)"/>
+        <input type="text" value={form.neighborhood} onChange={(event) => setForm((current) => ({ ...current, neighborhood: event.target.value }))} placeholder="Bairro (opcional)"/>
+        <input type="text" inputMode="numeric" value={form.postalCode} onChange={(event) => setForm((current) => ({ ...current, postalCode: event.target.value.replace(/\D/g, "").slice(0, 8) }))} placeholder="CEP (opcional)"/>
 
         <div className="auth-actions">
           <button type="submit" className="auth-btn auth-btn-primary" disabled={isLoading}>

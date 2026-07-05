@@ -178,6 +178,12 @@ export async function sendTestPush(req, res) {
 
 export async function activateToNaPista(req, res) {
   const payload = activateToNaPistaSchema.parse(req.body || {});
+  if (!req.user?.city || !req.user?.neighborhood || !req.user?.postalCode) {
+    return res.status(409).json({
+      error: "home_location_required",
+      message: "Cadastre sua cidade, bairro e CEP para usar o Tô na Pista."
+    });
+  }
   const { userId, identities } = identityWhere(req, payload.visitorId);
 
   if (!identities.length) {

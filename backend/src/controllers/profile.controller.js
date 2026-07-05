@@ -2,12 +2,27 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
+import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { isFeatureEnabled } from "../middlewares/featureFlags.js";
 import { uploadBufferToR2 } from "../services/r2Storage.service.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "../../");
+const locationSchema = z.object({
+  city: z.string().trim().min(2).max(120),
+  neighborhood: z.string().trim().min(2).max(120),
+  postalCode: z.string().transform((value) => value.replace(/\D/g, "")).refine((value) => value.length === 8, "CEP inválido.")
+});
+const userSelect = { id: true, email: true, username: true, firstName: true, lastName: true, phone: true, instagramHandle: true, avatarUrl: true, city: true, neighborhood: true, postalCode: true, role: true };
+
+export async function updateMyLocation(req, res, next) {
+  try {
+    const data = locationSchema.parse(req.body || {});
+    const user = await prisma.user.update({ where: { id: req.user.id }, data, select: userSelect });
+    return res.json({ item: user });
+  } catch (error) { return next(error); }
+}
 
 export async function uploadMyAvatar(req, res, next) {
   try {
@@ -32,7 +47,7 @@ export async function uploadMyAvatar(req, res, next) {
       avatarUrl = `${req.protocol}://${req.get("host")}/${relativeDir.replace(/\\/g, "/")}/${fileName}`;
     }
 
-    const user = await prisma.user.update({ where: { id: req.user.id }, data: { avatarUrl }, select: { id: true, email: true, username: true, firstName: true, lastName: true, phone: true, instagramHandle: true, avatarUrl: true, role: true } });
+    const user = await prisma.user.update({ where: { id: req.user.id }, data: { avatarUrl }, select: userSelect });
     return res.status(201).json({ item: user });
   } catch (error) { return next(error); }
 }

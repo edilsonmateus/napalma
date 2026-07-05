@@ -17,6 +17,7 @@ import {
 import mapsIcon from "../assets/routes/maps.svg";
 import wazeIcon from "../assets/routes/waze.svg";
 import uberIcon from "../assets/routes/uber.svg";
+import { useAuthStore } from "../store/authStore";
 
 const EXPLORE_PREFS_KEY = "napalma:explore:prefs";
 const ON_TRACK_KEY = "77gira:on-track-session";
@@ -179,11 +180,13 @@ function LiveProgressBar({ event }) {
 }
 
 export default function ExplorePage() {
+  const user = useAuthStore((state) => state.user);
   const [prefs, setPrefs] = useState(loadPrefs);
   const [showCitySheet, setShowCitySheet] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [showOnTrackSheet, setShowOnTrackSheet] = useState(false);
   const [showOnTrackInstallSheet, setShowOnTrackInstallSheet] = useState(false);
+  const [showOnTrackLocationSheet, setShowOnTrackLocationSheet] = useState(false);
   const [onTrackSession, setOnTrackSession] = useState(loadOnTrackSession);
   const [onTrackError, setOnTrackError] = useState("");
   const [onTrackNotifiedIds, setOnTrackNotifiedIds] = useState(() => {
@@ -428,6 +431,10 @@ export default function ExplorePage() {
 
   const requestOnTrack = () => {
     setOnTrackError("");
+    if (!user?.city || !user?.neighborhood || !user?.postalCode) {
+      setShowOnTrackSheet(false); setShowOnTrackInstallSheet(false); setShowOnTrackLocationSheet(true);
+      return;
+    }
     if (!navigator.geolocation) {
       setOnTrackError("Seu navegador não liberou localização para esta função.");
       return;
@@ -451,8 +458,9 @@ export default function ExplorePage() {
             source: "explore",
             metadata: { durationMinutes: 60 }
           });
-        } catch (_error) {
-          setOnTrackError("Não foi possível ativar o Tô na Pista agora. Tente novamente em instantes.");
+        } catch (error) {
+          if (error?.response?.data?.error === "home_location_required") { setShowOnTrackSheet(false); setShowOnTrackInstallSheet(false); setShowOnTrackLocationSheet(true); return; }
+          setOnTrackError(error?.response?.data?.message || "Não foi possível ativar o Tô na Pista agora. Tente novamente em instantes.");
         }
       },
       () => {
@@ -469,6 +477,11 @@ export default function ExplorePage() {
       setOnTrackSession(null);
       setOnTrackError("");
       trackAnalyticsEvent("on_track_disabled", { source: "explore" });
+      return;
+    }
+
+    if (!user?.city || !user?.neighborhood || !user?.postalCode) {
+      setShowOnTrackLocationSheet(true);
       return;
     }
 
@@ -684,6 +697,12 @@ export default function ExplorePage() {
             <button className="chip" type="button" onClick={() => setShowOnTrackInstallSheet(false)}>Agora não</button>
             <button className="chip active" type="button" onClick={requestOnTrack}>Testar por 1 hora</button>
           </div>
+        </ExploreSheet>
+      ) : null}
+      {showOnTrackLocationSheet ? (
+        <ExploreSheet title="Tô na Pista" onClose={() => setShowOnTrackLocationSheet(false)}>
+          <div className="on-track-copy"><p><strong>Para usar o Tô na Pista, precisamos saber sua cidade, bairro e CEP.</strong></p><p>Essas informações ajudam o 77Gira a entender sua base de circulação e sugerir experiências mais coerentes com o lugar onde você está.</p><p>Não pedimos seu endereço completo.</p></div>
+          <div className="explore-sheet-actions on-track-actions"><button className="chip" type="button" onClick={() => setShowOnTrackLocationSheet(false)}>Agora não</button>{user ? <Link className="chip active" to="/settings#location">Cadastrar localização</Link> : <Link className="chip active" to="/login">Entrar para continuar</Link>}</div>
         </ExploreSheet>
       ) : null}
       {showOnTrackSheet ? (

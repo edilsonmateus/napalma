@@ -8,6 +8,7 @@ import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "../utils/
 import { promptInstallApp, subscribeInstallPrompt } from "../utils/installPrompt";
 import ManagementHub from "../components/settings/ManagementHub";
 import { uploadProfileAvatar } from "../services/profile.service";
+import LocationBaseCard from "../components/settings/LocationBaseCard";
 
 export default function SettingsPage() {
   const { token, refreshToken, user, setAuth, clearAuth } = useAuthStore();
@@ -133,6 +134,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="settings-content-stack">
+        <LocationBaseCard user={user} token={token} refreshToken={refreshToken} setAuth={setAuth}/>
         <div className="settings-list clean-card">
           <Link to="/privacy" className="settings-link-row">Privacidade</Link>
           <Link to="/help" className="settings-link-row">Ajuda</Link>

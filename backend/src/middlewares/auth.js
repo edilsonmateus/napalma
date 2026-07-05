@@ -24,6 +24,9 @@ export async function attachUser(req, _res, next) {
         firstName: true,
         lastName: true,
         avatarUrl: true,
+        city: true,
+        neighborhood: true,
+        postalCode: true,
         role: true
       }
     });
