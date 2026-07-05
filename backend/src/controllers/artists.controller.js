@@ -96,6 +96,7 @@ export async function getArtistById(req, res, next) {
         producerAccesses: {
           select: { producerId: true }
         },
+        accesses: { select: { userId: true, role: true, status: true } },
         _count: {
           select: { events: true }
         }
@@ -298,7 +299,8 @@ export async function updateArtist(req, res, next) {
       include: {
         producerAccesses: {
           select: { producerId: true }
-        }
+        },
+        accesses: { select: { userId: true, role: true, status: true } }
       }
     });
 
@@ -366,6 +368,7 @@ export async function deleteArtist(req, res, next) {
         producerAccesses: {
           select: { producerId: true }
         },
+        accesses: { select: { userId: true, role: true, status: true } },
         _count: {
           select: { events: true }
         }

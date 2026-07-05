@@ -70,6 +70,8 @@ import { imageUpload } from "../middlewares/upload.js";
 import { createRateLimiter } from "../middlewares/rateLimit.js";
 import { requireFeatureFlag } from "../middlewares/featureFlags.js";
 import { requireAdvertiserCampaignWrite } from "../middlewares/advertiserAccess.js";
+import { requireArtistWrite } from "../middlewares/artistAccess.js";
+import { getArtistEpk, getMyArtistProfile, listMyArtists, updateMyArtistProfile } from "../controllers/artistEpk.controller.js";
 import { listAdPlacements } from "../controllers/adPlacements.controller.js";
 import { uploadAdCreativeAsset } from "../controllers/adCreativeUploads.controller.js";
 import {
@@ -222,6 +224,7 @@ router.delete("/venues/:id/my-access", requireAuth, requireRole(["venue_manager"
 router.get("/artists", listArtists);
 router.get("/artists/:id", getArtistById);
 router.get("/artists/:id/profile", getArtistProfile);
+router.get("/artist-epk/:ref", requireFeatureFlag("ARTIST_EPK_ENABLED"), getArtistEpk);
 router.post("/artists/:id/follow", requireAuth, followArtist);
 router.delete("/artists/:id/follow", requireAuth, unfollowArtist);
 router.post("/uploads/image", ...canUploadImages, uploadLimiter, imageUpload.single("file"), uploadImage);
@@ -230,6 +233,10 @@ router.post("/me/advertiser-uploads/creative", requireAuth, requireFeatureFlag("
 router.post("/artists", ...canManageCatalog, createArtist);
 router.patch("/artists/:id", ...canManageCatalog, updateArtist);
 router.delete("/artists/:id", ...canManageCatalog, deleteArtist);
+router.get("/me/artists", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), listMyArtists);
+router.get("/me/artists/:id/profile", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), getMyArtistProfile);
+router.patch("/me/artists/:id/profile", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), updateMyArtistProfile);
+router.post("/me/artists/:artistId/uploads/image", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), uploadLimiter, imageUpload.single("file"), requireArtistWrite, uploadImage);
 router.get("/ads/slots/:slot/delivery", getAdDelivery);
 router.post("/ads/track/impression", adsTrackLimiter, trackAdImpression);
 router.post("/ads/track/click", adsTrackLimiter, trackAdClick);

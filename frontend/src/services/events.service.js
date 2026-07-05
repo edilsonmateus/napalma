@@ -138,7 +138,8 @@ export async function getArtistById(id) {
 }
 
 export async function getArtistProfile(id) {
-  const { data } = await api.get(`/artists/${id}/profile`);
+  const epkEnabled = String(import.meta.env.VITE_ARTIST_EPK_ENABLED || "").toLowerCase() === "true";
+  const { data } = await api.get(epkEnabled ? `/artist-epk/${id}` : `/artists/${id}/profile`);
   return data.item;
 }
 

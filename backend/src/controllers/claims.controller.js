@@ -103,10 +103,11 @@ export async function createClaimRequest(req, res, next) {
   try {
     const isProducer = req.user?.role === "producer";
     const isHouse = req.user?.role === "venue_manager";
-    if (!isProducer && !isHouse) {
+    const isAttendee = req.user?.role === "attendee";
+    if (!isProducer && !isHouse && !isAttendee) {
       return res.status(403).json({
         error: "forbidden",
-        message: "Somente produtor ou casa podem abrir reivindicacoes."
+        message: "Seu perfil nao pode abrir reivindicacoes."
       });
     }
     const data = createClaimSchema.parse(req.body);
@@ -116,6 +117,9 @@ export async function createClaimRequest(req, res, next) {
         error: "forbidden",
         message: "Perfil casa pode reivindicar somente casas."
       });
+    }
+    if (isAttendee && data.targetType !== ClaimTargetType.artist) {
+      return res.status(403).json({ error: "forbidden", message: "Usuario comum pode reivindicar somente artistas." });
     }
 
     if (data.targetType === ClaimTargetType.venue) {
@@ -287,16 +291,20 @@ export async function decideClaim(req, res, next) {
           }
         }
         if (existing.requestType === "ownership" && existing.targetType === ClaimTargetType.artist && existing.artistId) {
-          await tx.producerArtistAccess.upsert({
-            where: {
-              producerId_artistId: {
-                producerId: existing.requestedById,
-                artistId: existing.artistId
-              }
-            },
-            update: {},
-            create: { producerId: existing.requestedById, artistId: existing.artistId }
+          const requester = await tx.user.findUnique({ where: { id: existing.requestedById }, select: { role: true } });
+          await tx.artistAccess.upsert({
+            where: { artistId_userId: { artistId: existing.artistId, userId: existing.requestedById } },
+            update: { role: "owner", status: "active", acceptedAt: new Date() },
+            create: { artistId: existing.artistId, userId: existing.requestedById, role: "owner", status: "active", acceptedAt: new Date(), invitedByUserId: req.user.id }
           });
+          if (requester?.role === "producer") {
+            await tx.producerArtistAccess.upsert({
+              where: { producerId_artistId: { producerId: existing.requestedById, artistId: existing.artistId } },
+              update: {},
+              create: { producerId: existing.requestedById, artistId: existing.artistId }
+            });
+          }
+          await tx.artist.update({ where: { id: existing.artistId }, data: { isVerified: true, verifiedAt: new Date(), verifiedByUserId: req.user.id } });
         }
       }
 

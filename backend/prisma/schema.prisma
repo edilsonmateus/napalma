@@ -108,6 +108,20 @@ enum ClaimStatus {
   rejected
 }
 
+enum ArtistAccessRole {
+  owner
+  manager
+  editor
+  viewer
+}
+
+enum ArtistAccessStatus {
+  invited
+  active
+  suspended
+  revoked
+}
+
 model User {
   id              String   @id @default(uuid())
   email           String   @unique
@@ -149,6 +163,9 @@ model User {
   adCampaignReviews           AdCampaign[]             @relation("AdCampaignReviewedBy")
   adCreativeReviews           AdCreative[]             @relation("AdCreativeReviewedBy")
   adReviewActions             AdReviewLog[]            @relation("AdReviewLogActor")
+  artistAccesses              ArtistAccess[]           @relation("ArtistAccessUser")
+  artistAccessInvites         ArtistAccess[]           @relation("ArtistAccessInvitedBy")
+  artistsVerified             Artist[]                 @relation("ArtistVerifiedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -600,28 +617,82 @@ model Event {
 }
 
 model Artist {
-  id              String   @id @default(uuid())
-  name            String
-  slug            String   @unique
-  bio             String?
-  contactName     String?
-  contactPhone    String?
-  imageUrl        String?
-  genres          String[]
-  isVerified      Boolean  @default(false)
-  spotifyUrl      String?
-  youtubeUrl      String?
-  instagramUrl    String?
-  createdByUserId String?
+  id               String    @id @default(uuid())
+  name             String
+  slug             String    @unique
+  bio              String?
+  contactName      String?
+  contactPhone     String?
+  imageUrl         String?
+  genres           String[]
+  isVerified       Boolean   @default(false)
+  verifiedAt       DateTime?
+  verifiedByUserId String?
+  spotifyUrl       String?
+  youtubeUrl       String?
+  instagramUrl     String?
+  createdByUserId  String?
 
-  events           EventArtist[]
-  createdBy        User?                  @relation("ArtistCreatedBy", fields: [createdByUserId], references: [id])
-  producerAccesses ProducerArtistAccess[]
-  claimRequests    ClaimRequest[]         @relation("ClaimArtist")
-  followers        ArtistFollow[]
+  events              EventArtist[]
+  createdBy           User?                      @relation("ArtistCreatedBy", fields: [createdByUserId], references: [id])
+  producerAccesses    ProducerArtistAccess[]
+  claimRequests       ClaimRequest[]             @relation("ClaimArtist")
+  followers           ArtistFollow[]
+  professionalProfile ArtistProfessionalProfile?
+  accesses            ArtistAccess[]
+  verifiedBy          User?                      @relation("ArtistVerifiedBy", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ArtistProfessionalProfile {
+  id                     String   @id @default(uuid())
+  artistId               String   @unique
+  coverImageUrl          String?
+  shortBio               String?
+  fullBio                String?
+  baseCity               String?
+  baseState              String?
+  serviceRegions         String[] @default([])
+  showFormats            String[] @default([])
+  eventTypes             String[] @default([])
+  averageDurationMinutes Int?
+  formation              String?
+  availability           String?
+  websiteUrl             String?
+  tiktokUrl              String?
+  whatsappUrl            String?
+  soundcloudUrl          String?
+  professionalEmail      String?
+  professionalPhone      String?
+  contactPreference      String?
+
+  artist Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ArtistAccess {
+  id              String             @id @default(uuid())
+  artistId        String
+  userId          String
+  role            ArtistAccessRole   @default(viewer)
+  status          ArtistAccessStatus @default(invited)
+  invitedByUserId String?
+  acceptedAt      DateTime?
+
+  artist    Artist @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  user      User   @relation("ArtistAccessUser", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy User?  @relation("ArtistAccessInvitedBy", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([artistId, userId])
+  @@index([userId, status])
+  @@index([artistId, status])
 }
 
 model ArtistFollow {

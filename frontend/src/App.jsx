@@ -28,6 +28,7 @@ const ProducerDashboardPage = lazy(() => import("./pages/ProducerDashboardPage")
 const AdsAdminPage = lazy(() => import("./pages/AdsAdminPage"));
 const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
 const AdvertiserPortalPage = lazy(() => import("./pages/AdvertiserPortalPage"));
+const ArtistWorkspacePage = lazy(() => import("./pages/ArtistWorkspacePage"));
 
 const VISIT_DAY_KEY = "napalma:last-visit-day";
 const SPLASH_MS_MOBILE = 5000;
@@ -197,6 +198,7 @@ export default function App() {
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/events/:eventId" element={<EventDetailPage />} />
             <Route path="/artists/:artistId" element={<ArtistProfilePage />} />
+            <Route path="/artistas/:artistId" element={<ArtistProfilePage />} />
             <Route path="/venues/:venueId" element={<VenueDetailFlowPage />} />
             <Route path="/radar" element={<RadarPage />} />
             <Route path="/pela-hora" element={<PelaHoraPage />} />
@@ -208,6 +210,7 @@ export default function App() {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/workspace/anunciante" element={user ? <AdvertiserPortalPage /> : <Navigate to="/login" replace />} />
+            <Route path="/workspace/artista" element={user ? <ArtistWorkspacePage /> : <Navigate to="/login" replace />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/help" element={<HelpPage />} />

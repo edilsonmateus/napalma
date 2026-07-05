@@ -36,10 +36,11 @@ export function canManageArtist(user, artist) {
   if (isProducer(user)) {
     const viaCreator = artist.createdByUserId === user.id;
     const viaProducerAccess = (artist.producerAccesses || []).some((entry) => entry.producerId === user.id);
-    return viaCreator || viaProducerAccess;
+    const viaArtistAccess = (artist.accesses || []).some((entry) => entry.userId === user.id && entry.status === "active" && ["owner", "manager", "editor"].includes(entry.role));
+    return viaCreator || viaProducerAccess || viaArtistAccess;
   }
 
-  return false;
+  return (artist.accesses || []).some((entry) => entry.userId === user.id && entry.status === "active" && ["owner", "manager", "editor"].includes(entry.role));
 }
 
 export function canManageEvent(user, event) {
