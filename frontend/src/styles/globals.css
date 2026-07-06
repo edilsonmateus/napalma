@@ -649,6 +649,27 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   gap: 10px;
 }
 
+.session-validation-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.session-validation-screen p { max-width: 430px; margin: 0; color: var(--text-secondary); }
+.session-validation-screen .auth-btn { margin-top: 6px; }
+.session-validation-spinner { width: 24px; height: 24px; border: 2px solid rgba(255,255,255,.18); border-top-color: #ffb81c; border-radius: 50%; animation: session-spin .75s linear infinite; }
+@keyframes session-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .session-validation-spinner { animation: none; border-top-color: rgba(255,255,255,.55); }
+}
+
 .artist-related-grid, .artist-insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
 .artist-related-card { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
 .artist-related-card img, .artist-related-avatar { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; background: var(--surface-muted, #ececec); flex: 0 0 auto; }

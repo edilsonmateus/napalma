@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useAuthStore } from "../store/authStore";
+import { isDefinitiveSessionFailure } from "../utils/authSession";
 
 const LOCAL_API_URL = "http://localhost:3333/api";
 const PRODUCTION_API_URL = "https://seven7gira-api.onrender.com/api";
@@ -35,13 +36,42 @@ api.interceptors.request.use((config) => {
 
 let refreshingPromise = null;
 
+async function rotateRefreshToken(failedAccessToken) {
+  const execute = async () => {
+    useAuthStore.getState().syncFromStorage({ validated: true });
+    const latest = useAuthStore.getState();
+
+    if (latest.token && latest.token !== failedAccessToken) {
+      return latest.token;
+    }
+
+    const res = await authlessApi.post("/auth/refresh", { refreshToken: latest.refreshToken });
+    useAuthStore.getState().setAuth({
+      token: res.data.accessToken,
+      refreshToken: res.data.refreshToken,
+      user: res.data.user
+    });
+    return res.data.accessToken;
+  };
+
+  if (typeof navigator !== "undefined" && navigator.locks?.request) {
+    return navigator.locks.request("77gira-auth-refresh", execute);
+  }
+  return execute();
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
     const status = error?.response?.status;
 
-    if (status !== 401 || originalRequest?._retry) {
+    if (status !== 401) {
+      return Promise.reject(error);
+    }
+
+    if (originalRequest?._retry) {
+      useAuthStore.getState().clearAuth();
       return Promise.reject(error);
     }
 
@@ -52,20 +82,14 @@ api.interceptors.response.use(
     }
 
     originalRequest._retry = true;
+    const failedAccessToken = store.token;
 
     if (!refreshingPromise) {
-      refreshingPromise = authlessApi
-        .post("/auth/refresh", { refreshToken: store.refreshToken })
-        .then((res) => {
-          useAuthStore.getState().setAuth({
-            token: res.data.accessToken,
-            refreshToken: res.data.refreshToken,
-            user: res.data.user
-          });
-          return res.data.accessToken;
-        })
+      refreshingPromise = rotateRefreshToken(failedAccessToken)
         .catch((refreshError) => {
-          useAuthStore.getState().clearAuth();
+          const currentStore = useAuthStore.getState();
+          if (isDefinitiveSessionFailure(refreshError)) currentStore.clearAuth();
+          else currentStore.setSessionStatus("degraded", "A conexão com sua sessão foi interrompida temporariamente.");
           throw refreshError;
         })
         .finally(() => {

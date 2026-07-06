@@ -8,6 +8,7 @@ import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "./utils/r
 import { ONBOARDING_STORAGE_KEY } from "./utils/onboarding";
 import { getOrCreateVisitorId } from "./utils/visitor";
 import { setupInstallPromptCapture } from "./utils/installPrompt";
+import { isDefinitiveSessionFailure } from "./utils/authSession";
 
 const ExplorePage = lazy(() => import("./pages/ExplorePage"));
 const EventDetailPage = lazy(() => import("./pages/EventDetailPage"));
@@ -61,7 +62,11 @@ export default function App() {
   const refreshToken = useAuthStore((state) => state.refreshToken);
   const setAuth = useAuthStore((state) => state.setAuth);
   const clearAuth = useAuthStore((state) => state.clearAuth);
+  const sessionStatus = useAuthStore((state) => state.sessionStatus);
+  const sessionMessage = useAuthStore((state) => state.sessionMessage);
+  const setSessionStatus = useAuthStore((state) => state.setSessionStatus);
   const [authReady, setAuthReady] = useState(() => !useAuthStore.getState().token);
+  const [sessionRetryNonce, setSessionRetryNonce] = useState(0);
   const { mutate: trackAudienceVisit } = useTrackAudienceVisitMutation();
   const isBackofficeMode = isAdminRole(user?.role) || isProducerRole(user?.role) || isVenueRole(user?.role);
   const isOnboardingRoute = location.pathname === "/onboarding";
@@ -88,14 +93,24 @@ export default function App() {
 
   useEffect(() => {
     let active = true;
+    let retryTimer = null;
+    const retryDelays = [1500, 4000, 10000];
 
-    async function syncSession() {
+    async function syncSession(attempt = 0) {
       if (!token) {
-        clearAuth();
+        if (useAuthStore.getState().user || useAuthStore.getState().refreshToken) clearAuth();
         if (active) setAuthReady(true);
         return;
       }
 
+      if (isOffline) {
+        setSessionStatus("degraded", "Você está offline. Sua sessão será validada quando a conexão voltar.");
+        if (active) setAuthReady(true);
+        return;
+      }
+
+      setSessionStatus("checking", "Validando sua sessão...");
+      if (active) setAuthReady(false);
       try {
         const currentUser = await fetchCurrentUser();
         if (!active) return;
@@ -105,9 +120,16 @@ export default function App() {
           refreshToken: latestAuth.refreshToken || refreshToken,
           user: currentUser
         });
-      } catch (_error) {
+      } catch (error) {
         if (!active) return;
-        clearAuth();
+        if (isDefinitiveSessionFailure(error)) {
+          clearAuth();
+        } else {
+          setSessionStatus("degraded", "Não foi possível validar sua sessão agora. Tentaremos novamente.");
+          if (attempt < retryDelays.length) {
+            retryTimer = window.setTimeout(() => syncSession(attempt + 1), retryDelays[attempt]);
+          }
+        }
       } finally {
         if (active) setAuthReady(true);
       }
@@ -118,8 +140,9 @@ export default function App() {
 
     return () => {
       active = false;
+      if (retryTimer) window.clearTimeout(retryTimer);
     };
-  }, [clearAuth, refreshToken, setAuth, token]);
+  }, [clearAuth, isOffline, refreshToken, sessionRetryNonce, setAuth, setSessionStatus, token]);
 
   useEffect(() => {
     if (!isOnboardingRoute) return;
@@ -188,8 +211,18 @@ export default function App() {
     return <Navigate to="/onboarding" replace />;
   }
 
-  if (!authReady) {
-    return <div className="empty">Validando sessao...</div>;
+  if (token && (!authReady || sessionStatus === "checking")) {
+    return <div className="session-validation-screen"><span className="session-validation-spinner"/><strong>Validando sua sessão...</strong></div>;
+  }
+
+  if (token && sessionStatus === "degraded") {
+    return (
+      <div className="session-validation-screen session-validation-degraded">
+        <strong>Sua conta continua conectada</strong>
+        <p>{sessionMessage || "O serviço está temporariamente indisponível. Seus dados de acesso foram preservados."}</p>
+        <button className="auth-btn auth-btn-primary" type="button" onClick={() => setSessionRetryNonce((value) => value + 1)}>Tentar novamente</button>
+      </div>
+    );
   }
 
   return (

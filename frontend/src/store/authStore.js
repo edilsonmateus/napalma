@@ -13,6 +13,7 @@ function loadAuth() {
 }
 
 const initial = loadAuth();
+const initialStatus = initial.token ? "checking" : "anonymous";
 
 function persist(state) {
   localStorage.setItem(
@@ -25,16 +26,38 @@ export const useAuthStore = create((set) => ({
   token: initial.token || "",
   refreshToken: initial.refreshToken || "",
   user: initial.user || null,
+  sessionStatus: initialStatus,
+  sessionMessage: "",
   setAuth: ({ token, refreshToken, user }) =>
     set(() => {
-      const next = { token, refreshToken, user };
+      const next = { token, refreshToken, user, sessionStatus: "authenticated", sessionMessage: "" };
       persist(next);
       return next;
     }),
+  setSessionStatus: (sessionStatus, sessionMessage = "") => set({ sessionStatus, sessionMessage }),
+  syncFromStorage: ({ validated = false } = {}) =>
+    set(() => {
+      const stored = loadAuth();
+      return {
+        token: stored.token || "",
+        refreshToken: stored.refreshToken || "",
+        user: stored.user || null,
+        sessionStatus: stored.token ? (validated ? "authenticated" : "checking") : "anonymous",
+        sessionMessage: ""
+      };
+    }),
   clearAuth: () =>
     set(() => {
-      const next = { token: "", refreshToken: "", user: null };
+      const next = { token: "", refreshToken: "", user: null, sessionStatus: "anonymous", sessionMessage: "" };
       persist(next);
       return next;
     })
 }));
+
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    if (event.key === AUTH_STORAGE_KEY) {
+      useAuthStore.getState().syncFromStorage({ validated: true });
+    }
+  });
+}
