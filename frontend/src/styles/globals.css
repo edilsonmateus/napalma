@@ -2882,6 +2882,49 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 .settings-artist-invite { margin: 14px 0; padding: 15px; border: 1px solid rgba(255,176,0,.16); border-radius: 16px; background: rgba(255,176,0,.045); }
 .settings-artist-invite p { margin: 5px 0 10px; color: var(--text-secondary); font-size: 13px; }
 .settings-artist-invite a { color: #ffbf36; font-size: 13px; }
+.artist-directory-screen, .artist-team-screen { display: grid; gap: 16px; }
+.artist-directory-search { display: flex; align-items: center; gap: 9px; padding: 0 13px; border: 1px solid #2e2e2e; border-radius: 12px; background: #111; color: var(--text-muted); }
+.artist-directory-search:focus-within { border-color: rgba(255,176,0,.48); box-shadow: 0 0 0 2px rgba(255,176,0,.08); }
+.artist-directory-search input { width: 100%; padding: 12px 0; border: 0; outline: 0; background: transparent; color: var(--text-primary); }
+.artist-directory-groups { display: grid; gap: 18px; }
+.artist-directory-groups > section > h3 { margin: 0 0 8px; color: #ffbf36; font-size: 14px; }
+.artist-directory-list { overflow: hidden; border: 1px solid rgba(255,255,255,.09); border-radius: 16px; background: rgba(255,255,255,.025); }
+.artist-directory-row, .artist-directory-invitations article { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.07); }
+.artist-directory-row:first-child, .artist-directory-invitations article:first-of-type { border-top: 0; }
+.artist-directory-avatar, .artist-team-avatar { display: grid; place-items: center; width: 42px; height: 42px; overflow: hidden; border-radius: 50%; background: linear-gradient(135deg, rgba(168,85,247,.7), rgba(255,145,0,.85)); color: #fff; font-weight: 700; }
+.artist-directory-avatar img, .artist-team-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.artist-directory-identity, .artist-directory-invitations article > div:nth-child(2), .artist-team-identity { display: grid; gap: 3px; min-width: 0; }
+.artist-directory-identity strong { display: flex; align-items: center; gap: 5px; }
+.artist-directory-identity small, .artist-directory-invitations small, .artist-team-identity small { overflow: hidden; color: var(--text-secondary); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.artist-directory-team { display: grid; justify-items: end; gap: 3px; min-width: 92px; }
+.artist-directory-team > span { display: flex; justify-content: flex-end; min-height: 24px; padding-left: 8px; }
+.artist-directory-team img, .artist-directory-team em, .artist-directory-team i { display: grid; place-items: center; width: 24px; height: 24px; margin-left: -7px; border: 2px solid #151515; border-radius: 50%; background: #282828; object-fit: cover; color: var(--text-secondary); font-size: 9px; font-style: normal; }
+.artist-directory-team small { color: var(--text-muted); font-size: 10px; }
+.artist-directory-action { min-width: 102px; padding: 8px 11px; border: 1px solid rgba(255,176,0,.28); border-radius: 999px; color: #ffbf36; font-size: 11px; text-align: center; text-decoration: none; }
+.artist-directory-invitations { display: grid; gap: 0; }
+.artist-directory-invitations h3 { margin: 0 0 8px; }
+.artist-directory-invitations .form-actions-inline { display: flex; gap: 6px; }
+.artist-directory-empty, .artist-directory-message { display: grid; gap: 8px; }
+.artist-directory-empty .chip { width: fit-content; }
+.artist-team-invite { display: grid; gap: 10px; }
+.artist-team-invite h3, .artist-team-invite p { margin: 0; }
+.artist-team-invite > div { display: grid; grid-template-columns: minmax(0, 1fr) 150px auto; gap: 8px; }
+.artist-team-invite input, .artist-team-invite select, .artist-team-controls select { min-width: 0; padding: 10px; border: 1px solid #2e2e2e; border-radius: 10px; background: #111; color: var(--text-primary); }
+.artist-team-list { display: grid; gap: 8px; }
+.artist-team-list > article { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; }
+.artist-team-controls { display: grid; justify-items: end; gap: 4px; }
+.artist-team-controls small { color: var(--text-muted); font-size: 10px; }
+@media (max-width: 680px) {
+  .artist-directory-row { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .artist-directory-team { display: none; }
+  .artist-directory-action { min-width: 0; padding-inline: 9px; }
+  .artist-directory-invitations article { grid-template-columns: auto minmax(0, 1fr); }
+  .artist-directory-invitations .form-actions-inline { grid-column: 2; }
+  .artist-team-invite > div { grid-template-columns: 1fr; }
+  .artist-team-list > article { grid-template-columns: auto minmax(0, 1fr); }
+  .artist-team-controls { grid-column: 2; justify-items: start; }
+  .artist-team-list > article > .chip { grid-column: 2; width: fit-content; }
+}
 .settings-location-card { display: grid; gap: 12px; margin: 10px 0 14px; }
 .settings-location-card > header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 10px; }
 .settings-location-card > header > span { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,176,0,.1); color: #ffb000; }

@@ -91,6 +91,7 @@ import {
 } from "../controllers/advertiserAccounts.controller.js";
 import { approveAdReview, getAdReviewHistory, listAdReviewQueue, rejectAdReview, submitAdReview } from "../controllers/adReviews.controller.js";
 import { createMyAdvertiserCampaign, createMyAdvertiserCreative, listMyAdvertiserAccounts, listMyAdvertiserCampaigns, submitMyAdvertiserReview, updateMyAdvertiserCampaign, updateMyAdvertiserCreative } from "../controllers/advertiserPortal.controller.js";
+import { decideMyArtistInvitation, inviteArtistTeamMember, listArtistTeam, listMyArtistInvitations, revokeArtistTeamMember, updateArtistTeamMember } from "../controllers/artistTeam.controller.js";
 
 export const router = Router();
 
@@ -249,6 +250,12 @@ router.delete("/artists/:id", ...canManageCatalog, deleteArtist);
 router.get("/me/artists", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), listMyArtists);
 router.get("/me/artists/:id/profile", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), getMyArtistProfile);
 router.patch("/me/artists/:id/profile", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), updateMyArtistProfile);
+router.get("/me/artists/:artistId/team", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), listArtistTeam);
+router.post("/me/artists/:artistId/team", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), inviteArtistTeamMember);
+router.patch("/me/artist-team/:id", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), updateArtistTeamMember);
+router.delete("/me/artist-team/:id", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), revokeArtistTeamMember);
+router.get("/me/artist-invitations", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), listMyArtistInvitations);
+router.patch("/me/artist-invitations/:id", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), decideMyArtistInvitation);
 router.post("/me/artists/:artistId/uploads/image", requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), uploadLimiter, imageUpload.single("file"), requireArtistWrite, uploadImage);
 router.get("/me/artists/:artistId/bookings", requireAuth, requireFeatureFlag("ARTIST_BOOKING_REQUESTS_ENABLED"), listArtistBookingRequests);
 router.patch("/me/artist-bookings/:id/status", requireAuth, requireFeatureFlag("ARTIST_BOOKING_REQUESTS_ENABLED"), updateArtistBookingStatus);

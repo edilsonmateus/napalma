@@ -34,6 +34,8 @@ const ArtistWorkspacePage = lazy(() => import("./pages/ArtistWorkspacePage"));
 const ArtistBookingsPage = lazy(() => import("./pages/ArtistBookingsPage"));
 const ArtistMediaPage = lazy(() => import("./pages/ArtistMediaPage"));
 const ArtistInsightsPage = lazy(() => import("./pages/ArtistInsightsPage"));
+const ArtistClaimDirectoryPage = lazy(() => import("./pages/ArtistClaimDirectoryPage"));
+const ArtistTeamPage = lazy(() => import("./pages/ArtistTeamPage"));
 const UsersAdminPage = lazy(() => import("./pages/UsersAdminPage"));
 
 const VISIT_DAY_KEY = "napalma:last-visit-day";
@@ -248,12 +250,14 @@ export default function App() {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/account" element={user ? <AccountSettingsPage /> : <Navigate to="/login" replace />} />
+            <Route path="/reivindicar-artista" element={user ? <ArtistClaimDirectoryPage /> : <Navigate to="/login" replace />} />
             <Route path="/settings/users" element={isAdminRole(user?.role) ? <UsersAdminPage /> : <Navigate to="/settings" replace />} />
             <Route path="/workspace/anunciante" element={user ? <AdvertiserPortalPage /> : <Navigate to="/login" replace />} />
             <Route path="/workspace/artista" element={user ? <ArtistWorkspacePage /> : <Navigate to="/login" replace />} />
             <Route path="/workspace/artista/contratacoes" element={user ? <ArtistBookingsPage /> : <Navigate to="/login" replace />} />
             <Route path="/workspace/artista/midia" element={user ? <ArtistMediaPage /> : <Navigate to="/login" replace />} />
             <Route path="/workspace/artista/desempenho" element={user ? <ArtistInsightsPage /> : <Navigate to="/login" replace />} />
+            <Route path="/workspace/artista/equipe" element={user ? <ArtistTeamPage /> : <Navigate to="/login" replace />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/help" element={<HelpPage />} />

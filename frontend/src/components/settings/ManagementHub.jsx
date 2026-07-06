@@ -30,6 +30,7 @@ export default function ManagementHub({ user, canManageVenues, canManageAds, can
       if (enabled("VITE_ARTIST_BOOKING_REQUESTS_ENABLED")) items.push({ to: "/workspace/artista/contratacoes", icon: BriefcaseBusiness, title: "Contratações", description: "Acompanhe solicitações, oportunidades, mensagens e status de negociação.", action: "Ver solicitações", badge: "Leads", chip: "Contratações" });
       if (enabled("VITE_ARTIST_MEDIA_GALLERY_ENABLED")) items.push({ to: "/workspace/artista/midia", icon: Image, title: "Fotos e vídeos", description: "Atualize imagens, vídeos e materiais de divulgação do perfil profissional.", action: "Gerenciar mídia", badge: "Mídia", chip: "Mídia" });
       if (enabled("VITE_ARTIST_INSIGHTS_ENABLED")) items.push({ to: "/workspace/artista/desempenho", icon: BarChart3, title: "Desempenho", description: "Veja visitas, cliques, seguidores e sinais de interesse do público.", action: "Ver métricas", badge: "Métricas", chip: "Métricas" });
+      items.push({ to: "/workspace/artista/equipe", icon: Users, title: "Equipe e acessos", description: "Convide gestores, editores e leitores sem compartilhar a senha da conta.", action: "Gerenciar equipe", badge: "Acessos", chip: "Equipe" });
       items.push({ to: `/artistas/${artist.slug || artist.id}`, icon: ExternalLink, title: "Mídia kit público", description: "Abra o perfil profissional para enviar a casas, imprensa e contratantes.", action: "Abrir EPK", badge: "EPK", chip: "EPK" });
     }
     if (advertiserAccounts.length) items.push({ to: "/workspace/anunciante", icon: Megaphone, title: "Central do Anunciante", description: "Crie campanhas, acompanhe anúncios e impulsione eventos, artistas ou casas.", action: "Abrir central", badge: "Ads", chip: "Ads" });
@@ -45,7 +46,7 @@ export default function ManagementHub({ user, canManageVenues, canManageAds, can
   }
 
   if (!user || !loaded) return null;
-  if (!cards.length) return <aside className="settings-artist-invite"><strong>Você é artista?</strong><p>Reivindique seu perfil e transforme sua página em um mídia kit vivo.</p><Link to="/explore">Encontrar meu perfil</Link></aside>;
+  if (!cards.length) return <aside className="settings-artist-invite"><strong>Você é artista?</strong><p>Reivindique seu perfil e transforme sua página em um mídia kit vivo.</p><Link to="/reivindicar-artista">Encontrar meu perfil</Link></aside>;
 
   return (
     <section className={`management-hub ${collapsed ? "is-collapsed" : ""}`}>

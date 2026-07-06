@@ -45,8 +45,11 @@ function artistWhere(ref) {
   return /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(ref) ? { id: ref } : { slug: ref.toLowerCase() };
 }
 
-function publicArtist(artist) {
+function publicArtist(artist, currentUserId = null) {
   const profile = artist.professionalProfile;
+  const activeAccesses = artist.accesses || [];
+  const producerAccesses = artist.producerAccesses || [];
+  const teamIds = new Set([...activeAccesses.map((item) => item.userId), ...producerAccesses.map((item) => item.producerId)]);
   return {
     id: artist.id,
     slug: artist.slug,
@@ -59,7 +62,13 @@ function publicArtist(artist) {
     genres: artist.genres || [],
     isVerified: Boolean(artist.isVerified),
     verifiedAt: artist.verifiedAt || null,
-    isClaimed: (artist._count?.accesses || 0) > 0 || (artist._count?.producerAccesses || 0) > 0,
+    isClaimed: teamIds.size > 0 || (artist._count?.accesses || 0) > 0 || (artist._count?.producerAccesses || 0) > 0,
+    teamCount: teamIds.size || (artist._count?.accesses || 0) + (artist._count?.producerAccesses || 0),
+    teamPreview: [...activeAccesses.map((item) => item.user?.avatarUrl), ...producerAccesses.map((item) => item.producer?.avatarUrl)].filter(Boolean).slice(0, 5),
+    myAccess: currentUserId
+      ? activeAccesses.find((item) => item.userId === currentUserId)
+        || (producerAccesses.some((item) => item.producerId === currentUserId) ? { role: "manager", status: "active" } : null)
+      : null,
     followersCount: artist._count?.followers || 0,
     eventsCount: artist._count?.events || 0,
     baseCity: profile?.baseCity || "",
@@ -106,6 +115,8 @@ export async function getArtistEpk(req, res, next) {
       include: {
         professionalProfile: true,
         media: { where: { isPublished: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }] },
+        accesses: { where: { status: "active" }, select: { userId: true, role: true, status: true, user: { select: { avatarUrl: true } } } },
+        producerAccesses: { select: { producerId: true, producer: { select: { avatarUrl: true } } } },
         _count: { select: { events: true, followers: true, producerAccesses: true, accesses: { where: { status: "active" } } } }
       }
     });
@@ -123,7 +134,7 @@ export async function getArtistEpk(req, res, next) {
         take: 6
       }) : []
     ]);
-    return res.json({ item: { ...publicArtist(artist), isFollowing: Boolean(follow), pendingClaim: pendingClaim || null, upcomingEvents: upcoming.map(eventPayload), pastEvents: history.map(eventPayload), relatedArtists } });
+    return res.json({ item: { ...publicArtist(artist, req.user?.id), isFollowing: Boolean(follow), pendingClaim: pendingClaim || null, upcomingEvents: upcoming.map(eventPayload), pastEvents: history.map(eventPayload), relatedArtists } });
   } catch (error) { return next(error); }
 }
 

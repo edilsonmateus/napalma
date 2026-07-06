@@ -5,7 +5,7 @@ import { prisma } from "../lib/prisma.js";
 const createClaimSchema = z
   .object({
     targetType: z.enum(["venue", "artist"]),
-    requestType: z.enum(["ownership", "venue_update"]).optional().default("ownership"),
+    requestType: z.enum(["ownership", "team_access", "venue_update"]).optional().default("ownership"),
     venueId: z.string().uuid().optional(),
     artistId: z.string().uuid().optional(),
     responsibleName: z.string().trim().min(3).max(120).optional(),
@@ -25,7 +25,7 @@ const createClaimSchema = z
     if (data.targetType === "artist" && !data.artistId) {
       ctx.addIssue({ code: "custom", path: ["artistId"], message: "Informe o artista para reivindicacao." });
     }
-    if (data.requestType === "ownership") {
+    if (["ownership", "team_access"].includes(data.requestType)) {
       if (!data.responsibleName) {
         ctx.addIssue({ code: "custom", path: ["responsibleName"], message: "Informe o nome do responsavel." });
       }
@@ -127,8 +127,11 @@ export async function createClaimRequest(req, res, next) {
       if (!venue) return res.status(404).json({ error: "venue_not_found", message: "Casa nao encontrada." });
     }
     if (data.targetType === ClaimTargetType.artist) {
-      const artist = await prisma.artist.findUnique({ where: { id: data.artistId }, select: { id: true } });
+      const artist = await prisma.artist.findUnique({ where: { id: data.artistId }, select: { id: true, _count: { select: { accesses: { where: { status: "active" } }, producerAccesses: true } } } });
       if (!artist) return res.status(404).json({ error: "artist_not_found", message: "Artista nao encontrado." });
+      const claimed = artist._count.accesses > 0 || artist._count.producerAccesses > 0;
+      if (data.requestType === "ownership" && claimed) return res.status(409).json({ error: "artist_already_claimed", message: "Este perfil já possui equipe. Solicite acesso em vez de reivindicar a propriedade." });
+      if (data.requestType === "team_access" && !claimed) return res.status(409).json({ error: "artist_without_owner", message: "Este perfil ainda não possui equipe. Faça uma reivindicação de propriedade." });
     }
 
     const existingPending = await prisma.claimRequest.findFirst({
@@ -305,6 +308,13 @@ export async function decideClaim(req, res, next) {
             });
           }
           await tx.artist.update({ where: { id: existing.artistId }, data: { isVerified: true, verifiedAt: new Date(), verifiedByUserId: req.user.id } });
+        }
+        if (existing.requestType === "team_access" && existing.targetType === ClaimTargetType.artist && existing.artistId) {
+          await tx.artistAccess.upsert({
+            where: { artistId_userId: { artistId: existing.artistId, userId: existing.requestedById } },
+            update: { role: "manager", status: "active", acceptedAt: new Date(), invitedByUserId: req.user.id },
+            create: { artistId: existing.artistId, userId: existing.requestedById, role: "manager", status: "active", acceptedAt: new Date(), invitedByUserId: req.user.id }
+          });
         }
       }
 

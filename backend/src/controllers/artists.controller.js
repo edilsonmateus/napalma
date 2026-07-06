@@ -35,7 +35,11 @@ function slugify(value) {
     .replace(/(^-|-$)/g, "");
 }
 
-function mapArtistPayload(artist) {
+function mapArtistPayload(artist, currentUserId = null) {
+  const activeAccesses = artist.accesses || [];
+  const producerAccesses = artist.producerAccesses || [];
+  const teamIds = new Set([...activeAccesses.map((item) => item.userId), ...producerAccesses.map((item) => item.producerId)]);
+  const teamPreview = [...activeAccesses.map((item) => item.user?.avatarUrl), ...producerAccesses.map((item) => item.producer?.avatarUrl)].filter(Boolean).slice(0, 5);
   return {
     id: artist.id,
     name: artist.name,
@@ -49,7 +53,13 @@ function mapArtistPayload(artist) {
     spotifyUrl: artist.spotifyUrl ?? "",
     youtubeUrl: artist.youtubeUrl ?? "",
     instagramUrl: artist.instagramUrl ?? "",
-    eventsCount: artist._count?.events ?? 0
+    eventsCount: artist._count?.events ?? 0,
+    baseCity: artist.professionalProfile?.baseCity ?? "",
+    baseState: artist.professionalProfile?.baseState ?? "",
+    teamCount: teamIds.size,
+    teamPreview,
+    isClaimed: teamIds.size > 0,
+    myAccess: currentUserId ? activeAccesses.find((item) => item.userId === currentUserId) || null : null
   };
 }
 
@@ -75,13 +85,21 @@ export async function listArtists(req, res, next) {
     const items = await prisma.artist.findMany({
       where: filters.length ? { AND: filters } : undefined,
       include: {
+        professionalProfile: { select: { baseCity: true, baseState: true } },
+        accesses: {
+          where: { status: "active" },
+          select: { userId: true, role: true, status: true, user: { select: { avatarUrl: true } } }
+        },
+        producerAccesses: {
+          select: { producerId: true, producer: { select: { avatarUrl: true } } }
+        },
         _count: {
           select: { events: true }
         }
       },
       orderBy: { name: "asc" }
     });
-    res.json({ items: items.map(mapArtistPayload) });
+    res.json({ items: items.map((item) => mapArtistPayload(item, req.user?.id)) });
   } catch (error) {
     next(error);
   }
