@@ -4625,6 +4625,7 @@ button.venue-card {
   color: var(--text-primary);
   font-weight: var(--weight-card-title);
   margin-top: 0 !important;
+  transform: translateY(-9px);
 }
 
 .next-event-label {
@@ -4633,6 +4634,7 @@ button.venue-card {
   letter-spacing: 0.02em;
   margin-top: 8px !important;
   margin-bottom: 0 !important;
+  transform: translateY(-9px);
 }
 
 .venue-neighborhood-line {
@@ -4655,6 +4657,10 @@ button.venue-card {
 
 .venue-flow-head {
   margin-bottom: 2px;
+}
+
+.venue-flow-head h3 {
+  transform: translateY(4px);
 }
 
 .venue-flow-head .route-inline-trigger {
