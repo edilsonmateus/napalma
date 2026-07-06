@@ -266,6 +266,7 @@ export default function EventDetailPage() {
           <ArtistProfileGateway
             artistId={event.artistId}
             artistName={event.artist || "Artista"}
+            artistImageUrl={event.artistImageUrl}
             verified={event.artistVerified}
             onClick={() => trackAnalyticsEvent("artist_profile_click", {
               eventId: event.id,

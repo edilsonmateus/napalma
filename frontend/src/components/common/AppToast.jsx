@@ -10,7 +10,7 @@ export default function AppToast({ toast, onClose }) {
   if (!toast?.text) return null;
 
   return (
-    <p className={`toast app-toast toast-${toast.type || "info"}`}>
+    <p className={`toast app-toast toast-${toast.type || "info"}`} role="status" aria-live="polite">
       {toast.text}
     </p>
   );

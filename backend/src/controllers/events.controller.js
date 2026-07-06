@@ -160,6 +160,7 @@ function mapEventPayload(event) {
     title: event.title,
     artistId: event.artists[0]?.artist.id ?? null,
     artist: event.artists[0]?.artist.name ?? "",
+    artistImageUrl: event.artists[0]?.artist.imageUrl ?? "",
     artistVerified: Boolean(event.artists[0]?.artist?.isVerified),
     venue: event.venue.name,
     venueDisplayNameWithArticle: event.venue.displayNameWithArticle ?? event.venue.name,
@@ -239,6 +240,7 @@ function mapEventDetailPayload(event) {
     venueId: event.venueId,
     artistName: event.artists[0]?.artist.name ?? "",
     artistId: event.artists[0]?.artist.id ?? null,
+    artistImageUrl: event.artists[0]?.artist.imageUrl ?? "",
     artistVerified: Boolean(event.artists[0]?.artist?.isVerified),
     venue: {
       id: event.venue.id,
