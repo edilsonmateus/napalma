@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { CalendarClock, ExternalLink, MapPin, Share2 } from "lucide-react";
 import { useArtistProfileQuery, useCreateClaimMutation, useToggleArtistFollowMutation } from "../hooks/useEventsQuery";
 import { useAuthStore } from "../store/authStore";
@@ -8,6 +8,7 @@ import ArtistBookingModal from "../components/artists/ArtistBookingModal";
 import ArtistGallery from "../components/artists/ArtistGallery";
 import RelatedArtists from "../components/artists/RelatedArtists";
 import { trackAnalyticsEvent } from "../services/analytics.service";
+import BackLink from "../components/common/BackLink";
 
 function formatDate(value) {
   return new Date(value).toLocaleString("pt-BR", {
@@ -21,6 +22,8 @@ function formatDate(value) {
 export default function ArtistProfilePage() {
   const { artistId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const cameFromManagementHub = location.state?.fromManagementHub === true;
   const user = useAuthStore((state) => state.user);
   const { data: artist, isLoading } = useArtistProfileQuery(artistId);
   const toggleFollow = useToggleArtistFollowMutation();
@@ -63,7 +66,7 @@ export default function ArtistProfilePage() {
     const links = Object.entries(artist.links || {}).filter(([, value]) => value);
     return (
       <section className="screen artist-epk-screen">
-        <button className="btn-link" onClick={() => navigate(-1)}>Voltar</button>
+        {cameFromManagementHub ? <BackLink to="/settings">Voltar ao Hub de Gestão</BackLink> : <BackLink onClick={() => navigate(-1)}>Voltar</BackLink>}
         <header className="artist-epk-hero">
           <div className="artist-epk-cover" style={artist.coverImageUrl ? { backgroundImage: `url(${artist.coverImageUrl})` } : undefined} />
           <div className="artist-epk-identity">
@@ -102,7 +105,7 @@ export default function ArtistProfilePage() {
 
   return (
     <section className="screen screen-decision artist-profile-screen">
-      <button className="btn-link" onClick={() => navigate(-1)}>Voltar</button>
+      {cameFromManagementHub ? <BackLink to="/settings">Voltar ao Hub de Gestão</BackLink> : <BackLink onClick={() => navigate(-1)}>Voltar</BackLink>}
       <header className="artist-profile-header">
         <div className="artist-profile-avatar-wrap">
           {artist.imageUrl ? (

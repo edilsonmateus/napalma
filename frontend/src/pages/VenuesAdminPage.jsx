@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import VerifiedBadge from "../components/common/VerifiedBadge";
 import ImpactSummaryPanel from "../components/admin/ImpactSummaryPanel";
 import AcquisitionAdminPanel from "./admin/AcquisitionAdminPanel";
+import BackLink from "../components/common/BackLink";
 import {
   useAddVenueManagerMutation,
   useArtistsQuery,
@@ -1785,7 +1786,7 @@ export default function VenuesAdminPage() {
 
   return (
     <section>
-      <button className="btn-link" onClick={() => navigate(-1)}>Voltar</button>
+      <BackLink onClick={() => navigate(-1)}>Voltar</BackLink>
       <header className="page-header admin-page-header">
         <div className="admin-page-header-main">
           <h2>{roleHeader.title}</h2>

@@ -2253,9 +2253,18 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 
 .event-title-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 18px;
+}
+
+.event-host-label {
+  margin: 0 0 5px;
+  color: #ffbf36;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.1px;
 }
 
 .artist-inline-with-badge {
@@ -2444,8 +2453,98 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   }
 }
 
-.artist-page-link {
-  text-transform: lowercase;
+.artist-profile-gateway {
+  position: relative;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  width: clamp(250px, 31vw, 310px);
+  min-height: 78px;
+  flex: 0 0 auto;
+  padding: 11px 13px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 145, 29, 0.52);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(164, 58, 190, 0.24), transparent 38%),
+    linear-gradient(120deg, rgba(58, 27, 66, 0.96), rgba(78, 45, 18, 0.96));
+  color: var(--text-primary);
+  text-decoration: none;
+  box-shadow: 0 7px 20px rgba(0, 0, 0, 0.16);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.artist-profile-gateway:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 184, 28, 0.86);
+  box-shadow: 0 11px 25px rgba(0, 0, 0, 0.24);
+}
+
+.artist-profile-gateway:focus-visible {
+  outline: 2px solid rgba(255, 191, 54, 0.88);
+  outline-offset: 3px;
+}
+
+.artist-profile-gateway-icon {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #ffcf5b;
+  background: linear-gradient(145deg, #8d3dc1, #ff7a2f);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.artist-profile-gateway-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.artist-profile-gateway-copy small {
+  color: #ffc23e;
+  font-size: 9px;
+  line-height: 1.1;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.artist-profile-gateway-copy strong {
+  overflow: hidden;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artist-profile-gateway-copy > span {
+  color: #ded5e6;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.artist-profile-gateway-arrow {
+  color: #ffb81c;
+  transition: transform 160ms ease;
+}
+
+.artist-profile-gateway:hover .artist-profile-gateway-arrow { transform: translateX(3px); }
+.artist-profile-gateway-verified { position: absolute; top: 9px; right: 11px; }
+.artist-profile-gateway-verified + .artist-profile-gateway-arrow { margin-top: 17px; }
+
+.event-artist-gateway-row {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 12px;
+}
+
+.event-artist-gateway-row .artist-profile-gateway {
+  width: min(100%, 360px);
 }
 
 .artist-profile-screen {
@@ -2644,7 +2743,25 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 .account-settings-header { display: grid; gap: 6px; margin-bottom: 2px; }
 .account-settings-header h2 { margin: 4px 0 0; }
 .account-settings-header p { margin: 0; color: var(--text-secondary); font-size: 13px; }
-.account-settings-back { display: inline-flex; align-items: center; gap: 7px; width: fit-content; color: #ffbf36; font-size: 13px; text-decoration: none; }
+.account-settings-back,
+.app-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  border: 0;
+  background: transparent;
+  color: #ffbf36;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.25;
+  text-decoration: none;
+  cursor: pointer;
+}
+.account-settings-back:hover,
+.app-back-link:hover { color: #ffd36a; }
+.account-settings-back:focus-visible,
+.app-back-link:focus-visible { outline: 2px solid rgba(255,191,54,.65); outline-offset: 4px; border-radius: 3px; }
 .account-settings-section { display: grid; gap: 12px; margin: 0; }
 .account-settings-screen > .settings-location-card,
 .account-settings-screen > .settings-location-card ~ .account-settings-section {
@@ -5694,6 +5811,17 @@ button.venue-card {
   border-radius: 999px;
 }
 
+@media (min-width: 641px) {
+  .event-decision .decision-actions { justify-items: start; }
+
+  .event-decision .decision-actions .btn-primary,
+  .event-decision .decision-actions .chip {
+    width: 240px;
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
 .decision-radar-muted {
   background: #111;
   border: 1px solid #2f2f2f;
@@ -6152,6 +6280,18 @@ button.venue-card {
 }
 
 @media (max-width: 640px) {
+  .event-title-row {
+    display: grid;
+    gap: 14px;
+  }
+
+  .artist-profile-gateway {
+    width: 100%;
+    min-height: 74px;
+  }
+
+  .event-artist-gateway-row .artist-profile-gateway { width: 100%; }
+
   .impact-panel-header {
     display: grid;
   }
@@ -6487,7 +6627,13 @@ button.venue-card {
     animation: none !important;
   }
 
-  .venue-flow-card:hover {
+  .artist-profile-gateway,
+  .artist-profile-gateway-arrow {
+    transition: none !important;
+  }
+
+  .venue-flow-card:hover,
+  .artist-profile-gateway:hover {
     transform: none;
   }
 }

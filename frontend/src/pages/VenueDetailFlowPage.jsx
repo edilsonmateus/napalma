@@ -11,6 +11,7 @@ import mapsIcon from "../assets/routes/maps.svg";
 import wazeIcon from "../assets/routes/waze.svg";
 import uberIcon from "../assets/routes/uber.svg";
 import { trackAnalyticsEvent } from "../services/analytics.service";
+import BackLink from "../components/common/BackLink";
 
 function formatDate(value) {
   return new Date(value).toLocaleString("pt-BR", {
@@ -101,7 +102,7 @@ export default function VenueDetailFlowPage() {
 
   return (
     <section className="screen screen-radar">
-      <Link className="btn-link" to="/explore">Voltar</Link>
+      <BackLink to="/explore">Voltar para Explorar</BackLink>
 
       {venue.imageUrl ? (
         <div className="event-detail-cover" style={{ backgroundImage: `url(${venue.imageUrl})` }} />

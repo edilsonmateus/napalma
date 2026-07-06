@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import BackLink from "../components/common/BackLink";
 
 export default function TermsPage() {
   return (
@@ -30,7 +30,7 @@ export default function TermsPage() {
       <article className="clean-card legal-card"><h3>12. Alterações e legislação</h3><p>Podemos atualizar estes Termos para acompanhar a evolução do produto ou da legislação. Mudanças relevantes serão comunicadas por meios adequados. Aplicam-se as leis brasileiras, inclusive as normas de proteção de dados e do consumidor quando cabíveis, respeitado o foro assegurado pela legislação aplicável.</p></article>
 
       <p className="meta-line legal-updated">Última atualização: 05/07/2026</p>
-      <p><Link to="/settings" className="btn-link">Voltar para Configurações</Link></p>
+      <BackLink to="/settings">Voltar para Configurações</BackLink>
     </section>
   );
 }

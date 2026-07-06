@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import BackLink from "../components/common/BackLink";
 
 export default function HelpPage() {
   return (
@@ -24,7 +24,7 @@ export default function HelpPage() {
       <article className="clean-card legal-card"><h3>Fale com o suporte</h3><p>Envie sua solicitação para <a href="mailto:77giramundo@gmail.com">77giramundo@gmail.com</a>. Pedidos sobre dados pessoais também podem ser encaminhados por esse canal.</p></article>
 
       <p className="meta-line legal-updated">Última atualização: 05/07/2026</p>
-      <p><Link to="/settings" className="btn-link">Voltar para Configurações</Link></p>
+      <BackLink to="/settings">Voltar para Configurações</BackLink>
     </section>
   );
 }

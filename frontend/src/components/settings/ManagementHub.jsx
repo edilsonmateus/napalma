@@ -57,7 +57,7 @@ export default function ManagementHub({ user, canManageVenues, canManageAds, can
       {collapsed ? <div className="management-hub-summary" aria-hidden="false">{cards.map((card) => <span key={card.title}>{card.chip}</span>)}</div> : null}
       <div id="managementHubContent" className="management-hub-content" hidden={collapsed}>
         {artist ? <div className="management-hub-context"><span>Gerenciando</span>{artists.length > 1 ? <select value={artist.id} onChange={(event) => setArtistId(event.target.value)} aria-label="Artista gerenciado">{artists.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select> : <strong>{artist.name}</strong>}<small>Perfil reivindicado</small></div> : null}
-        <div className="management-hub-grid">{cards.map(({ to, icon: Icon, title, description, action, badge }) => <Link to={to} className="management-card" key={title}><div className="management-card-heading"><Icon size={18}/><span>{badge}</span></div><strong>{title}</strong><p>{description}</p><em>{action} <ChevronRight size={14}/></em></Link>)}</div>
+        <div className="management-hub-grid">{cards.map(({ to, icon: Icon, title, description, action, badge }) => <Link to={to} state={{ fromManagementHub: true }} className="management-card" key={title}><div className="management-card-heading"><Icon size={18}/><span>{badge}</span></div><strong>{title}</strong><p>{description}</p><em>{action} <ChevronRight size={14}/></em></Link>)}</div>
       </div>
     </section>
   );

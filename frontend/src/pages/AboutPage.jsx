@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import BackLink from "../components/common/BackLink";
 
 export default function AboutPage() {
   return (
@@ -24,7 +24,7 @@ export default function AboutPage() {
       <article className="clean-card legal-card"><h3>Versão</h3><p>77Gira v1.0.0</p><p>Feito em casa, feito com alma. Desenhado e codificado por 77 Giramundo.</p></article>
 
       <p className="meta-line legal-updated">Última atualização: 05/07/2026</p>
-      <p><Link to="/settings" className="btn-link">Voltar para Configurações</Link></p>
+      <BackLink to="/settings">Voltar para Configurações</BackLink>
     </section>
   );
 }

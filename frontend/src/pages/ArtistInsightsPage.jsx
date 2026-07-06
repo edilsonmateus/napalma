@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BarChart3, CalendarDays, ExternalLink, Heart, Images, MessageSquare, Share2, Trophy } from "lucide-react";
 import { getMyArtists } from "../services/artistWorkspace.service";
 import { getArtistInsights } from "../services/artistInsights.service";
+import BackLink from "../components/common/BackLink";
 
 const cards = [
   ["profileViews", "Visitas ao perfil", BarChart3], ["newFollowers", "Novos seguidores", Heart],
@@ -17,6 +18,7 @@ export default function ArtistInsightsPage() {
   useEffect(() => { if (!artistId) return; setInsights(null); getArtistInsights(artistId, days).then(setInsights).catch((error) => setMessage(error?.response?.data?.message || "Não foi possível carregar os insights.")); }, [artistId, days]);
   return (
     <section className="screen artist-insights-screen">
+      <BackLink to="/settings">Voltar ao Hub de Gestão</BackLink>
       <header className="page-header"><h2>Desempenho do artista</h2><p>Entenda como o público encontra, compartilha e demonstra interesse pelo perfil.</p></header>
       {message ? <p className="clean-card">{message}</p> : null}
       {artists.length ? <div className="clean-card artist-insights-filters"><label>Artista<select value={artistId} onChange={(event) => setArtistId(event.target.value)}>{artists.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Período<select value={days} onChange={(event) => setDays(Number(event.target.value))}><option value={7}>7 dias</option><option value={30}>30 dias</option><option value={90}>90 dias</option><option value={365}>12 meses</option></select></label></div> : <p className="empty">Nenhum perfil sob sua gestão.</p>}

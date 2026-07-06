@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import BackLink from "../components/common/BackLink";
 
 export default function PrivacyPage() {
   return (
@@ -26,7 +26,7 @@ export default function PrivacyPage() {
       <article className="clean-card legal-card"><h3>10. Atualizações</h3><p>Esta política poderá ser atualizada para refletir novas funcionalidades, práticas operacionais ou exigências legais. Mudanças relevantes serão comunicadas por meios adequados, e a versão vigente permanecerá disponível nesta página.</p></article>
 
       <p className="meta-line legal-updated">Última atualização: 05/07/2026</p>
-      <p><Link to="/settings" className="btn-link">Voltar para Configurações</Link></p>
+      <BackLink to="/settings">Voltar para Configurações</BackLink>
     </section>
   );
 }

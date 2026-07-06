@@ -15,6 +15,8 @@ import wazeIcon from "../assets/routes/waze.svg";
 import uberIcon from "../assets/routes/uber.svg";
 import AppToast from "../components/common/AppToast";
 import { trackAnalyticsEvent } from "../services/analytics.service";
+import BackLink from "../components/common/BackLink";
+import ArtistProfileGateway from "../components/artists/ArtistProfileGateway";
 
 function formatDate(value) {
   return new Date(value).toLocaleString("pt-BR");
@@ -195,17 +197,17 @@ export default function EventDetailPage() {
 
   return (
     <section className="screen screen-decision event-decision">
-      <button className="btn-link" onClick={() => navigate(-1)}>Voltar</button>
+      <BackLink onClick={() => navigate(-1)}>Voltar</BackLink>
 
       <div className="event-detail-cover" style={{ backgroundImage: `url(${event.imageUrl})` }} />
 
       <div className="decision-card">
+        <p className="event-host-label">{event.venue} Recebe:</p>
         <div className="event-title-row">
           <h2 className="event-title-with-badge">
             <span>{event.title}</span>
             {event.artistVerified ? <VerifiedBadge className="artist-verified-dot" title="Artista verificado" /> : null}
           </h2>
-          {event.artistId ? <Link to={`/artists/${event.artistId}`} className="btn-link artist-page-link">página do artista</Link> : null}
         </div>
         {showArtistLine ? (
           <div className="decision-artist-wrap">
@@ -255,10 +257,25 @@ export default function EventDetailPage() {
               disabled={toggleRadar.isPending}
             >
               <Star size={14} />
-              {toggleRadar.isPending ? "Atualizando..." : marked ? "Marcado no seu Radar" : "Acho que eu vou"}
+              {toggleRadar.isPending ? "Atualizando..." : marked ? "Marcado no seu Radar" : "Guardar no Radar"}
             </button>
           </div>
         ) : null}
+
+        <div className="event-artist-gateway-row">
+          <ArtistProfileGateway
+            artistId={event.artistId}
+            artistName={event.artist || "Artista"}
+            verified={event.artistVerified}
+            onClick={() => trackAnalyticsEvent("artist_profile_click", {
+              eventId: event.id,
+              venueId: event.venueId,
+              artistId: event.artistId,
+              region: event.region,
+              source: "event_detail"
+            })}
+          />
+        </div>
 
         <div className="share-panel">
           <strong>Compartilhe com uma mensagem</strong>
