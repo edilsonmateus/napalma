@@ -9,6 +9,7 @@ import ArtistGallery from "../components/artists/ArtistGallery";
 import RelatedArtists from "../components/artists/RelatedArtists";
 import { trackAnalyticsEvent } from "../services/analytics.service";
 import BackLink from "../components/common/BackLink";
+import useClaimLegalAcknowledgement from "../hooks/useClaimLegalAcknowledgement";
 
 function formatDate(value) {
   return new Date(value).toLocaleString("pt-BR", {
@@ -28,6 +29,7 @@ export default function ArtistProfilePage() {
   const { data: artist, isLoading } = useArtistProfileQuery(artistId);
   const toggleFollow = useToggleArtistFollowMutation();
   const createClaim = useCreateClaimMutation();
+  const { requestAcknowledgement, claimLegalModal } = useClaimLegalAcknowledgement();
   const [showClaim, setShowClaim] = useState(false);
   const [showBooking, setShowBooking] = useState(false);
   const [claimMessage, setClaimMessage] = useState("");
@@ -56,8 +58,10 @@ export default function ArtistProfilePage() {
 
   async function submitClaim(event) {
     event.preventDefault();
+    const legalAcknowledgement = await requestAcknowledgement();
+    if (!legalAcknowledgement) return;
     try {
-      await createClaim.mutateAsync({ targetType: "artist", artistId: artist.id, requestType: artist.isClaimed ? "team_access" : "ownership", ...claim, officialEmail: claim.officialEmail || undefined, officialInstagram: claim.officialInstagram || undefined, officialWebsite: claim.officialWebsite || undefined });
+      await createClaim.mutateAsync({ targetType: "artist", artistId: artist.id, requestType: artist.isClaimed ? "team_access" : "ownership", ...claim, legalAcknowledgement, officialEmail: claim.officialEmail || undefined, officialInstagram: claim.officialInstagram || undefined, officialWebsite: claim.officialWebsite || undefined });
       setClaimMessage("Reivindicacao enviada para analise."); setShowClaim(false);
     } catch (error) { setClaimMessage(error?.response?.data?.message || "Nao foi possivel enviar a reivindicacao."); }
   }
@@ -66,6 +70,7 @@ export default function ArtistProfilePage() {
     const links = Object.entries(artist.links || {}).filter(([, value]) => value);
     return (
       <section className="screen artist-epk-screen">
+        {claimLegalModal}
         {cameFromManagementHub ? <BackLink to="/settings">Voltar ao Hub de Gestão</BackLink> : <BackLink onClick={() => navigate(-1)}>Voltar</BackLink>}
         <header className="artist-epk-hero">
           <div className="artist-epk-cover" style={artist.coverImageUrl ? { backgroundImage: `url(${artist.coverImageUrl})` } : undefined} />

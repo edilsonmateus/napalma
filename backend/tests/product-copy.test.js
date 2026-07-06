@@ -9,7 +9,7 @@ describe("final product legal and support copy", () => {
   it("updates privacy coverage for current data flows", () => {
     const privacy = page("PrivacyPage");
     for (const topic of ["Contratações", "campanhas publicitárias", "localização", "armazenamento local", "Seus direitos"]) expect(privacy).toContain(topic);
-    expect(privacy).toContain("05/07/2026");
+    expect(privacy).toContain("06/07/2026");
   });
 
   it("covers professional profiles, bookings, ads and user conduct in terms", () => {

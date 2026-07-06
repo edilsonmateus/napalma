@@ -2,6 +2,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { useAuthStore } from "../store/authStore";
 import VerifiedBadge from "../components/common/VerifiedBadge";
+import useClaimLegalAcknowledgement from "../hooks/useClaimLegalAcknowledgement";
 import {
   useArtistsQuery,
   useAudienceSummaryQuery,
@@ -51,6 +52,7 @@ export default function ProducerDashboardPage() {
   const { data: audienceSummary } = useAudienceSummaryQuery({ days: 30 }, true);
   const { data: myClaims = [] } = useMyClaimsQuery(true);
   const createClaim = useCreateClaimMutation();
+  const { requestAcknowledgement, claimLegalModal } = useClaimLegalAcknowledgement();
   const { data: pendingClaims = [] } = useClaimsQuery("pending", true);
 
   const loading = venuesLoading || artistsLoading || eventsLoading;
@@ -84,10 +86,13 @@ export default function ProducerDashboardPage() {
       setClaimFeedback("Selecione uma casa ou artista para reivindicar.");
       return;
     }
+    const legalAcknowledgement = await requestAcknowledgement();
+    if (!legalAcknowledgement) return;
     try {
       setClaimFeedback("");
       await createClaim.mutateAsync({
         targetType: claimType,
+        legalAcknowledgement,
         venueId: claimType === "venue" ? claimTargetId : undefined,
         artistId: claimType === "artist" ? claimTargetId : undefined,
         justification: claimJustification || undefined,
@@ -116,6 +121,7 @@ export default function ProducerDashboardPage() {
 
   return (
     <section className="screen screen-history">
+      {claimLegalModal}
       <header className="page-header admin-page-header">
         <div className="admin-page-header-main">
           <h2>Painel do Produtor</h2>

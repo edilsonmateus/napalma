@@ -21,6 +21,8 @@ export default function TermsPage() {
 
       <article className="clean-card legal-card"><h3>8. Condutas proibidas</h3><ul className="legal-list"><li>Publicar conteúdo falso, ilegal, discriminatório, ofensivo, fraudulento ou que viole direitos de terceiros.</li><li>Falsificar vínculo com artista, casa, anunciante ou organização.</li><li>Praticar spam, assédio, manipulação de métricas ou automação abusiva.</li><li>Tentar contornar autenticação, permissões, limites, revisões ou mecanismos de segurança.</li><li>Interferir no serviço, extrair dados em massa ou explorar vulnerabilidades sem autorização.</li></ul></article>
 
+      <article className="clean-card legal-card"><h3>8.1. Declarações de legitimidade</h3><p>Antes de solicitar criação, reivindicação, administração, acesso ou alteração de perfis profissionais, o usuário deverá declarar que possui legitimidade ou autorização para representar a pessoa, artista, banda, casa, empresa ou organização envolvida. A versão e a data dessa ciência poderão ser registradas para segurança, auditoria, prevenção de fraude e exercício de direitos.</p><p>Declarações falsas, documentos adulterados, falsa representação ou tentativas de apropriação indevida poderão resultar em rejeição, bloqueio, revogação de acessos, preservação de registros e adoção das medidas administrativas ou legais cabíveis.</p></article>
+
       <article className="clean-card legal-card"><h3>9. Moderação e suspensão</h3><p>Podemos solicitar correções, limitar alcance, remover conteúdo, revogar acessos ou suspender contas quando necessário para proteger usuários, terceiros ou a plataforma, cumprir a lei ou investigar violações. Sempre que adequado, consideraremos contexto, gravidade e possibilidade de correção.</p></article>
 
       <article className="clean-card legal-card"><h3>10. Disponibilidade e responsabilidade</h3><p>Trabalhamos para manter o serviço disponível e seguro, mas funcionalidades podem sofrer interrupções, manutenção, mudanças ou descontinuação. Na extensão permitida pela legislação, o 77Gira não responde por atos de usuários ou terceiros, cancelamento de eventos, negociações externas, perda decorrente de informação desatualizada ou indisponibilidade fora de seu controle. Direitos obrigatórios do consumidor permanecem preservados.</p></article>
@@ -29,7 +31,7 @@ export default function TermsPage() {
 
       <article className="clean-card legal-card"><h3>12. Alterações e legislação</h3><p>Podemos atualizar estes Termos para acompanhar a evolução do produto ou da legislação. Mudanças relevantes serão comunicadas por meios adequados. Aplicam-se as leis brasileiras, inclusive as normas de proteção de dados e do consumidor quando cabíveis, respeitado o foro assegurado pela legislação aplicável.</p></article>
 
-      <p className="meta-line legal-updated">Última atualização: 05/07/2026</p>
+      <p className="meta-line legal-updated">Última atualização: 06/07/2026</p>
       <BackLink to="/settings">Voltar para Configurações</BackLink>
     </section>
   );

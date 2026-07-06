@@ -21,11 +21,13 @@ export default function PrivacyPage() {
 
       <article className="clean-card legal-card"><h3>8. Segurança</h3><p>Adotamos controles técnicos e organizacionais proporcionais ao serviço, como autenticação, controle de acesso por função, limitação de requisições, validação de arquivos e registros operacionais. Nenhum sistema é absolutamente invulnerável; por isso, mantenha suas credenciais protegidas e comunique qualquer suspeita de uso indevido.</p></article>
 
+      <article className="clean-card legal-card"><h3>8.1. Registros de reivindicações</h3><p>Quando você solicita inclusão, reivindicação, acesso ou alteração de um perfil profissional, podemos registrar a versão da declaração de responsabilidade aceita, a data e hora da ciência, a conta solicitante, as evidências apresentadas e o resultado da análise. Esses dados são utilizados para autenticação de vínculos, prevenção de fraude, segurança, auditoria e exercício regular de direitos.</p></article>
+
       <article className="clean-card legal-card"><h3>9. Seus direitos</h3><p>Nos termos da LGPD, você pode solicitar confirmação e acesso ao tratamento, correção, informação sobre compartilhamento, anonimização, bloqueio ou eliminação quando aplicável, portabilidade conforme regulamentação, revisão de decisões automatizadas, oposição e revogação do consentimento. Poderemos solicitar informações para confirmar sua identidade e proteger a conta antes de atender ao pedido.</p><p>Recomendações e métricas podem usar regras automatizadas, mas o produto não prevê decisões exclusivamente automatizadas com efeito jurídico sobre usuários.</p></article>
 
       <article className="clean-card legal-card"><h3>10. Atualizações</h3><p>Esta política poderá ser atualizada para refletir novas funcionalidades, práticas operacionais ou exigências legais. Mudanças relevantes serão comunicadas por meios adequados, e a versão vigente permanecerá disponível nesta página.</p></article>
 
-      <p className="meta-line legal-updated">Última atualização: 05/07/2026</p>
+      <p className="meta-line legal-updated">Última atualização: 06/07/2026</p>
       <BackLink to="/settings">Voltar para Configurações</BackLink>
     </section>
   );

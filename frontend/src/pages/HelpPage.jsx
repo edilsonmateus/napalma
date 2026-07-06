@@ -13,6 +13,8 @@ export default function HelpPage() {
 
       <article className="clean-card legal-card"><h3>Perfis de artistas e EPK</h3><ul className="legal-list"><li>Para administrar um artista, abra seu perfil público e selecione <strong>Reivindicar perfil</strong>.</li><li>Após aprovação, o <strong>Hub de Gestão</strong> em Configurações libera perfil profissional, mídias, contratações e desempenho.</li><li>No EPK, mantenha bio curta, release, foto, capa, gêneros, agenda, regiões atendidas e links oficiais atualizados.</li><li>Fotos aceitam JPG, PNG ou WebP. Vídeos são adicionados por links externos compatíveis.</li><li>Solicitações de contratação aparecem em <strong>Contratações</strong> apenas para gestores autorizados daquele artista.</li></ul></article>
 
+      <article className="clean-card legal-card"><h3>Reivindicações e responsabilidade</h3><ul className="legal-list"><li>Solicite um perfil somente se você for proprietário, integrante, representante legal ou profissional expressamente autorizado.</li><li>Leia integralmente a declaração apresentada antes do envio e confirme sua ciência apenas se as informações forem verdadeiras.</li><li>O aceite não garante aprovação: a equipe poderá solicitar documentos, confirmar informações e rejeitar inconsistências.</li><li>Não tente assumir um perfil, alterar dados ou obter contatos comerciais em nome de terceiros sem autorização.</li></ul></article>
+
       <article className="clean-card legal-card"><h3>Casas e produtores</h3><ul className="legal-list"><li>Casas e produtores veem somente os cadastros autorizados por seu papel e vínculos aprovados.</li><li>Mantenha endereço, região, imagem, contatos, programação, preços e horários corretos.</li><li>Revise eventos antes de publicar; informações encerradas deixam de aparecer na agenda pública.</li><li>Convites e acessos devem ser concedidos apenas a pessoas da operação.</li></ul></article>
 
       <article className="clean-card legal-card"><h3>Anunciantes e campanhas</h3><ul className="legal-list"><li>A Central do Anunciante aparece quando existe uma conta anunciante vinculada e ativa.</li><li>Campanhas e criativos começam como rascunho e podem exigir envio para revisão.</li><li>Utilize imagens nos formatos e proporções indicados e destinos HTTPS confiáveis.</li><li>Aprovação, rejeição ou pedido de ajustes ficam registrados no fluxo de revisão.</li></ul></article>
@@ -23,7 +25,7 @@ export default function HelpPage() {
 
       <article className="clean-card legal-card"><h3>Fale com o suporte</h3><p>Envie sua solicitação para <a href="mailto:77giramundo@gmail.com">77giramundo@gmail.com</a>. Pedidos sobre dados pessoais também podem ser encaminhados por esse canal.</p></article>
 
-      <p className="meta-line legal-updated">Última atualização: 05/07/2026</p>
+      <p className="meta-line legal-updated">Última atualização: 06/07/2026</p>
       <BackLink to="/settings">Voltar para Configurações</BackLink>
     </section>
   );

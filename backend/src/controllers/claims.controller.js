@@ -2,10 +2,12 @@ import { ClaimStatus, ClaimTargetType } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 
+const CLAIM_LEGAL_VERSION = "CLAIM_RESPONSIBILITY_V1";
+
 const createClaimSchema = z
   .object({
     targetType: z.enum(["venue", "artist"]),
-    requestType: z.enum(["ownership", "team_access", "venue_update"]).optional().default("ownership"),
+    requestType: z.enum(["ownership", "team_access", "artist_inclusion", "venue_update"]).optional().default("ownership"),
     venueId: z.string().uuid().optional(),
     artistId: z.string().uuid().optional(),
     responsibleName: z.string().trim().min(3).max(120).optional(),
@@ -16,16 +18,26 @@ const createClaimSchema = z
     officialInstagram: z.string().trim().max(120).optional(),
     officialWebsite: z.string().trim().url().max(255).optional(),
     justification: z.string().trim().min(5).max(500),
-    requestedChanges: z.record(z.any()).optional()
+    requestedChanges: z.record(z.any()).optional(),
+    legalAcknowledgement: z.object({
+      accepted: z.literal(true),
+      version: z.literal(CLAIM_LEGAL_VERSION)
+    })
   })
   .superRefine((data, ctx) => {
     if (data.targetType === "venue" && !data.venueId) {
       ctx.addIssue({ code: "custom", path: ["venueId"], message: "Informe a casa para reivindicacao." });
     }
-    if (data.targetType === "artist" && !data.artistId) {
+    if (data.targetType === "artist" && data.requestType !== "artist_inclusion" && !data.artistId) {
       ctx.addIssue({ code: "custom", path: ["artistId"], message: "Informe o artista para reivindicacao." });
     }
-    if (["ownership", "team_access"].includes(data.requestType)) {
+    if (data.requestType === "artist_inclusion") {
+      const artistName = data.requestedChanges?.artistName;
+      if (typeof artistName !== "string" || artistName.trim().length < 2) {
+        ctx.addIssue({ code: "custom", path: ["requestedChanges", "artistName"], message: "Informe o nome artistico." });
+      }
+    }
+    if (["ownership", "team_access", "artist_inclusion"].includes(data.requestType)) {
       if (!data.responsibleName) {
         ctx.addIssue({ code: "custom", path: ["responsibleName"], message: "Informe o nome do responsavel." });
       }
@@ -50,6 +62,10 @@ const claimIdSchema = z.object({
   id: z.string().uuid()
 });
 
+function slugify(value) {
+  return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
 function mapClaim(claim) {
   return {
     id: claim.id,
@@ -58,6 +74,10 @@ function mapClaim(claim) {
     requestType: claim.requestType || "ownership",
     justification: claim.justification ?? "",
     requestedChanges: claim.requestedChanges ?? null,
+    legalAcknowledgement: claim.legalAcknowledgedAt ? {
+      acceptedAt: claim.legalAcknowledgedAt,
+      version: claim.legalAcknowledgementVersion
+    } : null,
     evidence: {
       responsibleName: claim.responsibleName ?? "",
       responsiblePhone: claim.responsiblePhone ?? "",
@@ -126,7 +146,7 @@ export async function createClaimRequest(req, res, next) {
       const venue = await prisma.venue.findUnique({ where: { id: data.venueId }, select: { id: true } });
       if (!venue) return res.status(404).json({ error: "venue_not_found", message: "Casa nao encontrada." });
     }
-    if (data.targetType === ClaimTargetType.artist) {
+    if (data.targetType === ClaimTargetType.artist && data.requestType !== "artist_inclusion") {
       const artist = await prisma.artist.findUnique({ where: { id: data.artistId }, select: { id: true, _count: { select: { accesses: { where: { status: "active" } }, producerAccesses: true } } } });
       if (!artist) return res.status(404).json({ error: "artist_not_found", message: "Artista nao encontrado." });
       const claimed = artist._count.accesses > 0 || artist._count.producerAccesses > 0;
@@ -161,6 +181,8 @@ export async function createClaimRequest(req, res, next) {
         artistId: data.artistId ?? null,
         justification: data.justification,
         requestedChanges: data.requestedChanges ?? null,
+        legalAcknowledgedAt: new Date(),
+        legalAcknowledgementVersion: data.legalAcknowledgement.version,
         responsibleName: data.responsibleName ?? null,
         responsiblePhone: data.responsiblePhone ?? null,
         claimantDocument: data.claimantDocument ?? null,
@@ -234,7 +256,35 @@ export async function decideClaim(req, res, next) {
     }
 
     const updated = await prisma.$transaction(async (tx) => {
+      let includedArtistId = null;
       if (data.status === ClaimStatus.approved) {
+        if (existing.requestType === "artist_inclusion" && existing.targetType === ClaimTargetType.artist) {
+          const requested = existing.requestedChanges && typeof existing.requestedChanges === "object" ? existing.requestedChanges : {};
+          const artistName = String(requested.artistName || "").trim();
+          if (!artistName) throw new Error("artist_inclusion_name_missing");
+          const duplicate = await tx.artist.findFirst({ where: { name: { equals: artistName, mode: "insensitive" } }, select: { id: true } });
+          if (duplicate) throw Object.assign(new Error("artist_already_exists"), { status: 409 });
+          const baseSlug = slugify(artistName) || "artista";
+          const slugTaken = await tx.artist.findUnique({ where: { slug: baseSlug }, select: { id: true } });
+          const artist = await tx.artist.create({
+            data: {
+              name: artistName,
+              slug: slugTaken ? `${baseSlug}-${existing.id.slice(0, 6)}` : baseSlug,
+              genres: Array.isArray(requested.genres) ? requested.genres.map(String).map((item) => item.trim()).filter(Boolean).slice(0, 12) : ["samba"],
+              isVerified: true,
+              verifiedAt: new Date(),
+              verifiedByUserId: req.user.id,
+              professionalProfile: {
+                create: {
+                  baseCity: String(requested.baseCity || "").trim() || null,
+                  baseState: String(requested.baseState || "").trim() || null
+                }
+              }
+            }
+          });
+          includedArtistId = artist.id;
+          await tx.artistAccess.create({ data: { artistId: artist.id, userId: existing.requestedById, role: "owner", status: "active", acceptedAt: new Date(), invitedByUserId: req.user.id } });
+        }
         if (existing.requestType === "venue_update" && existing.targetType === ClaimTargetType.venue && existing.venueId) {
           const allowed = [
             "name",
@@ -322,6 +372,7 @@ export async function decideClaim(req, res, next) {
         where: { id: existing.id },
         data: {
           status: data.status,
+          ...(includedArtistId ? { artistId: includedArtistId } : {}),
           decisionNote: data.decisionNote,
           reviewedById: req.user.id,
           reviewedAt: new Date()

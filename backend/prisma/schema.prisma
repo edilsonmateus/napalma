@@ -878,6 +878,8 @@ model ClaimRequest {
   justification     String?
   requestType       String          @default("ownership")
   requestedChanges  Json?
+  legalAcknowledgedAt DateTime?
+  legalAcknowledgementVersion String?
   status            ClaimStatus     @default(pending)
   reviewedById      String?
   reviewedAt        DateTime?

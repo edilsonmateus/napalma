@@ -4,6 +4,7 @@ import VerifiedBadge from "../components/common/VerifiedBadge";
 import ImpactSummaryPanel from "../components/admin/ImpactSummaryPanel";
 import AcquisitionAdminPanel from "./admin/AcquisitionAdminPanel";
 import BackLink from "../components/common/BackLink";
+import useClaimLegalAcknowledgement from "../hooks/useClaimLegalAcknowledgement";
 import {
   useAddVenueManagerMutation,
   useArtistsQuery,
@@ -558,6 +559,7 @@ export default function VenuesAdminPage() {
   const deleteArtistMutation = useDeleteArtistMutation();
   const createEventMutation = useCreateEventMutation();
   const createClaimMutation = useCreateClaimMutation();
+  const { requestAcknowledgement, claimLegalModal } = useClaimLegalAcknowledgement();
   const updateEventMutation = useUpdateEventMutation();
   const deleteEventMutation = useDeleteEventMutation();
   const addVenueManagerMutation = useAddVenueManagerMutation();
@@ -1139,9 +1141,12 @@ export default function VenuesAdminPage() {
           showToast("Nenhuma alteração detectada para enviar ao admin.", "info");
           return;
         }
+        const legalAcknowledgement = await requestAcknowledgement();
+        if (!legalAcknowledgement) return;
         await createClaimMutation.mutateAsync({
           targetType: "venue",
           requestType: "venue_update",
+          legalAcknowledgement,
           venueId: editingVenueId,
           justification: venueEditJustification.trim(),
           requestedChanges: diff
@@ -1729,10 +1734,13 @@ export default function VenuesAdminPage() {
       showToast("Selecione a filial para solicitar acesso.", "error");
       return;
     }
+    const legalAcknowledgement = await requestAcknowledgement();
+    if (!legalAcknowledgement) return;
     try {
       await createClaimMutation.mutateAsync({
         targetType: "venue",
         requestType: "ownership",
+        legalAcknowledgement,
         venueId: houseClaimTargetId,
         justification: houseClaimJustification.trim(),
         responsibleName: houseClaimResponsibleName.trim(),
@@ -2313,10 +2321,11 @@ export default function VenuesAdminPage() {
           {filteredClaims.map((claim) => (
             <article key={claim.id} className={`venue-card claim-card claim-status-${claim.status}`}>
               <div>
-                <h3>{claim.targetType === "venue" ?"Casa" : "Artista"}: {claim.venue?.name || claim.artist?.name}</h3>
+                <h3>{claim.targetType === "venue" ?"Casa" : "Artista"}: {claim.venue?.name || claim.artist?.name || claim.requestedChanges?.artistName || "Novo cadastro"}</h3>
                 <p className="meta-line">Produtor: {claim.requestedBy?.name || claim.requestedBy?.email}</p>
-                <p className="meta-line">Tipo: {claim.requestType === "venue_update" ?"Alteração de dados da casa" : "Reivindicação de carteira"}</p>
+                <p className="meta-line">Tipo: {claim.requestType === "venue_update" ?"Alteração de dados da casa" : claim.requestType === "artist_inclusion" ? "Inclusão e reivindicação de artista" : claim.requestType === "team_access" ? "Acesso à equipe do artista" : "Reivindicação de carteira"}</p>
                 <p className="meta-line">Status: {claim.status}</p>
+                {claim.legalAcknowledgement ? <p className="meta-line"><strong>Ciência legal registrada:</strong> {new Date(claim.legalAcknowledgement.acceptedAt).toLocaleString("pt-BR")} · {claim.legalAcknowledgement.version}</p> : <p className="meta-line"><strong>Aviso:</strong> solicitação legada sem ciência legal versionada.</p>}
                 {claim.venue?.contactName ?<p className="meta-line">Responsável da casa: {claim.venue.contactName}</p> : null}
                 {claim.venue?.contactPhone ?<p className="meta-line">Telefone da casa: {claim.venue.contactPhone}</p> : null}
                 {claim.justification ?<p className="meta-line">Motivo: {claim.justification}</p> : null}
@@ -2334,6 +2343,9 @@ export default function VenuesAdminPage() {
                 ) : null}
                 {claim.requestType === "venue_update" && claim.requestedChanges ?(
                   <p className="meta-line">Resumo da alteração: {Object.keys(claim.requestedChanges).join(", ")}</p>
+                ) : null}
+                {claim.requestType === "artist_inclusion" && claim.requestedChanges ?(
+                  <div className="claim-evidence-block"><p className="meta-line">Nome artístico: {claim.requestedChanges.artistName}</p><p className="meta-line">Base: {[claim.requestedChanges.baseCity, claim.requestedChanges.baseState].filter(Boolean).join(" - ")}</p><p className="meta-line">Gêneros: {(claim.requestedChanges.genres || []).join(", ") || "Não informado"}</p>{claim.evidence?.responsibleName ? <p className="meta-line">Responsável: {claim.evidence.responsibleName}</p> : null}{claim.evidence?.responsiblePhone ? <p className="meta-line">Contato: {claim.evidence.responsiblePhone}</p> : null}{claim.evidence?.claimantDocument ? <p className="meta-line">Documento: {claim.evidence.claimantDocument}</p> : null}{claim.evidence?.relationshipRole ? <p className="meta-line">Vínculo: {claim.evidence.relationshipRole}</p> : null}</div>
                 ) : null}
               </div>
               {claim.status === "pending" ?(
@@ -3231,6 +3243,7 @@ export default function VenuesAdminPage() {
           </article>
         </div>
       ) : null}
+      {claimLegalModal}
     </section>
   );
 }
