@@ -237,7 +237,7 @@ router.delete("/venues/:id/my-access", requireAuth, requireRole(["venue_manager"
 router.get("/artists", listArtists);
 router.get("/artists/:id", getArtistById);
 router.get("/artists/:id/profile", getArtistProfile);
-router.get("/artist-epk/:ref", requireFeatureFlag("ARTIST_EPK_ENABLED"), getArtistEpk);
+router.get("/artist-epk/:ref", getArtistEpk);
 router.post("/artist-bookings", requireFeatureFlag("ARTIST_BOOKING_REQUESTS_ENABLED"), artistBookingLimiter, createArtistBookingRequest);
 router.post("/artists/:id/follow", requireAuth, followArtist);
 router.delete("/artists/:id/follow", requireAuth, unfollowArtist);

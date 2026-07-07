@@ -32,8 +32,8 @@ describe("artist EPK foundation", () => {
     expect(publicMapper).toContain("bookingAvailable:");
   });
 
-  it("guards rollout and private editing with feature flags and auth", () => {
-    expect(routes).toContain('requireFeatureFlag("ARTIST_EPK_ENABLED"), getArtistEpk');
+  it("keeps public EPK open and guards private editing with feature flags and auth", () => {
+    expect(routes).toContain('router.get("/artist-epk/:ref", getArtistEpk)');
     expect(routes).toContain('requireAuth, requireFeatureFlag("ARTIST_SELF_SERVICE_ENABLED"), updateMyArtistProfile');
   });
 });
