@@ -103,7 +103,7 @@ function eventPayload(event) {
     type: event.type,
     tags: event.tags,
     imageUrl: event.imageUrl || event.venue?.imageUrl || "",
-    venue: event.venue ? { id: event.venue.id, name: event.venue.name, neighborhood: event.venue.neighborhood, region: event.venue.region, city: event.venue.city, state: event.venue.state } : null
+    venue: event.venue ? { id: event.venue.id, name: event.venue.name, address: event.venue.address, neighborhood: event.venue.neighborhood, region: event.venue.region, city: event.venue.city, state: event.venue.state } : null
   };
 }
 
