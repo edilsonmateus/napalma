@@ -25,6 +25,7 @@ const HelpPage = lazy(() => import("./pages/HelpPage"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
+const AdvertisePage = lazy(() => import("./pages/AdvertisePage"));
 const VenuesAdminPage = lazy(() => import("./pages/VenuesAdminPage"));
 const ProducerDashboardPage = lazy(() => import("./pages/ProducerDashboardPage"));
 const AdsAdminPage = lazy(() => import("./pages/AdsAdminPage"));
@@ -254,6 +255,7 @@ export default function App() {
             />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/anunciar" element={<AdvertisePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/account" element={<RequireAuth user={user}><AccountSettingsPage /></RequireAuth>} />
             <Route path="/reivindicar-artista" element={<RequireAuth user={user}><ArtistClaimDirectoryPage /></RequireAuth>} />

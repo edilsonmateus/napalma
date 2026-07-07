@@ -183,6 +183,7 @@ export default function LoginPage() {
             {isLoading ? "Entrando..." : "Entrar"}
           </button>
           <Link to="/signup" className="auth-btn auth-btn-strong">Criar conta</Link>
+          <Link to="/anunciar" className="auth-btn">Anunciar no 77Gira</Link>
           <Link to="/explore" className="auth-btn">Continuar sem conta</Link>
         </div>
       </form>

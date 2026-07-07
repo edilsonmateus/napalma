@@ -853,6 +853,147 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   flex-wrap: wrap;
 }
 
+.advertise-page {
+  display: grid;
+  gap: 18px;
+}
+
+.advertise-hero {
+  display: grid;
+  gap: 16px;
+  padding: clamp(22px, 4vw, 34px);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), transparent 38%),
+    radial-gradient(circle at 92% 0%, rgba(255,184,28,.16), transparent 28%),
+    #111820;
+}
+
+.advertise-hero h2 {
+  max-width: 780px;
+  margin: 0;
+  color: #eef4fa;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1.02;
+  letter-spacing: -.04em;
+}
+
+.advertise-hero p,
+.advertise-principle-card p,
+.advertise-audience-grid p,
+.advertise-steps p,
+.advertise-final-card p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.advertise-actions,
+.advertise-grid,
+.advertise-audience-grid,
+.advertise-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.advertise-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.advertise-principle-card,
+.advertise-audience-grid .clean-card,
+.advertise-steps .clean-card {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.advertise-principle-card h3,
+.advertise-section-heading h3,
+.advertise-final-card h3 {
+  margin: 0;
+  color: #f5f8fb;
+}
+
+.advertise-section {
+  display: grid;
+  gap: 12px;
+}
+
+.advertise-section-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.advertise-audience-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.advertise-audience-grid strong,
+.advertise-steps strong {
+  color: #f4f7fb;
+}
+
+.advertise-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.advertise-steps span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid rgba(255,184,28,.34);
+  border-radius: 12px;
+  background: rgba(255,184,28,.08);
+  color: #ffd783;
+  font-weight: 800;
+}
+
+.advertise-access-note {
+  display: grid;
+  gap: 6px;
+  border-style: dashed;
+}
+
+.advertise-access-note strong {
+  color: #f4f7fb;
+}
+
+.advertise-access-note code {
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px;
+  padding: 2px 6px;
+  background: rgba(0,0,0,.26);
+  color: #ffd783;
+  font-size: .92em;
+}
+
+.advertise-final-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-color: rgba(255,184,28,.22);
+}
+
+@media (max-width: 900px) {
+  .advertise-grid,
+  .advertise-audience-grid,
+  .advertise-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .advertise-final-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 @media (min-width: 920px) {
   .advertiser-entry-grid {
     grid-template-columns: minmax(0, 1.05fr) minmax(360px, .75fr);

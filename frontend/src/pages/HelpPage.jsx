@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import BackLink from "../components/common/BackLink";
 
 export default function HelpPage() {
@@ -17,7 +18,7 @@ export default function HelpPage() {
 
       <article className="clean-card legal-card"><h3>Casas e produtores</h3><ul className="legal-list"><li>Casas e produtores veem somente os cadastros autorizados por seu papel e vínculos aprovados.</li><li>Mantenha endereço, região, imagem, contatos, programação, preços e horários corretos.</li><li>Revise eventos antes de publicar; informações encerradas deixam de aparecer na agenda pública.</li><li>Convites e acessos devem ser concedidos apenas a pessoas da operação.</li></ul></article>
 
-      <article className="clean-card legal-card"><h3>Anunciantes e campanhas</h3><ul className="legal-list"><li>A Central do Anunciante aparece quando existe uma conta anunciante vinculada e ativa.</li><li>Campanhas e criativos começam como rascunho e podem exigir envio para revisão.</li><li>Utilize imagens nos formatos e proporções indicados e destinos HTTPS confiáveis.</li><li>Aprovação, rejeição ou pedido de ajustes ficam registrados no fluxo de revisão.</li></ul></article>
+      <article className="clean-card legal-card"><h3>Anunciantes e campanhas</h3><ul className="legal-list"><li>Marcas, casas, produtores e artistas podem conhecer a entrada comercial em <Link to="/anunciar">Anunciar no 77Gira</Link>.</li><li>A Central do Anunciante aparece quando existe uma conta anunciante vinculada e ativa.</li><li>Campanhas e criativos começam como rascunho e podem exigir envio para revisão.</li><li>Utilize imagens nos formatos e proporções indicados e destinos HTTPS confiáveis.</li><li>Aprovação, rejeição ou pedido de ajustes ficam registrados no fluxo de revisão.</li><li>Solicitar acesso comercial não compra mídia e não publica anúncios automaticamente.</li></ul></article>
 
       <article className="clean-card legal-card"><h3>Conta, foto e acesso</h3><ul className="legal-list"><li>Em Configurações, toque no avatar para enviar ou substituir sua foto de perfil.</li><li>Se a sessão expirar, entre novamente; suas informações sincronizadas permanecem associadas à conta.</li><li>Não compartilhe senha ou tokens. Em caso de suspeita de acesso indevido, encerre a sessão e procure o suporte.</li><li>Alguns recursos podem estar desativados durante implantação gradual ou manutenção.</li></ul></article>
 

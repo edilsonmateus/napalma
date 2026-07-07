@@ -127,6 +127,10 @@ export default function SettingsPage() {
             <img src="/qrCodeIco.svg" alt="" aria-hidden="true" className="settings-action-icon" />
             QR Code Pro Amigo
           </button>
+
+          <Link to="/anunciar" className="auth-btn">
+            Anunciar no 77Gira
+          </Link>
         </div>
 
         <ManagementHub user={user} canManageVenues={canOpenVenuesPanel} canManageAds={isAdminRole(user?.role)} canManageUsers={isAdminRole(user?.role)}/>

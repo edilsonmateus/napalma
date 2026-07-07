@@ -166,6 +166,7 @@ export default function AccountSettingsPage() {
         <h3>Suporte e informações</h3>
         <div className="settings-list account-settings-links">
           <Link to="/help" className="settings-link-row">Ajuda <ChevronRight size={16}/></Link>
+          <Link to="/anunciar" className="settings-link-row">Anunciar no 77Gira <ChevronRight size={16}/></Link>
           <Link to="/privacy" className="settings-link-row">Privacidade <ChevronRight size={16}/></Link>
           <Link to="/terms" className="settings-link-row">Termos de Uso <ChevronRight size={16}/></Link>
           <Link to="/about" className="settings-link-row">Sobre o 77Gira <ChevronRight size={16}/></Link>
