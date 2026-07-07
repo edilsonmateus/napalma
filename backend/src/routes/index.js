@@ -90,7 +90,7 @@ import {
   updateAdvertiserMembership
 } from "../controllers/advertiserAccounts.controller.js";
 import { approveAdReview, getAdReviewHistory, listAdReviewQueue, rejectAdReview, submitAdReview } from "../controllers/adReviews.controller.js";
-import { createMyAdvertiserCampaign, createMyAdvertiserCreative, listMyAdvertiserAccounts, listMyAdvertiserCampaigns, submitMyAdvertiserReview, updateMyAdvertiserCampaign, updateMyAdvertiserCreative } from "../controllers/advertiserPortal.controller.js";
+import { createMyAdvertiserCampaign, createMyAdvertiserCreative, listMyAdvertiserAccessRequests, listMyAdvertiserAccounts, listMyAdvertiserCampaigns, requestMyAdvertiserAccess, submitMyAdvertiserReview, updateMyAdvertiserCampaign, updateMyAdvertiserCreative } from "../controllers/advertiserPortal.controller.js";
 import { decideMyArtistInvitation, inviteArtistTeamMember, listArtistTeam, listMyArtistInvitations, revokeArtistTeamMember, updateArtistTeamMember } from "../controllers/artistTeam.controller.js";
 
 export const router = Router();
@@ -195,6 +195,8 @@ router.post("/me/history/:eventId", requireAuth, markEventAsAttended);
 router.delete("/me/history/:eventId", requireAuth, unmarkEventAsAttended);
 router.get("/me/achievements", requireAuth, listMyAchievements);
 router.get("/me/advertiser-accounts", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), listMyAdvertiserAccounts);
+router.get("/me/advertiser-access-requests", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), listMyAdvertiserAccessRequests);
+router.post("/me/advertiser-access-requests", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), requestMyAdvertiserAccess);
 router.get("/me/advertiser-accounts/:accountId/campaigns", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), listMyAdvertiserCampaigns);
 router.post("/me/advertiser-accounts/:accountId/campaigns", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), createMyAdvertiserCampaign);
 router.patch("/me/advertiser-campaigns/:campaignId", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), updateMyAdvertiserCampaign);

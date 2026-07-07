@@ -1,4 +1,4 @@
-import { AdSlot } from "@prisma/client";
+import { AdSlot, AdvertiserAccountType } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 
@@ -28,6 +28,15 @@ const creativePayload = z.object({
   fileSizeBytes: z.number().int().positive().max(5 * 1024 * 1024).optional().nullable(),
   checksum: z.string().regex(/^[a-f0-9]{64}$/).optional().nullable(),
   assetVersion: z.number().int().positive().optional()
+});
+const accessRequestPayload = z.object({
+  name: z.string().trim().min(2).max(160),
+  type: z.nativeEnum(AdvertiserAccountType).default("brand"),
+  legalName: z.string().trim().max(200).optional().nullable(),
+  contactEmail: z.string().trim().email().max(200).optional().nullable(),
+  contactPhone: z.string().trim().max(40).optional().nullable(),
+  objective: z.enum(["brand_campaign", "boost_event", "boost_venue", "agency", "other"]).default("brand_campaign"),
+  message: z.string().trim().min(10).max(1200)
 });
 
 const WRITE_ROLES = ["owner", "admin", "campaign_manager"];
@@ -60,6 +69,86 @@ export async function listMyAdvertiserAccounts(req, res, next) {
     });
     res.json({ items: items.map((item) => ({ ...item.account, membership: { id: item.id, role: item.role, status: item.status } })) });
   } catch (error) { next(error); }
+}
+
+export async function listMyAdvertiserAccessRequests(req, res, next) {
+  try {
+    const items = await prisma.advertiserMembership.findMany({
+      where: {
+        userId: req.user.id,
+        status: { in: ["invited", "suspended"] },
+        account: { source: "self_service_request", status: { in: ["draft", "pending_review", "suspended"] } }
+      },
+      include: { account: true },
+      orderBy: { createdAt: "desc" }
+    });
+    return res.json({
+      items: items.map((item) => ({
+        id: item.account.id,
+        name: item.account.name,
+        type: item.account.type,
+        status: item.account.status,
+        source: item.account.source,
+        createdAt: item.account.createdAt,
+        membership: { id: item.id, role: item.role, status: item.status }
+      }))
+    });
+  } catch (error) { return next(error); }
+}
+
+export async function requestMyAdvertiserAccess(req, res, next) {
+  try {
+    const payload = accessRequestPayload.parse(req.body);
+    const existing = await prisma.advertiserMembership.findFirst({
+      where: {
+        userId: req.user.id,
+        status: { not: "revoked" },
+        account: {
+          name: { equals: payload.name, mode: "insensitive" },
+          status: { notIn: ["rejected", "archived"] }
+        }
+      },
+      include: { account: true }
+    });
+    if (existing) {
+      return res.status(409).json({
+        error: "advertiser_request_exists",
+        message: "Ja existe uma conta ou solicitacao para este anunciante."
+      });
+    }
+
+    const notes = [
+      "Solicitacao enviada pela Central do Anunciante.",
+      `Objetivo: ${payload.objective}.`,
+      `Mensagem: ${payload.message}`
+    ].join("\n");
+    const item = await prisma.$transaction(async (tx) => {
+      const account = await tx.advertiserAccount.create({
+        data: {
+          name: payload.name,
+          type: payload.type,
+          status: "pending_review",
+          source: "self_service_request",
+          legalName: payload.legalName || null,
+          contactEmail: payload.contactEmail || req.user.email || null,
+          contactPhone: payload.contactPhone || null,
+          notes,
+          createdByUserId: req.user.id
+        }
+      });
+      const membership = await tx.advertiserMembership.create({
+        data: {
+          accountId: account.id,
+          userId: req.user.id,
+          role: "owner",
+          status: "invited",
+          invitedByUserId: req.user.id
+        }
+      });
+      return { ...account, membership: { id: membership.id, role: membership.role, status: membership.status } };
+    });
+    return res.status(201).json({ item });
+  } catch (error) { return next(error); }
 }
 
 export async function listMyAdvertiserCampaigns(req, res, next) {
