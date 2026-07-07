@@ -138,9 +138,16 @@ export async function getArtistById(id) {
 }
 
 export async function getArtistProfile(id) {
-  const epkEnabled = String(import.meta.env.VITE_ARTIST_EPK_ENABLED || "").toLowerCase() === "true";
-  const { data } = await api.get(epkEnabled ? `/artist-epk/${id}` : `/artists/${id}/profile`);
-  return data.item;
+  try {
+    const { data } = await api.get(`/artist-epk/${id}`);
+    return data.item;
+  } catch (error) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(id);
+    const canFallbackToLegacyProfile = isUuid && [404, 501].includes(error?.response?.status);
+    if (!canFallbackToLegacyProfile) throw error;
+    const { data } = await api.get(`/artists/${id}/profile`);
+    return data.item;
+  }
 }
 
 export async function followArtist(id) {
