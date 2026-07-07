@@ -11,7 +11,8 @@ const prismaMock = vi.hoisted(() => ({
     findMany: vi.fn(),
     findUnique: vi.fn(),
     create: vi.fn(),
-    update: vi.fn()
+    update: vi.fn(),
+    updateMany: vi.fn()
   },
   adCampaign: {
     findUnique: vi.fn(),
@@ -19,15 +20,18 @@ const prismaMock = vi.hoisted(() => ({
   },
   user: {
     findUnique: vi.fn()
-  }
+  },
+  $transaction: vi.fn()
 }));
 
 vi.mock("../src/lib/prisma.js", () => ({ prisma: prismaMock }));
 
 import {
+  approveAdvertiserAccessRequest,
   createAdvertiserAccount,
   createAdvertiserMembership,
   listAdvertiserAccounts,
+  rejectAdvertiserAccessRequest,
   revokeAdvertiserMembership,
   setCampaignAdvertiserAccount
 } from "../src/controllers/advertiserAccounts.controller.js";
@@ -60,7 +64,10 @@ function account(overrides = {}) {
   };
 }
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  prismaMock.$transaction.mockImplementation((callback) => callback(prismaMock));
+});
 
 describe("Ads advertiser accounts admin API", () => {
   it("lists accounts without exposing document number", async () => {
@@ -207,5 +214,74 @@ describe("Ads advertiser accounts admin API", () => {
 
     expect(res.status).toHaveBeenCalledWith(409);
     expect(prismaMock.adCampaign.update).not.toHaveBeenCalled();
+  });
+
+  it("approves a self-service advertiser request and activates invited memberships", async () => {
+    prismaMock.advertiserAccount.findUnique.mockResolvedValue(account({
+      status: "pending_review",
+      source: "self_service_request",
+      memberships: [{ id: MEMBERSHIP_ID, status: "invited" }]
+    }));
+    prismaMock.advertiserMembership.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.advertiserAccount.update.mockResolvedValue(account({
+      status: "active",
+      source: "self_service_request",
+      approvedByUserId: USER_ID,
+      memberships: [{ id: MEMBERSHIP_ID, status: "active" }],
+      campaigns: []
+    }));
+    const res = response();
+
+    await approveAdvertiserAccessRequest(
+      { params: { id: ACCOUNT_ID }, user: { id: USER_ID } },
+      res,
+      vi.fn()
+    );
+
+    expect(prismaMock.advertiserMembership.updateMany).toHaveBeenCalledWith({
+      where: { accountId: ACCOUNT_ID, status: "invited" },
+      data: { status: "active", acceptedAt: expect.any(Date) }
+    });
+    expect(prismaMock.advertiserAccount.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: ACCOUNT_ID },
+      data: expect.objectContaining({
+        status: "active",
+        approvedByUserId: USER_ID,
+        approvedAt: expect.any(Date)
+      })
+    }));
+  });
+
+  it("rejects a pending advertiser request and revokes pending memberships", async () => {
+    prismaMock.advertiserAccount.findUnique.mockResolvedValue(account({
+      status: "pending_review",
+      source: "self_service_request"
+    }));
+    prismaMock.advertiserMembership.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.advertiserAccount.update.mockResolvedValue(account({
+      status: "rejected",
+      source: "self_service_request",
+      memberships: [{ id: MEMBERSHIP_ID, status: "revoked" }],
+      campaigns: []
+    }));
+    const res = response();
+
+    await rejectAdvertiserAccessRequest(
+      { params: { id: ACCOUNT_ID }, body: { reason: "fora de escopo" }, user: { id: USER_ID } },
+      res,
+      vi.fn()
+    );
+
+    expect(prismaMock.advertiserMembership.updateMany).toHaveBeenCalledWith({
+      where: { accountId: ACCOUNT_ID, status: { in: ["invited", "suspended"] } },
+      data: { status: "revoked" }
+    });
+    expect(prismaMock.advertiserAccount.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: ACCOUNT_ID },
+      data: expect.objectContaining({
+        status: "rejected",
+        notes: expect.stringContaining("fora de escopo")
+      })
+    }));
   });
 });

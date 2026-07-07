@@ -84,6 +84,8 @@ import {
   getAdvertiserAccount,
   listAdvertiserAccounts,
   listAdvertiserMemberships,
+  approveAdvertiserAccessRequest,
+  rejectAdvertiserAccessRequest,
   revokeAdvertiserMembership,
   setCampaignAdvertiserAccount,
   updateAdvertiserAccount,
@@ -287,6 +289,8 @@ router.get("/ads/advertiser-accounts", ...canManageAdvertiserAccounts, listAdver
 router.get("/ads/advertiser-accounts/:id", ...canManageAdvertiserAccounts, getAdvertiserAccount);
 router.post("/ads/advertiser-accounts", ...canManageAdvertiserAccounts, createAdvertiserAccount);
 router.patch("/ads/advertiser-accounts/:id", ...canManageAdvertiserAccounts, updateAdvertiserAccount);
+router.post("/ads/advertiser-accounts/:id/approve-access", ...canManageAdvertiserAccounts, approveAdvertiserAccessRequest);
+router.post("/ads/advertiser-accounts/:id/reject-access", ...canManageAdvertiserAccounts, rejectAdvertiserAccessRequest);
 router.get("/ads/advertiser-accounts/:accountId/memberships", ...canManageAdvertiserAccounts, listAdvertiserMemberships);
 router.post("/ads/advertiser-accounts/:accountId/memberships", ...canManageAdvertiserAccounts, createAdvertiserMembership);
 router.patch("/ads/advertiser-memberships/:id", ...canManageAdvertiserAccounts, updateAdvertiserMembership);

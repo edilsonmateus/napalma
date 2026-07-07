@@ -33,7 +33,17 @@ export default function ManagementHub({ user, canManageVenues, canManageAds, can
       items.push({ to: "/workspace/artista/equipe", icon: Users, title: "Equipe e acessos", description: "Convide gestores, editores e leitores sem compartilhar a senha da conta.", action: "Gerenciar equipe", badge: "Acessos", chip: "Equipe" });
       items.push({ to: `/artistas/${artist.slug || artist.id}`, icon: ExternalLink, title: "Mídia kit público", description: "Abra o perfil profissional para enviar a casas, imprensa e contratantes.", action: "Abrir EPK", badge: "EPK", chip: "EPK" });
     }
-    if (advertiserAccounts.length) items.push({ to: "/workspace/anunciante", icon: Megaphone, title: "Central do Anunciante", description: "Crie campanhas, acompanhe anúncios e impulsione eventos, artistas ou casas.", action: "Abrir central", badge: "Ads", chip: "Ads" });
+    if (enabled("VITE_ADS_ADVERTISER_ACCOUNTS_ENABLED") && (advertiserAccounts.length || canManageVenues)) {
+      items.push({
+        to: "/workspace/anunciante",
+        icon: Megaphone,
+        title: advertiserAccounts.length ? "Central do Anunciante" : "Solicitar publicidade",
+        description: advertiserAccounts.length ? "Crie campanhas, acompanhe anúncios e impulsione eventos, artistas ou casas." : "Peça acesso para impulsionar uma casa, evento ou campanha com revisão da equipe 77Gira.",
+        action: advertiserAccounts.length ? "Abrir central" : "Solicitar acesso",
+        badge: "Ads",
+        chip: "Ads"
+      });
+    }
     if (canManageVenues) items.push({ to: "/settings/venues", icon: Store, title: "Gestão de casas", description: "Administre casas de samba, programação e acessos operacionais.", action: "Gerenciar casas", badge: "Casas", chip: "Casas" });
     if (canManageAds) items.push({ to: "/settings/ads", icon: Megaphone, title: "Gestão de publicidade", description: "Revise campanhas, criativos, anunciantes e entregas da plataforma.", action: "Gerenciar Ads", badge: "Admin", chip: "Ads Admin" });
     if (canManageUsers) items.push({ to: "/settings/users", icon: Users, title: "Gestão de usuários", description: "Crie contas comuns e autorize usernames oficiais da marca.", action: "Gerenciar usuários", badge: "Admin", chip: "Usuários" });

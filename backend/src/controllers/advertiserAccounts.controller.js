@@ -43,6 +43,9 @@ const updateMembershipSchema = z
   })
   .refine((payload) => Object.keys(payload).length > 0, "Informe ao menos uma alteracao.");
 const campaignAccountSchema = z.object({ accountId: uuid.nullable() });
+const accessDecisionSchema = z.object({
+  reason: z.string().trim().max(1000).optional().nullable()
+});
 
 function mapAccount(item, { includeSensitive = false } = {}) {
   const mapped = {
@@ -163,6 +166,104 @@ export async function updateAdvertiserAccount(req, res, next) {
     const item = await prisma.advertiserAccount.update({
       where: { id },
       data: { ...payload, ...approvalData }
+    });
+    return res.json({ item: mapAccount(item, { includeSensitive: true }) });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function approveAdvertiserAccessRequest(req, res, next) {
+  try {
+    const { id } = idSchema.parse(req.params);
+    const account = await prisma.advertiserAccount.findUnique({
+      where: { id },
+      include: { memberships: true }
+    });
+    if (!account) {
+      return res.status(404).json({
+        error: "advertiser_account_not_found",
+        message: "Conta anunciante nao encontrada."
+      });
+    }
+    if (account.status === "archived") {
+      return res.status(409).json({
+        error: "advertiser_account_archived",
+        message: "Conta arquivada nao pode ser aprovada."
+      });
+    }
+
+    const now = new Date();
+    const item = await prisma.$transaction(async (tx) => {
+      await tx.advertiserMembership.updateMany({
+        where: { accountId: id, status: "invited" },
+        data: { status: "active", acceptedAt: now }
+      });
+      return tx.advertiserAccount.update({
+        where: { id },
+        data: {
+          status: "active",
+          approvedByUserId: req.user.id,
+          approvedAt: now
+        },
+        include: {
+          memberships: {
+            orderBy: { createdAt: "asc" },
+            include: { user: { select: { id: true, email: true, username: true, role: true } } }
+          },
+          campaigns: {
+            orderBy: { updatedAt: "desc" },
+            select: { id: true, name: true, advertiser: true, status: true, isEnabled: true }
+          }
+        }
+      });
+    });
+    return res.json({ item: mapAccount(item, { includeSensitive: true }) });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function rejectAdvertiserAccessRequest(req, res, next) {
+  try {
+    const { id } = idSchema.parse(req.params);
+    const payload = accessDecisionSchema.parse(req.body ?? {});
+    const account = await prisma.advertiserAccount.findUnique({ where: { id } });
+    if (!account) {
+      return res.status(404).json({
+        error: "advertiser_account_not_found",
+        message: "Conta anunciante nao encontrada."
+      });
+    }
+    if (account.status === "active") {
+      return res.status(409).json({
+        error: "advertiser_account_active",
+        message: "Conta ativa nao deve ser rejeitada por este atalho."
+      });
+    }
+
+    const notes = [account.notes, payload.reason ? `Rejeitado pela equipe 77Gira: ${payload.reason}` : null]
+      .filter(Boolean)
+      .join("\n\n");
+    const item = await prisma.$transaction(async (tx) => {
+      await tx.advertiserMembership.updateMany({
+        where: { accountId: id, status: { in: ["invited", "suspended"] } },
+        data: { status: "revoked" }
+      });
+      return tx.advertiserAccount.update({
+        where: { id },
+        data: { status: "rejected", notes },
+        include: {
+          memberships: {
+            orderBy: { createdAt: "asc" },
+            include: { user: { select: { id: true, email: true, username: true, role: true } } }
+          },
+          campaigns: {
+            orderBy: { updatedAt: "desc" },
+            select: { id: true, name: true, advertiser: true, status: true, isEnabled: true }
+          }
+        }
+      });
     });
     return res.json({ item: mapAccount(item, { includeSensitive: true }) });
   } catch (error) {

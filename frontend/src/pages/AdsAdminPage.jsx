@@ -17,6 +17,7 @@ import {
   useAdPlacementsQuery,
   useAdvertiserAccountQuery,
   useAdvertiserAccountsQuery,
+  useApproveAdvertiserAccessRequestMutation,
   useAdsActivityQuery,
   useAdDeliveryQuery,
   useAdsReportQuery,
@@ -24,6 +25,7 @@ import {
   useCreateAdvertiserAccountMutation,
   useCreateAdvertiserMembershipMutation,
   useCreateAdCreativeMutation,
+  useRejectAdvertiserAccessRequestMutation,
   useRevokeAdvertiserMembershipMutation,
   useSetCampaignAdvertiserAccountMutation,
   useSubmitAdReviewMutation,
@@ -143,6 +145,8 @@ export default function AdsAdminPage() {
   const uploadAdCreativeAsset = useUploadAdCreativeAssetMutation();
   const createAdvertiserAccount = useCreateAdvertiserAccountMutation();
   const updateAdvertiserAccount = useUpdateAdvertiserAccountMutation();
+  const approveAdvertiserAccess = useApproveAdvertiserAccessRequestMutation();
+  const rejectAdvertiserAccess = useRejectAdvertiserAccessRequestMutation();
   const createAdvertiserMembership = useCreateAdvertiserMembershipMutation();
   const updateAdvertiserMembership = useUpdateAdvertiserMembershipMutation();
   const revokeAdvertiserMembership = useRevokeAdvertiserMembershipMutation();
@@ -202,6 +206,10 @@ export default function AdsAdminPage() {
         .includes(query)
     );
   }, [advertiserAccounts, advertiserQuery]);
+  const pendingAdvertiserRequests = useMemo(
+    () => advertiserAccounts.filter((item) => item.source === "self_service_request" && item.status === "pending_review"),
+    [advertiserAccounts]
+  );
   const unlinkedCampaigns = useMemo(
     () => campaigns.filter((campaign) => !campaign.advertiserAccountId),
     [campaigns]
@@ -329,6 +337,28 @@ export default function AdsAdminPage() {
       setMessage(editingAdvertiserId ? "Conta anunciante atualizada." : "Conta anunciante criada.");
     } catch (error) {
       setMessage(error?.response?.data?.message || "Nao foi possivel salvar a conta anunciante.");
+    }
+  }
+
+  async function handleApproveAdvertiserAccess(item) {
+    setMessage("");
+    try {
+      const updated = await approveAdvertiserAccess.mutateAsync({ id: item.id });
+      setSelectedAdvertiserId(updated.id);
+      setMessage("Solicitacao aprovada. A conta anunciante e seus acessos foram ativados.");
+    } catch (error) {
+      setMessage(error?.response?.data?.message || "Nao foi possivel aprovar a solicitacao.");
+    }
+  }
+
+  async function handleRejectAdvertiserAccess(item) {
+    setMessage("");
+    try {
+      const updated = await rejectAdvertiserAccess.mutateAsync({ id: item.id, payload: {} });
+      setSelectedAdvertiserId(updated.id);
+      setMessage("Solicitacao rejeitada e acessos pendentes revogados.");
+    } catch (error) {
+      setMessage(error?.response?.data?.message || "Nao foi possivel rejeitar a solicitacao.");
     }
   }
 
@@ -744,6 +774,45 @@ export default function AdsAdminPage() {
             Nova conta
           </button>
         </div>
+
+        {pendingAdvertiserRequests.length ? (
+          <div className="advertiser-approval-queue">
+            <div className="advertiser-approval-heading">
+              <div>
+                <span className="eyebrow">Fila comercial</span>
+                <strong>Solicitacoes de acesso aguardando decisao</strong>
+                <p className="meta-line">Aprovacao ativa a conta anunciante e libera o workspace para o solicitante.</p>
+              </div>
+              <span className="status-badge status-pending_review">{pendingAdvertiserRequests.length} pendente(s)</span>
+            </div>
+            {pendingAdvertiserRequests.map((item) => (
+              <article className="advertiser-approval-card" key={item.id}>
+                <div>
+                  <strong>{item.name}</strong>
+                  <p className="meta-line">{item.type} · {item.contactEmail || "sem e-mail"} · {item.legalName || "sem razao social"}</p>
+                </div>
+                <div className="form-actions-inline">
+                  <button
+                    type="button"
+                    className="chip active"
+                    disabled={approveAdvertiserAccess.isPending || rejectAdvertiserAccess.isPending}
+                    onClick={() => handleApproveAdvertiserAccess(item)}
+                  >
+                    Aprovar acesso
+                  </button>
+                  <button
+                    type="button"
+                    className="chip"
+                    disabled={approveAdvertiserAccess.isPending || rejectAdvertiserAccess.isPending}
+                    onClick={() => handleRejectAdvertiserAccess(item)}
+                  >
+                    Rejeitar
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : null}
 
         {showAdvertiserForm ? (
           <form className="venue-form clean-card advertiser-account-form" onSubmit={handleSaveAdvertiser}>

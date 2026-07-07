@@ -7,6 +7,8 @@ import {
   createAdvertiserMembership,
   getAdvertiserAccount,
   getAdvertiserAccounts,
+  approveAdvertiserAccessRequest,
+  rejectAdvertiserAccessRequest,
   revokeAdvertiserMembership,
   setCampaignAdvertiserAccount,
   updateAdvertiserAccount,
@@ -193,6 +195,28 @@ export function useUpdateAdvertiserAccountMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, payload }) => updateAdvertiserAccount(id, payload),
+    onSuccess: (item) => {
+      queryClient.invalidateQueries({ queryKey: ["advertiser-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["advertiser-account", item.id] });
+    }
+  });
+}
+
+export function useApproveAdvertiserAccessRequestMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }) => approveAdvertiserAccessRequest(id),
+    onSuccess: (item) => {
+      queryClient.invalidateQueries({ queryKey: ["advertiser-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["advertiser-account", item.id] });
+    }
+  });
+}
+
+export function useRejectAdvertiserAccessRequestMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => rejectAdvertiserAccessRequest(id, payload),
     onSuccess: (item) => {
       queryClient.invalidateQueries({ queryKey: ["advertiser-accounts"] });
       queryClient.invalidateQueries({ queryKey: ["advertiser-account", item.id] });

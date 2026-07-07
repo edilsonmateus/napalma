@@ -82,7 +82,13 @@ export default function AdvertiserPortalPage() {
       setMessage("Solicitacao enviada. A equipe 77Gira vai analisar e liberar a Central do Anunciante quando estiver tudo certo.");
       await loadAccounts();
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Nao foi possivel enviar a solicitacao.");
+      if (error?.response?.status === 401) {
+        setMessage("Sua sessao expirou antes do envio. Entre novamente e reenvie a solicitacao; os dados digitados foram mantidos nesta tela enquanto ela permanecer aberta.");
+      } else if (error?.response?.status === 404) {
+        setMessage("O backend ainda nao reconhece o endpoint de solicitacao de anunciante. Aguarde o deploy da API e tente novamente.");
+      } else {
+        setMessage(error?.response?.data?.message || "Nao foi possivel enviar a solicitacao.");
+      }
     } finally {
       setIsRequesting(false);
     }
@@ -119,13 +125,17 @@ export default function AdvertiserPortalPage() {
       <div className="advertiser-entry-grid">
         <article className="clean-card advertiser-entry-hero">
           <span className="eyebrow">Acesso comercial</span>
-          <h3>Anuncie no 77Gira sem perder o controle da marca.</h3>
-          <p>Solicite sua conta anunciante para impulsionar eventos, casas, artistas ou campanhas institucionais. A equipe 77Gira revisa o pedido antes de liberar a criacao de campanhas.</p>
+          <h3>Solicite uma conta anunciante para operar campanhas com revisao 77Gira.</h3>
+          <p>Este ambiente e destinado a marcas, casas, produtores, artistas e representantes autorizados. A criacao de campanhas so e liberada apos validacao comercial e revisao da equipe 77Gira.</p>
           <div className="advertiser-benefits">
             <span>Campanhas por slot</span>
-            <span>Upload de criativos</span>
-            <span>Revisao antes de publicar</span>
+            <span>Revisao editorial</span>
+            <span>Upload controlado</span>
             <span>Metricas de exibicao</span>
+          </div>
+          <div className="advertiser-compliance-note">
+            <strong>Importante</strong>
+            <p>O envio desta solicitacao nao compra midia, nao publica anuncios e nao garante aprovacao automatica. Dados informados podem ser usados para validar legitimidade comercial, titularidade e adequacao da campanha.</p>
           </div>
           {hasPendingRequest ? (
             <div className="advertiser-pending-card">

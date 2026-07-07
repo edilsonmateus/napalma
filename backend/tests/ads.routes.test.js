@@ -74,6 +74,8 @@ describe("Ads route contracts", () => {
     ["/ads/advertiser-accounts", "post"],
     ["/ads/advertiser-accounts/:id", "get"],
     ["/ads/advertiser-accounts/:id", "patch"],
+    ["/ads/advertiser-accounts/:id/approve-access", "post"],
+    ["/ads/advertiser-accounts/:id/reject-access", "post"],
     ["/ads/advertiser-accounts/:accountId/memberships", "get"],
     ["/ads/advertiser-accounts/:accountId/memberships", "post"],
     ["/ads/advertiser-memberships/:id", "patch"],

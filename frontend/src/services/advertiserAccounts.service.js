@@ -20,6 +20,16 @@ export async function updateAdvertiserAccount(id, payload) {
   return data.item;
 }
 
+export async function approveAdvertiserAccessRequest(id) {
+  const { data } = await api.post(`/ads/advertiser-accounts/${id}/approve-access`);
+  return data.item;
+}
+
+export async function rejectAdvertiserAccessRequest(id, payload = {}) {
+  const { data } = await api.post(`/ads/advertiser-accounts/${id}/reject-access`, payload);
+  return data.item;
+}
+
 export async function createAdvertiserMembership(accountId, payload) {
   const { data } = await api.post(`/ads/advertiser-accounts/${accountId}/memberships`, payload);
   return data.item;
