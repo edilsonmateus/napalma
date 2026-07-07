@@ -46,6 +46,7 @@ export default function ArtistProfilePage() {
   const [showClaim, setShowClaim] = useState(false);
   const [showBooking, setShowBooking] = useState(false);
   const [claimMessage, setClaimMessage] = useState("");
+  const [claimLegalAcknowledgement, setClaimLegalAcknowledgement] = useState(null);
   const [claim, setClaim] = useState({
     responsibleName: "",
     responsiblePhone: "",
@@ -88,7 +89,7 @@ export default function ArtistProfilePage() {
 
   async function submitClaim(event) {
     event.preventDefault();
-    const legalAcknowledgement = await requestAcknowledgement();
+    const legalAcknowledgement = claimLegalAcknowledgement || await requestAcknowledgement();
     if (!legalAcknowledgement) return;
     try {
       await createClaim.mutateAsync({
@@ -103,9 +104,22 @@ export default function ArtistProfilePage() {
       });
       setClaimMessage("Reivindicação enviada para análise.");
       setShowClaim(false);
+      setClaimLegalAcknowledgement(null);
     } catch (error) {
       setClaimMessage(error?.response?.data?.message || "Não foi possível enviar a reivindicação.");
     }
+  }
+
+  async function startClaimFlow() {
+    const legalAcknowledgement = await requestAcknowledgement();
+    if (!legalAcknowledgement) return;
+    setClaimLegalAcknowledgement(legalAcknowledgement);
+    setShowClaim(true);
+  }
+
+  function cancelClaimFlow() {
+    setShowClaim(false);
+    setClaimLegalAcknowledgement(null);
   }
 
   return (
@@ -153,7 +167,7 @@ export default function ArtistProfilePage() {
             <strong>{artist.isClaimed ? "Este perfil já possui uma equipe" : "Este perfil ainda não foi reivindicado"}</strong>
             <p>{artist.isClaimed ? `Atualmente ${artist.teamCount || 1} pessoa(s) administram este artista. Se você faz parte da equipe, solicite acesso.` : "É você ou faz parte da equipe? Transforme este perfil em uma vitrine profissional oficial."}</p>
           </div>
-          {user ? <button className="btn-primary" onClick={() => setShowClaim(true)}>{artist.isClaimed ? "Solicitar acesso à equipe" : "Reivindicar perfil"}</button> : <Link className="btn-primary" to="/login">Entrar para continuar</Link>}
+          {user ? <button className="btn-primary" onClick={startClaimFlow}>{artist.isClaimed ? "Solicitar acesso à equipe" : "Reivindicar perfil"}</button> : <Link className="btn-primary" to="/login">Entrar para continuar</Link>}
         </aside>
       ) : null}
       {artist.pendingClaim ? (
@@ -215,7 +229,7 @@ export default function ArtistProfilePage() {
             <input placeholder="Instagram oficial (opcional)" value={claim.officialInstagram} onChange={(e) => setClaim({ ...claim, officialInstagram: e.target.value })} />
             <input type="url" placeholder="Site oficial (opcional)" value={claim.officialWebsite} onChange={(e) => setClaim({ ...claim, officialWebsite: e.target.value })} />
             <textarea required minLength={5} placeholder="Conte como podemos comprovar este vínculo" value={claim.justification} onChange={(e) => setClaim({ ...claim, justification: e.target.value })} />
-            <div className="form-actions-inline"><button className="btn-primary" disabled={createClaim.isPending}>Enviar para análise</button><button className="chip" type="button" onClick={() => setShowClaim(false)}>Cancelar</button></div>
+            <div className="form-actions-inline"><button className="btn-primary" disabled={createClaim.isPending}>Enviar para análise</button><button className="chip" type="button" onClick={cancelClaimFlow}>Cancelar</button></div>
           </form>
         </div>
       ) : null}
