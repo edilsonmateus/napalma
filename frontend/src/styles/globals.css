@@ -2086,7 +2086,7 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 .event-detail-cover {
   border-radius: 16px;
   margin: 12px 0;
-  height: 220px;
+  height: 330px;
 }
 
 .event-region {
@@ -5861,7 +5861,7 @@ button.venue-card {
 }
 
 .event-decision .event-detail-cover {
-  height: 250px;
+  height: 375px;
 }
 
 .decision-card {
@@ -6448,11 +6448,11 @@ button.venue-card {
   }
 
   .event-detail-cover {
-    height: 176px;
+    height: 264px;
   }
 
   .event-decision .event-detail-cover {
-    height: 196px;
+    height: 294px;
   }
 
   .chip-row {
