@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import VerifiedBadge from "../components/common/VerifiedBadge";
 import ImpactSummaryPanel from "../components/admin/ImpactSummaryPanel";
 import AcquisitionAdminPanel from "./admin/AcquisitionAdminPanel";
@@ -238,6 +238,19 @@ function kitWithArticle(name, article) {
   const cleanName = String(name || "").trim();
   const cleanArticle = String(article || inferKitArticle(cleanName)).trim();
   return cleanArticle ?`${cleanArticle} ${cleanName}` : cleanName;
+}
+
+function buildAdvertiserIntentUrl({ source = "venues_admin", name, accountName, campaignName, type = "venue", objective = "boost_venue", message }) {
+  const params = new URLSearchParams({
+    source,
+    type,
+    objective,
+    name: name || "",
+    accountName: accountName || name || "",
+    campaignName: campaignName || "",
+    message: message || "Quero solicitar acesso para impulsionar minha casa, agenda ou uma campanha vinculada à minha operação no 77Gira."
+  });
+  return `/workspace/anunciante?${params.toString()}`;
 }
 
 function kitWithDeRelation(name, article) {
@@ -3089,6 +3102,20 @@ export default function VenuesAdminPage() {
               ) : null}
             </div>
             <div className="venue-actions">
+              <Link
+                className="chip"
+                to={buildAdvertiserIntentUrl({
+                  source: "event_admin",
+                  name: eventItem.venue || houseDisplayName,
+                  accountName: eventItem.venue || houseDisplayName,
+                  campaignName: eventItem.title,
+                  type: isHouseRole ? "venue" : "producer",
+                  objective: "boost_event",
+                  message: `Quero impulsionar o evento "${eventItem.title}", na casa ${eventItem.venue}, em ${eventItem.region}.`
+                })}
+              >
+                Impulsionar
+              </Link>
               <button className="chip" onClick={() => prepare77FirstKit(eventItem)} disabled={firstKitLoadingId === eventItem.id}>
                 {firstKitLoadingId === eventItem.id ?"Preparando..." : "77First"}
               </button>

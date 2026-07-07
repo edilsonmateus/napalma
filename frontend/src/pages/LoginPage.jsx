@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Share2 } from "lucide-react";
 import QRCode from "qrcode";
 import { login, loginAsLocalAdmin } from "../services/auth.service";
@@ -18,6 +18,7 @@ const DEMO_ACCOUNTS = [
 export default function LoginPage() {
   const allowDemoAuth = import.meta.env.DEV && import.meta.env.VITE_ENABLE_TEST_LOGIN === "true";
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, setAuth } = useAuthStore();
   const [email, setEmail] = useState(allowDemoAuth ? "lia@napalma.app" : "");
   const [password, setPassword] = useState(allowDemoAuth ? "123456" : "");
@@ -38,9 +39,14 @@ export default function LoginPage() {
     const configured = import.meta.env.VITE_PUBLIC_APP_URL;
     return configured || window.location.origin;
   }, []);
+  const redirectTo = useMemo(() => {
+    const from = location.state?.from;
+    if (typeof from === "string" && from.startsWith("/") && !from.startsWith("/login")) return from;
+    return "";
+  }, [location.state]);
 
   if (user) {
-    return <Navigate to={getRoleHome(user.role)} replace />;
+    return <Navigate to={redirectTo || getRoleHome(user.role)} replace />;
   }
 
   useEffect(() => {
@@ -81,7 +87,7 @@ export default function LoginPage() {
     try {
       const data = await login({ email, password, visitorId: getOrCreateVisitorId() });
       setAuth({ token: data.accessToken, refreshToken: data.refreshToken, user: data.user });
-      navigate(getRoleHome(data.user.role), { replace: true });
+      navigate(redirectTo || getRoleHome(data.user.role), { replace: true });
     } catch (error) {
       setMessage(error?.response?.data?.message || "Não foi possível entrar agora.");
     } finally {

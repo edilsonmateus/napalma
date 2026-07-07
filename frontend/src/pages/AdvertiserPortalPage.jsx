@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   createMyAdvertiserCampaign,
   createMyAdvertiserCreative,
@@ -30,16 +31,48 @@ const OBJECTIVES = [
   ["other", "Outro objetivo"]
 ];
 const INITIAL_REQUEST = { name: "", type: "brand", legalName: "", contactEmail: "", contactPhone: "", objective: "brand_campaign", message: "" };
+const VALID_TYPES = new Set(ACCOUNT_TYPES.map(([value]) => value));
+const VALID_OBJECTIVES = new Set(OBJECTIVES.map(([value]) => value));
+const REQUEST_DRAFT_KEY = "77gira.ads.advertiserRequestDraft";
+
+function readRequestDraft(email = "") {
+  try {
+    const raw = localStorage.getItem(REQUEST_DRAFT_KEY);
+    if (!raw) return { ...INITIAL_REQUEST, contactEmail: email || "" };
+    const parsed = JSON.parse(raw);
+    return {
+      ...INITIAL_REQUEST,
+      ...parsed,
+      type: VALID_TYPES.has(parsed?.type) ? parsed.type : INITIAL_REQUEST.type,
+      objective: VALID_OBJECTIVES.has(parsed?.objective) ? parsed.objective : INITIAL_REQUEST.objective,
+      contactEmail: parsed?.contactEmail || email || ""
+    };
+  } catch (_error) {
+    return { ...INITIAL_REQUEST, contactEmail: email || "" };
+  }
+}
+
+function hasMeaningfulRequestDraft(draft) {
+  return Boolean(
+    draft?.name?.trim()
+    || draft?.legalName?.trim()
+    || draft?.contactPhone?.trim()
+    || draft?.message?.trim()
+    || draft?.objective !== INITIAL_REQUEST.objective
+    || draft?.type !== INITIAL_REQUEST.type
+  );
+}
 
 export default function AdvertiserPortalPage() {
   const user = useAuthStore((state) => state.user);
+  const [searchParams] = useSearchParams();
   const [accounts, setAccounts] = useState([]);
   const [requests, setRequests] = useState([]);
   const [accountId, setAccountId] = useState("");
   const [data, setData] = useState({ items: [], membership: null });
   const [campaign, setCampaign] = useState({ advertiser: "", name: "", startsAt: "", endsAt: "", runInAllSlots: false });
   const [creative, setCreative] = useState({ campaignId: "", slot: SLOTS[0], title: "", destinationUrl: "", altText: "", asset: null });
-  const [requestForm, setRequestForm] = useState(() => ({ ...INITIAL_REQUEST, contactEmail: user?.email || "" }));
+  const [requestForm, setRequestForm] = useState(() => readRequestDraft(user?.email));
   const [message, setMessage] = useState("");
   const [isRequesting, setIsRequesting] = useState(false);
 
@@ -59,6 +92,40 @@ export default function AdvertiserPortalPage() {
   }
   useEffect(() => { loadAccounts(); }, []);
   useEffect(() => { loadCampaigns(accountId); }, [accountId]);
+  useEffect(() => {
+    try {
+      if (hasMeaningfulRequestDraft(requestForm)) {
+        localStorage.setItem(REQUEST_DRAFT_KEY, JSON.stringify(requestForm));
+      } else {
+        localStorage.removeItem(REQUEST_DRAFT_KEY);
+      }
+    } catch (_error) {
+      // armazenamento local indisponivel
+    }
+  }, [requestForm]);
+  useEffect(() => {
+    const source = searchParams.get("source") || "";
+    if (!source) return;
+    const name = searchParams.get("name") || "";
+    const accountName = searchParams.get("accountName") || name;
+    const campaignName = searchParams.get("campaignName") || name;
+    const type = searchParams.get("type") || "";
+    const objective = searchParams.get("objective") || "";
+    const messageParam = searchParams.get("message") || "";
+    setRequestForm((current) => ({
+      ...current,
+      name: current.name || accountName,
+      type: VALID_TYPES.has(type) ? type : current.type,
+      objective: VALID_OBJECTIVES.has(objective) ? objective : current.objective,
+      message: current.message || messageParam,
+      contactEmail: current.contactEmail || user?.email || ""
+    }));
+    setCampaign((current) => ({
+      ...current,
+      advertiser: current.advertiser || accountName,
+      name: current.name || (objective === "boost_event" && campaignName ? `Impulsionamento - ${campaignName}` : "")
+    }));
+  }, [searchParams, user?.email]);
   const canWrite = WRITERS.includes(data.membership?.role);
   const hasPendingRequest = requests.length > 0;
 
@@ -79,6 +146,7 @@ export default function AdvertiserPortalPage() {
         contactPhone: requestForm.contactPhone || null
       });
       setRequestForm({ ...INITIAL_REQUEST, contactEmail: user?.email || "" });
+      try { localStorage.removeItem(REQUEST_DRAFT_KEY); } catch (_error) { /* armazenamento local indisponivel */ }
       setMessage("Solicitacao enviada. A equipe 77Gira vai analisar e liberar a Central do Anunciante quando estiver tudo certo.");
       await loadAccounts();
     } catch (error) {
@@ -161,6 +229,9 @@ export default function AdvertiserPortalPage() {
             {hasPendingRequest ? "Solicitacao ja enviada" : isRequesting ? "Enviando..." : "Enviar solicitacao"}
           </button>
           <small className="meta-line">O envio nao libera anuncios automaticamente. A aprovacao continua com a equipe 77Gira.</small>
+          {hasMeaningfulRequestDraft(requestForm) && !hasPendingRequest ? (
+            <small className="meta-line">Rascunho salvo neste dispositivo. Se a sessao expirar, voce podera voltar e continuar.</small>
+          ) : null}
         </form>
       </div>
     ) : <>

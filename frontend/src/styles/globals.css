@@ -845,6 +845,14 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   color: #f4f7fb;
 }
 
+.producer-event-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 @media (min-width: 920px) {
   .advertiser-entry-grid {
     grid-template-columns: minmax(0, 1.05fr) minmax(360px, .75fr);

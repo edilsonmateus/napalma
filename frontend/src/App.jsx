@@ -48,6 +48,12 @@ function RequireRole({ user, allowedRoles, children }) {
   return children;
 }
 
+function RequireAuth({ user, children }) {
+  const location = useLocation();
+  if (!user) return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />;
+  return children;
+}
+
 export default function App() {
   const location = useLocation();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -249,15 +255,15 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/settings/account" element={user ? <AccountSettingsPage /> : <Navigate to="/login" replace />} />
-            <Route path="/reivindicar-artista" element={user ? <ArtistClaimDirectoryPage /> : <Navigate to="/login" replace />} />
+            <Route path="/settings/account" element={<RequireAuth user={user}><AccountSettingsPage /></RequireAuth>} />
+            <Route path="/reivindicar-artista" element={<RequireAuth user={user}><ArtistClaimDirectoryPage /></RequireAuth>} />
             <Route path="/settings/users" element={isAdminRole(user?.role) ? <UsersAdminPage /> : <Navigate to="/settings" replace />} />
-            <Route path="/workspace/anunciante" element={user ? <AdvertiserPortalPage /> : <Navigate to="/login" replace />} />
-            <Route path="/workspace/artista" element={user ? <ArtistWorkspacePage /> : <Navigate to="/login" replace />} />
-            <Route path="/workspace/artista/contratacoes" element={user ? <ArtistBookingsPage /> : <Navigate to="/login" replace />} />
-            <Route path="/workspace/artista/midia" element={user ? <ArtistMediaPage /> : <Navigate to="/login" replace />} />
-            <Route path="/workspace/artista/desempenho" element={user ? <ArtistInsightsPage /> : <Navigate to="/login" replace />} />
-            <Route path="/workspace/artista/equipe" element={user ? <ArtistTeamPage /> : <Navigate to="/login" replace />} />
+            <Route path="/workspace/anunciante" element={<RequireAuth user={user}><AdvertiserPortalPage /></RequireAuth>} />
+            <Route path="/workspace/artista" element={<RequireAuth user={user}><ArtistWorkspacePage /></RequireAuth>} />
+            <Route path="/workspace/artista/contratacoes" element={<RequireAuth user={user}><ArtistBookingsPage /></RequireAuth>} />
+            <Route path="/workspace/artista/midia" element={<RequireAuth user={user}><ArtistMediaPage /></RequireAuth>} />
+            <Route path="/workspace/artista/desempenho" element={<RequireAuth user={user}><ArtistInsightsPage /></RequireAuth>} />
+            <Route path="/workspace/artista/equipe" element={<RequireAuth user={user}><ArtistTeamPage /></RequireAuth>} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/help" element={<HelpPage />} />

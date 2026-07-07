@@ -28,6 +28,19 @@ function eventsThisWeek(events) {
   }).length;
 }
 
+function buildAdvertiserIntentUrl({ name, accountName, campaignName, type = "producer", objective = "boost_event", message }) {
+  const params = new URLSearchParams({
+    source: "producer_dashboard",
+    type,
+    objective,
+    name: name || "",
+    accountName: accountName || name || "",
+    campaignName: campaignName || "",
+    message: message || "Quero solicitar acesso para impulsionar eventos, casas ou campanhas vinculadas à minha atuação como produtor no 77Gira."
+  });
+  return `/workspace/anunciante?${params.toString()}`;
+}
+
 export default function ProducerDashboardPage() {
   const user = useAuthStore((state) => state.user);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -196,6 +209,7 @@ export default function ProducerDashboardPage() {
           <div className="admin-shortcuts producer-shortcuts">
             <Link to="/settings/venues" className="btn-primary">Abrir Gestão Completa</Link>
             <Link to="/settings/venues?section=events" className="chip">Criar Evento</Link>
+            <Link to={buildAdvertiserIntentUrl({ name: producerName })} className="chip">Solicitar publicidade</Link>
           </div>
 
           {showOverview ? (
@@ -307,7 +321,21 @@ export default function ProducerDashboardPage() {
                       </p>
                       <p className="meta-line">{event.venue} - {event.region}</p>
                     </div>
-                    <small className="meta-line">{new Date(event.startsAt).toLocaleString("pt-BR")}</small>
+                    <div className="producer-event-actions">
+                      <small className="meta-line">{new Date(event.startsAt).toLocaleString("pt-BR")}</small>
+                      <Link
+                        className="chip"
+                        to={buildAdvertiserIntentUrl({
+                          name: producerName,
+                          accountName: producerName,
+                          campaignName: event.title,
+                          objective: "boost_event",
+                          message: `Quero impulsionar o evento "${event.title}", na casa ${event.venue}, em ${event.region}.`
+                        })}
+                      >
+                        Impulsionar
+                      </Link>
+                    </div>
                   </article>
                 ))}
               </div>
