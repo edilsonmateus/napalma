@@ -170,17 +170,17 @@ export default function AdsAdminPage() {
       setMessage(decision === "approve" ? "Item aprovado." : "Item rejeitado.");
       setReviewReason("");
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Nao foi possivel registrar a decisao.");
+      setMessage(error?.response?.data?.message || "Não foi possível registrar a decisão.");
     }
   }
 
   async function handleSubmitReview(entityType, id) {
     try {
       await submitReview.mutateAsync({ entityType, id });
-      setMessage("Item enviado para revisao.");
+      setMessage("Item enviado para revisão.");
       setAdsSection("reviews");
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Nao foi possivel enviar para revisao.");
+      setMessage(error?.response?.data?.message || "Não foi possível enviar para revisão.");
     }
   }
 
@@ -279,6 +279,21 @@ export default function AdsAdminPage() {
     }
     return "";
   }, [creativeForm.width, creativeForm.height, creativeForm.slot]);
+  const reviewQueueCount = (reviewQueue.campaigns?.length || 0) + (reviewQueue.creatives?.length || 0);
+  const activeCampaignCount = orderedCampaigns.filter((item) => item.status === "active").length;
+  const creativeCount = orderedCampaigns.reduce((total, item) => total + item.creatives.length, 0);
+  const healthIssueCount = activeWithoutCreatives.length + activeMissingSlots.length + expiredActiveCampaigns.length;
+  const navItems = [
+    ["overview", "Visão geral", activeCampaignCount],
+    ["campaigns", "Campanhas", filteredCampaigns.length],
+    ["creatives", "Criativos", creativeCount],
+    ["health", "Saúde", healthIssueCount],
+    ["activity", "Atividade", activity.length],
+    ...(REVIEW_WORKFLOW_ENABLED ? [["reviews", "Revisão", reviewQueueCount]] : []),
+    ...(ADVERTISER_ACCOUNTS_ENABLED ? [["advertisers", "Anunciantes", pendingAdvertiserRequests.length]] : []),
+    ...(PLACEMENT_CATALOG_ENABLED ? [["inventory", "Inventário", placements.length]] : []),
+    ["reports", "Relatórios", report?.daily?.length || 0]
+  ];
 
   async function handleCreateCampaign(event) {
     event.preventDefault();
@@ -336,7 +351,7 @@ export default function AdsAdminPage() {
       setAdvertiserForm(INITIAL_ADVERTISER_ACCOUNT);
       setMessage(editingAdvertiserId ? "Conta anunciante atualizada." : "Conta anunciante criada.");
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Nao foi possivel salvar a conta anunciante.");
+      setMessage(error?.response?.data?.message || "Não foi possível salvar a conta anunciante.");
     }
   }
 
@@ -347,7 +362,7 @@ export default function AdsAdminPage() {
       setSelectedAdvertiserId(updated.id);
       setMessage("Solicitacao aprovada. A conta anunciante e seus acessos foram ativados.");
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Nao foi possivel aprovar a solicitacao.");
+      setMessage(error?.response?.data?.message || "Não foi possível aprovar a solicitação.");
     }
   }
 
@@ -358,7 +373,7 @@ export default function AdsAdminPage() {
       setSelectedAdvertiserId(updated.id);
       setMessage("Solicitacao rejeitada e acessos pendentes revogados.");
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Nao foi possivel rejeitar a solicitacao.");
+      setMessage(error?.response?.data?.message || "Não foi possível rejeitar a solicitação.");
     }
   }
 
@@ -374,7 +389,7 @@ export default function AdsAdminPage() {
       setMembershipForm({ email: "", role: "viewer", status: "invited" });
       setMessage("Usuario vinculado a conta anunciante.");
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Nao foi possivel vincular o usuario.");
+      setMessage(error?.response?.data?.message || "Não foi possível vincular o usuário.");
     }
   }
 
@@ -388,7 +403,7 @@ export default function AdsAdminPage() {
       });
       setMessage("Permissao do membro atualizada.");
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Nao foi possivel atualizar o membro.");
+      setMessage(error?.response?.data?.message || "Não foi possível atualizar o membro.");
     }
   }
 
@@ -398,7 +413,7 @@ export default function AdsAdminPage() {
       await revokeAdvertiserMembership.mutateAsync({ id: membership.id, accountId: selectedAdvertiserId });
       setMessage("Acesso do membro revogado.");
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Nao foi possivel revogar o acesso.");
+      setMessage(error?.response?.data?.message || "Não foi possível revogar o acesso.");
     }
   }
 
@@ -414,7 +429,7 @@ export default function AdsAdminPage() {
       setCampaignToLinkId("");
       setMessage("Campanha vinculada a conta anunciante.");
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Nao foi possivel vincular a campanha.");
+      setMessage(error?.response?.data?.message || "Não foi possível vincular a campanha.");
     }
   }
 
@@ -424,7 +439,7 @@ export default function AdsAdminPage() {
       await setCampaignAdvertiserAccount.mutateAsync({ campaignId, accountId: null });
       setMessage("Campanha desvinculada; o anunciante legado foi preservado.");
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Nao foi possivel desvincular a campanha.");
+      setMessage(error?.response?.data?.message || "Não foi possível desvincular a campanha.");
     }
   }
 
@@ -577,7 +592,7 @@ export default function AdsAdminPage() {
       }));
       setMessage("Criativo enviado ao Cloudflare R2.");
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Nao foi possivel enviar o criativo ao R2.");
+      setMessage(error?.response?.data?.message || "Não foi possível enviar o criativo ao R2.");
     } finally {
       event.target.value = "";
     }
@@ -639,32 +654,33 @@ export default function AdsAdminPage() {
   }
 
   return (
-    <section className="screen screen-history screen-ads-hard">
-      <header className="page-header admin-page-header">
+    <section className="screen screen-history screen-ads-hard ads-admin-console">
+      <header className="page-header admin-page-header ads-admin-hero">
         <div className="admin-page-header-main">
+          <div className="ads-brand-lockup ads-brand-lockup-admin">
+            <img src="/logoads77gira.svg" alt="77Gira Ads" className="ads-brand-logo ads-brand-logo-admin" />
+            <span>Operação interna</span>
+          </div>
           <h2>Gestão de Publicidade</h2>
-          <p>Campanhas, criativos por slot e toggles de exibicao.</p>
+          <p>Console de anunciantes, campanhas, criativos, revisão e saúde de entrega.</p>
           <div className="role-session-wrap">
             <div className="role-session-badge">Perfil ativo: {(user?.role || "admin").toUpperCase()}</div>
             <span className="role-live-indicator" aria-label="Perfil ativo ao vivo">LIVE</span>
           </div>
         </div>
-        <img src="/assets/brand/icon_mono_77Gira.svg" alt="77Gira" className="admin-page-icon" />
+        <div className="ads-admin-hero-metrics" aria-label="Resumo operacional de publicidade">
+          <article><span>Ativas</span><strong>{activeCampaignCount}</strong></article>
+          <article><span>Revisão</span><strong>{reviewQueueCount}</strong></article>
+          <article><span>Alertas</span><strong>{healthIssueCount}</strong></article>
+        </div>
       </header>
       <div className="ads-layout">
         <aside className="ads-sidebar">
-          {[
-            ["overview", "Visão Geral"],
-            ["campaigns", "Campanhas"],
-            ["creatives", "Criativos por Slot"],
-            ["health", "Saúde e Alertas"],
-            ["activity", "Atividade"],
-            ...(REVIEW_WORKFLOW_ENABLED ? [["reviews", "Revisao"]] : []),
-            ...(ADVERTISER_ACCOUNTS_ENABLED ? [["advertisers", "Anunciantes"]] : []),
-            ...(PLACEMENT_CATALOG_ENABLED ? [["inventory", "Inventario"]] : []),
-            ["reports", "Relatórios"]
-          ].map(([id, label]) => (
-            <button key={id} className={`chip ${adsSection === id ? "active" : ""}`} onClick={() => setAdsSection(id)}>{label}</button>
+          {navItems.map(([id, label, count]) => (
+            <button key={id} className={`chip ads-nav-item ${adsSection === id ? "active" : ""}`} onClick={() => setAdsSection(id)}>
+              <span>{label}</span>
+              <small>{count}</small>
+            </button>
           ))}
         </aside>
         <div className="ads-content">
@@ -673,12 +689,12 @@ export default function AdsAdminPage() {
       <section className="ads-review-section">
         <div className="admin-list-header">
           <div>
-            <strong>Fila de revisao ({reviewQueue.campaigns.length + reviewQueue.creatives.length})</strong>
+            <strong>Fila de revisão ({reviewQueue.campaigns.length + reviewQueue.creatives.length})</strong>
             <p className="meta-line">Campanhas e criativos aguardando decisao administrativa.</p>
           </div>
         </div>
         {reviewQueueLoading ? <p className="empty">Carregando fila...</p> : null}
-        {!reviewQueueLoading && reviewQueue.campaigns.length + reviewQueue.creatives.length === 0 ? <p className="empty">Nenhum item aguardando revisao.</p> : null}
+        {!reviewQueueLoading && reviewQueue.campaigns.length + reviewQueue.creatives.length === 0 ? <p className="empty">Nenhum item aguardando revisão.</p> : null}
         <div className="ads-review-grid">
           {[
             ...reviewQueue.campaigns.map((item) => ({ ...item, entityType: "campaign", label: item.name, detail: item.advertiser })),
@@ -719,12 +735,12 @@ export default function AdsAdminPage() {
       <section className="placement-catalog-section">
         <div className="admin-list-header">
           <div>
-            <strong>Inventario canonico ({placements.length})</strong>
+            <strong>Inventário canônico ({placements.length})</strong>
             <p className="meta-line">Catalogo somente leitura; delivery permanece no AdSlot legado.</p>
           </div>
         </div>
         {placementsLoading ? <p className="empty">Carregando placements...</p> : null}
-        {placementsError ? <p className="empty empty-highlight">Nao foi possivel carregar o inventario.</p> : null}
+        {placementsError ? <p className="empty empty-highlight">Não foi possível carregar o inventário.</p> : null}
         <div className="placement-catalog-grid">
           {placements.map((placement) => (
             <article key={placement.key} className="clean-card placement-catalog-card">
@@ -749,7 +765,7 @@ export default function AdsAdminPage() {
                 <div><dt>Compra</dt><dd>{placement.commercialRules.purchaseEnabled ? "habilitada" : "indisponivel"}</dd></div>
               </dl>
               <p className="meta-line">
-                Aprovacao: {placement.requiresApproval ? "obrigatoria" : "nao exigida"} · targeting: {placement.supportsTargeting ? "sim" : "nao"} · frequency cap: {placement.supportsFrequencyCap ? "sim" : "nao"}
+                Aprovação: {placement.requiresApproval ? "obrigatória" : "não exigida"} · targeting: {placement.supportsTargeting ? "sim" : "não"} · frequency cap: {placement.supportsFrequencyCap ? "sim" : "não"}
               </p>
             </article>
           ))}
@@ -881,7 +897,7 @@ export default function AdsAdminPage() {
 
         {advertiserAccountsLoading ? <p className="empty">Carregando anunciantes...</p> : null}
         {advertiserAccountsError ? (
-          <p className="empty empty-highlight">Nao foi possivel carregar as contas anunciantes.</p>
+          <p className="empty empty-highlight">Não foi possível carregar as contas anunciantes.</p>
         ) : null}
         {!advertiserAccountsLoading && !advertiserAccountsError && advertiserAccounts.length === 0 ? (
           <div className="empty">
@@ -933,8 +949,8 @@ export default function AdsAdminPage() {
                 <dl className="advertiser-readonly-data">
                   <div><dt>Tipo</dt><dd>{selectedAdvertiser.type}</dd></div>
                   <div><dt>Origem</dt><dd>{selectedAdvertiser.source}</dd></div>
-                  <div><dt>E-mail</dt><dd>{selectedAdvertiser.contactEmail || "Nao informado"}</dd></div>
-                  <div><dt>Telefone</dt><dd>{selectedAdvertiser.contactPhone || "Nao informado"}</dd></div>
+                  <div><dt>E-mail</dt><dd>{selectedAdvertiser.contactEmail || "Não informado"}</dd></div>
+                  <div><dt>Telefone</dt><dd>{selectedAdvertiser.contactPhone || "Não informado"}</dd></div>
                 </dl>
                 <div className="admin-content-divider" />
                 <h4>Campanhas ({selectedAdvertiser.campaigns?.length || 0})</h4>

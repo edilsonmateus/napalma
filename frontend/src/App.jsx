@@ -79,6 +79,9 @@ export default function App() {
   const { mutate: trackAudienceVisit } = useTrackAudienceVisitMutation();
   const isBackofficeMode = isAdminRole(user?.role) || isProducerRole(user?.role) || isVenueRole(user?.role);
   const isOnboardingRoute = location.pathname === "/onboarding";
+  const isAdsRoute = location.pathname === "/anunciar"
+    || location.pathname === "/workspace/anunciante"
+    || location.pathname === "/settings/ads";
   const shouldForceOnboarding = !showSplash && !hasSeenOnboarding && !isOnboardingRoute;
 
   function getDefaultRoute() {
@@ -235,7 +238,7 @@ export default function App() {
   }
 
   return (
-    <div className={`app-shell ${isBackofficeMode ? "app-shell-admin" : ""}`}>
+    <div className={`app-shell ${isBackofficeMode ? "app-shell-admin" : ""} ${isAdsRoute ? "app-shell-ads" : ""}`}>
       {isOffline ? <div className="offline-banner">Você está offline. Algumas ações podem falhar.</div> : null}
       <main className="app-content">
         <Suspense fallback={<div className="empty">Carregando pagina...</div>}>

@@ -30,7 +30,9 @@ export default function AdvertisePage() {
   return (
     <section className="screen screen-history advertise-page">
       <header className="advertise-hero clean-card">
-        <span className="eyebrow">77Gira Ads</span>
+        <div className="ads-brand-lockup" aria-label="77Gira Ads">
+          <img src="/logoads77gira.svg" alt="77Gira Ads" className="ads-brand-logo" />
+        </div>
         <h2>Publicidade para quem quer participar da cena, não apenas interromper.</h2>
         <p>
           O 77Gira conecta casas, artistas, produtores, marcas e público em torno da agenda real do samba.

@@ -69,6 +69,21 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   padding: 20px 16px 88px;
 }
 
+.app-shell-ads {
+  max-width: none;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 20px 16px 88px;
+  background: #f8fafc;
+  color: #111827;
+}
+
+.app-shell-ads .app-content {
+  width: min(100%, 1220px);
+  margin: 0 auto;
+}
+
 .app-shell-admin {
   --admin-bg: #111821;
   --admin-surface: #19242f;
@@ -93,6 +108,11 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   background: linear-gradient(180deg, #0f161f 0%, #111821 100%);
   font-family: var(--admin-font);
   font-weight: 400;
+}
+
+.app-shell-admin.app-shell-ads {
+  background: #f8fafc;
+  color: #111827;
 }
 
 .app-shell-admin :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .auth-btn, .event-card, .venue-flow-card, .clean-card, .modal-card) {
@@ -630,23 +650,508 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   height: 14px;
   margin: 0;
 }
+
+
+/* ADS Light Shell Final — Cloudflare-like operational finish
+   This block intentionally lives at the end of the stylesheet to prevent the
+   public 77Gira dark/admin theme from leaking into Ads surfaces. */
+.advertise-page,
+.advertiser-console,
+.app-shell-admin .ads-admin-console {
+  --ads-bg: #f8fafc;
+  --ads-surface: #ffffff;
+  --ads-surface-subtle: #f9fafb;
+  --ads-surface-muted: #f3f4f6;
+  --ads-border: #e5e7eb;
+  --ads-border-strong: #d1d5db;
+  --ads-text: #111827;
+  --ads-text-secondary: #4b5563;
+  --ads-text-muted: #6b7280;
+  --ads-orange: #f97316;
+  --ads-orange-hover: #ea580c;
+  --ads-orange-soft: #fff7ed;
+  --ads-orange-border: #fed7aa;
+  --ads-blue: #2563eb;
+  --ads-blue-hover: #1d4ed8;
+  --ads-radius-sm: 6px;
+  --ads-radius-md: 8px;
+  --ads-radius-lg: 10px;
+  --ads-shadow-sm: 0 1px 2px rgba(16, 24, 40, .04);
+  background: var(--ads-bg) !important;
+  color: var(--ads-text) !important;
+}
+
+.advertise-page {
+  max-width: 1120px;
+}
+
+.advertiser-console,
+.app-shell-admin .ads-admin-console {
+  max-width: 1180px;
+}
+
+.advertise-page :where(.clean-card, .advertise-hero, .advertise-principle-card, .advertise-final-card, .advertise-access-note),
+.advertiser-console :where(.clean-card, .advertiser-console-topbar, .advertiser-entry-hero-pro, .advertiser-request-form-pro, .advertiser-account-bar, .advertiser-console-form, .advertiser-campaign-card, .advertiser-empty-state, .advertiser-readonly-notice, .advertiser-creative-card),
+.app-shell-admin .ads-admin-console :where(.clean-card, .venue-card, .empty, .admin-list-header, .ads-chart-card, .achievements-completed, .ads-review-card, .ads-review-drafts, .placement-catalog-card, .advertiser-readonly-card, .advertiser-readonly-detail, .advertiser-approval-queue, .advertiser-approval-card, .modal-card) {
+  border: 1px solid var(--ads-border) !important;
+  border-radius: var(--ads-radius-md) !important;
+  background: var(--ads-surface) !important;
+  color: var(--ads-text) !important;
+  box-shadow: var(--ads-shadow-sm) !important;
+}
+
+.advertise-page :where(.advertise-hero, .advertiser-entry-hero-pro),
+.advertiser-console :where(.advertiser-console-topbar, .advertiser-entry-hero-pro),
+.app-shell-admin .ads-admin-console .ads-admin-hero {
+  border-radius: var(--ads-radius-lg) !important;
+  background: var(--ads-surface) !important;
+  box-shadow: none !important;
+}
+
+.advertise-page .advertise-hero,
+.advertiser-console .advertiser-console-topbar,
+.app-shell-admin .ads-admin-console .ads-admin-hero {
+  padding: 24px !important;
+}
+
+.advertise-page .advertise-hero h2,
+.advertiser-console .advertiser-console-topbar h2,
+.app-shell-admin .ads-admin-console .ads-admin-hero h2 {
+  color: var(--ads-text) !important;
+  font-size: clamp(1.75rem, 3.6vw, 2.45rem) !important;
+  line-height: 1.12 !important;
+  letter-spacing: -.035em !important;
+}
+
+.advertise-page :where(h3, h4, strong),
+.advertiser-console :where(h3, h4, strong),
+.app-shell-admin .ads-admin-console :where(h3, h4, strong) {
+  color: var(--ads-text) !important;
+}
+
+.advertise-page :where(p, small, .meta-line),
+.advertiser-console :where(p, small, .meta-line),
+.app-shell-admin .ads-admin-console :where(p, small, .meta-line, .empty) {
+  color: var(--ads-text-muted) !important;
+}
+
+.advertise-page .eyebrow,
+.advertiser-console .eyebrow,
+.app-shell-admin .ads-admin-console .eyebrow {
+  color: #c2410c !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+}
+
+.advertise-page :where(input, select, textarea),
+.advertiser-console :where(input, select, textarea),
+.app-shell-admin .ads-admin-console :where(input, select, textarea, .search-input) {
+  min-height: 36px !important;
+  border: 1px solid var(--ads-border-strong) !important;
+  border-radius: var(--ads-radius-sm) !important;
+  background: var(--ads-surface) !important;
+  color: var(--ads-text) !important;
+  font-size: 14px !important;
+  box-shadow: none !important;
+}
+
+.advertise-page :where(input, select, textarea)::placeholder,
+.advertiser-console :where(input, select, textarea)::placeholder,
+.app-shell-admin .ads-admin-console :where(input, select, textarea, .search-input)::placeholder {
+  color: #9ca3af !important;
+}
+
+.advertise-page :where(input, select, textarea):focus,
+.advertiser-console :where(input, select, textarea):focus,
+.app-shell-admin .ads-admin-console :where(input, select, textarea, .search-input):focus {
+  outline: 2px solid rgba(249, 115, 22, .24) !important;
+  border-color: var(--ads-orange) !important;
+}
+
+.advertise-page .btn-primary,
+.advertiser-console .btn-primary,
+.app-shell-admin .ads-admin-console .btn-primary {
+  min-height: 36px !important;
+  border: 1px solid var(--ads-blue) !important;
+  border-radius: var(--ads-radius-sm) !important;
+  background: var(--ads-blue) !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+.advertise-page .btn-primary:hover,
+.advertiser-console .btn-primary:hover,
+.app-shell-admin .ads-admin-console .btn-primary:hover {
+  border-color: var(--ads-blue-hover) !important;
+  background: var(--ads-blue-hover) !important;
+}
+
+.advertise-page :where(.chip, .auth-btn),
+.advertiser-console :where(.chip, .advertiser-console-help),
+.app-shell-admin .ads-admin-console :where(.chip, .auth-btn, .btn-link) {
+  min-height: 34px !important;
+  border: 1px solid var(--ads-border-strong) !important;
+  border-radius: var(--ads-radius-sm) !important;
+  background: var(--ads-surface) !important;
+  color: var(--ads-text-secondary) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+}
+
+.advertise-page :where(.chip, .auth-btn):hover,
+.advertiser-console :where(.chip, .advertiser-console-help):hover,
+.app-shell-admin .ads-admin-console :where(.chip, .auth-btn, .btn-link):hover {
+  background: var(--ads-surface-subtle) !important;
+  color: var(--ads-text) !important;
+}
+
+.advertise-page :where(.advertise-access-note, .advertiser-compliance-note-pro),
+.advertiser-console :where(.advertiser-compliance-note-pro, .advertiser-pending-card-pro),
+.app-shell-admin .ads-admin-console :where(.empty-highlight) {
+  border-color: var(--ads-orange-border) !important;
+  border-left: 3px solid var(--ads-orange) !important;
+  background: var(--ads-orange-soft) !important;
+  color: #9a3412 !important;
+}
+
+.advertise-page .advertise-steps span,
+.advertiser-console .advertiser-process-list li > span,
+.app-shell-admin .ads-admin-console .ads-admin-hero-metrics article {
+  border: 1px solid var(--ads-orange-border) !important;
+  border-radius: var(--ads-radius-md) !important;
+  background: var(--ads-orange-soft) !important;
+  color: #c2410c !important;
+}
+
+.app-shell-admin .ads-admin-console .ads-layout {
+  grid-template-columns: 232px minmax(0, 1fr) !important;
+  gap: 18px !important;
+}
+
+.app-shell-admin .ads-admin-console .ads-sidebar {
+  border: 1px solid var(--ads-border) !important;
+  border-radius: var(--ads-radius-lg) !important;
+  background: var(--ads-surface) !important;
+  box-shadow: none !important;
+}
+
+.app-shell-admin .ads-admin-console .ads-sidebar .chip {
+  justify-content: space-between !important;
+  border: 1px solid transparent !important;
+  border-left: 2px solid transparent !important;
+  background: transparent !important;
+}
+
+.app-shell-admin .ads-admin-console .ads-sidebar .chip.active {
+  border-color: var(--ads-orange-border) !important;
+  border-left-color: var(--ads-orange) !important;
+  background: var(--ads-orange-soft) !important;
+  color: #c2410c !important;
+}
+
+.app-shell-admin .ads-admin-console .ads-nav-item small {
+  border: 1px solid var(--ads-border) !important;
+  background: var(--ads-surface-muted) !important;
+  color: var(--ads-text-muted) !important;
+}
+
+.advertise-page .status-badge,
+.advertiser-console .status-badge,
+.app-shell-admin .ads-admin-console .status-badge {
+  border-radius: 999px !important;
+  border: 1px solid var(--ads-border) !important;
+  background: var(--ads-surface-muted) !important;
+  color: #374151 !important;
+}
+
+.advertise-page :where(.status-pending_review, .status-draft),
+.advertiser-console :where(.status-pending_review, .status-draft),
+.app-shell-admin .ads-admin-console :where(.status-pending_review, .status-draft) {
+  border-color: var(--ads-orange-border) !important;
+  background: var(--ads-orange-soft) !important;
+  color: #c2410c !important;
+}
+
+.advertise-page :where(.status-approved, .status-active),
+.advertiser-console :where(.status-approved, .status-active),
+.app-shell-admin .ads-admin-console :where(.status-approved, .status-active) {
+  border-color: #bbf7d0 !important;
+  background: #f0fdf4 !important;
+  color: #15803d !important;
+}
+
+.advertise-page :where(.status-rejected, .status-changes_requested),
+.advertiser-console :where(.status-rejected, .status-changes_requested),
+.app-shell-admin .ads-admin-console :where(.status-rejected, .status-changes_requested) {
+  border-color: #fecaca !important;
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+}
+
+.app-shell-admin .ads-admin-console :where(.ads-review-image, .ads-slot-preview img),
+.advertiser-console .advertiser-creative-card .ads-review-image {
+  border: 1px solid var(--ads-border) !important;
+  background: var(--ads-surface-muted) !important;
+}
+
+@media (max-width: 980px) {
+  .app-shell-admin .ads-admin-console .ads-layout,
+  .advertiser-console .advertiser-entry-grid-pro,
+  .advertiser-console .advertiser-console-workgrid,
+  .advertiser-console .advertiser-console-metrics,
+  .advertiser-console .advertiser-form-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .app-shell-admin .ads-admin-console .ads-sidebar {
+    position: static !important;
+    display: flex !important;
+    overflow-x: auto !important;
+  }
+}
+.ads-admin-console {
+  --ads-admin-bg: #0b1118;
+  --ads-admin-panel: #101821;
+  --ads-admin-panel-soft: #141e28;
+  --ads-admin-border: rgba(158, 174, 191, .18);
+  --ads-admin-muted: #93a2b2;
+  max-width: 1220px;
+  gap: 14px;
+  color: #e8eef5;
+}
+
+.app-shell-admin .ads-admin-console {
+  --screen-surface: #101821;
+}
+
+.ads-admin-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  border: 1px solid var(--ads-admin-border);
+  border-radius: 24px;
+  padding: clamp(18px, 3vw, 28px);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.045), transparent 48%),
+    radial-gradient(circle at 100% 0%, rgba(255,184,28,.13), transparent 30%),
+    var(--ads-admin-bg);
+  box-shadow: 0 20px 45px rgba(0,0,0,.28);
+}
+
+.app-shell-admin .ads-admin-hero {
+  border-color: var(--ads-border);
+  background: var(--ads-surface);
+  color: var(--ads-text);
+  box-shadow: var(--ads-shadow-sm);
+}
+
+.ads-admin-hero .eyebrow {
+  display: inline-flex;
+  margin-bottom: 8px;
+  color: #ffb81c;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.ads-admin-hero h2 {
+  margin: 0;
+  color: #f6f8fb;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  line-height: 1.04;
+  letter-spacing: -.04em;
+}
+
+.app-shell-admin .ads-admin-hero h2 {
+  color: var(--ads-text);
+}
+
+.ads-admin-hero p {
+  max-width: 680px;
+  margin: 7px 0 0;
+  color: var(--ads-admin-muted);
+}
+
+.app-shell-admin .ads-admin-hero p {
+  color: var(--ads-text-muted);
+}
+
+.ads-admin-hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(82px, 1fr));
+  gap: 8px;
+  min-width: min(360px, 100%);
+}
+
+.ads-admin-hero-metrics article {
+  border: 1px solid rgba(158,174,191,.16);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(255,255,255,.035);
+}
+
+.ads-admin-hero-metrics span,
+.ads-admin-hero-metrics strong {
+  display: block;
+}
+
+.ads-admin-hero-metrics span {
+  color: var(--ads-admin-muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.ads-admin-hero-metrics strong {
+  margin-top: 4px;
+  color: #f6f8fb;
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
 .ads-layout {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
 }
 .ads-sidebar {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  position: sticky;
+  top: 14px;
+  display: grid;
+  gap: 7px;
+  border: 1px solid var(--ads-admin-border);
+  border-radius: 20px;
+  padding: 10px;
+  background: var(--ads-admin-bg);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
 }
 .ads-sidebar .chip {
   min-width: 0;
-  padding: 6px 10px;
+  justify-content: space-between;
+  border-radius: 12px;
+  padding: 9px 10px;
+  background: transparent;
+  color: #c6d1dd;
+  text-align: left;
+}
+.ads-sidebar .chip.active {
+  border-color: rgba(255,184,28,.28);
+  background: rgba(255,184,28,.1);
+  color: #fff4d5;
+}
+.ads-nav-item span,
+.ads-nav-item small {
+  display: inline-flex;
+  align-items: center;
+}
+.ads-nav-item small {
+  min-width: 24px;
+  justify-content: center;
+  border: 1px solid rgba(158,174,191,.16);
+  border-radius: 999px;
+  padding: 2px 6px;
+  background: rgba(255,255,255,.04);
+  color: var(--ads-admin-muted);
+  font-size: 11px;
 }
 .ads-content {
   display: grid;
+  gap: 12px;
+}
+
+.ads-admin-console .clean-card,
+.ads-admin-console .venue-card,
+.ads-admin-console .admin-list-header,
+.ads-admin-console .empty,
+.ads-admin-console .ads-chart-card,
+.ads-admin-console .achievements-completed {
+  border-color: var(--ads-admin-border);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.03), transparent 40%),
+    var(--ads-admin-panel);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+.ads-admin-console .admin-list-header {
+  border: 1px solid var(--ads-admin-border);
+  border-radius: 18px;
+  padding: 12px;
+}
+
+.ads-admin-console .venue-card {
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.ads-admin-console :where(.venue-form input, .venue-form select, .venue-form textarea, .admin-list-header input, .admin-list-header select) {
+  border: 1px solid rgba(158,174,191,.2);
+  border-radius: 10px;
+  background: #0b1016;
+  color: #eef4fa;
+}
+
+.ads-admin-console :where(.venue-form input, .venue-form select, .venue-form textarea, .admin-list-header input, .admin-list-header select):focus {
+  outline: none;
+  border-color: rgba(255,184,28,.48);
+  box-shadow: 0 0 0 3px rgba(255,184,28,.08);
+}
+
+.ads-admin-console .ads-review-card,
+.ads-admin-console .placement-catalog-card {
+  border-radius: 18px;
+}
+
+.ads-admin-console .ads-review-image,
+.ads-admin-console .ads-slot-preview img {
+  border: 1px solid rgba(158,174,191,.12);
+  background: rgba(0,0,0,.22);
+}
+
+.ads-admin-console .ads-hard-kpis {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
+}
+
+.ads-admin-console .ads-hard-kpis .clean-card {
+  border-radius: 16px;
+  padding: 14px;
+}
+
+@media (max-width: 980px) {
+  .ads-admin-hero,
+  .ads-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ads-admin-hero {
+    flex-direction: column;
+  }
+
+  .ads-sidebar {
+    position: static;
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .ads-sidebar .chip {
+    flex: 0 0 auto;
+    min-width: 150px;
+  }
+
+  .ads-admin-console .ads-hard-kpis,
+  .ads-admin-hero-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .session-validation-screen {
@@ -845,6 +1350,816 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   color: #f4f7fb;
 }
 
+.advertiser-console {
+  --ads-console-bg: #0b1118;
+  --ads-console-panel: #101821;
+  --ads-console-panel-strong: #151f2a;
+  --ads-console-border: rgba(158, 174, 191, .18);
+  --ads-console-border-strong: rgba(255, 184, 28, .28);
+  --ads-console-muted: #93a2b2;
+  display: grid;
+  gap: 16px;
+  max-width: 1180px;
+  color: #e8eef5;
+}
+
+.advertiser-console-topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid var(--ads-console-border);
+  border-radius: 22px;
+  padding: clamp(18px, 3vw, 26px);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), transparent 48%),
+    radial-gradient(circle at 100% 0%, rgba(255,184,28,.12), transparent 28%),
+    var(--ads-console-bg);
+  box-shadow: 0 18px 40px rgba(0,0,0,.28);
+}
+
+.advertiser-console-topbar h2 {
+  margin: 0;
+  color: #f5f8fb;
+  font-size: clamp(1.75rem, 4vw, 3.1rem);
+  letter-spacing: -.04em;
+}
+
+.advertiser-console-topbar p {
+  max-width: 680px;
+  margin: 6px 0 0;
+  color: var(--ads-console-muted);
+}
+
+.advertiser-console-help {
+  flex: 0 0 auto;
+  border: 1px solid var(--ads-console-border);
+  border-radius: 999px;
+  padding: 9px 12px;
+  background: rgba(255,255,255,.035);
+  color: #ffd783;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.advertiser-entry-grid-pro {
+  grid-template-columns: minmax(0, 1.06fr) minmax(360px, .78fr);
+  align-items: start;
+}
+
+.advertiser-entry-hero-pro,
+.advertiser-request-form-pro,
+.advertiser-account-bar,
+.advertiser-console-metrics .clean-card,
+.advertiser-console-form,
+.advertiser-campaign-card,
+.advertiser-empty-state,
+.advertiser-readonly-notice {
+  border-color: var(--ads-console-border);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.035), transparent 42%),
+    var(--ads-console-panel);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.advertiser-entry-hero-pro {
+  position: sticky;
+  top: 14px;
+  gap: 18px;
+  min-height: 520px;
+  border-color: var(--ads-console-border-strong);
+  background:
+    radial-gradient(circle at 100% 4%, rgba(255,184,28,.14), transparent 30%),
+    linear-gradient(135deg, #121a23, #121015 60%, #0c131b);
+}
+
+.advertiser-entry-hero-pro h3 {
+  max-width: 760px;
+  font-size: clamp(1.9rem, 4vw, 3.3rem);
+  letter-spacing: -.04em;
+}
+
+.advertiser-benefits-pro span {
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: rgba(255,184,28,.08);
+}
+
+.advertiser-compliance-note-pro {
+  border-color: rgba(255,255,255,.14);
+  background: rgba(0,0,0,.22);
+}
+
+.advertiser-process-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.advertiser-process-list li {
+  display: flex;
+  gap: 10px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(255,255,255,.025);
+}
+
+.advertiser-process-list li > span {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(255,184,28,.1);
+  color: #ffd783;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.advertiser-process-list strong,
+.advertiser-process-list small {
+  display: block;
+}
+
+.advertiser-process-list small {
+  margin-top: 2px;
+  color: var(--ads-console-muted);
+}
+
+.advertiser-pending-card-pro {
+  border-radius: 16px;
+  border-color: rgba(255,184,28,.36);
+}
+
+.advertiser-request-form-pro,
+.advertiser-console-form {
+  gap: 12px;
+  padding: 20px;
+}
+
+.advertiser-form-heading {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.advertiser-form-heading h3 {
+  margin: 0;
+  color: #f6f8fb;
+  font-size: 1.25rem;
+}
+
+.advertiser-form-heading p {
+  margin: 0;
+  color: var(--ads-console-muted);
+  font-size: 13px;
+}
+
+.advertiser-request-form-pro label,
+.advertiser-console-form label,
+.advertiser-account-bar label {
+  display: grid;
+  gap: 6px;
+  color: var(--ads-console-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.advertiser-request-form-pro :where(input, select, textarea),
+.advertiser-console-form :where(input, select, textarea),
+.advertiser-account-bar select {
+  width: 100%;
+  border: 1px solid rgba(158,174,191,.2);
+  border-radius: 10px;
+  padding: 10px 11px;
+  background: #0b1016;
+  color: #eef4fa;
+  font: inherit;
+  font-size: 13px;
+}
+
+.advertiser-request-form-pro :where(input, select, textarea):focus,
+.advertiser-console-form :where(input, select, textarea):focus,
+.advertiser-account-bar select:focus {
+  outline: none;
+  border-color: rgba(255,184,28,.5);
+  box-shadow: 0 0 0 3px rgba(255,184,28,.08);
+}
+
+.advertiser-request-form-pro textarea,
+.advertiser-console-form textarea {
+  resize: vertical;
+}
+
+.advertiser-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.advertiser-submit-button {
+  width: 100%;
+  justify-content: center;
+}
+
+.advertiser-console-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.advertiser-account-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.advertiser-account-bar strong,
+.advertiser-account-bar small {
+  display: block;
+}
+
+.advertiser-account-bar strong {
+  color: #f6f8fb;
+  font-size: 1.25rem;
+}
+
+.advertiser-account-bar small {
+  margin-top: 3px;
+  color: var(--ads-console-muted);
+}
+
+.advertiser-account-bar label {
+  min-width: min(360px, 100%);
+}
+
+.advertiser-console-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.advertiser-console-metrics article {
+  display: grid;
+  gap: 4px;
+}
+
+.advertiser-console-metrics span {
+  color: var(--ads-console-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.advertiser-console-metrics strong {
+  color: #f6f8fb;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.advertiser-console-metrics small {
+  color: var(--ads-console-muted);
+}
+
+.advertiser-console-workgrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.advertiser-checkbox {
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+.advertiser-checkbox input {
+  width: auto !important;
+}
+
+.advertiser-campaign-section {
+  display: grid;
+  gap: 10px;
+}
+
+.advertiser-section-title {
+  display: grid;
+  gap: 3px;
+}
+
+.advertiser-section-title h3 {
+  margin: 0;
+  color: #f6f8fb;
+}
+
+.advertiser-campaign-list {
+  display: grid;
+  gap: 12px;
+}
+
+.advertiser-campaign-card {
+  display: grid;
+  gap: 14px;
+}
+
+.advertiser-campaign-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.advertiser-campaign-card-header h3,
+.advertiser-campaign-card-header p {
+  margin: 0;
+}
+
+.advertiser-campaign-card-header h3 {
+  color: #f6f8fb;
+}
+
+.advertiser-campaign-card-header p {
+  margin-top: 4px;
+  color: var(--ads-console-muted);
+  font-size: 13px;
+}
+
+.advertiser-creative-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.advertiser-creative-card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(158,174,191,.14);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(0,0,0,.18);
+}
+
+.advertiser-creative-card .ads-review-image {
+  max-height: 130px;
+}
+
+.advertiser-creative-card strong,
+.advertiser-creative-card small {
+  display: block;
+}
+
+.advertiser-creative-card strong {
+  color: #f6f8fb;
+}
+
+.advertiser-creative-card small {
+  margin-top: 2px;
+  color: var(--ads-console-muted);
+}
+
+.advertiser-empty-state,
+.advertiser-readonly-notice {
+  color: var(--ads-console-muted);
+}
+
+.advertiser-empty-state strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #f6f8fb;
+}
+
+@media (max-width: 920px) {
+  .advertiser-console-topbar,
+  .advertiser-account-bar,
+  .advertiser-campaign-card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .advertiser-entry-grid-pro,
+  .advertiser-console-workgrid,
+  .advertiser-console-metrics,
+  .advertiser-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .advertiser-entry-hero-pro {
+    position: static;
+    min-height: auto;
+  }
+}
+
+/* 77Gira Ads — light operational shell inspired by Cloudflare-like SaaS dashboards */
+.advertise-page,
+.advertiser-console,
+.ads-admin-console {
+  --ads-bg: #f8fafc;
+  --ads-surface: #ffffff;
+  --ads-surface-subtle: #f9fafb;
+  --ads-surface-muted: #f3f4f6;
+  --ads-border: #e5e7eb;
+  --ads-border-strong: #d1d5db;
+  --ads-text: #111827;
+  --ads-text-secondary: #4b5563;
+  --ads-text-muted: #6b7280;
+  --ads-orange: #f97316;
+  --ads-orange-hover: #ea580c;
+  --ads-orange-soft: #fff7ed;
+  --ads-orange-border: #fed7aa;
+  --ads-success-bg: #f0fdf4;
+  --ads-success-border: #bbf7d0;
+  --ads-success-text: #15803d;
+  --ads-error-bg: #fef2f2;
+  --ads-error-border: #fecaca;
+  --ads-error-text: #b91c1c;
+  --ads-info-bg: #eff6ff;
+  --ads-info-border: #bfdbfe;
+  --ads-info-text: #1d4ed8;
+  --ads-radius-sm: 6px;
+  --ads-radius-md: 8px;
+  --ads-radius-lg: 12px;
+  --ads-shadow-sm: 0 1px 2px rgba(16, 24, 40, .04);
+  max-width: 1220px;
+  padding: clamp(16px, 3vw, 24px);
+  border-radius: 0;
+  background: var(--ads-bg);
+  color: var(--ads-text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.app-shell-admin .ads-admin-console {
+  --screen-surface: var(--ads-bg);
+  background: var(--ads-bg);
+  color: var(--ads-text);
+}
+
+.advertise-page .clean-card,
+.advertiser-console .clean-card,
+.app-shell-admin .ads-admin-console .clean-card,
+.app-shell-admin .ads-admin-console .venue-card,
+.app-shell-admin .ads-admin-console .empty,
+.app-shell-admin .ads-admin-console .admin-list-header,
+.app-shell-admin .ads-admin-console .ads-chart-card,
+.app-shell-admin .ads-admin-console .achievements-completed,
+.app-shell-admin .ads-admin-console .ads-review-card,
+.app-shell-admin .ads-admin-console .placement-catalog-card {
+  border: 1px solid var(--ads-border);
+  border-radius: var(--ads-radius-md);
+  background: var(--ads-surface);
+  color: var(--ads-text);
+  box-shadow: var(--ads-shadow-sm);
+}
+
+.advertise-page .eyebrow,
+.advertiser-console .eyebrow,
+.ads-admin-console .eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  margin-bottom: 6px;
+  color: var(--ads-orange);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.advertise-hero,
+.advertiser-console-topbar,
+.ads-admin-hero {
+  border: 1px solid var(--ads-border);
+  border-radius: var(--ads-radius-lg);
+  padding: clamp(18px, 3vw, 24px);
+  background: var(--ads-surface);
+  color: var(--ads-text);
+  box-shadow: var(--ads-shadow-sm);
+}
+
+.advertise-hero h2,
+.advertiser-console-topbar h2,
+.ads-admin-hero h2 {
+  max-width: 820px;
+  margin: 0;
+  color: var(--ads-text);
+  font-size: clamp(1.7rem, 4vw, 2.5rem);
+  line-height: 1.12;
+  letter-spacing: -.035em;
+}
+
+.advertise-hero p,
+.advertiser-console-topbar p,
+.ads-admin-hero p,
+.advertise-principle-card p,
+.advertise-audience-grid p,
+.advertise-steps p,
+.advertise-final-card p,
+.advertiser-entry-hero-pro p,
+.advertiser-form-heading p,
+.advertiser-console-metrics small,
+.advertiser-campaign-card-header p,
+.advertiser-creative-card small,
+.app-shell-admin .ads-admin-console .meta-line,
+.app-shell-admin .ads-admin-console .empty,
+.app-shell-admin .ads-admin-console small {
+  color: var(--ads-text-muted);
+}
+
+.advertise-principle-card h3,
+.advertise-section-heading h3,
+.advertise-final-card h3,
+.advertiser-entry-hero-pro h3,
+.advertiser-form-heading h3,
+.advertiser-account-bar strong,
+.advertiser-console-metrics strong,
+.advertiser-section-title h3,
+.advertiser-campaign-card-header h3,
+.advertiser-creative-card strong,
+.advertiser-empty-state strong,
+.app-shell-admin .ads-admin-console h3,
+.app-shell-admin .ads-admin-console h4,
+.app-shell-admin .ads-admin-console strong {
+  color: var(--ads-text);
+}
+
+.advertise-actions .chip,
+.advertiser-console-help,
+.advertiser-console .chip,
+.ads-admin-console .chip,
+.app-shell-admin .ads-admin-console .chip {
+  min-height: 34px;
+  border: 1px solid var(--ads-border-strong);
+  border-radius: var(--ads-radius-sm);
+  padding: 7px 11px;
+  background: var(--ads-surface);
+  color: var(--ads-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: none;
+}
+
+.advertise-actions .chip:hover,
+.advertiser-console-help:hover,
+.advertiser-console .chip:hover,
+.ads-admin-console .chip:hover,
+.app-shell-admin .ads-admin-console .chip:hover {
+  background: var(--ads-surface-subtle);
+  color: var(--ads-text);
+}
+
+.advertise-page .btn-primary,
+.advertiser-console .btn-primary,
+.app-shell-admin .ads-admin-console .btn-primary {
+  min-height: 36px;
+  border: 1px solid var(--ads-orange);
+  border-radius: var(--ads-radius-sm);
+  padding: 8px 14px;
+  background: var(--ads-orange);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.advertise-page .btn-primary:hover,
+.advertiser-console .btn-primary:hover,
+.app-shell-admin .ads-admin-console .btn-primary:hover {
+  border-color: var(--ads-orange-hover);
+  background: var(--ads-orange-hover);
+}
+
+.advertiser-entry-grid-pro {
+  grid-template-columns: minmax(0, .96fr) minmax(360px, .78fr);
+  gap: 16px;
+}
+
+.advertiser-entry-hero-pro,
+.advertiser-request-form-pro,
+.advertiser-account-bar,
+.advertiser-console-metrics .clean-card,
+.advertiser-console-form,
+.advertiser-campaign-card,
+.advertiser-empty-state,
+.advertiser-readonly-notice,
+.advertise-principle-card,
+.advertise-audience-grid .clean-card,
+.advertise-steps .clean-card,
+.advertise-final-card,
+.advertise-access-note {
+  border-color: var(--ads-border);
+  background: var(--ads-surface);
+  box-shadow: var(--ads-shadow-sm);
+}
+
+.advertiser-entry-hero-pro {
+  min-height: auto;
+  border-top: 2px solid var(--ads-orange);
+}
+
+.advertiser-benefits-pro span,
+.advertiser-process-list li > span,
+.ads-admin-hero-metrics article {
+  border: 1px solid var(--ads-orange-border);
+  background: var(--ads-orange-soft);
+  color: #c2410c;
+}
+
+.advertiser-compliance-note-pro,
+.advertiser-pending-card-pro,
+.advertise-access-note {
+  border: 1px solid var(--ads-orange-border);
+  border-left: 3px solid var(--ads-orange);
+  background: var(--ads-orange-soft);
+  color: #9a3412;
+}
+
+.advertiser-process-list li,
+.advertiser-creative-card {
+  border: 1px solid var(--ads-border);
+  border-radius: var(--ads-radius-md);
+  background: var(--ads-surface-subtle);
+}
+
+.advertiser-request-form-pro label,
+.advertiser-console-form label,
+.advertiser-account-bar label,
+.app-shell-admin .ads-admin-console .venue-form label {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.advertiser-request-form-pro :where(input, select, textarea),
+.advertiser-console-form :where(input, select, textarea),
+.advertiser-account-bar select,
+.app-shell-admin .ads-admin-console :where(input, select, textarea, .search-input) {
+  min-height: 36px;
+  border: 1px solid var(--ads-border-strong);
+  border-radius: var(--ads-radius-sm);
+  background: var(--ads-surface);
+  color: var(--ads-text);
+  font-size: 14px;
+  box-shadow: none;
+}
+
+.advertiser-request-form-pro :where(input, select, textarea):focus,
+.advertiser-console-form :where(input, select, textarea):focus,
+.advertiser-account-bar select:focus,
+.app-shell-admin .ads-admin-console :where(input, select, textarea, .search-input):focus {
+  outline: 2px solid rgba(249,115,22,.22);
+  border-color: var(--ads-orange);
+  box-shadow: none;
+}
+
+.advertiser-console-metrics span,
+.ads-admin-hero-metrics span,
+.ads-hard-kpis h4 {
+  color: var(--ads-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: none;
+}
+
+.advertiser-console-metrics strong,
+.ads-admin-hero-metrics strong,
+.ads-hard-kpis p {
+  color: var(--ads-text);
+}
+
+.ads-admin-hero-metrics article {
+  border-radius: var(--ads-radius-md);
+}
+
+.ads-layout {
+  grid-template-columns: 236px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.ads-sidebar {
+  border: 1px solid var(--ads-border);
+  border-radius: var(--ads-radius-lg);
+  background: var(--ads-surface);
+  box-shadow: var(--ads-shadow-sm);
+}
+
+.ads-sidebar .chip,
+.app-shell-admin .ads-sidebar .chip {
+  border: 1px solid transparent;
+  border-left: 2px solid transparent;
+  border-radius: var(--ads-radius-sm);
+  background: transparent;
+  color: var(--ads-text-secondary);
+}
+
+.ads-sidebar .chip.active,
+.app-shell-admin .ads-sidebar .chip.active {
+  border-color: var(--ads-orange-border);
+  border-left-color: var(--ads-orange);
+  background: var(--ads-orange-soft);
+  color: #c2410c;
+}
+
+.ads-nav-item small {
+  border-color: var(--ads-border);
+  background: var(--ads-surface-muted);
+  color: var(--ads-text-muted);
+}
+
+.app-shell-admin .ads-admin-console .admin-list-header,
+.app-shell-admin .ads-admin-console .venue-card {
+  border-radius: var(--ads-radius-md);
+}
+
+.app-shell-admin .ads-admin-console .ads-review-image,
+.app-shell-admin .ads-admin-console .ads-slot-preview img,
+.advertiser-creative-card .ads-review-image {
+  border: 1px solid var(--ads-border);
+  background: var(--ads-surface-muted);
+}
+
+.advertiser-empty-state,
+.app-shell-admin .ads-admin-console .empty {
+  border-style: dashed;
+  background: var(--ads-surface);
+}
+
+.advertise-page .status-badge,
+.advertiser-console .status-badge,
+.ads-admin-console .status-badge {
+  border-radius: 999px;
+  border: 1px solid var(--ads-border);
+  background: var(--ads-surface-muted);
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.advertise-page .status-pending_review,
+.advertiser-console .status-pending_review,
+.ads-admin-console .status-pending_review,
+.advertise-page .status-draft,
+.advertiser-console .status-draft,
+.ads-admin-console .status-draft {
+  border-color: var(--ads-orange-border);
+  background: var(--ads-orange-soft);
+  color: #c2410c;
+}
+
+.advertise-page .status-approved,
+.advertiser-console .status-approved,
+.ads-admin-console .status-approved,
+.advertise-page .status-active,
+.advertiser-console .status-active,
+.ads-admin-console .status-active {
+  border-color: var(--ads-success-border);
+  background: var(--ads-success-bg);
+  color: var(--ads-success-text);
+}
+
+.advertise-page .status-rejected,
+.advertiser-console .status-rejected,
+.ads-admin-console .status-rejected,
+.advertise-page .status-changes_requested,
+.advertiser-console .status-changes_requested,
+.ads-admin-console .status-changes_requested {
+  border-color: var(--ads-error-border);
+  background: var(--ads-error-bg);
+  color: var(--ads-error-text);
+}
+
+.app-shell-admin .ads-admin-console .ads-chart-card {
+  padding: 14px;
+}
+
+@media (max-width: 980px) {
+  .advertise-page,
+  .advertiser-console,
+  .ads-admin-console {
+    padding: 14px;
+  }
+
+  .ads-layout,
+  .advertiser-entry-grid-pro,
+  .advertiser-console-workgrid,
+  .advertiser-console-metrics,
+  .advertiser-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ads-sidebar {
+    position: static;
+    display: flex;
+    overflow-x: auto;
+  }
+}
+
 .producer-event-actions {
   display: flex;
   align-items: center;
@@ -1009,6 +2324,71 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   }
 }
 
+.advertise-page .advertise-hero,
+.advertise-page .advertise-principle-card,
+.advertise-page .advertise-audience-grid .clean-card,
+.advertise-page .advertise-steps .clean-card,
+.advertise-page .advertise-final-card,
+.advertise-page .advertise-access-note {
+  border: 1px solid var(--ads-border);
+  background: var(--ads-surface);
+  color: var(--ads-text);
+  box-shadow: var(--ads-shadow-sm);
+}
+
+.advertise-page .advertise-hero {
+  gap: 14px;
+  padding: clamp(20px, 4vw, 28px);
+}
+
+.advertise-page .advertise-hero h2 {
+  max-width: 820px;
+  color: var(--ads-text);
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  line-height: 1.12;
+}
+
+.advertise-page :where(.advertise-hero p, .advertise-principle-card p, .advertise-audience-grid p, .advertise-steps p, .advertise-final-card p) {
+  color: var(--ads-text-muted);
+}
+
+.advertise-page :where(.advertise-principle-card p, .advertise-audience-grid p, .advertise-steps p, .advertise-final-card p, .advertise-access-note p) {
+  font-size: .88rem;
+  line-height: 1.58;
+  letter-spacing: -.005em;
+}
+
+.advertise-page :where(.advertise-audience-grid strong, .advertise-steps strong, .advertise-final-card h3, .advertise-access-note strong) {
+  font-size: .98rem;
+}
+
+.advertise-page :where(.advertise-principle-card h3, .advertise-section-heading h3, .advertise-final-card h3, .advertise-audience-grid strong, .advertise-steps strong, .advertise-access-note strong) {
+  color: var(--ads-text);
+}
+
+.advertise-page .advertise-steps span {
+  border-color: var(--ads-orange-border);
+  border-radius: var(--ads-radius-md);
+  background: var(--ads-orange-soft);
+  color: #c2410c;
+}
+
+.advertise-page .advertise-access-note {
+  border-left: 3px solid var(--ads-orange);
+  border-style: solid;
+  background: var(--ads-orange-soft);
+}
+
+.advertise-page .advertise-access-note code {
+  border-color: var(--ads-orange-border);
+  background: #fff;
+  color: #c2410c;
+}
+
+.advertise-page .advertise-final-card {
+  border-color: var(--ads-border);
+}
+
 .advertiser-readonly-section {
   display: grid;
   gap: 12px;
@@ -1018,6 +2398,61 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 .placement-catalog-grid {
   display: grid;
   gap: 12px;
+}
+
+/* ADS brand mark */
+.ads-brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  min-height: 34px;
+  margin-bottom: 8px;
+}
+
+.ads-brand-logo {
+  display: block;
+  width: auto;
+  max-width: 176px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.ads-brand-lockup-admin {
+  gap: 12px;
+}
+
+.ads-brand-lockup-admin span {
+  border-left: 1px solid var(--ads-border-strong);
+  padding-left: 12px;
+  color: var(--ads-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.ads-brand-logo-admin {
+  max-width: 158px;
+  height: 28px;
+}
+
+@media (max-width: 720px) {
+  .ads-brand-logo {
+    max-width: 148px;
+    height: 26px;
+  }
+
+  .ads-brand-lockup-admin {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ads-brand-lockup-admin span {
+    border-left: 0;
+    padding-left: 0;
+  }
 }
 
 .placement-catalog-card h3 {
@@ -7284,6 +8719,46 @@ button.venue-card {
     margin-top: 0;
   }
 
+}
+
+/* ADS typography refinement — quieter supporting copy */
+.advertiser-console :where(
+  .advertiser-console-topbar p,
+  .advertiser-entry-hero-pro p,
+  .advertiser-form-heading p,
+  .advertiser-compliance-note-pro,
+  .advertiser-pending-card-pro p,
+  .advertiser-process-list small,
+  .advertiser-console-metrics small,
+  .advertiser-campaign-card-header p,
+  .advertiser-creative-card small,
+  .advertiser-empty-state,
+  .advertiser-readonly-notice
+) {
+  font-size: .86rem;
+  line-height: 1.56;
+  letter-spacing: -.005em;
+}
+
+.advertiser-console :where(.advertiser-benefits-pro span, .advertiser-process-list strong) {
+  font-size: .82rem;
+}
+
+.app-shell-admin .ads-admin-console :where(
+  .ads-admin-hero p,
+  .meta-line,
+  .empty,
+  small,
+  .ads-nav-item small,
+  .ads-admin-hero-metrics span
+) {
+  font-size: .84rem;
+  line-height: 1.5;
+  letter-spacing: -.004em;
+}
+
+.app-shell-admin .ads-admin-console :where(.ads-admin-hero-metrics strong, .ads-review-card strong, .placement-catalog-card strong) {
+  letter-spacing: -.01em;
 }
 
 
