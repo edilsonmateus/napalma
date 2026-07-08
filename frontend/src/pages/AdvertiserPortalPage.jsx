@@ -111,19 +111,20 @@ export default function AdvertiserPortalPage() {
   const selectedAccount = useMemo(() => accounts.find((item) => item.id === accountId), [accountId, accounts]);
   const canWrite = WRITERS.includes(data.membership?.role);
   const hasPendingRequest = requests.length > 0;
+  const pendingRequest = requests[0];
   const campaigns = data.items || [];
   const creativeCount = campaigns.reduce((total, item) => total + (item.creatives?.length || 0), 0);
   const pendingReviewCount = campaigns.filter((item) => item.reviewStatus === "pending_review").length
     + campaigns.reduce((total, item) => total + (item.creatives || []).filter((creativeItem) => creativeItem.reviewStatus === "pending_review").length, 0);
 
-  async function loadAccounts() {
+  async function loadAccounts({ silent = false } = {}) {
     try {
       const [items, pendingItems] = await Promise.all([getMyAdvertiserAccounts(), getMyAdvertiserAccessRequests()]);
       setAccounts(items);
       setRequests(pendingItems);
       if (!accountId && items[0]) setAccountId(items[0].id);
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Não foi possível carregar suas contas.");
+      if (!silent) setMessage(error?.response?.data?.message || "Não foi possível carregar suas contas.");
     }
   }
 
@@ -185,21 +186,25 @@ export default function AdvertiserPortalPage() {
     setMessage("");
     setIsRequesting(true);
     try {
-      await requestMyAdvertiserAccess({
+      const item = await requestMyAdvertiserAccess({
         ...requestForm,
         legalName: requestForm.legalName || null,
         contactEmail: requestForm.contactEmail || user?.email || null,
         contactPhone: requestForm.contactPhone || null
       });
+      setRequests((current) => [item, ...current.filter((requestItem) => requestItem.id !== item.id)]);
       setRequestForm({ ...INITIAL_REQUEST, contactEmail: user?.email || "" });
       try { localStorage.removeItem(REQUEST_DRAFT_KEY); } catch (_error) { /* armazenamento local indisponível */ }
-      setMessage("Solicitação enviada. A equipe 77Gira vai analisar e liberar a Central do Anunciante quando estiver tudo certo.");
-      await loadAccounts();
+      setMessage("Solicitação recebida. A equipe 77Gira vai analisar e liberar a Central do Anunciante quando estiver tudo certo.");
+      await loadAccounts({ silent: true });
     } catch (error) {
       if (error?.response?.status === 401) {
         setMessage("Sua sessão expirou antes do envio. Entre novamente e reenvie a solicitação; os dados digitados foram preservados neste dispositivo.");
       } else if (error?.response?.status === 404) {
         setMessage("O backend ainda não reconhece o endpoint de solicitação de anunciante. Aguarde o deploy da API e tente novamente.");
+      } else if (error?.response?.status === 409) {
+        setMessage(error?.response?.data?.message || "Já existe uma solicitação para este anunciante.");
+        await loadAccounts({ silent: true });
       } else {
         setMessage(error?.response?.data?.message || "Não foi possível enviar a solicitação.");
       }
@@ -317,6 +322,24 @@ export default function AdvertiserPortalPage() {
             ) : null}
           </article>
 
+          {hasPendingRequest ? (
+          <article className="clean-card advertiser-request-form advertiser-request-form-pro advertiser-request-confirmation">
+            <div className="advertiser-form-heading">
+              <span className="eyebrow">Solicitação recebida</span>
+              <h3>Estamos analisando seu acesso</h3>
+              <p>A equipe 77Gira recebeu o pedido e vai liberar o workspace quando a conta anunciante for aprovada.</p>
+            </div>
+            <div className="advertiser-pending-card advertiser-pending-card-pro">
+              <strong>{pendingRequest?.name || "Conta anunciante"}</strong>
+              <p>{getAccountTypeLabel(pendingRequest?.type)} · {getStatusLabel(pendingRequest?.status)}</p>
+              <small className="meta-line">Você continuará usando este mesmo login do 77Gira. Nenhuma senha separada de ADS será criada.</small>
+            </div>
+            <button className="btn-primary advertiser-submit-button advertiser-submit-button-success" type="button" disabled>
+              Solicitação enviada
+            </button>
+            <small className="meta-line">Se a aprovação for concluída, a Central do Anunciante será aberta automaticamente nesta área.</small>
+          </article>
+          ) : (
           <form className="venue-form clean-card advertiser-request-form advertiser-request-form-pro" onSubmit={submitAdvertiserRequest}>
             <div className="advertiser-form-heading">
               <span className="eyebrow">Nova solicitação</span>
@@ -344,6 +367,7 @@ export default function AdvertiserPortalPage() {
               <small className="meta-line">Rascunho salvo neste dispositivo. Se a sessão expirar, você poderá voltar e continuar.</small>
             ) : null}
           </form>
+          )}
         </div>
       ) : (
         <>

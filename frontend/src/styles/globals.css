@@ -1566,6 +1566,18 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   justify-content: center;
 }
 
+.advertiser-request-confirmation {
+  align-content: start;
+}
+
+.advertiser-submit-button-success:disabled {
+  border-color: #16a34a !important;
+  background: #16a34a !important;
+  color: #fff !important;
+  cursor: default;
+  opacity: 1;
+}
+
 .advertiser-console-panel {
   display: grid;
   gap: 12px;
