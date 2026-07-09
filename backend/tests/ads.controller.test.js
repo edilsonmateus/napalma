@@ -74,9 +74,28 @@ function activeCampaign(overrides = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  process.env.ADS_CREDITS_PURCHASE_ENABLED = "true";
 });
 
 describe("Ads controller legacy contracts", () => {
+  it("blocks delivery while credits/patacos are not enabled", async () => {
+    process.env.ADS_CREDITS_PURCHASE_ENABLED = "false";
+    prismaMock.adCampaign.findMany.mockResolvedValue([activeCampaign()]);
+    const req = { params: { slot: "explore_feed_large" }, user: null };
+    const res = createResponse();
+    const next = vi.fn();
+
+    await getAdDelivery(req, res, next);
+
+    expect(prismaMock.adCampaign.findMany).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      item: null,
+      blockedReason: "credits_not_enabled",
+      message: "Ad delivery is blocked until credits/patacos are enabled."
+    });
+    expect(next).not.toHaveBeenCalled();
+  });
+
   it("returns the current no-fill contract when no campaign is eligible", async () => {
     prismaMock.adCampaign.findMany.mockResolvedValue([]);
     const req = { params: { slot: "explore_feed_large" }, user: null };

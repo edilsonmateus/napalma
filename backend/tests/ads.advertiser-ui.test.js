@@ -35,7 +35,7 @@ describe("Ads advertiser admin UI contract", () => {
       "utf8"
     );
     expect(page).toContain("VITE_ADS_ADVERTISER_ACCOUNTS_ENABLED");
-    expect(page).toContain('ADVERTISER_ACCOUNTS_ENABLED ? [["advertisers", "Anunciantes"]]');
+    expect(page).toMatch(/ADVERTISER_ACCOUNTS_ENABLED\s+\?\s+\[\["advertisers", "Anunciantes", pendingAdvertiserRequests\.length\]\]/);
     expect(page).toContain('adsSection === "advertisers" && ADVERTISER_ACCOUNTS_ENABLED');
     expect(page).toContain("Nova conta");
     expect(page).toContain("Editar conta");

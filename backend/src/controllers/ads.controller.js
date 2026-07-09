@@ -202,6 +202,13 @@ export async function updateAdCreative(req, res, next) {
 export async function getAdDelivery(req, res, next) {
   try {
     const slot = slotEnum.parse(req.params.slot);
+    if (!isFeatureEnabled("ADS_CREDITS_PURCHASE_ENABLED")) {
+      return res.json({
+        item: null,
+        blockedReason: "credits_not_enabled",
+        message: "Ad delivery is blocked until credits/patacos are enabled."
+      });
+    }
     const now = new Date();
     const userId = req.user?.id || null;
     const dayStart = new Date(now);

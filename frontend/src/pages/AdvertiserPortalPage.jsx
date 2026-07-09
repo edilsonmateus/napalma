@@ -82,6 +82,8 @@ const STATUS_LABELS = {
   archived: "Arquivado"
 };
 const INITIAL_REQUEST = { name: "", type: "brand", legalName: "", contactEmail: "", contactPhone: "", objective: "brand_campaign", message: "" };
+const CREDITS_PURCHASE_ENABLED =
+  String(import.meta.env.VITE_ADS_CREDITS_PURCHASE_ENABLED || "").toLowerCase() === "true";
 const VALID_TYPES = new Set(ACCOUNT_TYPES.map(([value]) => value));
 const VALID_OBJECTIVES = new Set(OBJECTIVES.map(([value]) => value));
 const REQUEST_DRAFT_KEY = "77gira.ads.advertiserRequestDraft";
@@ -149,7 +151,7 @@ function getCampaignReadiness(campaignItem) {
   const anyCreativeInReview = creatives.some((item) => item.reviewStatus === "pending_review");
   const needsCampaignReview = ["draft", "rejected", "changes_requested"].includes(campaignItem.reviewStatus || "draft");
   const needsCreativeReview = creatives.some((item) => ["draft", "rejected", "changes_requested"].includes(item.reviewStatus || "draft"));
-  const hasBudget = Number(campaignItem.creditBalance || campaignItem.budgetCredits || 0) > 0;
+  const hasBudget = CREDITS_PURCHASE_ENABLED && Number(campaignItem.creditBalance || campaignItem.budgetCredits || 0) > 0;
 
   if (!hasCreative) {
     return { deliveryLabel: "Aguardando criativo", tone: "draft", nextAction: "Envie pelo menos um criativo para que a campanha possa ser revisada.", progress: 25 };
@@ -167,6 +169,14 @@ function getCampaignReadiness(campaignItem) {
     return { deliveryLabel: "Aguardando aprovação", tone: "pending_review", nextAction: "A campanha ou os criativos ainda precisam de aprovação.", progress: 70 };
   }
   if (!hasBudget) {
+    if (!CREDITS_PURCHASE_ENABLED) {
+      return {
+        deliveryLabel: "Bloqueada por créditos",
+        tone: "draft",
+        nextAction: "A compra de patacos ainda não está liberada; a campanha aprovada fica pronta, mas não deve ser tratada como no ar.",
+        progress: 82
+      };
+    }
     return { deliveryLabel: "Aguardando créditos", tone: "draft", nextAction: "Adicione créditos/patacos quando a compra de mídia estiver liberada.", progress: 82 };
   }
   return { deliveryLabel: "Pronta para veicular", tone: "active", nextAction: "Campanha aprovada, com criativo e orçamento disponível.", progress: 100 };
@@ -174,6 +184,36 @@ function getCampaignReadiness(campaignItem) {
 
 function getPrimaryCreative(campaignItem) {
   return (campaignItem.creatives || [])[0] || null;
+}
+
+function getCampaignBlockers(campaignItem) {
+  const creatives = campaignItem.creatives || [];
+  const approvedCreatives = creatives.filter((item) => ["approved", "active"].includes(item.reviewStatus || item.status));
+  const hasBudget = CREDITS_PURCHASE_ENABLED && Number(campaignItem.creditBalance || campaignItem.budgetCredits || 0) > 0;
+  return [
+    {
+      label: "Campanha revisada",
+      complete: ["approved", "active"].includes(campaignItem.reviewStatus || campaignItem.status),
+      help: "A equipe 77Gira precisa aprovar objetivo, período e contexto."
+    },
+    {
+      label: "Criativo aprovado",
+      complete: approvedCreatives.length > 0,
+      help: creatives.length ? "O arquivo existe, mas ainda precisa passar pela revisão." : "Envie pelo menos uma imagem para o slot escolhido."
+    },
+    {
+      label: "Patacos/créditos",
+      complete: hasBudget,
+      help: CREDITS_PURCHASE_ENABLED
+        ? "Compre ou vincule créditos de impulsionamento."
+        : "Camada financeira ainda não liberada; veiculação comercial fica bloqueada."
+    },
+    {
+      label: "Inventário compatível",
+      complete: campaignItem.runInAllSlots || approvedCreatives.some((creative) => SLOTS.includes(creative.slot)),
+      help: "O criativo precisa estar ligado a um slot existente do app."
+    }
+  ];
 }
 
 function getCampaignPreviewSlots(campaignItem, liveCreative = {}) {
@@ -812,6 +852,7 @@ export default function AdvertiserPortalPage() {
                         : {};
                       const livePreviewSlots = getCampaignPreviewSlots(item, liveCreative);
                       const previewSlot = liveCreative.slot || primaryCreative?.slot || livePreviewSlots[0];
+                      const blockers = getCampaignBlockers(item);
                       const previewCopy = SLOT_PREVIEW_COPY[previewSlot] || { description: "Prévia aproximada do slot selecionado.", cta: "Abrir" };
                       return (
                         <>
@@ -828,6 +869,15 @@ export default function AdvertiserPortalPage() {
                                 </span>
                               ))}
                             </div>
+                          </div>
+                          <div className="advertiser-campaign-blockers" aria-label="Checklist de liberação da campanha">
+                            <strong>Checklist para entrar no ar</strong>
+                            {blockers.map((blocker) => (
+                              <div key={blocker.label} className={blocker.complete ? "complete" : ""}>
+                                <span>{blocker.complete ? "OK" : "Pendente"}</span>
+                                <p><b>{blocker.label}</b><small>{blocker.help}</small></p>
+                              </div>
+                            ))}
                           </div>
                           <div className="advertiser-campaign-readiness">
                             <article>

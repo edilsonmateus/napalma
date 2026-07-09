@@ -39,7 +39,7 @@ describe("Ads canonical placement catalog", () => {
     const page = fs.readFileSync(path.join(frontendRoot, "src/pages/AdsAdminPage.jsx"), "utf8");
     expect(envExample).toContain('VITE_ADS_PLACEMENT_CATALOG_ENABLED="false"');
     expect(page).toContain("VITE_ADS_PLACEMENT_CATALOG_ENABLED");
-    expect(page).toContain('PLACEMENT_CATALOG_ENABLED ? [["inventory", "Inventario"]]');
+    expect(page).toMatch(/PLACEMENT_CATALOG_ENABLED\s+\?\s+\[\["inventory", "Inventário", placements\.length\]\]/);
     expect(page).toContain('adsSection === "inventory" && PLACEMENT_CATALOG_ENABLED');
   });
 });

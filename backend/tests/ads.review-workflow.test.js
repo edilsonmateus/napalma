@@ -22,7 +22,7 @@ describe("ADS review workflow", () => {
 
   it("exposes the review queue only behind the frontend flag", () => {
     expect(page).toContain("VITE_ADS_REVIEW_WORKFLOW_ENABLED");
-    expect(page).toContain('[["reviews", "Revisao"]]');
+    expect(page).toMatch(/REVIEW_WORKFLOW_ENABLED\s+\?\s+\[\["reviews", "Revisão", reviewQueueCount\]\]/);
     expect(page).toContain('adsSection === "reviews" && REVIEW_WORKFLOW_ENABLED');
   });
 });

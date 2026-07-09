@@ -47,6 +47,8 @@ const R2_CREATIVE_UPLOAD_ENABLED =
   String(import.meta.env.VITE_ADS_R2_CREATIVE_UPLOAD_ENABLED || "").toLowerCase() === "true";
 const REVIEW_WORKFLOW_ENABLED =
   String(import.meta.env.VITE_ADS_REVIEW_WORKFLOW_ENABLED || "").toLowerCase() === "true";
+const CREDITS_PURCHASE_ENABLED =
+  String(import.meta.env.VITE_ADS_CREDITS_PURCHASE_ENABLED || "").toLowerCase() === "true";
 
 const SLOT_OPTIONS = [
   "explore_feed_large",
@@ -130,6 +132,31 @@ function getReviewContextText(item) {
     return "Valide principalmente imagem, destino e adequação ao slot antes de aprovar.";
   }
   return "Valide intenção comercial, período e relação com a conta anunciante antes de aprovar.";
+}
+
+function hasApprovedReview(value) {
+  return !REVIEW_WORKFLOW_ENABLED || value === null || value === "approved" || value === "active";
+}
+
+function hasCampaignBudget(campaign) {
+  return CREDITS_PURCHASE_ENABLED && Number(campaign.creditBalance || campaign.budgetCredits || 0) > 0;
+}
+
+function getCampaignOpsBlockers(campaign) {
+  const now = Date.now();
+  const approvedCreatives = (campaign.creatives || []).filter(
+    (creative) => creative.isEnabled && hasApprovedReview(creative.reviewStatus)
+  );
+  const blockers = [];
+  if (!campaign.isEnabled || campaign.status !== "active") blockers.push("Campanha precisa estar ativa e habilitada.");
+  if (campaign.startsAt && new Date(campaign.startsAt).getTime() > now) blockers.push("Janela de veiculação ainda não começou.");
+  if (campaign.endsAt && new Date(campaign.endsAt).getTime() < now) blockers.push("Janela de veiculação encerrada.");
+  if (!hasApprovedReview(campaign.reviewStatus)) blockers.push("Campanha ainda não foi aprovada pela revisão 77Gira.");
+  if (!approvedCreatives.length) blockers.push("Nenhum criativo aprovado e habilitado.");
+  if (!hasCampaignBudget(campaign)) {
+    blockers.push(CREDITS_PURCHASE_ENABLED ? "Sem patacos/créditos vinculados." : "Camada de patacos/checkout ainda não liberada.");
+  }
+  return blockers;
 }
 
 export default function AdsAdminPage() {
@@ -259,6 +286,16 @@ export default function AdsAdminPage() {
       })
       .filter((row) => row.missing.length > 0);
   }, [orderedCampaigns]);
+  const campaignOpsBlockers = useMemo(
+    () => orderedCampaigns
+      .map((item) => ({ item, blockers: getCampaignOpsBlockers(item) }))
+      .filter((row) => row.blockers.length > 0),
+    [orderedCampaigns]
+  );
+  const campaignsBlockedByCredits = useMemo(
+    () => campaignOpsBlockers.filter((row) => row.blockers.some((blocker) => blocker.toLowerCase().includes("patacos"))),
+    [campaignOpsBlockers]
+  );
   const coverageBySlot = useMemo(() => {
     const map = Object.fromEntries(SLOT_OPTIONS.map((slot) => [slot, 0]));
     for (const campaign of orderedCampaigns) {
@@ -311,7 +348,7 @@ export default function AdsAdminPage() {
   const reviewQueueCount = reviewCampaignCount + reviewCreativeCount;
   const activeCampaignCount = orderedCampaigns.filter((item) => item.status === "active").length;
   const creativeCount = orderedCampaigns.reduce((total, item) => total + item.creatives.length, 0);
-  const healthIssueCount = activeWithoutCreatives.length + activeMissingSlots.length + expiredActiveCampaigns.length;
+  const healthIssueCount = activeWithoutCreatives.length + activeMissingSlots.length + expiredActiveCampaigns.length + campaignsBlockedByCredits.length;
   const pendingActionCount = pendingAdvertiserRequests.length + reviewQueueCount + healthIssueCount;
   const navItems = [
     ["overview", "Painel", pendingActionCount],
@@ -753,6 +790,26 @@ export default function AdsAdminPage() {
             <span>Alertas de saúde</span>
             <strong>{healthIssueCount}</strong>
             <small>Campanhas sem criativo, slot ou janela válida.</small>
+          </button>
+          <button type="button" className="clean-card ads-command-card ads-command-card-warning" onClick={() => setAdsSection("health")}>
+            <span>Patacos / checkout</span>
+            <strong>{CREDITS_PURCHASE_ENABLED ? campaignsBlockedByCredits.length : "OFF"}</strong>
+            <small>{CREDITS_PURCHASE_ENABLED ? "Campanhas maduras sem crédito." : "Camada financeira ainda bloqueia veiculação comercial."}</small>
+          </button>
+          <button type="button" className="clean-card ads-command-card" onClick={() => setAdsSection("reports")}>
+            <span>Tracking</span>
+            <strong>{(report?.summary?.impressions || report?.summary?.clicks) ? "ON" : "0"}</strong>
+            <small>Impressões e cliques já alimentam relatórios e atividade.</small>
+          </button>
+          <button type="button" className="clean-card ads-command-card" onClick={() => setAdsSection("reports")}>
+            <span>Inventário por slot</span>
+            <strong>{Object.values(coverageBySlot).reduce((sum, value) => sum + value, 0)}</strong>
+            <small>Campanhas tecnicamente aptas distribuídas por superfície.</small>
+          </button>
+          <button type="button" className="clean-card ads-command-card ads-command-card-warning" onClick={() => setAdsSection("health")}>
+            <span>Entrega segura</span>
+            <strong>{campaignOpsBlockers.length}</strong>
+            <small>Bloqueios antes de considerar uma campanha como no ar.</small>
           </button>
         </div>
 
@@ -1633,6 +1690,31 @@ export default function AdsAdminPage() {
           <button className="btn-link" type="button" onClick={pauseExpiredCampaigns}>Pausar expiradas</button>
         </p>
       ) : null}
+      <section className="clean-card ads-health-blockers">
+        <div className="advertiser-readonly-title">
+          <div>
+            <span className="eyebrow">Entrega segura</span>
+            <h3>Bloqueios antes de ir ao ar</h3>
+            <p className="meta-line">Campanha aprovada não deve ser confundida com campanha veiculando. Estes pontos seguram a entrega.</p>
+          </div>
+          <span className="status-badge status-draft">{campaignOpsBlockers.length} bloqueio(s)</span>
+        </div>
+        {campaignOpsBlockers.length ? (
+          <div className="ads-health-blocker-list">
+            {campaignOpsBlockers.map(({ item, blockers }) => (
+              <article key={item.id}>
+                <strong>{item.name}</strong>
+                <small>{item.advertiser} · {item.status} · {item.reviewStatus || "sem revisão"}</small>
+                <ul>
+                  {blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
+                </ul>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="meta-line">Nenhum bloqueio operacional encontrado para as campanhas atuais.</p>
+        )}
+      </section>
       </>
       ) : null}
       {adsSection === "campaigns" ? (

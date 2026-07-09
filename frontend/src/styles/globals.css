@@ -2020,9 +2020,75 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   padding: 9px 10px;
 }
 
-.advertiser-campaign-readiness {
+.advertiser-campaign-blockers {
   grid-column: 1;
   grid-row: 3;
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--ads-border, rgba(158,174,191,.18));
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--ads-surface-subtle, rgba(255,255,255,.035));
+}
+
+.advertiser-campaign-blockers > strong {
+  color: var(--ads-text, #0f172a);
+  font-size: .86rem;
+}
+
+.advertiser-campaign-blockers div {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  border-top: 1px solid var(--ads-border, rgba(158,174,191,.14));
+  padding-top: 8px;
+}
+
+.advertiser-campaign-blockers div:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.advertiser-campaign-blockers span {
+  display: inline-flex;
+  justify-content: center;
+  border: 1px solid var(--ads-orange-border, rgba(249,115,22,.28));
+  border-radius: 999px;
+  padding: 3px 6px;
+  background: var(--ads-orange-soft, rgba(249,115,22,.08));
+  color: #c2410c;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.advertiser-campaign-blockers div.complete span {
+  border-color: var(--ads-success-border, rgba(22,163,74,.28));
+  background: var(--ads-success-bg, rgba(22,163,74,.1));
+  color: var(--ads-success-text, #15803d);
+}
+
+.advertiser-campaign-blockers p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+
+.advertiser-campaign-blockers b {
+  color: var(--ads-text, #0f172a);
+  font-size: 12px;
+}
+
+.advertiser-campaign-blockers small {
+  color: var(--ads-text-muted, #64748b);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.advertiser-campaign-readiness {
+  grid-column: 1;
+  grid-row: 4;
   align-self: start;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2055,7 +2121,7 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 
 .advertiser-campaign-live-preview {
   grid-column: 2;
-  grid-row: 2 / span 2;
+  grid-row: 2 / span 3;
   align-self: start;
   display: grid;
   justify-items: center;
@@ -2325,6 +2391,7 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 
   .advertiser-campaign-card-header,
   .advertiser-campaign-delivery,
+  .advertiser-campaign-blockers,
   .advertiser-campaign-readiness,
   .advertiser-campaign-live-preview,
   .advertiser-creative-grid,
@@ -2365,6 +2432,7 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 
   .advertiser-campaign-card-header,
   .advertiser-campaign-delivery,
+  .advertiser-campaign-blockers,
   .advertiser-campaign-readiness,
   .advertiser-campaign-live-preview,
   .advertiser-creative-grid,
@@ -3515,6 +3583,44 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   color: var(--ads-text-muted);
   font-size: 12px;
   line-height: 1.42;
+}
+
+.ads-health-blockers {
+  display: grid;
+  gap: 12px;
+}
+
+.ads-health-blocker-list {
+  display: grid;
+  gap: 10px;
+}
+
+.ads-health-blocker-list article {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--ads-border);
+  border-radius: var(--ads-radius-md);
+  padding: 12px;
+  background: var(--ads-surface-muted);
+}
+
+.ads-health-blocker-list strong {
+  color: var(--ads-text);
+}
+
+.ads-health-blocker-list small {
+  color: var(--ads-text-muted);
+  font-size: 11px;
+}
+
+.ads-health-blocker-list ul {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 0;
+  padding-left: 18px;
+  color: var(--ads-text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .ads-manual-admin-panel {
