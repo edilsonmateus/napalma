@@ -33,12 +33,16 @@ export default function ManagementHub({ user, canManageVenues, canManageAds, can
       items.push({ to: "/workspace/artista/equipe", icon: Users, title: "Equipe e acessos", description: "Convide gestores, editores e leitores sem compartilhar a senha da conta.", action: "Gerenciar equipe", badge: "Acessos", chip: "Equipe" });
       items.push({ to: `/artistas/${artist.slug || artist.id}`, icon: ExternalLink, title: "Mídia kit público", description: "Abra o perfil profissional para enviar a casas, imprensa e contratantes.", action: "Abrir EPK", badge: "EPK", chip: "EPK" });
     }
-    if (enabled("VITE_ADS_ADVERTISER_ACCOUNTS_ENABLED") && (advertiserAccounts.length || canManageVenues)) {
+    if (enabled("VITE_ADS_ADVERTISER_ACCOUNTS_ENABLED") && (advertiserAccounts.length || canManageVenues || artist)) {
       items.push({
         to: "/workspace/anunciante",
         icon: Megaphone,
-        title: advertiserAccounts.length ? "Central do Anunciante" : "Solicitar publicidade",
-        description: advertiserAccounts.length ? "Crie campanhas, acompanhe anúncios e impulsione eventos, artistas ou casas." : "Peça acesso para impulsionar uma casa, evento ou campanha com revisão da equipe 77Gira.",
+        title: advertiserAccounts.length ? "Central do Anunciante" : "Publicidade e impulsionamento",
+        description: advertiserAccounts.length
+          ? "Crie campanhas, acompanhe anúncios, envie criativos e veja o que ainda falta para veicular."
+          : artist
+            ? "Solicite acesso para destacar seu EPK, agenda e próximos sambas com revisão da equipe 77Gira."
+            : "Peça acesso para impulsionar uma casa, evento ou campanha com revisão da equipe 77Gira.",
         action: advertiserAccounts.length ? "Abrir central" : "Solicitar acesso",
         badge: "Ads",
         chip: "Ads"

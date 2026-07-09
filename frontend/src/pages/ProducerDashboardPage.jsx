@@ -213,10 +213,23 @@ export default function ProducerDashboardPage() {
           </div>
 
           {showOverview ? (
+            <>
             <article className="clean-card admin-overview-card">
               <h4>Visão Geral do Produtor</h4>
               <p className="meta-line">Use o menu lateral para reivindicar carteira, acompanhar suas solicitações e acessar os próximos eventos.</p>
             </article>
+            <aside className="clean-card ops-ads-entry-card">
+              <div>
+                <span className="eyebrow">77Gira Ads</span>
+                <strong>Impulsione eventos e projetos da sua carteira.</strong>
+                <p className="meta-line">
+                  O workspace de anunciante cria campanhas com revisão 77Gira. É o caminho certo para divulgar agenda,
+                  projetos especiais e campanhas de ocupação sem publicar nada automaticamente.
+                </p>
+              </div>
+              <Link className="btn-primary" to={buildAdvertiserIntentUrl({ name: producerName })}>Abrir publicidade</Link>
+            </aside>
+            </>
           ) : null}
 
           {showClaims ? (

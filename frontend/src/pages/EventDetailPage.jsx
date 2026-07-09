@@ -48,6 +48,23 @@ function stripBrazilZipCode(value) {
     .trim();
 }
 
+function canPromoteEvent(role) {
+  return ["admin", "casa", "venue_manager", "produtor", "producer"].includes(role);
+}
+
+function buildEventAdvertiserIntentUrl(event) {
+  const params = new URLSearchParams({
+    source: "event_detail",
+    type: "venue",
+    objective: "boost_event",
+    name: event.venue || event.title || "Evento",
+    accountName: event.venue || event.title || "Evento",
+    campaignName: event.title || "Evento",
+    message: `Quero impulsionar o evento "${event.title}", na casa ${event.venue}, em ${event.region}.`
+  });
+  return `/workspace/anunciante?${params.toString()}`;
+}
+
 export default function EventDetailPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
@@ -96,6 +113,7 @@ export default function EventDetailPage() {
   const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
   const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
   const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${formatCalendarDate(event.startsAt)}/${formatCalendarDate(event.endsAt)}&details=${encodeURIComponent(`${event.artist} | ${event.priceLabel}`)}&location=${encodeURIComponent(`${event.venue} - ${event.region}`)}`;
+  const showPromoteEvent = canPromoteEvent(user?.role);
 
   async function handleNativeShare() {
     try {
@@ -259,6 +277,11 @@ export default function EventDetailPage() {
               <Star size={14} />
               {toggleRadar.isPending ? "Atualizando..." : marked ? "Marcado no seu Radar" : "Guardar no Radar"}
             </button>
+            {showPromoteEvent ? (
+              <Link className="chip event-promote-chip" to={buildEventAdvertiserIntentUrl(event)}>
+                Promover evento
+              </Link>
+            ) : null}
           </div>
         ) : null}
 

@@ -1958,6 +1958,28 @@ export default function VenuesAdminPage() {
           {houseActiveVenue ?(
             <>
               {houseAdsLoading ?<p className="empty">Carregando métricas de anúncios...</p> : null}
+              <aside className="clean-card ops-ads-entry-card">
+                <div>
+                  <span className="eyebrow">77Gira Ads</span>
+                  <strong>Impulsione a casa ou uma noite específica.</strong>
+                  <p className="meta-line">
+                    Abra o workspace de anunciante com a casa já contextualizada. Campanhas e criativos passam por revisão
+                    antes de qualquer veiculação.
+                  </p>
+                </div>
+                <Link
+                  className="btn-primary"
+                  to={buildAdvertiserIntentUrl({
+                    name: houseDisplayName,
+                    accountName: houseDisplayName,
+                    campaignName: houseDisplayName,
+                    type: "venue",
+                    objective: "boost_venue"
+                  })}
+                >
+                  Promover casa
+                </Link>
+              </aside>
             </>
           ) : null}
         </>

@@ -37,6 +37,7 @@ import {
   useUploadAdCreativeAssetMutation
 } from "../hooks/useEventsQuery";
 import { useAuthStore } from "../store/authStore";
+import AdsMobilePreview from "../components/ads/AdsMobilePreview";
 
 const ADVERTISER_ACCOUNTS_ENABLED =
   String(import.meta.env.VITE_ADS_ADVERTISER_ACCOUNTS_ENABLED || "").toLowerCase() === "true";
@@ -107,6 +108,30 @@ const ADVERTISER_STATUSES = ["draft", "pending_review", "active", "suspended", "
 const MEMBERSHIP_ROLES = ["owner", "admin", "campaign_manager", "analyst", "billing_manager", "viewer"];
 const MEMBERSHIP_STATUSES = ["invited", "active", "suspended", "revoked"];
 
+function getReviewChecklist(item) {
+  if (item.entityType === "creative") {
+    return [
+      "Imagem compatível com o slot e sem corte crítico.",
+      "Texto, arte e destino não prometem algo enganoso.",
+      "Campanha vinculada tem contexto claro.",
+      "Marca, casa, artista ou produtor são identificáveis."
+    ];
+  }
+  return [
+    "Anunciante e objetivo comercial fazem sentido para o 77Gira.",
+    "Período da campanha está coerente com evento, casa ou ação.",
+    "Criativos existem ou já foram enviados para revisão.",
+    "A campanha não compromete a experiência editorial do app."
+  ];
+}
+
+function getReviewContextText(item) {
+  if (item.entityType === "creative") {
+    return "Valide principalmente imagem, destino e adequação ao slot antes de aprovar.";
+  }
+  return "Valide intenção comercial, período e relação com a conta anunciante antes de aprovar.";
+}
+
 export default function AdsAdminPage() {
   const user = useAuthStore((state) => state.user);
   const [adsSection, setAdsSection] = useState("overview");
@@ -159,6 +184,8 @@ export default function AdsAdminPage() {
   const [advertiserForm, setAdvertiserForm] = useState(INITIAL_ADVERTISER_ACCOUNT);
   const [editingAdvertiserId, setEditingAdvertiserId] = useState(null);
   const [showAdvertiserForm, setShowAdvertiserForm] = useState(false);
+  const [showManualCampaignForm, setShowManualCampaignForm] = useState(false);
+  const [showManualCreativeForm, setShowManualCreativeForm] = useState(false);
   const [membershipForm, setMembershipForm] = useState({ email: "", role: "viewer", status: "invited" });
   const [campaignToLinkId, setCampaignToLinkId] = useState("");
   const [message, setMessage] = useState("");
@@ -279,19 +306,22 @@ export default function AdsAdminPage() {
     }
     return "";
   }, [creativeForm.width, creativeForm.height, creativeForm.slot]);
-  const reviewQueueCount = (reviewQueue.campaigns?.length || 0) + (reviewQueue.creatives?.length || 0);
+  const reviewCampaignCount = reviewQueue.campaigns?.length || 0;
+  const reviewCreativeCount = reviewQueue.creatives?.length || 0;
+  const reviewQueueCount = reviewCampaignCount + reviewCreativeCount;
   const activeCampaignCount = orderedCampaigns.filter((item) => item.status === "active").length;
   const creativeCount = orderedCampaigns.reduce((total, item) => total + item.creatives.length, 0);
   const healthIssueCount = activeWithoutCreatives.length + activeMissingSlots.length + expiredActiveCampaigns.length;
+  const pendingActionCount = pendingAdvertiserRequests.length + reviewQueueCount + healthIssueCount;
   const navItems = [
-    ["overview", "Visão geral", activeCampaignCount],
+    ["overview", "Painel", pendingActionCount],
+    ...(ADVERTISER_ACCOUNTS_ENABLED ? [["advertisers", "Anunciantes", pendingAdvertiserRequests.length]] : []),
+    ...(REVIEW_WORKFLOW_ENABLED ? [["reviews", "Revisão", reviewQueueCount]] : []),
     ["campaigns", "Campanhas", filteredCampaigns.length],
     ["creatives", "Criativos", creativeCount],
+    ...(PLACEMENT_CATALOG_ENABLED ? [["inventory", "Inventário", placements.length]] : []),
     ["health", "Saúde", healthIssueCount],
     ["activity", "Atividade", activity.length],
-    ...(REVIEW_WORKFLOW_ENABLED ? [["reviews", "Revisão", reviewQueueCount]] : []),
-    ...(ADVERTISER_ACCOUNTS_ENABLED ? [["advertisers", "Anunciantes", pendingAdvertiserRequests.length]] : []),
-    ...(PLACEMENT_CATALOG_ENABLED ? [["inventory", "Inventário", placements.length]] : []),
     ["reports", "Relatórios", report?.daily?.length || 0]
   ];
 
@@ -685,12 +715,110 @@ export default function AdsAdminPage() {
         </aside>
         <div className="ads-content">
 
+      {adsSection === "overview" ? (
+      <section className="ads-command-center">
+        <div className="ads-command-heading">
+          <div>
+            <span className="eyebrow">Painel operacional</span>
+            <h3>O que precisa de decisão no 77Gira Ads</h3>
+            <p className="meta-line">
+              O workspace do anunciante cria solicitações, campanhas e criativos. Este console existe para revisar,
+              aprovar, pausar, auditar e proteger a experiência pública do 77Gira.
+            </p>
+          </div>
+          {REVIEW_WORKFLOW_ENABLED ? (
+            <button type="button" className="chip active" onClick={() => setAdsSection("reviews")}>
+              Abrir revisão
+            </button>
+          ) : null}
+        </div>
+
+        <div className="ads-command-grid">
+          <button type="button" className="clean-card ads-command-card" onClick={() => setAdsSection(ADVERTISER_ACCOUNTS_ENABLED ? "advertisers" : "campaigns")}>
+            <span>Solicitações comerciais</span>
+            <strong>{pendingAdvertiserRequests.length}</strong>
+            <small>Contas anunciantes aguardando aprovação.</small>
+          </button>
+          <button type="button" className="clean-card ads-command-card" onClick={() => setAdsSection(REVIEW_WORKFLOW_ENABLED ? "reviews" : "campaigns")}>
+            <span>Itens em revisão</span>
+            <strong>{reviewQueueCount}</strong>
+            <small>{reviewCampaignCount} campanha(s) e {reviewCreativeCount} criativo(s).</small>
+          </button>
+          <button type="button" className="clean-card ads-command-card" onClick={() => setAdsSection("campaigns")}>
+            <span>Campanhas ativas</span>
+            <strong>{activeCampaignCount}</strong>
+            <small>{orderedCampaigns.length} campanha(s) no console.</small>
+          </button>
+          <button type="button" className="clean-card ads-command-card" onClick={() => setAdsSection("health")}>
+            <span>Alertas de saúde</span>
+            <strong>{healthIssueCount}</strong>
+            <small>Campanhas sem criativo, slot ou janela válida.</small>
+          </button>
+        </div>
+
+        <div className="ads-command-next clean-card">
+          <div>
+            <span className="eyebrow">Próxima ação recomendada</span>
+            <strong>
+              {pendingActionCount > 0
+                ? "Resolver pendências antes de criar novas campanhas manuais."
+                : "Operação sem pendências críticas no momento."}
+            </strong>
+            <p className="meta-line">
+              Campanhas e criativos devem nascer prioritariamente no workspace do anunciante. Use criação manual apenas
+              para campanhas internas, correções operacionais ou exceções aprovadas pela equipe 77Gira.
+            </p>
+          </div>
+          <div className="ads-command-actions">
+            {ADVERTISER_ACCOUNTS_ENABLED ? (
+              <button type="button" className="chip" onClick={() => setAdsSection("advertisers")}>Anunciantes</button>
+            ) : null}
+            <button type="button" className="chip" onClick={() => setAdsSection("campaigns")}>Campanhas</button>
+            {PLACEMENT_CATALOG_ENABLED ? (
+              <button type="button" className="chip" onClick={() => setAdsSection("inventory")}>Inventário</button>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="ads-admin-funnel clean-card">
+          <div>
+            <span className="eyebrow">Fios conectados ao workspace</span>
+            <strong>Da solicitação à veiculação</strong>
+            <p className="meta-line">
+              O anunciante cria a demanda no workspace; o Admin 77Gira aprova acesso, revisa campanha/criativo,
+              acompanha inventário e segura a publicação quando houver risco editorial ou comercial.
+            </p>
+          </div>
+          <ol>
+            <li><span>01</span><strong>Solicitação</strong><small>{pendingAdvertiserRequests.length} aguardando decisão comercial</small></li>
+            <li><span>02</span><strong>Revisão</strong><small>{reviewQueueCount} item(ns) aguardando curadoria</small></li>
+            <li><span>03</span><strong>Inventário</strong><small>{PLACEMENT_CATALOG_ENABLED ? `${placements.length} placement(s) catalogados` : "Catálogo desativado"}</small></li>
+            <li><span>04</span><strong>Saúde</strong><small>{healthIssueCount} alerta(s) operacional(is)</small></li>
+          </ol>
+        </div>
+      </section>
+      ) : null}
+
       {adsSection === "reviews" && REVIEW_WORKFLOW_ENABLED ? (
       <section className="ads-review-section">
         <div className="admin-list-header">
           <div>
             <strong>Fila de revisão ({reviewQueue.campaigns.length + reviewQueue.creatives.length})</strong>
             <p className="meta-line">Campanhas e criativos aguardando decisao administrativa.</p>
+          </div>
+        </div>
+        <div className="ads-review-guidance clean-card">
+          <div>
+            <span className="eyebrow">Protocolo de decisão</span>
+            <strong>Revisão protege a experiência 77Gira.</strong>
+            <p className="meta-line">
+              Aprove quando houver legitimidade, contexto e peça adequada. Rejeite ou peça ajuste quando o anúncio parecer
+              genérico, enganoso, mal vinculado ao samba ou incompatível com o slot.
+            </p>
+          </div>
+          <div className="ads-review-guidance-metrics">
+            <span>{reviewCampaignCount} campanha(s)</span>
+            <span>{reviewCreativeCount} criativo(s)</span>
           </div>
         </div>
         {reviewQueueLoading ? <p className="empty">Carregando fila...</p> : null}
@@ -706,6 +834,24 @@ export default function AdsAdminPage() {
                 <span className="status-badge status-pending_review">pendente</span>
               </div>
               {item.imageUrl ? <img className="ads-review-image" src={item.imageUrl} alt={item.altText || item.label} /> : null}
+              <div className="ads-review-context">
+                <strong>{getReviewContextText(item)}</strong>
+                <ul>
+                  {getReviewChecklist(item).map((row) => <li key={row}>{row}</li>)}
+                </ul>
+              </div>
+              {item.entityType === "creative" && item.imageUrl ? (
+                <div className="ads-review-mobile-preview">
+                  <AdsMobilePreview
+                    slot={item.slot}
+                    imageUrl={item.imageUrl}
+                    title={item.title || item.campaign?.name || item.label}
+                    altText={item.altText || item.label}
+                    campaignName={item.campaign?.name}
+                    compact
+                  />
+                </div>
+              ) : null}
               <p className="meta-line">Enviado em {item.submittedAt ? new Date(item.submittedAt).toLocaleString("pt-BR") : "agora"}</p>
               <textarea placeholder="Motivo (obrigatorio para rejeitar)" value={selectedReview?.id === item.id ? reviewReason : ""} onFocus={() => setSelectedReview(item)} onChange={(event) => { setSelectedReview(item); setReviewReason(event.target.value); }} />
               <div className="form-actions-inline">
@@ -778,7 +924,7 @@ export default function AdsAdminPage() {
         <div className="admin-list-header">
           <div>
             <strong>Contas anunciantes ({filteredAdvertiserAccounts.length})</strong>
-            <p className="meta-line">Cadastro e consulta administrativa de contas.</p>
+            <p className="meta-line">Solicitações, aprovação comercial, responsáveis e vínculo com campanhas.</p>
           </div>
           <input
             className="search-input"
@@ -787,7 +933,7 @@ export default function AdsAdminPage() {
             onChange={(event) => setAdvertiserQuery(event.target.value)}
           />
           <button type="button" className="chip" onClick={openCreateAdvertiserForm}>
-            Nova conta
+            Criar conta manual
           </button>
         </div>
 
@@ -805,6 +951,8 @@ export default function AdsAdminPage() {
               <article className="advertiser-approval-card" key={item.id}>
                 <div>
                   <strong>{item.name}</strong>
+                  {item.notes ? <p className="advertiser-approval-intent">{item.notes}</p> : null}
+                  <small className="meta-line">Origem: workspace do anunciante · aprovar acesso não publica campanhas.</small>
                   <p className="meta-line">{item.type} · {item.contactEmail || "sem e-mail"} · {item.legalName || "sem razao social"}</p>
                 </div>
                 <div className="form-actions-inline">
@@ -832,7 +980,13 @@ export default function AdsAdminPage() {
 
         {showAdvertiserForm ? (
           <form className="venue-form clean-card advertiser-account-form" onSubmit={handleSaveAdvertiser}>
-            <strong>{editingAdvertiserId ? "Editar conta anunciante" : "Nova conta anunciante"}</strong>
+            <strong>{editingAdvertiserId ? "Editar conta anunciante" : "Nova conta anunciante manual"}</strong>
+            {!editingAdvertiserId ? (
+              <p className="meta-line">
+                Use apenas para contas internas ou exceções aprovadas. O fluxo normal começa pela solicitação no
+                workspace do anunciante.
+              </p>
+            ) : null}
             <input
               required
               minLength={2}
@@ -1061,7 +1215,7 @@ export default function AdsAdminPage() {
       </section>
       ) : null}
 
-      {(adsSection === "overview" || adsSection === "reports") ? (
+      {adsSection === "reports" ? (
       <>
       <section className="ads-hard-kpis">
         <article className="clean-card">
@@ -1236,7 +1390,7 @@ export default function AdsAdminPage() {
       </>
       ) : null}
 
-      {(adsSection === "overview" || adsSection === "activity") ? (
+      {adsSection === "activity" ? (
       <section className="ads-hard-grid">
         <section className="clean-card">
           <div className="form-actions-inline">
@@ -1255,9 +1409,23 @@ export default function AdsAdminPage() {
       ) : null}
 
       {(adsSection === "campaigns") ? (
-      <section className="ads-hard-grid ads-hard-forms">
-      <form className="venue-form clean-card" onSubmit={handleCreateCampaign}>
-        <h3 className="section-title">Nova campanha</h3>
+      <section className="ads-manual-admin-panel clean-card">
+        <div className="ads-manual-admin-heading">
+          <div>
+            <span className="eyebrow">Ação manual avançada</span>
+            <strong>Criar campanha interna</strong>
+            <p className="meta-line">
+              Atalho reservado para campanhas 77Gira, correções operacionais ou exceções aprovadas. O fluxo principal
+              deve começar no workspace do anunciante.
+            </p>
+          </div>
+          <button type="button" className="chip" onClick={() => setShowManualCampaignForm((current) => !current)}>
+            {showManualCampaignForm ? "Ocultar" : "Criar manualmente"}
+          </button>
+        </div>
+      {showManualCampaignForm ? (
+      <form className="venue-form ads-manual-admin-form" onSubmit={handleCreateCampaign}>
+        <h3 className="section-title">Nova campanha manual</h3>
         <input
           placeholder="Anunciante"
           value={campaignForm.advertiser}
@@ -1315,13 +1483,28 @@ export default function AdsAdminPage() {
           {createCampaign.isPending ? "Criando..." : "Criar campanha"}
         </button>
       </form>
+      ) : null}
       </section>
       ) : null}
 
       {(adsSection === "creatives") ? (
-      <section className="ads-hard-grid ads-hard-forms">
-      <form className="venue-form clean-card" onSubmit={handleCreateCreative}>
-        <h3 className="section-title">Novo criativo</h3>
+      <section className="ads-manual-admin-panel clean-card">
+        <div className="ads-manual-admin-heading">
+          <div>
+            <span className="eyebrow">Ação manual avançada</span>
+            <strong>Adicionar criativo a uma campanha</strong>
+            <p className="meta-line">
+              Use para ajustes internos, reposição de asset ou campanhas operadas pela equipe. O fluxo completo de
+              envio e revisão deve permanecer conectado ao workspace do anunciante.
+            </p>
+          </div>
+          <button type="button" className="chip" onClick={() => setShowManualCreativeForm((current) => !current)}>
+            {showManualCreativeForm ? "Ocultar" : "Adicionar manualmente"}
+          </button>
+        </div>
+      {showManualCreativeForm ? (
+      <form className="venue-form ads-manual-admin-form" onSubmit={handleCreateCreative}>
+        <h3 className="section-title">Novo criativo manual</h3>
         <select
           value={creativeForm.campaignId}
           onChange={(e) => setCreativeForm((prev) => ({ ...prev, campaignId: e.target.value }))}
@@ -1386,11 +1569,51 @@ export default function AdsAdminPage() {
           {createCreative.isPending ? "Salvando..." : "Adicionar criativo"}
         </button>
       </form>
+      ) : null}
+      </section>
+      ) : null}
+
+      {adsSection === "creatives" ? (
+      <section className="ads-creative-ops">
+        <div className="admin-list-header">
+          <div>
+            <strong>Criativos em operação ({creativeCount})</strong>
+            <p className="meta-line">Assets vinculados a campanhas, slots e revisão de entrega.</p>
+          </div>
+        </div>
+        <div className="ads-creative-grid">
+          {orderedCampaigns.flatMap((campaign) =>
+            campaign.creatives.map((creative) => (
+              <article key={creative.id} className="clean-card ads-creative-admin-card">
+                <div className="advertiser-readonly-title">
+                  <div>
+                    <h3>{creative.title || SLOT_LABELS[creative.slot] || creative.slot}</h3>
+                    <p className="meta-line">{campaign.name} · {campaign.advertiser}</p>
+                  </div>
+                  <span className={`status-badge ${creative.isEnabled ? "status-active" : "status-draft"}`}>
+                    {creative.isEnabled ? "ativo" : "inativo"}
+                  </span>
+                </div>
+                <div className="ads-slot-preview">
+                  <small>{SLOT_LABELS[creative.slot] || creative.slot}</small>
+                  <img src={creative.imageUrl} alt={creative.altText || creative.title || creative.slot} />
+                </div>
+                <p className="meta-line">
+                  Destino: {creative.destinationUrl || "sem link"} · Revisão: {creative.reviewStatus || "draft"}
+                </p>
+                <button className="chip" type="button" onClick={() => toggleCreative(creative)}>
+                  {creative.isEnabled ? "Desligar criativo" : "Ligar criativo"}
+                </button>
+              </article>
+            ))
+          )}
+        </div>
+        {creativeCount === 0 ? <p className="empty">Nenhum criativo cadastrado ainda.</p> : null}
       </section>
       ) : null}
 
       {message ? <p className="empty">{message}</p> : null}
-      {(adsSection === "health" || adsSection === "overview") ? (
+      {adsSection === "health" ? (
       <>
       {(activeWithoutCreatives.length > 0 || activeMissingSlots.length > 0) ? (
         <div className="empty empty-highlight">
@@ -1412,7 +1635,7 @@ export default function AdsAdminPage() {
       ) : null}
       </>
       ) : null}
-      {(adsSection === "campaigns" || adsSection === "overview") ? (
+      {adsSection === "campaigns" ? (
       <>
       {isLoading ? <p className="empty">Carregando campanhas...</p> : null}
       {!isLoading ? (

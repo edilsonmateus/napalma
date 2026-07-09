@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { getAdsSlotSpec } from "../../config/adsSlots";
 import { trackAdClick, trackAdImpression } from "../../services/events.service";
 
 function getSessionId() {
@@ -14,6 +15,7 @@ export default function AdSlotCard({ ad, slot, compact = false, venueId = null }
   if (!ad) return null;
   const sessionId = getSessionId();
   const isPlaceholder = Boolean(ad.isPlaceholder);
+  const slotSpec = getAdsSlotSpec(slot);
 
   useEffect(() => {
     if (isPlaceholder) return;
@@ -54,23 +56,35 @@ export default function AdSlotCard({ ad, slot, compact = false, venueId = null }
 
   const content = (
     <>
-      <div className={`ad-slot-media ${compact ? "compact" : ""} ${isPlaceholder ? "placeholder" : ""}`}>
-        {ad.imageUrl ? <img src={ad.imageUrl} alt={ad.altText || ad.title || "Publicidade"} /> : null}
+      <div
+        className={`ad-slot-media ad-slot-media-${slotSpec.format} ${compact ? "compact" : ""} ${isPlaceholder ? "placeholder" : ""}`}
+        style={{ "--ad-slot-ratio": slotSpec.aspectRatio }}
+      >
+        {ad.imageUrl ? (
+          <img src={ad.imageUrl} alt={ad.altText || ad.title || "Publicidade"} style={{ objectFit: slotSpec.imageFit }} />
+        ) : null}
       </div>
       <div className="ad-slot-body">
-        <small>{isPlaceholder ? "Espaço Publicitário" : "Patrocinado"}</small>
+        <small>{isPlaceholder ? "Espaço publicitário" : "Patrocinado"}</small>
         <strong>{ad.title || ad.campaignName}</strong>
       </div>
     </>
   );
 
+  const cardClassName = `ad-slot-card ad-slot-card-${slotSpec.format}`;
+  const slotProps = {
+    className: cardClassName,
+    "data-ad-slot": slot,
+    "data-ad-format": slotSpec.format
+  };
+
   if (ad.destinationUrl && !isPlaceholder) {
     return (
-      <a href={buildTrackedUrl(ad.destinationUrl)} onClick={handleClick} target="_blank" rel="noreferrer" className="ad-slot-card">
+      <a href={buildTrackedUrl(ad.destinationUrl)} onClick={handleClick} target="_blank" rel="noreferrer" {...slotProps}>
         {content}
       </a>
     );
   }
 
-  return <div className="ad-slot-card">{content}</div>;
+  return <div {...slotProps}>{content}</div>;
 }

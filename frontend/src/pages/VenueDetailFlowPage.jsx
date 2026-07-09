@@ -50,6 +50,23 @@ function getLiveStatus(startsAt, endsAt) {
   return { label: "Encerrado", tone: "ended" };
 }
 
+function canPromoteVenue(role) {
+  return ["admin", "casa", "venue_manager", "produtor", "producer"].includes(role);
+}
+
+function buildVenueAdvertiserIntentUrl(venue) {
+  const params = new URLSearchParams({
+    source: "venue_detail",
+    type: "venue",
+    objective: "boost_venue",
+    name: venue?.name || "Casa",
+    accountName: venue?.name || "Casa",
+    campaignName: venue?.name || "Casa",
+    message: `Quero impulsionar a casa ${venue?.name || ""} no 77Gira para aumentar descoberta, visitas e interesse nos eventos.`
+  });
+  return `/workspace/anunciante?${params.toString()}`;
+}
+
 export default function VenueDetailFlowPage() {
   const { venueId } = useParams();
   const user = useAuthStore((state) => state.user);
@@ -81,6 +98,7 @@ export default function VenueDetailFlowPage() {
   const googleMapsUrl = buildGoogleMapsLink(venue);
   const wazeUrl = buildWazeLink(venue);
   const uberUrl = buildUberLink(venue);
+  const showPromoteVenue = canPromoteVenue(user?.role);
 
   async function handleToggleRadar(eventItem) {
     try {
@@ -133,6 +151,11 @@ export default function VenueDetailFlowPage() {
             >
               Como chegar
             </button>
+            {showPromoteVenue ? (
+              <Link className="chip event-promote-chip" to={buildVenueAdvertiserIntentUrl(venue)}>
+                Promover casa
+              </Link>
+            ) : null}
           </div>
         </div>
       </div>
