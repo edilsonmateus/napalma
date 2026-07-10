@@ -52,6 +52,8 @@ function activeCampaign(overrides = {}) {
     frequencyCapDaily: 3,
     runInAllSlots: false,
     isEnabled: true,
+    budgetCredits: 100,
+    spentCredits: 0,
     targeting: null,
     createdAt: new Date("2026-06-01T12:00:00.000Z"),
     updatedAt: new Date("2026-06-01T12:00:00.000Z"),

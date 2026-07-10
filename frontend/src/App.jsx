@@ -31,6 +31,7 @@ const ProducerDashboardPage = lazy(() => import("./pages/ProducerDashboardPage")
 const AdsAdminPage = lazy(() => import("./pages/AdsAdminPage"));
 const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
 const AdvertiserPortalPage = lazy(() => import("./pages/AdvertiserPortalPage"));
+const MockPaymentPage = lazy(() => import("./pages/MockPaymentPage"));
 const ArtistWorkspacePage = lazy(() => import("./pages/ArtistWorkspacePage"));
 const ArtistBookingsPage = lazy(() => import("./pages/ArtistBookingsPage"));
 const ArtistMediaPage = lazy(() => import("./pages/ArtistMediaPage"));
@@ -80,7 +81,7 @@ export default function App() {
   const isBackofficeMode = isAdminRole(user?.role) || isProducerRole(user?.role) || isVenueRole(user?.role);
   const isOnboardingRoute = location.pathname === "/onboarding";
   const isAdsRoute = location.pathname === "/anunciar"
-    || location.pathname === "/workspace/anunciante"
+    || location.pathname.startsWith("/workspace/anunciante")
     || location.pathname === "/settings/ads";
   const shouldForceOnboarding = !showSplash && !hasSeenOnboarding && !isOnboardingRoute;
 
@@ -264,6 +265,10 @@ export default function App() {
             <Route path="/reivindicar-artista" element={<RequireAuth user={user}><ArtistClaimDirectoryPage /></RequireAuth>} />
             <Route path="/settings/users" element={isAdminRole(user?.role) ? <UsersAdminPage /> : <Navigate to="/settings" replace />} />
             <Route path="/workspace/anunciante" element={<RequireAuth user={user}><AdvertiserPortalPage /></RequireAuth>} />
+            <Route path="/workspace/anunciante/campanhas" element={<RequireAuth user={user}><AdvertiserPortalPage /></RequireAuth>} />
+            <Route path="/workspace/anunciante/novo-anuncio" element={<RequireAuth user={user}><AdvertiserPortalPage /></RequireAuth>} />
+            <Route path="/workspace/anunciante/carteira" element={<RequireAuth user={user}><AdvertiserPortalPage /></RequireAuth>} />
+            <Route path="/workspace/anunciante/pagamento/mock/:orderId" element={<RequireAuth user={user}><MockPaymentPage /></RequireAuth>} />
             <Route path="/workspace/artista" element={<RequireAuth user={user}><ArtistWorkspacePage /></RequireAuth>} />
             <Route path="/workspace/artista/contratacoes" element={<RequireAuth user={user}><ArtistBookingsPage /></RequireAuth>} />
             <Route path="/workspace/artista/midia" element={<RequireAuth user={user}><ArtistMediaPage /></RequireAuth>} />

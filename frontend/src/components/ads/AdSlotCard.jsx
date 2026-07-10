@@ -67,11 +67,14 @@ export default function AdSlotCard({ ad, slot, compact = false, venueId = null }
       <div className="ad-slot-body">
         <small>{isPlaceholder ? "Espaço publicitário" : "Patrocinado"}</small>
         <strong>{ad.title || ad.campaignName}</strong>
+        <span className="ad-slot-description">{ad.altText || "Conteúdo patrocinado no 77Gira"}</span>
+        <em className="ad-slot-cta">{slotSpec.cta} <b>→</b></em>
+        <i className="ad-slot-badge">ADS</i>
       </div>
     </>
   );
 
-  const cardClassName = `ad-slot-card ad-slot-card-${slotSpec.format}`;
+  const cardClassName = `ad-slot-card ad-slot-card-${slotSpec.format} ad-slot-card-${slot}`;
   const slotProps = {
     className: cardClassName,
     "data-ad-slot": slot,

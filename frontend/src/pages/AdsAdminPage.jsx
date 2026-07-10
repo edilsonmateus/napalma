@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -38,6 +38,7 @@ import {
 } from "../hooks/useEventsQuery";
 import { useAuthStore } from "../store/authStore";
 import AdsMobilePreview from "../components/ads/AdsMobilePreview";
+import { getAdsBillingOperations, processAdminMockPaymentOrder } from "../services/events.service";
 
 const ADVERTISER_ACCOUNTS_ENABLED =
   String(import.meta.env.VITE_ADS_ADVERTISER_ACCOUNTS_ENABLED || "").toLowerCase() === "true";
@@ -61,9 +62,9 @@ const SLOT_LABELS = {
   radar_header: "Topo do Radar"
 };
 const SLOT_RATIOS = {
-  explore_feed_large: 16 / 6,
-  venue_detail_inline: 16 / 5,
-  radar_header: 16 / 5
+  explore_feed_large: 580 / 350,
+  venue_detail_inline: 580 / 240,
+  radar_header: 580 / 258
 };
 
 const INITIAL_CAMPAIGN = {
@@ -217,6 +218,9 @@ export default function AdsAdminPage() {
   const [campaignToLinkId, setCampaignToLinkId] = useState("");
   const [message, setMessage] = useState("");
   const [confirmEndCampaign, setConfirmEndCampaign] = useState(null);
+  const [billing, setBilling] = useState(null);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingProcessingId, setBillingProcessingId] = useState("");
 
   async function handleReviewDecision(item, decision) {
     try {
@@ -359,8 +363,38 @@ export default function AdsAdminPage() {
     ...(PLACEMENT_CATALOG_ENABLED ? [["inventory", "Inventário", placements.length]] : []),
     ["health", "Saúde", healthIssueCount],
     ["activity", "Atividade", activity.length],
+    ...(CREDITS_PURCHASE_ENABLED ? [["billing", "Financeiro", billing?.summary?.orders || 0]] : []),
     ["reports", "Relatórios", report?.daily?.length || 0]
   ];
+
+  async function loadBilling() {
+    if (!CREDITS_PURCHASE_ENABLED) return;
+    setBillingLoading(true);
+    try {
+      setBilling(await getAdsBillingOperations());
+    } catch (error) {
+      setMessage(error?.response?.data?.message || "Não foi possível carregar a operação financeira.");
+    } finally {
+      setBillingLoading(false);
+    }
+  }
+
+  async function handleAdminPaymentOutcome(orderId, outcome) {
+    setBillingProcessingId(orderId);
+    try {
+      await processAdminMockPaymentOrder(orderId, outcome);
+      setMessage(`Pagamento mock atualizado para ${outcome}.`);
+      await loadBilling();
+    } catch (error) {
+      setMessage(error?.response?.data?.message || "Não foi possível processar esta simulação.");
+    } finally {
+      setBillingProcessingId("");
+    }
+  }
+
+  useEffect(() => {
+    if (adsSection === "billing" && CREDITS_PURCHASE_ENABLED) loadBilling();
+  }, [adsSection]);
 
   async function handleCreateCampaign(event) {
     event.preventDefault();
@@ -1270,6 +1304,70 @@ export default function AdsAdminPage() {
           </article>
         </div>
       </section>
+      ) : null}
+
+      {adsSection === "billing" && CREDITS_PURCHASE_ENABLED ? (
+        <section className="ads-billing-section">
+          <div className="ads-section-heading">
+            <div>
+              <span className="eyebrow">Controle financeiro</span>
+              <h3>Patacos, pagamentos e auditoria</h3>
+              <p className="meta-line">Visão administrativa do gateway mock. Nenhum registro abaixo representa recebimento financeiro real.</p>
+            </div>
+            <button className="chip" type="button" onClick={loadBilling} disabled={billingLoading}>{billingLoading ? "Atualizando..." : "Atualizar"}</button>
+          </div>
+          <div className="ads-billing-warning">
+            <strong>AMBIENTE DE SIMULAÇÃO</strong>
+            <span>Ordens mock devem ser desativadas antes da integração oficial com o Mercado Pago.</span>
+          </div>
+          <div className="ads-hard-kpis">
+            <article className="clean-card"><h4>Ordens</h4><p>{billing?.summary?.orders || 0}</p></article>
+            <article className="clean-card"><h4>Patacos aprovados</h4><p>{billing?.summary?.approvedCredits || 0}</p></article>
+            <article className="clean-card"><h4>Saldo livre</h4><p>{billing?.summary?.availableWalletCredits || 0}</p></article>
+            <article className="clean-card"><h4>Provedor</h4><p className="ads-billing-provider">{billing?.runtime?.provider || "-"}</p></article>
+          </div>
+          <article className="clean-card ads-billing-table-card">
+            <div className="ads-section-heading"><div><h3>Ordens recentes</h3><p className="meta-line">Referência, conta, campanha e resultado do processamento.</p></div></div>
+            {billingLoading && !billing ? <p className="meta-line">Carregando operação...</p> : null}
+            <div className="ads-billing-table-wrap">
+              <table className="ads-billing-table">
+                <thead><tr><th>Conta / campanha</th><th>Pacote</th><th>Status</th><th>Referência</th><th>Ações mock</th></tr></thead>
+                <tbody>
+                  {(billing?.orders || []).map((order) => (
+                    <tr key={order.id}>
+                      <td><strong>{order.account?.name}</strong><small>{order.campaign?.name || "Saldo geral"}</small></td>
+                      <td><strong>{order.creditAmount} patacos</strong><small>{new Intl.NumberFormat("pt-BR", { style: "currency", currency: order.currency || "BRL" }).format(order.amountCents / 100)} ilustrativos</small></td>
+                      <td><span className={`status-badge status-${order.status}`}>{order.status}</span></td>
+                      <td><code>{order.externalReference}</code><small>{new Date(order.createdAt).toLocaleString("pt-BR")}</small></td>
+                      <td>
+                        {["created", "pending"].includes(order.status) ? (
+                          <div className="form-actions-inline">
+                            <button className="chip active" type="button" disabled={billingProcessingId === order.id} onClick={() => handleAdminPaymentOutcome(order.id, "approved")}>Aprovar teste</button>
+                            <button className="chip" type="button" disabled={billingProcessingId === order.id} onClick={() => handleAdminPaymentOutcome(order.id, "rejected")}>Recusar</button>
+                          </div>
+                        ) : <small>Operação concluída</small>}
+                      </td>
+                    </tr>
+                  ))}
+                  {!billing?.orders?.length ? <tr><td colSpan="5"><p className="meta-line">Nenhuma aquisição simulada registrada.</p></td></tr> : null}
+                </tbody>
+              </table>
+            </div>
+          </article>
+          <article className="clean-card ads-billing-table-card">
+            <div className="ads-section-heading"><div><h3>Livro-caixa de patacos</h3><p className="meta-line">Cada crédito e alocação possui chave idempotente e saldo posterior auditável.</p></div></div>
+            <div className="ads-billing-ledger">
+              {(billing?.entries || []).map((entry) => (
+                <div key={entry.id}>
+                  <span className={entry.delta >= 0 ? "credit" : "debit"}>{entry.delta >= 0 ? "+" : ""}{entry.delta}</span>
+                  <p><strong>{entry.account?.name}</strong><small>{entry.campaign?.name || entry.description || entry.type}</small></p>
+                  <small>Saldo: {entry.balanceAfter} · {new Date(entry.createdAt).toLocaleString("pt-BR")}</small>
+                </div>
+              ))}
+              {!billing?.entries?.length ? <p className="meta-line">O livro-caixa ainda está vazio.</p> : null}
+            </div>
+          </article>
+        </section>
       ) : null}
 
       {adsSection === "reports" ? (

@@ -264,6 +264,16 @@ export async function getAdsActivity(limit = 25) {
   return data.items || [];
 }
 
+export async function getAdsBillingOperations() {
+  const { data } = await api.get("/ads/billing");
+  return data.item;
+}
+
+export async function processAdminMockPaymentOrder(id, outcome) {
+  const { data } = await api.post(`/ads/payment-orders/${id}/mock-process`, { outcome });
+  return data.item;
+}
+
 export async function getVenueAdsSummary(params = {}) {
   const { data } = await api.get("/ads/venue-summary", { params });
   return data;

@@ -219,6 +219,7 @@ export async function getAdDelivery(req, res, next) {
       where: {
         isEnabled: true,
         status: "active",
+        budgetCredits: { gt: 0 },
         ...(isFeatureEnabled("ADS_REVIEW_WORKFLOW_ENABLED")
           ? { OR: [{ reviewStatus: null }, { reviewStatus: "approved" }] }
           : {}),
@@ -243,7 +244,7 @@ export async function getAdDelivery(req, res, next) {
       orderBy: [{ priority: "desc" }, { updatedAt: "desc" }]
     });
 
-    const eligible = campaigns.flatMap((campaign) =>
+    const eligible = campaigns.filter((campaign) => campaign.spentCredits < campaign.budgetCredits).flatMap((campaign) =>
       campaign.creatives
         .filter((creative) => campaign.runInAllSlots || creative.slot === slot || (slot !== "explore_feed_large" && creative.slot === "explore_feed_large"))
         .map((creative) => ({ campaign, creative }))

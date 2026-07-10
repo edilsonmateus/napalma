@@ -15,8 +15,8 @@ describe("claim legal acknowledgement", () => {
   });
 
   it("persists acceptance date and version on every claim", () => {
-    expect(schema).toContain("legalAcknowledgedAt DateTime?");
-    expect(schema).toContain("legalAcknowledgementVersion String?");
+    expect(schema).toMatch(/legalAcknowledgedAt\s+DateTime\?/);
+    expect(schema).toMatch(/legalAcknowledgementVersion\s+String\?/);
     expect(controller).toContain("legalAcknowledgedAt: new Date()");
   });
 

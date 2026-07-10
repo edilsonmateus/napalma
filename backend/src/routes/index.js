@@ -92,8 +92,9 @@ import {
   updateAdvertiserMembership
 } from "../controllers/advertiserAccounts.controller.js";
 import { approveAdReview, getAdReviewHistory, listAdReviewQueue, rejectAdReview, submitAdReview } from "../controllers/adReviews.controller.js";
-import { createMyAdvertiserCampaign, createMyAdvertiserCreative, listMyAdvertiserAccessRequests, listMyAdvertiserAccounts, listMyAdvertiserCampaigns, requestMyAdvertiserAccess, submitMyAdvertiserReview, updateMyAdvertiserCampaign, updateMyAdvertiserCreative } from "../controllers/advertiserPortal.controller.js";
+import { createMyAdvertiserCampaign, createMyAdvertiserCreative, deleteMyAdvertiserCampaign, duplicateMyAdvertiserCampaign, endMyAdvertiserCampaign, listMyAdvertiserAccessRequests, listMyAdvertiserAccounts, listMyAdvertiserCampaigns, requestMyAdvertiserAccess, setMyAdvertiserCampaignLifecycle, submitMyAdvertiserReview, updateMyAdvertiserCampaign, updateMyAdvertiserCreative } from "../controllers/advertiserPortal.controller.js";
 import { decideMyArtistInvitation, inviteArtistTeamMember, listArtistTeam, listMyArtistInvitations, revokeArtistTeamMember, updateArtistTeamMember } from "../controllers/artistTeam.controller.js";
+import { allocateMyWalletCredits, createMyPaymentOrder, getAdsBillingOperations, getMyAdvertiserWallet, getMyPaymentOrder, processAdminMockPaymentOrder, processMyMockPaymentOrder } from "../controllers/adPayments.controller.js";
 
 export const router = Router();
 
@@ -140,6 +141,12 @@ const adsTrackLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 120,
   message: "Muitas interacoes de anuncio no momento. Aguarde alguns segundos."
+});
+const paymentLimiter = createRateLimiter({
+  keyPrefix: "ads-payment",
+  windowMs: 60_000,
+  max: 12,
+  message: "Muitas operacoes de pagamento em pouco tempo. Aguarde um minuto."
 });
 const artistBookingLimiter = createRateLimiter({ keyPrefix: "artist-booking", windowMs: 60_000, max: 8, message: "Muitas solicitacoes enviadas. Aguarde um minuto." });
 const analyticsTrackLimiter = createRateLimiter({
@@ -202,9 +209,18 @@ router.post("/me/advertiser-access-requests", requireAuth, requireFeatureFlag("A
 router.get("/me/advertiser-accounts/:accountId/campaigns", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), listMyAdvertiserCampaigns);
 router.post("/me/advertiser-accounts/:accountId/campaigns", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), createMyAdvertiserCampaign);
 router.patch("/me/advertiser-campaigns/:campaignId", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), updateMyAdvertiserCampaign);
+router.delete("/me/advertiser-campaigns/:campaignId", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), deleteMyAdvertiserCampaign);
+router.post("/me/advertiser-campaigns/:campaignId/end", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), endMyAdvertiserCampaign);
+router.post("/me/advertiser-campaigns/:campaignId/duplicate", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), duplicateMyAdvertiserCampaign);
+router.post("/me/advertiser-campaigns/:campaignId/lifecycle", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), setMyAdvertiserCampaignLifecycle);
 router.post("/me/advertiser-campaigns/:campaignId/creatives", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), createMyAdvertiserCreative);
 router.patch("/me/advertiser-creatives/:creativeId", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), updateMyAdvertiserCreative);
 router.post("/me/advertiser-reviews/:entityType/:id/submit", requireAuth, requireFeatureFlag("ADS_REVIEW_WORKFLOW_ENABLED"), submitMyAdvertiserReview);
+router.get("/me/advertiser-accounts/:accountId/wallet", requireAuth, requireFeatureFlag("ADS_CREDITS_PURCHASE_ENABLED"), getMyAdvertiserWallet);
+router.post("/me/advertiser-accounts/:accountId/payment-orders", requireAuth, requireFeatureFlag("ADS_CREDITS_PURCHASE_ENABLED"), paymentLimiter, createMyPaymentOrder);
+router.post("/me/advertiser-accounts/:accountId/wallet/allocate", requireAuth, requireFeatureFlag("ADS_CREDITS_PURCHASE_ENABLED"), paymentLimiter, allocateMyWalletCredits);
+router.get("/me/advertiser-payment-orders/:id", requireAuth, requireFeatureFlag("ADS_CREDITS_PURCHASE_ENABLED"), getMyPaymentOrder);
+router.post("/me/advertiser-payment-orders/:id/mock-process", requireAuth, requireFeatureFlag("ADS_CREDITS_PURCHASE_ENABLED"), paymentLimiter, processMyMockPaymentOrder);
 router.get("/me/pela-hora", requireAuth, listPelaHora);
 router.get("/me/pela-hora/suggest", requireAuth, suggestPelaHora);
 router.get("/me/pela-hora/:id", requireAuth, getPelaHoraById);
@@ -296,3 +312,5 @@ router.post("/ads/advertiser-accounts/:accountId/memberships", ...canManageAdver
 router.patch("/ads/advertiser-memberships/:id", ...canManageAdvertiserAccounts, updateAdvertiserMembership);
 router.delete("/ads/advertiser-memberships/:id", ...canManageAdvertiserAccounts, revokeAdvertiserMembership);
 router.patch("/ads/campaigns/:id/advertiser-account", ...canManageAdvertiserAccounts, setCampaignAdvertiserAccount);
+router.get("/ads/billing", ...canManageAds, requireFeatureFlag("ADS_CREDITS_PURCHASE_ENABLED"), getAdsBillingOperations);
+router.post("/ads/payment-orders/:id/mock-process", ...canManageAds, requireFeatureFlag("ADS_CREDITS_PURCHASE_ENABLED"), paymentLimiter, processAdminMockPaymentOrder);

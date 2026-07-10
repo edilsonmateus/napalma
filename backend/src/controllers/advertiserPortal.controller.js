@@ -189,6 +189,115 @@ export async function updateMyAdvertiserCampaign(req, res, next) {
   } catch (error) { return next(error); }
 }
 
+export async function deleteMyAdvertiserCampaign(req, res, next) {
+  try {
+    const { campaignId } = campaignParams.parse(req.params);
+    const current = await prisma.adCampaign.findUnique({ where: { id: campaignId }, include: { creatives: { select: { id: true } } } });
+    if (!current?.advertiserAccountId) return res.status(404).json({ error: "campaign_not_found" });
+    const access = await membership(req.user.id, current.advertiserAccountId);
+    if (!access) return deny(res);
+    if (!WRITE_ROLES.includes(access.role)) return deny(res, true);
+    const reviewStatus = current.reviewStatus || "draft";
+    const canDelete = current.status === "draft" && ["draft", "pending_review", "rejected", "changes_requested"].includes(reviewStatus);
+    if (!canDelete) {
+      return res.status(409).json({
+        error: "campaign_must_be_ended",
+        message: "Campanhas aprovadas ou em veiculacao preservam historico. Use encerrar em vez de excluir."
+      });
+    }
+    await prisma.$transaction(async (tx) => {
+      await tx.adCreative.deleteMany({ where: { campaignId } });
+      await tx.adCampaign.delete({ where: { id: campaignId } });
+    });
+    return res.status(204).send();
+  } catch (error) { return next(error); }
+}
+
+export async function endMyAdvertiserCampaign(req, res, next) {
+  try {
+    const { campaignId } = campaignParams.parse(req.params);
+    const current = await prisma.adCampaign.findUnique({ where: { id: campaignId } });
+    if (!current?.advertiserAccountId) return res.status(404).json({ error: "campaign_not_found" });
+    const access = await membership(req.user.id, current.advertiserAccountId);
+    if (!access) return deny(res);
+    if (!WRITE_ROLES.includes(access.role)) return deny(res, true);
+    const item = await prisma.adCampaign.update({
+      where: { id: campaignId },
+      data: { status: "ended", isEnabled: false, endsAt: current.endsAt || new Date() },
+      include: { creatives: true }
+    });
+    return res.json({ item });
+  } catch (error) { return next(error); }
+}
+
+export async function duplicateMyAdvertiserCampaign(req, res, next) {
+  try {
+    const { campaignId } = campaignParams.parse(req.params);
+    const current = await prisma.adCampaign.findUnique({ where: { id: campaignId }, include: { creatives: true } });
+    if (!current?.advertiserAccountId) return res.status(404).json({ error: "campaign_not_found" });
+    const access = await membership(req.user.id, current.advertiserAccountId);
+    if (!access) return deny(res);
+    if (!WRITE_ROLES.includes(access.role)) return deny(res, true);
+    const item = await prisma.adCampaign.create({
+      data: {
+        advertiser: current.advertiser,
+        name: `${current.name} — cópia`,
+        status: "draft",
+        startsAt: current.startsAt,
+        endsAt: current.endsAt,
+        priority: current.priority,
+        frequencyCapDaily: current.frequencyCapDaily,
+        runInAllSlots: current.runInAllSlots,
+        isEnabled: false,
+        targeting: current.targeting || undefined,
+        createdByUserId: req.user.id,
+        advertiserAccountId: current.advertiserAccountId,
+        reviewStatus: "draft",
+        requiresReviewAfterEdit: false,
+        creatives: {
+          create: current.creatives.map((creative) => ({
+            slot: creative.slot,
+            title: creative.title,
+            imageUrl: creative.imageUrl,
+            destinationUrl: creative.destinationUrl,
+            altText: creative.altText,
+            width: creative.width,
+            height: creative.height,
+            isEnabled: false,
+            storageProvider: creative.storageProvider,
+            storageKey: creative.storageKey,
+            mimeType: creative.mimeType,
+            fileSizeBytes: creative.fileSizeBytes,
+            checksum: creative.checksum,
+            assetVersion: creative.assetVersion,
+            reviewStatus: "draft"
+          }))
+        }
+      },
+      include: { creatives: true }
+    });
+    return res.status(201).json({ item });
+  } catch (error) { return next(error); }
+}
+
+export async function setMyAdvertiserCampaignLifecycle(req, res, next) {
+  try {
+    const { campaignId } = campaignParams.parse(req.params);
+    const { status } = z.object({ status: z.enum(["active", "paused"]) }).parse(req.body);
+    const current = await prisma.adCampaign.findUnique({ where: { id: campaignId } });
+    if (!current?.advertiserAccountId) return res.status(404).json({ error: "campaign_not_found" });
+    const access = await membership(req.user.id, current.advertiserAccountId);
+    if (!access) return deny(res);
+    if (!WRITE_ROLES.includes(access.role)) return deny(res, true);
+    if (!["active", "paused"].includes(current.status)) return res.status(409).json({ error: "invalid_campaign_lifecycle", message: "A campanha precisa estar ativada para ser pausada ou retomada." });
+    if (status === "active" && (current.reviewStatus !== "approved" || current.budgetCredits <= current.spentCredits)) {
+      return res.status(409).json({ error: "campaign_not_ready", message: "A campanha precisa de revisão aprovada e patacos disponíveis para entrar no ar." });
+    }
+    const item = await prisma.adCampaign.update({ where: { id: campaignId }, data: { status, isEnabled: status === "active" }, include: { creatives: true } });
+    return res.json({ item });
+  } catch (error) { return next(error); }
+}
+
 export async function createMyAdvertiserCreative(req, res, next) {
   try {
     const { campaignId } = campaignParams.parse(req.params);
@@ -228,6 +337,9 @@ export async function submitMyAdvertiserReview(req, res, next) {
     const access = await membership(req.user.id, accountId);
     if (!access) return deny(res);
     if (!WRITE_ROLES.includes(access.role)) return deny(res, true);
+    if (entityType === "campaign" && current.budgetCredits <= current.spentCredits) {
+      return res.status(409).json({ error: "campaign_budget_required", message: "Vincule patacos à campanha antes de enviar para revisão." });
+    }
     const status = current.reviewStatus || "draft";
     if (!["draft", "rejected", "changes_requested"].includes(status)) return res.status(409).json({ error: "invalid_review_transition" });
     const now = new Date();
