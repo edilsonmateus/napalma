@@ -1,58 +1,44 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { getAdsSlotSpec } from "../../config/adsSlots";
-import { trackAdClick, trackAdImpression } from "../../services/events.service";
-
-function getSessionId() {
-  const key = "napalma:ad-session";
-  const current = localStorage.getItem(key);
-  if (current) return current;
-  const next = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  localStorage.setItem(key, next);
-  return next;
-}
+import { getAdClickUrl, trackDeliveredImpression } from "../../services/events.service";
 
 export default function AdSlotCard({ ad, slot, compact = false, venueId = null }) {
-  if (!ad) return null;
-  const sessionId = getSessionId();
-  const isPlaceholder = Boolean(ad.isPlaceholder);
-  const slotSpec = getAdsSlotSpec(slot);
+  const cardRef = useRef(null);
 
   useEffect(() => {
-    if (isPlaceholder) return;
-    const payload = {
-      campaignId: ad.campaignId,
-      creativeId: ad.creativeId,
-      slot,
-      sessionId,
-      venueId
+    if (!ad || ad.isPlaceholder || !ad.deliveryToken || !cardRef.current || typeof IntersectionObserver === "undefined") return undefined;
+    let timer = null;
+    let reported = false;
+    let visibleSince = 0;
+    const clearTimer = () => { if (timer) window.clearTimeout(timer); timer = null; };
+    const report = () => {
+      if (reported || document.visibilityState !== "visible") return;
+      reported = true;
+      trackDeliveredImpression(ad.deliveryToken, {
+        venueId,
+        visibilityRatio: 0.5,
+        viewedMs: Math.max(1000, Date.now() - visibleSince)
+      }).catch(() => { reported = false; });
     };
-    trackAdImpression(payload).catch(() => {});
-  }, [ad.campaignId, ad.creativeId, slot, sessionId, isPlaceholder, venueId]);
-
-  function handleClick() {
-    if (isPlaceholder) return;
-    const payload = {
-      campaignId: ad.campaignId,
-      creativeId: ad.creativeId,
-      slot,
-      sessionId,
-      venueId
+    const observer = new IntersectionObserver(([entry]) => {
+      clearTimer();
+      if (!entry?.isIntersecting || entry.intersectionRatio < 0.5 || document.visibilityState !== "visible" || reported) return;
+      visibleSince = Date.now();
+      timer = window.setTimeout(report, 1000);
+    }, { threshold: [0, 0.5, 1] });
+    observer.observe(cardRef.current);
+    const onVisibilityChange = () => { if (document.visibilityState !== "visible") clearTimer(); };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      clearTimer();
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-    trackAdClick(payload).catch(() => {});
-  }
+  }, [ad?.deliveryToken, ad?.isPlaceholder, venueId]);
 
-  function buildTrackedUrl(url) {
-    try {
-      const parsed = new URL(url);
-      parsed.searchParams.set("utm_source", "napalma");
-      parsed.searchParams.set("utm_medium", "app");
-      parsed.searchParams.set("utm_campaign", ad.campaignName || ad.campaignId);
-      parsed.searchParams.set("utm_content", slot);
-      return parsed.toString();
-    } catch (_error) {
-      return url;
-    }
-  }
+  if (!ad) return null;
+  const isPlaceholder = Boolean(ad.isPlaceholder);
+  const slotSpec = getAdsSlotSpec(slot);
 
   const content = (
     <>
@@ -76,14 +62,15 @@ export default function AdSlotCard({ ad, slot, compact = false, venueId = null }
 
   const cardClassName = `ad-slot-card ad-slot-card-${slotSpec.format} ad-slot-card-${slot}`;
   const slotProps = {
+    ref: cardRef,
     className: cardClassName,
     "data-ad-slot": slot,
     "data-ad-format": slotSpec.format
   };
 
-  if (ad.destinationUrl && !isPlaceholder) {
+  if (ad.destinationAvailable && ad.deliveryToken && !isPlaceholder) {
     return (
-      <a href={buildTrackedUrl(ad.destinationUrl)} onClick={handleClick} target="_blank" rel="noreferrer" {...slotProps}>
+      <a href={getAdClickUrl(ad.deliveryToken)} target="_blank" rel="noreferrer" {...slotProps}>
         {content}
       </a>
     );

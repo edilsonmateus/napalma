@@ -37,10 +37,13 @@ import {
   createAdCreative,
   getAdsActivity,
   getAdDelivery,
+  getAdsHealth,
   getAdsReport,
   getVenueAdsSummary,
   listAdCampaigns,
+  redirectDeliveredClick,
   trackAdClick,
+  trackDeliveredImpression,
   trackAdImpression,
   updateAdCampaign,
   updateAdCreative
@@ -139,8 +142,14 @@ const uploadLimiter = createRateLimiter({
 const adsTrackLimiter = createRateLimiter({
   keyPrefix: "ads-track",
   windowMs: 60_000,
-  max: 120,
+  max: 60,
   message: "Muitas interacoes de anuncio no momento. Aguarde alguns segundos."
+});
+const adsDeliveryLimiter = createRateLimiter({
+  keyPrefix: "ads-delivery",
+  windowMs: 60_000,
+  max: 60,
+  message: "Muitas solicitacoes de anuncio no momento. Aguarde alguns segundos."
 });
 const paymentLimiter = createRateLimiter({
   keyPrefix: "ads-payment",
@@ -284,10 +293,13 @@ router.post("/me/artists/:artistId/media", requireAuth, requireFeatureFlag("ARTI
 router.patch("/me/artist-media/:id", requireAuth, requireFeatureFlag("ARTIST_MEDIA_GALLERY_ENABLED"), updateArtistMedia);
 router.delete("/me/artist-media/:id", requireAuth, requireFeatureFlag("ARTIST_MEDIA_GALLERY_ENABLED"), deleteArtistMedia);
 router.get("/me/artists/:artistId/insights", requireAuth, requireFeatureFlag("ARTIST_INSIGHTS_ENABLED"), getArtistInsights);
-router.get("/ads/slots/:slot/delivery", getAdDelivery);
+router.get("/ads/slots/:slot/delivery", adsDeliveryLimiter, getAdDelivery);
+router.post("/ads/deliveries/:token/impression", adsTrackLimiter, trackDeliveredImpression);
+router.get("/ads/deliveries/:token/click", adsTrackLimiter, redirectDeliveredClick);
 router.post("/ads/track/impression", adsTrackLimiter, trackAdImpression);
 router.post("/ads/track/click", adsTrackLimiter, trackAdClick);
 router.get("/ads/report", ...canManageAds, getAdsReport);
+router.get("/ads/health", ...canManageAds, getAdsHealth);
 router.get("/ads/placements", ...canViewAdPlacementCatalog, listAdPlacements);
 router.get("/ads/activity", ...canManageAds, getAdsActivity);
 router.get("/ads/venue-summary", requireAuth, requireRole(["admin", "venue_manager"]), getVenueAdsSummary);

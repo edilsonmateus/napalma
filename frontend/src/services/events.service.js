@@ -249,13 +249,42 @@ export async function updateAdCreative(id, payload) {
   return data.item;
 }
 
-export async function getAdDelivery(slot) {
-  const { data } = await api.get(`/ads/slots/${slot}/delivery`);
+const ADS_SESSION_KEY = "77gira:ads-session";
+
+export function getAdsSessionId() {
+  const stored = localStorage.getItem(ADS_SESSION_KEY);
+  if (stored) return stored;
+  const next = `${crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
+  localStorage.setItem(ADS_SESSION_KEY, next);
+  return next;
+}
+
+export async function getAdDelivery(slot, context = {}) {
+  const { data } = await api.get(`/ads/slots/${slot}/delivery`, {
+    params: { sessionId: getAdsSessionId(), ...context }
+  });
   return data.item || null;
+}
+
+export async function trackDeliveredImpression(token, payload) {
+  const { data } = await api.post(`/ads/deliveries/${encodeURIComponent(token)}/impression`, {
+    sessionId: getAdsSessionId(),
+    ...payload
+  });
+  return data;
+}
+
+export function getAdClickUrl(token) {
+  return `${apiBaseUrl}/ads/deliveries/${encodeURIComponent(token)}/click`;
 }
 
 export async function getAdsReport(days = 30) {
   const { data } = await api.get("/ads/report", { params: { days } });
+  return data;
+}
+
+export async function getAdsHealth(hours = 24) {
+  const { data } = await api.get("/ads/health", { params: { hours } });
   return data;
 }
 

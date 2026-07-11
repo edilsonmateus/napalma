@@ -26,7 +26,8 @@ export const AD_PLACEMENTS = Object.freeze([
     requiresApproval: true,
     supportsTargeting: true,
     supportsFrequencyCap: true,
-    commercialRules: { purchaseEnabled: false, pricingConfigured: false, billingMode: null }
+    inventory: { dailyImpressionCap: 1200, maxAdsPerPage: 1 },
+    commercialRules: { purchaseEnabled: false, pricingConfigured: false, billingMode: "valid_impression" }
   },
   {
     key: "venue_detail_inline",
@@ -49,7 +50,8 @@ export const AD_PLACEMENTS = Object.freeze([
     requiresApproval: true,
     supportsTargeting: true,
     supportsFrequencyCap: true,
-    commercialRules: { purchaseEnabled: false, pricingConfigured: false, billingMode: null }
+    inventory: { dailyImpressionCap: 700, maxAdsPerPage: 1 },
+    commercialRules: { purchaseEnabled: false, pricingConfigured: false, billingMode: "valid_impression" }
   },
   {
     key: "radar_header",
@@ -73,6 +75,7 @@ export const AD_PLACEMENTS = Object.freeze([
     requiresApproval: true,
     supportsTargeting: true,
     supportsFrequencyCap: true,
-    commercialRules: { purchaseEnabled: false, pricingConfigured: false, billingMode: null }
+    inventory: { dailyImpressionCap: 900, maxAdsPerPage: 1 },
+    commercialRules: { purchaseEnabled: false, pricingConfigured: false, billingMode: "valid_impression" }
   }
 ]);

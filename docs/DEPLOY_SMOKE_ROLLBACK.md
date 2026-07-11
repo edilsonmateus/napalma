@@ -1,5 +1,7 @@
 # Deploy PWA - Smoke + Rollback
 
+Para releases que alterem o 77Gira Ads, siga também o [runbook específico de produção](ADS_PRODUCTION_RELEASE_RUNBOOK.md) antes de liberar campanhas.
+
 ## 1) Pre-deploy
 ```powershell
 cd "C:\Users\edils\OneDrive\Documentos\New project\backend"

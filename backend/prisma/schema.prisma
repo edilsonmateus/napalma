@@ -115,6 +115,7 @@ enum AdPaymentStatus {
 enum AdCreditLedgerType {
   purchase
   campaign_allocation
+  delivery_charge
   campaign_refund
   payment_refund
   admin_adjustment
@@ -402,6 +403,7 @@ model AdCampaign {
   reviewedBy        User?                 @relation("AdCampaignReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
   creatives         AdCreative[]
   events            AdEventLog[]
+  deliveries        AdDelivery[]
   paymentOrders     AdPaymentOrder[]
   creditEntries     AdCreditLedgerEntry[]
 
@@ -560,6 +562,7 @@ model AdCreative {
   campaign   AdCampaign   @relation(fields: [campaignId], references: [id])
   reviewedBy User?        @relation("AdCreativeReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
   events     AdEventLog[]
+  deliveries AdDelivery[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -598,10 +601,12 @@ model AdEventLog {
   sessionId  String?
   userAgent  String?
   ipHash     String?
+  deliveryId String?
   createdAt  DateTime    @default(now())
 
   campaign AdCampaign @relation(fields: [campaignId], references: [id])
   creative AdCreative @relation(fields: [creativeId], references: [id])
+  delivery AdDelivery? @relation(fields: [deliveryId], references: [id], onDelete: SetNull)
   venue    Venue?     @relation(fields: [venueId], references: [id])
   user     User?      @relation(fields: [userId], references: [id])
 
@@ -609,6 +614,35 @@ model AdEventLog {
   @@index([creativeId, type, createdAt])
   @@index([userId, type, createdAt])
   @@index([venueId, type, createdAt])
+  @@index([deliveryId, type])
+  @@unique([deliveryId, type])
+}
+
+model AdDelivery {
+  id                   String   @id @default(uuid())
+  token                String   @unique
+  slot                 AdSlot
+  campaignId           String
+  creativeId           String
+  venueId              String?
+  userId               String?
+  sessionHash          String?
+  context              Json?
+  expiresAt            DateTime
+  renderedAt           DateTime?
+  impressionRecordedAt DateTime?
+  clickRecordedAt      DateTime?
+  createdAt            DateTime @default(now())
+
+  campaign AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creative AdCreative @relation(fields: [creativeId], references: [id], onDelete: Cascade)
+  events   AdEventLog[]
+
+  @@index([slot, createdAt])
+  @@index([campaignId, createdAt])
+  @@index([creativeId, createdAt])
+  @@index([sessionHash, createdAt])
+  @@index([expiresAt])
 }
 
 model RefreshToken {

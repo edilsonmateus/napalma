@@ -156,8 +156,28 @@ export async function listMyAdvertiserCampaigns(req, res, next) {
     const { accountId } = accountParams.parse(req.params);
     const access = await membership(req.user.id, accountId);
     if (!access) return deny(res);
-    const items = await prisma.adCampaign.findMany({ where: { advertiserAccountId: accountId }, include: { creatives: { orderBy: { createdAt: "desc" } } }, orderBy: { updatedAt: "desc" } });
-    return res.json({ account: access.account, membership: { role: access.role }, items });
+    const [items, impressions, clicks] = await Promise.all([
+      prisma.adCampaign.findMany({ where: { advertiserAccountId: accountId }, include: { creatives: { orderBy: { createdAt: "desc" } } }, orderBy: { updatedAt: "desc" } }),
+      prisma.adEventLog.groupBy({ by: ["campaignId"], where: { type: "impression", campaign: { advertiserAccountId: accountId } }, _count: { _all: true } }),
+      prisma.adEventLog.groupBy({ by: ["campaignId"], where: { type: "click", campaign: { advertiserAccountId: accountId } }, _count: { _all: true } })
+    ]);
+    const impressionsByCampaign = new Map(impressions.map((item) => [item.campaignId, item._count._all]));
+    const clicksByCampaign = new Map(clicks.map((item) => [item.campaignId, item._count._all]));
+    const enriched = items.map((item) => {
+      const totalImpressions = impressionsByCampaign.get(item.id) || 0;
+      const totalClicks = clicksByCampaign.get(item.id) || 0;
+      return {
+        ...item,
+        metrics: {
+          impressions: totalImpressions,
+          clicks: totalClicks,
+          ctr: totalImpressions ? Number(((totalClicks / totalImpressions) * 100).toFixed(2)) : 0,
+          spentPatacos: item.spentCredits,
+          remainingPatacos: Math.max(0, item.budgetCredits - item.spentCredits)
+        }
+      };
+    });
+    return res.json({ account: access.account, membership: { role: access.role }, items: enriched });
   } catch (error) { return next(error); }
 }
 

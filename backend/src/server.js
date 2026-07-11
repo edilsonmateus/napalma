@@ -2,6 +2,7 @@ import { createApp } from "./app.js";
 import { env } from "./config/env.js";
 import { ensureAdminBootstrap } from "./lib/adminBootstrap.js";
 import { startToNaPistaScheduler } from "./services/toNaPista.service.js";
+import { startAdsHealthAlertScheduler } from "./services/adsHealthAlerts.service.js";
 
 const app = createApp();
 
@@ -21,4 +22,5 @@ try {
 app.listen(env.port, () => {
   console.log(`NaPalma API online na porta ${env.port}`);
   startToNaPistaScheduler();
+  startAdsHealthAlertScheduler();
 });

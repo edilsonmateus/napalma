@@ -4,6 +4,7 @@ dotenv.config();
 
 export const env = {
   port: Number(process.env.PORT || 3333),
+  trustProxyHops: Number(process.env.TRUST_PROXY_HOPS || (process.env.NODE_ENV === "production" ? 1 : 0)),
   databaseUrl: process.env.DATABASE_URL || "",
   jwtSecret: process.env.JWT_SECRET || "dev-secret-change-me",
   publicAppUrl: process.env.PUBLIC_APP_URL || "http://localhost:5173",
@@ -16,5 +17,9 @@ export const env = {
   toNaPistaSchedulerIntervalMs: Number(process.env.TO_NA_PISTA_SCHEDULER_INTERVAL_MS || 60000),
   toNaPistaRadiusKm: Number(process.env.TO_NA_PISTA_RADIUS_KM || 8),
   toNaPistaHorizonMinutes: Number(process.env.TO_NA_PISTA_HORIZON_MINUTES || 120),
-  toNaPistaBatchSize: Number(process.env.TO_NA_PISTA_BATCH_SIZE || 100)
+  toNaPistaBatchSize: Number(process.env.TO_NA_PISTA_BATCH_SIZE || 100),
+  adsHealthAlertsEnabled: process.env.ADS_HEALTH_ALERTS_ENABLED === "true",
+  adsHealthAlertWebhookUrl: process.env.ADS_HEALTH_ALERT_WEBHOOK_URL || "",
+  adsHealthAlertIntervalMs: Number(process.env.ADS_HEALTH_ALERT_INTERVAL_MS || 900000),
+  adsHealthAlertCooldownMs: Number(process.env.ADS_HEALTH_ALERT_COOLDOWN_MS || 21600000)
 };

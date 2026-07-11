@@ -15,7 +15,7 @@ function resolveApiBaseUrl() {
   return import.meta.env.PROD ? PRODUCTION_API_URL : LOCAL_API_URL;
 }
 
-const apiBaseUrl = resolveApiBaseUrl();
+export const apiBaseUrl = resolveApiBaseUrl();
 
 export const api = axios.create({
   baseURL: apiBaseUrl

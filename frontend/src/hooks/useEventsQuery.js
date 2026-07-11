@@ -42,6 +42,7 @@ import {
   getAudienceSummary,
   getClaims,
   getAdDelivery,
+  getAdsHealth,
   getAdsReport,
   getMyAchievements,
   getMyPelaHora,
@@ -268,10 +269,10 @@ export function useSetCampaignAdvertiserAccountMutation() {
   });
 }
 
-export function useAdDeliveryQuery(slot, enabled = true) {
+export function useAdDeliveryQuery(slot, enabled = true, context = {}) {
   return useQuery({
-    queryKey: ["ad-delivery", slot],
-    queryFn: () => getAdDelivery(slot),
+    queryKey: ["ad-delivery", slot, context.venueId || null, context.preview ? "preview" : "live"],
+    queryFn: () => getAdDelivery(slot, context),
     enabled: Boolean(slot) && enabled
   });
 }
@@ -281,6 +282,17 @@ export function useAdsReportQuery(days = 30, enabled = true) {
     queryKey: ["ads-report", days],
     queryFn: () => getAdsReport(days),
     enabled
+  });
+}
+
+export function useAdsHealthQuery(hours = 24, enabled = true) {
+  return useQuery({
+    queryKey: ["ads-health", hours],
+    queryFn: () => getAdsHealth(hours),
+    enabled,
+    refetchInterval: enabled ? 60_000 : false,
+    refetchIntervalInBackground: false,
+    staleTime: 30_000
   });
 }
 

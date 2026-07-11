@@ -7,9 +7,13 @@ import { router } from "./routes/index.js";
 import { attachUser } from "./middlewares/auth.js";
 import { ensureUploadsRoot } from "./controllers/uploads.controller.js";
 import { createRateLimiter } from "./middlewares/rateLimit.js";
+import { env } from "./config/env.js";
 
 export function createApp() {
   const app = express();
+  // In production, Render/Vercel place the API behind a reverse proxy. This
+  // makes req.ip usable by rate limits without changing local development.
+  if (env.trustProxyHops > 0) app.set("trust proxy", env.trustProxyHops);
   const configuredOrigins = (process.env.CORS_ORIGINS || "")
     .split(",")
     .map((origin) => origin.trim())

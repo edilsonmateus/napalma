@@ -74,7 +74,7 @@ export default function VenueDetailFlowPage() {
   const { data: events = [], isLoading: eventsLoading } = useEventsQuery({ venueId });
   const { data: radarEvents = [] } = useMyRadarQuery(Boolean(user));
   const toggleRadar = useToggleRadarMutation();
-  const { data: inlineAd } = useAdDeliveryQuery("venue_detail_inline", true);
+  const { data: inlineAd } = useAdDeliveryQuery("venue_detail_inline", Boolean(venueId), { venueId });
   const adToRender = inlineAd || null;
   const venue = venues.find((item) => item.id === venueId);
   const [showRouteModal, setShowRouteModal] = useState(false);

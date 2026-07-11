@@ -28,7 +28,7 @@ const REQUEST_DRAFT_KEY = "77gira.ads.advertiserRequestDraft";
 const ACCOUNT_TYPES = [["brand", "Marca"], ["venue", "Casa"], ["producer", "Produtor"], ["artist", "Artista"], ["agency", "Agência"], ["group", "Grupo"], ["unclassified", "Outro"]];
 const OBJECTIVES = [["brand_campaign", "Campanha de marca"], ["boost_event", "Impulsionar evento"], ["boost_venue", "Impulsionar casa"], ["agency", "Gerenciar campanhas de clientes"], ["other", "Outro objetivo"]];
 const INITIAL_REQUEST = { name: "", type: "brand", legalName: "", contactEmail: "", contactPhone: "", objective: "brand_campaign", message: "" };
-const INITIAL_CAMPAIGN = { advertiser: "", name: "", startsAt: "", endsAt: "", objective: "brand_campaign" };
+const INITIAL_CAMPAIGN = { advertiser: "", name: "", startsAt: "", endsAt: "", objective: "brand_campaign", targetCity: "", targetRegion: "", dailyPacingCap: "" };
 const INITIAL_CREATIVE = { slot: "explore_feed_large", title: "", destinationUrl: "", altText: "", asset: null };
 
 const SLOT_CATALOG = [
@@ -156,6 +156,15 @@ export default function AdvertiserPortalPage() {
   });
 
   function showMessage(text, type = "info") { setMessage(text); setMessageType(type); }
+  function buildCampaignTargeting() {
+    return {
+      objective: campaignForm.objective,
+      slots: selectedSlots,
+      cities: campaignForm.targetCity.trim() ? [campaignForm.targetCity.trim()] : [],
+      regions: campaignForm.targetRegion.trim() ? [campaignForm.targetRegion.trim()] : [],
+      dailyImpressionCap: Number(campaignForm.dailyPacingCap) || null
+    };
+  }
   function openArea(next) { navigate(`/workspace/anunciante/${next === "new" ? "novo-anuncio" : next === "wallet" ? "carteira" : "campanhas"}`); }
   function goWizardStep(step, campaignId = wizardCampaignId) {
     const currentCampaign = campaigns.find((item) => item.id === campaignId);
@@ -226,7 +235,10 @@ export default function AdvertiserPortalPage() {
       name: current.name || "",
       startsAt: current.startsAt ? new Date(current.startsAt).toISOString().slice(0, 16) : "",
       endsAt: current.endsAt ? new Date(current.endsAt).toISOString().slice(0, 16) : "",
-      objective: current.targeting?.objective || "brand_campaign"
+      objective: current.targeting?.objective || "brand_campaign",
+      targetCity: current.targeting?.cities?.[0] || current.targeting?.city || "",
+      targetRegion: current.targeting?.regions?.[0] || current.targeting?.region || "",
+      dailyPacingCap: current.targeting?.dailyImpressionCap || ""
     });
     setSelectedSlots(current.targeting?.slots?.length ? current.targeting.slots : [...new Set((current.creatives || []).map((item) => item.slot))]);
   }, [campaigns, searchParams]);
@@ -246,7 +258,7 @@ export default function AdvertiserPortalPage() {
     const intentObjective = searchParams.get("objective") || "brand_campaign";
     setWizardCampaignId(existing?.id || "");
     setCampaignForm(existing ? {
-      advertiser: existing.advertiser || "", name: existing.name || "", startsAt: existing.startsAt ? new Date(existing.startsAt).toISOString().slice(0, 16) : "", endsAt: existing.endsAt ? new Date(existing.endsAt).toISOString().slice(0, 16) : "", objective: existing.targeting?.objective || "brand_campaign"
+      advertiser: existing.advertiser || "", name: existing.name || "", startsAt: existing.startsAt ? new Date(existing.startsAt).toISOString().slice(0, 16) : "", endsAt: existing.endsAt ? new Date(existing.endsAt).toISOString().slice(0, 16) : "", objective: existing.targeting?.objective || "brand_campaign", targetCity: existing.targeting?.cities?.[0] || existing.targeting?.city || "", targetRegion: existing.targeting?.regions?.[0] || existing.targeting?.region || "", dailyPacingCap: existing.targeting?.dailyImpressionCap || ""
     } : { ...INITIAL_CAMPAIGN, advertiser: selectedAccount?.name || "", objective: intentObjective });
     setSelectedSlots(existing ? [...new Set((existing.creatives || []).map((item) => item.slot))] : []);
     setCreative(INITIAL_CREATIVE);
@@ -267,7 +279,7 @@ export default function AdvertiserPortalPage() {
       startsAt: campaignForm.startsAt ? new Date(campaignForm.startsAt).toISOString() : null,
       endsAt: campaignForm.endsAt ? new Date(campaignForm.endsAt).toISOString() : null,
       runInAllSlots: selectedSlots.length === SLOT_CATALOG.length,
-      targeting: { objective: campaignForm.objective, slots: selectedSlots }
+      targeting: buildCampaignTargeting()
     };
     try {
       const item = wizardCampaignId ? await updateMyAdvertiserCampaign(wizardCampaignId, payload) : await createMyAdvertiserCampaign(accountId, payload);
@@ -289,7 +301,7 @@ export default function AdvertiserPortalPage() {
       await createMyAdvertiserCreative(wizardCampaignId, { slot: creative.slot, title: creative.title || null, destinationUrl: creative.destinationUrl || null, altText: creative.altText || null, imageUrl, width: asset.width, height: asset.height, storageProvider: asset.storageProvider, storageKey: asset.storageKey, mimeType: asset.mimeType, fileSizeBytes: asset.fileSizeBytes, checksum: asset.checksum, assetVersion: asset.assetVersion });
       await updateMyAdvertiserCampaign(wizardCampaignId, {
         runInAllSlots: selectedSlots.length === SLOT_CATALOG.length,
-        targeting: { objective: campaignForm.objective, slots: selectedSlots }
+        targeting: buildCampaignTargeting()
       });
       const refreshed = await getMyAdvertiserCampaigns(accountId);
       setData(refreshed);
@@ -313,7 +325,7 @@ export default function AdvertiserPortalPage() {
     try {
       await updateMyAdvertiserCampaign(wizardCampaignId, {
         runInAllSlots: selectedSlots.length === SLOT_CATALOG.length,
-        targeting: { objective: campaignForm.objective, slots: selectedSlots }
+        targeting: buildCampaignTargeting()
       });
       await loadCampaigns();
       goWizardStep("budget", wizardCampaignId);
@@ -427,13 +439,14 @@ export default function AdvertiserPortalPage() {
           <div className="ads-campaign-filters"><input placeholder="Buscar campanha ou anunciante" value={campaignQuery} onChange={(event) => setCampaignQuery(event.target.value)} /><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">Todos os status</option><option value="draft">Rascunhos</option><option value="awaiting_creative">Aguardando criativo</option><option value="pending_review">Em revisão</option><option value="approved">Aprovadas</option><option value="active">No ar</option><option value="ended">Encerradas</option></select></div>
           {!filteredCampaigns.length ? <article className="ads-empty-campaigns"><strong>Nenhuma campanha neste recorte.</strong><p>Crie um anúncio para iniciar um rascunho guiado.</p></article> : <div className="ads-campaign-grid-v2">{filteredCampaigns.map((item) => {
             const state = campaignState(item); const steps = ["Criada", "Criativo", "Revisão", "No ar"];
-            return <article key={item.id} className="ads-campaign-card-v2"><header><div><span>{item.advertiser}</span><h3>{item.name}</h3><p>{formatDate(item.startsAt)} → {formatDate(item.endsAt)}</p></div><b className={`ads-stage ${state.key}`}>{state.label}</b></header><div className="ads-progress-v2">{steps.map((label, index) => <span key={label} className={index + 1 <= state.current ? "done" : ""}><i />{label}</span>)}</div><footer><button className="chip" type="button" onClick={() => beginWizard(item)}>Editar</button>{canWrite ? <><button className="chip" type="button" disabled={busy} onClick={() => duplicateCampaign(item)}>Duplicar</button>{["active", "paused"].includes(item.status) ? <button className="chip" type="button" disabled={busy} onClick={() => changeLifecycle(item)}>{item.status === "active" ? "Pausar" : "Retomar"}</button> : null}<button className="chip" type="button" disabled={busy} onClick={() => removeOrEnd(item)}>{item.status === "draft" && ["draft", "pending_review", "rejected", "changes_requested"].includes(item.reviewStatus || "draft") ? "Excluir" : "Encerrar"}</button></> : null}</footer></article>;
+            return <article key={item.id} className="ads-campaign-card-v2"><header><div><span>{item.advertiser}</span><h3>{item.name}</h3><p>{formatDate(item.startsAt)} → {formatDate(item.endsAt)}</p></div><b className={`ads-stage ${state.key}`}>{state.label}</b></header><div className="ads-progress-v2">{steps.map((label, index) => <span key={label} className={index + 1 <= state.current ? "done" : ""}><i />{label}</span>)}</div>{item.metrics ? <div className="ads-campaign-live-metrics" aria-label={`Métricas da campanha ${item.name}`}><span><b>{item.metrics.impressions}</b> impressões</span><span><b>{item.metrics.clicks}</b> cliques</span><span><b>{item.metrics.ctr}%</b> CTR</span><span><b>{item.metrics.remainingPatacos}</b> patacos</span></div> : null}<footer><button className="chip" type="button" onClick={() => beginWizard(item)}>Editar</button>{canWrite ? <><button className="chip" type="button" disabled={busy} onClick={() => duplicateCampaign(item)}>Duplicar</button>{["active", "paused"].includes(item.status) ? <button className="chip" type="button" disabled={busy} onClick={() => changeLifecycle(item)}>{item.status === "active" ? "Pausar" : "Retomar"}</button> : null}<button className="chip" type="button" disabled={busy} onClick={() => removeOrEnd(item)}>{item.status === "draft" && ["draft", "pending_review", "rejected", "changes_requested"].includes(item.reviewStatus || "draft") ? "Excluir" : "Encerrar"}</button></> : null}</footer></article>;
           })}</div>}
         </section> : null}
 
         {area === "new" ? <section className="ads-wizard-v2">
           <div className="ads-area-heading"><div><span>NOVO ANÚNCIO</span><h2>{wizardCampaignId ? "Configure seu rascunho" : "Vamos montar sua campanha"}</h2><p>Uma etapa por vez. Você pode voltar e ajustar o que já foi definido.</p></div><button className="chip" type="button" onClick={() => openArea("campaigns")}>Voltar para campanhas</button></div>
           <ol className="ads-wizard-steps">{wizardSteps.map(([id, title, helper], index) => <li key={id} className={wizardStep === id ? "active" : wizardSteps.findIndex(([key]) => key === wizardStep) > index ? "complete" : ""}><span>{index + 1}</span><div><strong>{title}</strong><small>{helper}</small></div></li>)}</ol>
+          {wizardStep === "objective" ? <aside className="ads-targeting-panel"><div><span>ALCANCE INICIAL</span><strong>Defina apenas o contexto que faz sentido para esta campanha.</strong><p>Sem filtros, a campanha usa o inventário compatível. Cidade, região e ritmo diário são opcionais.</p></div><label>Cidade<input value={campaignForm.targetCity} onChange={(event) => setCampaignForm({ ...campaignForm, targetCity: event.target.value })} placeholder="Ex.: São Paulo" /></label><label>Região ou bairro<input value={campaignForm.targetRegion} onChange={(event) => setCampaignForm({ ...campaignForm, targetRegion: event.target.value })} placeholder="Ex.: Zona Norte" /></label><label>Máximo de impressões por dia<input type="number" min="1" value={campaignForm.dailyPacingCap} onChange={(event) => setCampaignForm({ ...campaignForm, dailyPacingCap: event.target.value })} placeholder="Automático" /></label></aside> : null}
           <div className="ads-wizard-panel">
             {wizardStep === "objective" ? <form className="ads-wizard-form" onSubmit={saveObjective}><div><span>ETAPA 1</span><h3>Objetivo e período</h3><p>Comece pelo contexto. Nada será publicado neste momento.</p></div><label>Anunciante<input required value={campaignForm.advertiser} onChange={(event) => setCampaignForm({ ...campaignForm, advertiser: event.target.value })} placeholder="Nome exibido no anúncio" /></label><label>Nome da campanha<input required value={campaignForm.name} onChange={(event) => setCampaignForm({ ...campaignForm, name: event.target.value })} placeholder="Ex.: Noite especial de samba" /></label><label>Objetivo<select value={campaignForm.objective} onChange={(event) => setCampaignForm({ ...campaignForm, objective: event.target.value })}>{OBJECTIVES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label><div className="ads-two-fields"><label>Início<input type="datetime-local" value={campaignForm.startsAt} onChange={(event) => setCampaignForm({ ...campaignForm, startsAt: event.target.value })} /></label><label>Fim<input type="datetime-local" value={campaignForm.endsAt} onChange={(event) => setCampaignForm({ ...campaignForm, endsAt: event.target.value })} /></label></div><button className="btn-primary" disabled={busy}>{busy ? "Salvando..." : "Salvar e escolher posição"}</button></form> : null}
             {wizardStep === "placement" ? <div className="ads-placement-step"><div><span>ETAPA 2</span><h3>Onde este anúncio aparece?</h3><p>Escolha os posicionamentos antes do upload. Cada espaço usa sua proporção real de exibição.</p></div><div className="ads-slot-carousel">{SLOT_CATALOG.map((slot) => <SlotSurface key={slot.id} slot={slot} selected={selectedSlots.includes(slot.id)} creative={wizardCampaign?.creatives?.find((item) => item.slot === slot.id)} onSelect={toggleSlot} />)}</div><div className="ads-slot-dots">{SLOT_CATALOG.map((slot) => <i key={slot.id} className={selectedSlots.includes(slot.id) ? "active" : ""} />)}</div>{selectedSlotItems.length ? <form className="ads-upload-form" onSubmit={uploadCreative}><div><span>CRIATIVO PARA {labelFor(SLOT_CATALOG.map((item) => [item.id, item.name]), creative.slot)}</span><p>Recomendado: {SLOT_CATALOG.find((item) => item.id === creative.slot)?.dimensions} · máximo 5 MB.</p></div><label>Posicionamento<select value={creative.slot} onChange={(event) => setCreative({ ...creative, slot: event.target.value })}>{selectedSlotItems.map((slot) => <option value={slot.id} key={slot.id}>{slot.name}</option>)}</select></label><label>Arquivo<input required type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setCreative({ ...creative, asset: event.target.files?.[0] || null })} /></label><label>Título do anúncio<input value={creative.title} onChange={(event) => setCreative({ ...creative, title: event.target.value })} placeholder="Título visível ou interno" /></label><label>Destino<input type="url" value={creative.destinationUrl} onChange={(event) => setCreative({ ...creative, destinationUrl: event.target.value })} placeholder="https://..." /></label>{creativePreviewUrl ? <div className="ads-upload-preview"><img src={creativePreviewUrl} alt="Prévia local do criativo" /><span>Prévia do arquivo selecionado</span></div> : null}<button className="chip active" type="submit" disabled={busy}>{busy ? "Enviando criativo..." : "Salvar criativo e avançar"}</button></form> : <p className="ads-wizard-hint">Selecione pelo menos um posicionamento para preparar o upload.</p>}<div className="ads-wizard-actions"><button className="chip" type="button" onClick={() => goWizardStep("objective")}>Voltar</button><button className="btn-primary" type="button" disabled={busy} onClick={continueFromPlacement}>Continuar para orçamento</button></div></div> : null}

@@ -10423,4 +10423,494 @@ button.venue-card {
 .ads-admin-preview-radar-list { display: grid; gap: 5px; }.ads-admin-preview-radar-list i { height: 19px; border-radius: 4px; background: #d7dde4; }
 .ads-review-mobile-preview .ads-mobile-slot-preview > p { margin: 7px 0 0; color: #64748b; font-size: 9px; text-align: center; }.ads-review-mobile-preview .ads-mobile-slot-preview > p small { display: block; margin-top: 2px; font-size: 8px; }
 
+/* ADS UI precision pass — isolate the operational product from public-app defaults.
+   These rules intentionally live last: Ads must not inherit the large pills,
+   automatic button margins, or dark surface treatment used by the public app. */
+.app-shell-ads {
+  background: #f8fafc;
+}
+
+.advertise-page,
+.ads-workspace-v2,
+.app-shell-admin .ads-admin-console,
+.mock-payment-shell {
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+/* Shared controls: one quiet scale for actions, fields and compact labels. */
+.advertise-page :where(.btn-primary, .chip),
+.ads-workspace-v2 :where(.btn-primary, .chip),
+.app-shell-admin .ads-admin-console :where(.btn-primary, .chip),
+.mock-payment-shell :where(.btn-primary, .chip, .btn-secondary) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 36px;
+  margin: 0 !important;
+  padding: 8px 12px;
+  border-radius: 6px;
+  line-height: 1;
+  font-size: 12px;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ads-workspace-v2 .btn-primary {
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+
+.ads-workspace-v2 .btn-primary:hover:not(:disabled) {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  transform: none;
+}
+
+.ads-workspace-v2 .btn-primary:disabled {
+  border-color: #cbd5e1;
+  background: #cbd5e1;
+  color: #475569;
+}
+
+.ads-workspace-v2 :where(input, select, textarea),
+.app-shell-admin .ads-admin-console :where(input, select, textarea, .search-input) {
+  min-height: 38px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.ads-workspace-v2 :where(label, .ads-workspace-context label),
+.app-shell-admin .ads-admin-console .venue-form label {
+  font-size: 11px;
+  letter-spacing: .005em;
+}
+
+/* Public entry: the product explanation stays generous, without a marketing
+   landing-page scale or detached CTAs. */
+.advertise-page {
+  max-width: 1140px;
+  gap: 16px;
+  padding: clamp(14px, 2.2vw, 22px);
+}
+
+.advertise-page .advertise-hero {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: clamp(20px, 3vw, 26px);
+}
+
+.advertise-page .advertise-hero h2 {
+  max-width: 760px;
+  font-size: clamp(1.72rem, 3.1vw, 2.28rem);
+  line-height: 1.13;
+  letter-spacing: -.032em;
+}
+
+.advertise-page .advertise-hero p {
+  max-width: 690px;
+  font-size: .88rem;
+  line-height: 1.58;
+}
+
+.advertise-page .advertise-actions {
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.advertise-page .advertise-actions .btn-primary,
+.advertise-page .advertise-actions .chip {
+  min-height: 36px;
+}
+
+.advertise-page .advertise-grid,
+.advertise-page .advertise-audience-grid,
+.advertise-page .advertise-steps {
+  gap: 12px;
+}
+
+.advertise-page :where(.advertise-principle-card, .advertise-audience-grid .clean-card, .advertise-steps .clean-card) {
+  gap: 7px;
+  padding: 16px;
+}
+
+.advertise-page :where(.advertise-principle-card h3, .advertise-section-heading h3, .advertise-final-card h3) {
+  font-size: 1.04rem;
+  line-height: 1.25;
+  letter-spacing: -.014em;
+}
+
+.advertise-page :where(.advertise-principle-card p, .advertise-audience-grid p, .advertise-steps p, .advertise-final-card p, .advertise-access-note p) {
+  font-size: .82rem;
+  line-height: 1.55;
+}
+
+.advertise-page .advertise-section {
+  gap: 9px;
+}
+
+.advertise-page .advertise-section-heading {
+  gap: 2px;
+}
+
+.advertise-page .advertise-access-note,
+.advertise-page .advertise-final-card {
+  padding: 16px 18px;
+}
+
+.advertise-page .advertise-final-card {
+  align-items: center;
+}
+
+/* Workspace: a dense, calm dashboard rather than a sequence of oversized cards. */
+.ads-workspace-v2 {
+  gap: 14px;
+}
+
+.ads-workspace-v2-header {
+  padding: clamp(18px, 2.5vw, 24px);
+}
+
+.ads-workspace-v2-header h1 {
+  margin-top: 11px;
+  font-size: clamp(1.62rem, 2.5vw, 2.1rem);
+  line-height: 1.13;
+  letter-spacing: -.03em;
+}
+
+.ads-workspace-v2-header p,
+.ads-area-heading p {
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.ads-workspace-v2-header .chip {
+  min-height: 34px;
+  color: #475569;
+}
+
+.ads-access-grid {
+  gap: 12px;
+}
+
+.ads-access-intro {
+  gap: 14px;
+  padding: clamp(20px, 3.2vw, 30px);
+}
+
+.ads-access-intro h2 {
+  max-width: 520px;
+  font-size: clamp(1.85rem, 3.2vw, 2.65rem);
+  line-height: 1.1;
+  letter-spacing: -.038em;
+}
+
+.ads-access-intro p,
+.ads-access-intro ol,
+.ads-access-form p {
+  font-size: .82rem;
+  line-height: 1.56;
+}
+
+.ads-access-form {
+  gap: 10px;
+  padding: 20px;
+}
+
+.ads-access-form h2 {
+  font-size: 1.12rem;
+}
+
+.ads-workspace-context {
+  padding: 11px 14px;
+}
+
+.ads-workspace-tabs button {
+  min-height: 42px;
+  gap: 7px;
+  font-size: 12px;
+}
+
+.ads-area-heading h2 {
+  font-size: 1.36rem;
+  line-height: 1.2;
+}
+
+.ads-campaign-card-v2 {
+  gap: 13px;
+  padding: 14px;
+}
+
+.ads-wizard-panel {
+  min-height: 0;
+  align-content: start;
+  padding: clamp(18px, 2.5vw, 24px);
+}
+
+.ads-wizard-form,
+.ads-placement-step,
+.ads-budget-step,
+.ads-review-step {
+  gap: 14px;
+}
+
+.ads-wizard-panel h3 {
+  font-size: 1.23rem;
+  line-height: 1.22;
+}
+
+.ads-wizard-panel p,
+.ads-wizard-hint,
+.ads-package-grid article p,
+.ads-review-step dd {
+  font-size: .82rem;
+  line-height: 1.52;
+}
+
+.ads-wizard-actions {
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+.ads-wallet-v2,
+.ads-wallet-layout > section {
+  padding: clamp(18px, 2.5vw, 24px);
+}
+
+.ads-wallet-kpis article,
+.ads-package-grid article,
+.ads-review-step dl div {
+  padding: 12px;
+}
+
+.ads-campaign-live-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--ads-v2-line);
+  border-radius: 7px;
+  background: var(--ads-v2-line);
+}
+
+.ads-campaign-live-metrics span {
+  display: grid;
+  gap: 2px;
+  padding: 8px 9px;
+  background: #fff;
+  color: var(--ads-v2-muted);
+  font-size: 10px;
+}
+
+.ads-campaign-live-metrics b {
+  color: var(--ads-v2-ink);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.ads-targeting-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) repeat(3, minmax(130px, .65fr));
+  gap: 10px;
+  align-items: end;
+  border: 1px solid var(--ads-v2-line);
+  border-left: 3px solid #2563eb;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fbff;
+}
+
+.ads-targeting-panel > div {
+  display: grid;
+  gap: 3px;
+}
+
+.ads-targeting-panel strong {
+  color: var(--ads-v2-ink);
+  font-size: 12px;
+}
+
+.ads-targeting-panel p {
+  margin: 0;
+  color: var(--ads-v2-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.ads-targeting-panel label {
+  display: grid;
+  gap: 5px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ads-targeting-panel input {
+  min-width: 0;
+  min-height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 7px 9px;
+  background: #fff;
+  color: var(--ads-v2-ink);
+  font: inherit;
+}
+
+.ads-delivery-health {
+  display: grid;
+  gap: 14px;
+}
+
+.ads-delivery-health-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--ads-border);
+  border-radius: 7px;
+  background: var(--ads-border);
+}
+
+.ads-delivery-health-kpis span,
+.ads-delivery-inventory span {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  background: #fff;
+  color: var(--ads-text-muted);
+  font-size: 11px;
+}
+
+.ads-delivery-health-kpis b {
+  color: var(--ads-text);
+  font-size: 17px;
+  line-height: 1;
+}
+
+.ads-delivery-alert-list {
+  display: grid;
+  gap: 7px;
+}
+
+.ads-delivery-alert-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 10px;
+  border: 1px solid var(--ads-border);
+  border-left: 3px solid #f59e0b;
+  border-radius: 7px;
+  padding: 9px 10px;
+  background: #fffbeb;
+}
+
+.ads-delivery-alert-list article.critical {
+  border-left-color: #dc2626;
+  background: #fef2f2;
+}
+
+.ads-delivery-alert-list article.info {
+  border-left-color: #2563eb;
+  background: #eff6ff;
+}
+
+.ads-delivery-alert-list strong { color: var(--ads-text); font-size: 12px; }
+.ads-delivery-alert-list span { color: var(--ads-text-secondary); font-size: 12px; font-weight: 800; }
+.ads-delivery-alert-list small { grid-column: 1 / -1; color: var(--ads-text-muted); font-size: 11px; line-height: 1.42; }
+
+.ads-delivery-inventory {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ads-delivery-inventory strong { color: var(--ads-text); font-size: 11px; }
+.ads-delivery-inventory small { font-size: 10px; }
+
+/* Admin inherits the same hierarchy while preserving its review-specific content. */
+.app-shell-admin .ads-admin-console {
+  gap: 14px;
+}
+
+.app-shell-admin .ads-admin-console .ads-admin-hero {
+  padding: 20px;
+}
+
+.app-shell-admin .ads-admin-console .ads-admin-hero h2 {
+  font-size: clamp(1.58rem, 2.6vw, 2.1rem);
+  line-height: 1.15;
+}
+
+.app-shell-admin .ads-admin-console :where(.venue-card, .ads-review-card, .placement-catalog-card, .admin-list-header, .ads-chart-card) {
+  padding: 14px;
+}
+
+.app-shell-admin .ads-admin-console :where(.meta-line, .empty, small) {
+  font-size: .8rem;
+  line-height: 1.5;
+}
+
+.mock-payment-card {
+  gap: 16px;
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, .08);
+}
+
+.mock-payment-confirm {
+  margin: 0 !important;
+}
+
+@media (max-width: 767px) {
+  .advertise-page {
+    gap: 14px;
+    padding: 14px 10px;
+  }
+
+  .advertise-page .advertise-hero {
+    padding: 20px;
+  }
+
+  .advertise-page .advertise-hero h2 {
+    font-size: 1.72rem;
+  }
+
+  .advertise-page .advertise-final-card {
+    gap: 14px;
+  }
+
+  .ads-workspace-v2-header,
+  .ads-access-intro,
+  .ads-access-form,
+  .ads-wizard-panel,
+  .ads-wallet-v2 {
+    padding: 16px;
+  }
+
+  .ads-access-intro h2 {
+    font-size: 1.8rem;
+  }
+
+  .ads-workspace-tabs button {
+    min-height: 40px;
+  }
+
+  .ads-campaign-live-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ads-targeting-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .ads-delivery-health-kpis,
+  .ads-delivery-inventory {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 

@@ -20,6 +20,7 @@ import {
   useApproveAdvertiserAccessRequestMutation,
   useAdsActivityQuery,
   useAdDeliveryQuery,
+  useAdsHealthQuery,
   useAdsReportQuery,
   useCreateAdCampaignMutation,
   useCreateAdvertiserAccountMutation,
@@ -175,8 +176,9 @@ export default function AdsAdminPage() {
   const { data: reviewQueue = { campaigns: [], creatives: [] }, isLoading: reviewQueueLoading } = useAdReviewQueueQuery(REVIEW_WORKFLOW_ENABLED);
   const { data: reviewHistory = [] } = useAdReviewHistoryQuery(selectedReview?.entityType, selectedReview?.id, REVIEW_WORKFLOW_ENABLED && Boolean(selectedReview));
   const { data: report, isLoading: reportLoading } = useAdsReportQuery(reportDays, true);
+  const { data: deliveryHealth, isLoading: healthLoading } = useAdsHealthQuery(24, true);
   const { data: activity = [], isLoading: activityLoading } = useAdsActivityQuery(25, true);
-  const { data: simulatedDelivery, isLoading: simLoading } = useAdDeliveryQuery(simulatorSlot, true);
+  const { data: simulatedDelivery, isLoading: simLoading } = useAdDeliveryQuery(simulatorSlot, true, { preview: true });
   const {
     data: placements = [],
     isLoading: placementsLoading,
@@ -724,22 +726,30 @@ export default function AdsAdminPage() {
   function handleExportReportCsv() {
     if (!report) return;
     const rows = [
-      ["tipo", "nome", "status", "impressoes", "cliques", "ctr_percentual"],
+      ["tipo", "nome", "status", "solicitacoes", "renderizacoes", "impressoes", "cliques", "ctr_percentual", "viewability_percentual", "inventario_restante"],
       ...report.campaigns.map((item) => [
         "campanha",
         item.campaignName,
         item.status,
+        "-",
+        "-",
         item.impressions,
         item.clicks,
-        item.ctr
+        item.ctr,
+        "-",
+        "-"
       ]),
       ...report.slots.map((slot) => [
         "slot",
         slot.slot,
         "-",
+        slot.requests || 0,
+        slot.rendered || 0,
         slot.impressions,
         slot.clicks,
-        slot.ctr
+        slot.ctr,
+        slot.viewabilityRate || 0,
+        slot.inventoryRemaining ?? 0
       ])
     ];
     const csv = rows.map((line) => line.map((cell) => `"${String(cell).replaceAll("\"", "\"\"")}"`).join(",")).join("\n");
@@ -998,6 +1008,8 @@ export default function AdsAdminPage() {
                 <div><dt>Proporcao</dt><dd>{placement.aspectRatio}</dd></div>
                 <div><dt>Formatos</dt><dd>{placement.allowedMimeTypes.join(", ")}</dd></div>
                 <div><dt>Limite</dt><dd>{Math.round(placement.maxFileSizeBytes / 1024 / 1024)} MB</dd></div>
+                <div><dt>Capacidade diária</dt><dd>{placement.inventory?.dailyImpressionCap || 0} impressões</dd></div>
+                <div><dt>Modo de cobrança</dt><dd>{placement.commercialRules.billingMode === "valid_impression" ? "impressão válida" : "não definido"}</dd></div>
                 <div><dt>Dispositivos</dt><dd>mobile e desktop</dd></div>
                 <div><dt>Compra</dt><dd>{placement.commercialRules.purchaseEnabled ? "habilitada" : "indisponivel"}</dd></div>
               </dl>
@@ -1481,8 +1493,8 @@ export default function AdsAdminPage() {
               {report.slots.map((slot) => (
                 <article key={slot.slot} className="clean-card">
                   <h4>{SLOT_LABELS[slot.slot] || slot.slot}</h4>
-                  <p className="meta-line">{slot.impressions} imp / {slot.clicks} cliques</p>
-                  <small>CTR {slot.ctr}%</small>
+                  <p className="meta-line">{slot.impressions} imp / {slot.clicks} cliques / {slot.requests || 0} entregas solicitadas</p>
+                  <small>CTR {slot.ctr}% · viewability {slot.viewabilityRate || 0}% · inventário restante {slot.inventoryRemaining ?? 0}</small>
                 </article>
               ))}
             </div>
@@ -1770,6 +1782,13 @@ export default function AdsAdminPage() {
       {message ? <p className="empty">{message}</p> : null}
       {adsSection === "health" ? (
       <>
+      {healthLoading ? <p className="empty">Lendo sinais de entrega...</p> : null}
+      {deliveryHealth ? <section className="clean-card ads-delivery-health">
+        <div className="advertiser-readonly-title"><div><span className="eyebrow">MONITORAMENTO</span><h3>Saúde da entrega</h3><p className="meta-line">Sinais das últimas 24 horas. Alertas não expõem dados pessoais de usuários.</p></div><span className={`status-badge ${deliveryHealth.summary.criticalCount ? "status-rejected" : deliveryHealth.summary.alertCount ? "status-pending_review" : "status-active"}`}>{deliveryHealth.summary.alertCount ? `${deliveryHealth.summary.alertCount} alerta(s)` : "estável"}</span></div>
+        <div className="ads-delivery-health-kpis"><span><b>{deliveryHealth.summary.deliveries}</b> entregas</span><span><b>{deliveryHealth.summary.validImpressions}</b> impressões</span><span><b>{deliveryHealth.summary.clicks}</b> cliques</span><span><b>{deliveryHealth.summary.criticalCount}</b> críticos</span></div>
+        {deliveryHealth.alerts.length ? <div className="ads-delivery-alert-list">{deliveryHealth.alerts.map((alert) => <article key={alert.code} className={alert.severity}><strong>{alert.title}</strong><span>{alert.count}</span><small>{alert.detail}</small></article>)}</div> : <p className="meta-line">Nenhum sinal crítico ou anormal foi detectado neste período.</p>}
+        <div className="ads-delivery-inventory">{deliveryHealth.inventory.map((item) => <span key={item.slot}><strong>{SLOT_LABELS[item.slot] || item.slot}</strong><small>{item.used}/{item.capacity} impressões · {item.utilization}% usado</small></span>)}</div>
+      </section> : null}
       {(activeWithoutCreatives.length > 0 || activeMissingSlots.length > 0) ? (
         <div className="empty empty-highlight">
           <strong>Saúde de campanhas</strong>

@@ -12,8 +12,13 @@ const prismaMock = vi.hoisted(() => ({
   },
   adEventLog: {
     create: vi.fn(),
+    count: vi.fn(),
     groupBy: vi.fn(),
     findMany: vi.fn()
+  },
+  adDelivery: {
+    create: vi.fn(),
+    groupBy: vi.fn()
   },
   venue: {
     findMany: vi.fn()
@@ -77,6 +82,10 @@ function activeCampaign(overrides = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   process.env.ADS_CREDITS_PURCHASE_ENABLED = "true";
+  prismaMock.adEventLog.count.mockResolvedValue(0);
+  prismaMock.adEventLog.groupBy.mockResolvedValue([]);
+  prismaMock.adDelivery.groupBy.mockResolvedValue([]);
+  prismaMock.adDelivery.create.mockResolvedValue({ id: "delivery-1" });
 });
 
 describe("Ads controller legacy contracts", () => {
@@ -120,22 +129,23 @@ describe("Ads controller legacy contracts", () => {
 
     expect(next).not.toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith({
-      item: {
+      item: expect.objectContaining({
         campaignId: CAMPAIGN_ID,
         campaignName: "Campanha Centro",
         slot: "explore_feed_large",
         creativeId: CREATIVE_ID,
         imageUrl: "https://cdn.example.com/ad.webp",
-        destinationUrl: "https://77gira.com.br/events/example",
+        destinationAvailable: true,
         altText: "Campanha Centro",
-        title: "Hoje tem samba"
-      }
+        title: "Hoje tem samba",
+        deliveryToken: expect.any(String)
+      })
     });
   });
 
   it("returns no-fill when an authenticated user reached the daily frequency cap", async () => {
     prismaMock.adCampaign.findMany.mockResolvedValue([activeCampaign()]);
-    prismaMock.adEventLog.groupBy.mockResolvedValue([
+    prismaMock.adDelivery.groupBy.mockResolvedValue([
       { campaignId: CAMPAIGN_ID, _count: { _all: 3 } }
     ]);
     const req = {
@@ -147,7 +157,7 @@ describe("Ads controller legacy contracts", () => {
 
     await getAdDelivery(req, res, next);
 
-    expect(prismaMock.adEventLog.groupBy).toHaveBeenCalledOnce();
+    expect(prismaMock.adDelivery.groupBy).toHaveBeenCalledOnce();
     expect(res.json).toHaveBeenCalledWith({ item: null });
     expect(next).not.toHaveBeenCalled();
   });
@@ -189,7 +199,7 @@ describe("Ads controller legacy contracts", () => {
   it.each([
     ["impression", trackAdImpression],
     ["click", trackAdClick]
-  ])("persists the current %s tracking payload", async (type, handler) => {
+  ])("retires the direct %s tracking endpoint", async (_type, handler) => {
     prismaMock.adEventLog.create.mockResolvedValue({ id: "log-1" });
     const req = {
       body: {
@@ -208,20 +218,9 @@ describe("Ads controller legacy contracts", () => {
     await handler(req, res, next);
 
     expect(next).not.toHaveBeenCalled();
-    expect(prismaMock.adEventLog.create).toHaveBeenCalledWith({
-      data: {
-        type,
-        campaignId: CAMPAIGN_ID,
-        creativeId: CREATIVE_ID,
-        slot: "venue_detail_inline",
-        venueId: VENUE_ID,
-        userId: "user-1",
-        sessionId: "session-77",
-        userAgent: "Vitest Browser"
-      }
-    });
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith({ ok: true });
+    expect(prismaMock.adEventLog.create).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(410);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: "delivery_token_required" }));
   });
 
   it("rejects an invalid tracking payload before writing to the database", async () => {
