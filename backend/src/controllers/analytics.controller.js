@@ -28,7 +28,6 @@ const TRACKABLE_EVENT_TYPES = new Set([
 const analyticsEventSchema = z.object({
   type: z.string().min(2).max(80),
   visitorId: z.string().max(120).optional().nullable(),
-  userId: z.string().uuid().optional().nullable(),
   venueId: z.string().uuid().optional().nullable(),
   eventId: z.string().uuid().optional().nullable(),
   artistId: z.string().uuid().optional().nullable(),
@@ -38,6 +37,23 @@ const analyticsEventSchema = z.object({
   source: z.string().max(80).optional().nullable(),
   metadata: z.record(z.any()).optional().nullable()
 });
+
+const SAFE_METADATA_KEYS = new Set([
+  "action", "channel", "provider", "mediaId", "type", "platform",
+  "durationMinutes", "enabled", "liveEventsCount", "length", "filterDate", "filterHour"
+]);
+
+function sanitizeAnalyticsMetadata(metadata) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return undefined;
+  const safe = {};
+  for (const [key, value] of Object.entries(metadata)) {
+    if (!SAFE_METADATA_KEYS.has(key)) continue;
+    if (typeof value === "boolean") safe[key] = value;
+    if (typeof value === "number" && Number.isFinite(value)) safe[key] = Math.max(-1_000_000, Math.min(1_000_000, value));
+    if (typeof value === "string") safe[key] = value.trim().slice(0, 120);
+  }
+  return Object.keys(safe).length ? safe : undefined;
+}
 
 function getSinceDate(days = 30) {
   const safeDays = Math.min(Math.max(Number(days) || 30, 1), 365);
@@ -321,7 +337,8 @@ export async function trackAnalyticsEvent(req, res, next) {
     }
 
     const visitorId = payload.visitorId || null;
-    const userId = req.user?.id || payload.userId || null;
+    // Client payloads must never be able to attribute analytics to another account.
+    const userId = req.user?.id || null;
 
     await prisma.analyticsEvent.create({
       data: {
@@ -335,7 +352,7 @@ export async function trackAnalyticsEvent(req, res, next) {
         city: payload.city || null,
         state: payload.state || null,
         source: payload.source || null,
-        metadata: payload.metadata || undefined,
+        metadata: sanitizeAnalyticsMetadata(payload.metadata),
         userAgent: req.get("user-agent") || null
       }
     });

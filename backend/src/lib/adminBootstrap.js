@@ -1,6 +1,6 @@
-import bcrypt from "bcryptjs";
 import { UserRole } from "@prisma/client";
 import { prisma } from "./prisma.js";
+import { hashPassword } from "../utils/passwordSecurity.js";
 
 function clean(value) {
   return String(value || "").trim();
@@ -36,7 +36,7 @@ export async function ensureAdminBootstrap({ logger = console } = {}) {
   );
   const firstName = clean(process.env.ADMIN_BOOTSTRAP_FIRST_NAME) || "Admin";
   const lastName = clean(process.env.ADMIN_BOOTSTRAP_LAST_NAME) || "77Gira";
-  const passwordHash = await bcrypt.hash(password, 10);
+  const passwordHash = await hashPassword(password);
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {

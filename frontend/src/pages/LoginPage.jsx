@@ -44,6 +44,12 @@ export default function LoginPage() {
     if (typeof from === "string" && from.startsWith("/") && !from.startsWith("/login")) return from;
     return "";
   }, [location.state]);
+  const securityNotice = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("securitySessionsRevoked") === "1") return "Suas sessões foram encerradas. Entre novamente para continuar.";
+    if (params.get("passwordChanged") === "1") return "Senha alterada com sucesso. Entre novamente para continuar.";
+    return "";
+  }, [location.search]);
 
   if (user) {
     return <Navigate to={redirectTo || getRoleHome(user.role)} replace />;
@@ -215,7 +221,7 @@ export default function LoginPage() {
         </button>
       </div>
 
-      {message ? <p className="empty">{message}</p> : null}
+      {message || securityNotice ? <p className="empty" role="status">{message || securityNotice}</p> : null}
 
       <p className="meta-line">
         Ao continuar, você concorda com nossos{" "}

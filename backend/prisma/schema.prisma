@@ -161,6 +161,28 @@ enum ArtistMediaType {
   video_external
 }
 
+enum PrivacyConsentPurpose {
+  cultural_personalization
+  ads_personalization
+}
+
+enum PrivacyRequestType {
+  access
+  data_export
+  deletion
+  anonymization
+  correction
+  opposition
+}
+
+enum PrivacyRequestStatus {
+  received
+  in_review
+  completed
+  rejected
+  cancelled
+}
+
 model User {
   id                              String    @id @default(uuid())
   email                           String    @unique
@@ -215,9 +237,64 @@ model User {
   artistAccessInvites         ArtistAccess[]           @relation("ArtistAccessInvitedBy")
   artistsVerified             Artist[]                 @relation("ArtistVerifiedBy")
   artistBookingRequests       ArtistBookingRequest[]   @relation("ArtistBookingRequester")
+  privacyConsentRecords       PrivacyConsentRecord[]
+  privacyRequests             PrivacyRequest[]         @relation("PrivacyRequestRequester")
+  privacyRequestsHandled      PrivacyRequest[]         @relation("PrivacyRequestHandledBy")
+  auditLogs                   AuditLog[]               @relation("AuditLogActor")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model PrivacyConsentRecord {
+  id            String                  @id @default(uuid())
+  userId        String
+  purpose       PrivacyConsentPurpose
+  policyVersion String
+  isGranted     Boolean
+  source        String                  @default("privacy_center")
+  createdAt     DateTime                @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, createdAt])
+}
+
+model PrivacyRequest {
+  id             String               @id @default(uuid())
+  userId         String
+  type           PrivacyRequestType
+  status         PrivacyRequestStatus @default(received)
+  details        String?
+  requestedAt    DateTime             @default(now())
+  dueAt          DateTime?
+  resolvedAt     DateTime?
+  handledByUserId String?
+  resolutionNote String?
+
+  user      User  @relation("PrivacyRequestRequester", fields: [userId], references: [id], onDelete: Cascade)
+  handledBy User? @relation("PrivacyRequestHandledBy", fields: [handledByUserId], references: [id], onDelete: SetNull)
+
+  @@index([userId, requestedAt])
+  @@index([status, requestedAt])
+  @@index([status, dueAt])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String?
+  action      String
+  subjectType String
+  subjectId   String?
+  metadata    Json?
+  ipHash      String?
+  createdAt   DateTime @default(now())
+
+  actor User? @relation("AuditLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId, createdAt])
+  @@index([subjectType, subjectId, createdAt])
+  @@index([action, createdAt])
 }
 
 model Region {

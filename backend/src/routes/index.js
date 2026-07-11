@@ -77,7 +77,7 @@ import { requireArtistWrite } from "../middlewares/artistAccess.js";
 import { getArtistEpk, getMyArtistProfile, listMyArtists, updateMyArtistProfile } from "../controllers/artistEpk.controller.js";
 import { createArtistBookingRequest, listArtistBookingRequests, updateArtistBookingStatus } from "../controllers/artistBookings.controller.js";
 import { createArtistMedia, deleteArtistMedia, listMyArtistMedia, updateArtistMedia } from "../controllers/artistMedia.controller.js";
-import { updateMyLocation, updateMyPassword, updateMyProfile, uploadMyAvatar } from "../controllers/profile.controller.js";
+import { revokeMySessions, updateMyLocation, updateMyPassword, updateMyProfile, uploadMyAvatar } from "../controllers/profile.controller.js";
 import { getArtistInsights } from "../controllers/artistInsights.controller.js";
 import { listAdPlacements } from "../controllers/adPlacements.controller.js";
 import { uploadAdCreativeAsset } from "../controllers/adCreativeUploads.controller.js";
@@ -98,6 +98,7 @@ import { approveAdReview, getAdReviewHistory, listAdReviewQueue, rejectAdReview,
 import { createMyAdvertiserCampaign, createMyAdvertiserCreative, deleteMyAdvertiserCampaign, duplicateMyAdvertiserCampaign, endMyAdvertiserCampaign, listMyAdvertiserAccessRequests, listMyAdvertiserAccounts, listMyAdvertiserCampaigns, requestMyAdvertiserAccess, setMyAdvertiserCampaignLifecycle, submitMyAdvertiserReview, updateMyAdvertiserCampaign, updateMyAdvertiserCreative } from "../controllers/advertiserPortal.controller.js";
 import { decideMyArtistInvitation, inviteArtistTeamMember, listArtistTeam, listMyArtistInvitations, revokeArtistTeamMember, updateArtistTeamMember } from "../controllers/artistTeam.controller.js";
 import { allocateMyWalletCredits, createMyPaymentOrder, getAdsBillingOperations, getMyAdvertiserWallet, getMyPaymentOrder, processAdminMockPaymentOrder, processMyMockPaymentOrder } from "../controllers/adPayments.controller.js";
+import { createMyDeletionRequest, createMyPrivacyRequest, exportMyPrivacyData, getMyPrivacyOverview, getPrivacyRetentionPreviewForAdmin, getSecurityReadinessForAdmin, listAuditLogs, listPrivacyRequests, setMyPrivacyConsent, updatePrivacyRequest } from "../controllers/privacy.controller.js";
 
 export const router = Router();
 
@@ -170,6 +171,18 @@ const pushLimiter = createRateLimiter({
   max: 30,
   message: "Muitas atualizacoes de notificacao no momento. Aguarde alguns segundos."
 });
+const privacyRequestLimiter = createRateLimiter({
+  keyPrefix: "privacy-request",
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: "Muitas solicitações de privacidade em pouco tempo. Aguarde antes de tentar novamente."
+});
+const privacySensitiveActionLimiter = createRateLimiter({
+  keyPrefix: "privacy-sensitive-action",
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 2,
+  message: "Por segurança, aguarde antes de repetir esta operação de privacidade."
+});
 
 router.post("/auth/register", authLimiter, register);
 router.post("/auth/login", authLimiter, login);
@@ -181,6 +194,17 @@ router.post("/me/profile/avatar", requireAuth, uploadLimiter, imageUpload.single
 router.patch("/me/profile", requireAuth, updateMyProfile);
 router.patch("/me/profile/location", requireAuth, updateMyLocation);
 router.patch("/me/profile/password", requireAuth, authLimiter, updateMyPassword);
+router.post("/me/security/revoke-sessions", requireAuth, privacySensitiveActionLimiter, revokeMySessions);
+router.get("/me/privacy", requireAuth, getMyPrivacyOverview);
+router.post("/me/privacy/consents/:purpose", requireAuth, privacyRequestLimiter, setMyPrivacyConsent);
+router.post("/me/privacy/requests", requireAuth, privacyRequestLimiter, createMyPrivacyRequest);
+router.post("/me/privacy/export", requireAuth, privacySensitiveActionLimiter, exportMyPrivacyData);
+router.post("/me/privacy/deletion-request", requireAuth, privacySensitiveActionLimiter, createMyDeletionRequest);
+router.get("/admin/privacy-requests", requireAuth, requireRole(["admin"]), listPrivacyRequests);
+router.patch("/admin/privacy-requests/:id", requireAuth, requireRole(["admin"]), updatePrivacyRequest);
+router.get("/admin/privacy-retention/preview", requireAuth, requireRole(["admin"]), getPrivacyRetentionPreviewForAdmin);
+router.get("/admin/audit-logs", requireAuth, requireRole(["admin"]), listAuditLogs);
+router.get("/admin/security-readiness", requireAuth, requireRole(["admin"]), getSecurityReadinessForAdmin);
 router.get("/admin/users", requireAuth, requireRole(["admin"]), listCommonUsers);
 router.post("/admin/users", requireAuth, requireRole(["admin"]), authLimiter, createCommonUser);
 router.patch("/admin/users/:id/reserved-username-permission", requireAuth, requireRole(["admin"]), setReservedUsernamePermission);

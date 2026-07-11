@@ -96,8 +96,8 @@ export default function SignupPage() {
           type="password"
           value={form.password}
           onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-          placeholder="Senha (mínimo 6 caracteres)"
-          minLength={6}
+          placeholder="Senha (mínimo 8 caracteres)"
+          minLength={8}
           required
         />
         <p className="meta-line signup-location-intro">Localização-base opcional — necessária apenas para usar o Tô na Pista. Não pedimos endereço completo.</p>

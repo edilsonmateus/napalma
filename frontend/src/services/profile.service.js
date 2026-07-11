@@ -20,3 +20,8 @@ export async function updateProfileDetails(payload) {
 export async function updateProfilePassword(payload) {
   await api.patch("/me/profile/password", payload);
 }
+
+export async function revokeProfileSessions(currentPassword) {
+  const { data } = await api.post("/me/security/revoke-sessions", { currentPassword });
+  return data;
+}

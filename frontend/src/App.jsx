@@ -19,6 +19,7 @@ const PelaHoraPage = lazy(() => import("./pages/PelaHoraPage"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const AccountSettingsPage = lazy(() => import("./pages/AccountSettingsPage"));
+const PrivacyCenterPage = lazy(() => import("./pages/PrivacyCenterPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage"));
 const HelpPage = lazy(() => import("./pages/HelpPage"));
@@ -262,6 +263,7 @@ export default function App() {
             <Route path="/anunciar" element={<AdvertisePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/settings/account" element={<RequireAuth user={user}><AccountSettingsPage /></RequireAuth>} />
+            <Route path="/settings/privacy" element={<RequireAuth user={user}><PrivacyCenterPage /></RequireAuth>} />
             <Route path="/reivindicar-artista" element={<RequireAuth user={user}><ArtistClaimDirectoryPage /></RequireAuth>} />
             <Route path="/settings/users" element={isAdminRole(user?.role) ? <UsersAdminPage /> : <Navigate to="/settings" replace />} />
             <Route path="/workspace/anunciante" element={<RequireAuth user={user}><AdvertiserPortalPage /></RequireAuth>} />

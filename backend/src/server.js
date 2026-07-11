@@ -1,9 +1,10 @@
 import { createApp } from "./app.js";
-import { env } from "./config/env.js";
+import { assertProductionSecurityConfig, env } from "./config/env.js";
 import { ensureAdminBootstrap } from "./lib/adminBootstrap.js";
 import { startToNaPistaScheduler } from "./services/toNaPista.service.js";
 import { startAdsHealthAlertScheduler } from "./services/adsHealthAlerts.service.js";
 
+assertProductionSecurityConfig();
 const app = createApp();
 
 try {

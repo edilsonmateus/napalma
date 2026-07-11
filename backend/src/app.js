@@ -7,10 +7,16 @@ import { router } from "./routes/index.js";
 import { attachUser } from "./middlewares/auth.js";
 import { ensureUploadsRoot } from "./controllers/uploads.controller.js";
 import { createRateLimiter } from "./middlewares/rateLimit.js";
+import { securityHeaders } from "./middlewares/securityHeaders.js";
+import { noStore } from "./middlewares/noStore.js";
+import { requestContext } from "./middlewares/requestContext.js";
 import { env } from "./config/env.js";
+import { logSafeError } from "./utils/errorLogging.js";
+import { checkDatabaseReadiness } from "./services/health.service.js";
 
 export function createApp() {
   const app = express();
+  app.disable("x-powered-by");
   // In production, Render/Vercel place the API behind a reverse proxy. This
   // makes req.ip usable by rate limits without changing local development.
   if (env.trustProxyHops > 0) app.set("trust proxy", env.trustProxyHops);
@@ -30,6 +36,7 @@ export function createApp() {
     message: "Muitas requisicoes no momento. Tente novamente em instantes."
   });
 
+  app.use(requestContext);
   app.use(
     cors({
       origin(origin, callback) {
@@ -40,8 +47,9 @@ export function createApp() {
       }
     })
   );
-  app.use(express.json());
-  app.use(morgan("dev"));
+  app.use(securityHeaders);
+  app.use(express.json({ limit: "1mb" }));
+  app.use(morgan((tokens, req, res) => `${tokens.method(req, res)} ${req.path} ${tokens.status(req, res)} ${tokens["response-time"](req, res)} ms`));
   app.use("/uploads", express.static("uploads"));
   app.use(attachUser);
 
@@ -49,17 +57,34 @@ export function createApp() {
     res.json({ status: "ok", service: "napalma-api" });
   });
 
+  app.get("/health/ready", async (_req, res) => {
+    const database = await checkDatabaseReadiness();
+    return database.ready
+      ? res.json({ status: "ready", service: "napalma-api" })
+      : res.status(503).json({ status: "not_ready", service: "napalma-api" });
+  });
+
   app.use("/api", apiGlobalLimiter);
+  app.use("/api", noStore);
   app.use("/api", router);
 
-  app.use((err, _req, res, _next) => {
-    console.error(err);
+  app.use((err, req, res, _next) => {
+    logSafeError(err, req);
+
+    if (err?.message === "Origin not allowed by CORS") {
+      return res.status(403).json({
+        error: "cors_origin_denied",
+        message: "Origem nao autorizada.",
+        requestId: req.requestId
+      });
+    }
 
     if (err instanceof ZodError) {
       return res.status(400).json({
         error: "validation_error",
         message: "Payload invalido.",
-        details: err.flatten()
+        details: err.flatten(),
+        requestId: req.requestId
       });
     }
 
@@ -67,18 +92,21 @@ export function createApp() {
       if (err.code === "LIMIT_FILE_SIZE") {
         return res.status(400).json({
           error: "file_too_large",
-          message: "Arquivo muito grande. Limite de 5MB."
+          message: "Arquivo muito grande. Limite de 5MB.",
+          requestId: req.requestId
         });
       }
       return res.status(400).json({
-        error: "upload_error",
-        message: "Nao foi possivel processar o upload."
+          error: "upload_error",
+          message: "Nao foi possivel processar o upload.",
+          requestId: req.requestId
       });
     }
 
     res.status(500).json({
       error: "internal_server_error",
-      message: "Nao foi possivel processar a requisicao."
+      message: "Nao foi possivel processar a requisicao.",
+      requestId: req.requestId
     });
   });
 

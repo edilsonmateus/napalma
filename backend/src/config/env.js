@@ -23,3 +23,26 @@ export const env = {
   adsHealthAlertIntervalMs: Number(process.env.ADS_HEALTH_ALERT_INTERVAL_MS || 900000),
   adsHealthAlertCooldownMs: Number(process.env.ADS_HEALTH_ALERT_COOLDOWN_MS || 21600000)
 };
+
+const INSECURE_JWT_VALUES = new Set(["", "dev-secret-change-me", "change-me", "secret", "jwt-secret"]);
+
+export function getSecurityReadiness() {
+  const production = process.env.NODE_ENV === "production";
+  const corsOrigins = (process.env.CORS_ORIGINS || "").split(",").map((value) => value.trim()).filter(Boolean);
+  const jwtConfigured = !INSECURE_JWT_VALUES.has(env.jwtSecret) && env.jwtSecret.length >= 32;
+  const checks = [
+    { key: "jwt_secret", label: "Segredo de autenticação", ok: jwtConfigured, required: true },
+    { key: "cors_origins", label: "Origens CORS autorizadas", ok: corsOrigins.length > 0, required: true },
+    { key: "database_url", label: "Banco configurado", ok: Boolean(env.databaseUrl), required: true },
+    { key: "public_app_https", label: "URL pública HTTPS", ok: !production || env.publicAppUrl.startsWith("https://"), required: true },
+    { key: "mock_payment_disabled", label: "Gateway mock desativado", ok: process.env.ADS_MOCK_PAYMENT_ENABLED !== "true", required: false }
+  ];
+  return { environment: production ? "production" : "development", checks, ready: checks.filter((item) => item.required).every((item) => item.ok) };
+}
+
+export function assertProductionSecurityConfig() {
+  const status = getSecurityReadiness();
+  if (status.environment !== "production" || status.ready) return;
+  const failed = status.checks.filter((item) => item.required && !item.ok).map((item) => item.key).join(", ");
+  throw new Error(`Configuracao de producao insegura: ${failed}`);
+}

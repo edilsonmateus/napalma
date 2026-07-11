@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
-import bcrypt from "bcryptjs";
 import { isReservedUsername, isUsernameSyntaxValid, RESERVED_USERNAME_MESSAGE } from "../utils/usernamePolicy.js";
+import { hashPassword } from "../utils/passwordSecurity.js";
 
 const querySchema = z.object({
   q: z.string().trim().min(1).optional()
@@ -60,7 +60,7 @@ export async function createCommonUser(req, res, next) {
     }
     const existing = await prisma.user.findFirst({ where: { OR: [{ email }, { username: data.username }] }, select: { id: true } });
     if (existing) return res.status(409).json({ error: "user_already_exists", message: "Já existe usuário com esse e-mail ou username." });
-    const passwordHash = await bcrypt.hash(data.password, 10);
+    const passwordHash = await hashPassword(data.password);
     const officialPermission = Boolean(data.canUseReservedBrandUsername);
     const user = await prisma.user.create({
       data: {
@@ -153,7 +153,7 @@ export async function createProducerUser(req, res, next) {
       });
     }
 
-    const passwordHash = await bcrypt.hash(data.password, 10);
+    const passwordHash = await hashPassword(data.password);
     const user = await prisma.user.create({
       data: {
         email,

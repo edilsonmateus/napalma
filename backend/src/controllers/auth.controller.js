@@ -7,6 +7,7 @@ import crypto from "node:crypto";
 import { linkVisitorToUser } from "./audience.controller.js";
 import { linkPushSubscriptionsToUser } from "../services/push.service.js";
 import { isReservedUsername, isUsernameSyntaxValid, RESERVED_USERNAME_MESSAGE } from "../utils/usernamePolicy.js";
+import { hashPassword, needsPasswordRehash } from "../utils/passwordSecurity.js";
 
 const postalCodeSchema = z.string().transform((value) => value.replace(/\D/g, "")).refine((value) => value.length === 8, "CEP inválido.");
 
@@ -21,7 +22,7 @@ const registerSchema = z.object({
   neighborhood: z.string().trim().min(2).max(120).optional(),
   postalCode: postalCodeSchema.optional(),
   visitorId: z.string().min(8).max(120).optional(),
-  password: z.string().min(6)
+  password: z.string().min(8).max(128)
 });
 
 const loginSchema = z.object({
@@ -101,7 +102,7 @@ export async function register(req, res, next) {
       });
     }
 
-    const passwordHash = await bcrypt.hash(data.password, 10);
+    const passwordHash = await hashPassword(data.password);
     const user = await prisma.user.create({
       data: {
         email,
@@ -151,6 +152,10 @@ export async function login(req, res, next) {
       });
     }
 
+    if (needsPasswordRehash(user.passwordHash)) {
+      await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await hashPassword(data.password) } });
+    }
+
     const accessToken = signAccessToken(user);
     const refreshToken = await issueRefreshToken(user.id);
     await Promise.all([
@@ -181,7 +186,7 @@ export async function devLoginAdmin(req, res, next) {
         data: { role: "admin", canUseReservedBrandUsername: true }
       });
     } else {
-      const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10);
+      const passwordHash = await hashPassword(crypto.randomBytes(32).toString("hex"));
       user = await prisma.user.create({
         data: {
           email,

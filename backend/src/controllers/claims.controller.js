@@ -1,6 +1,7 @@
 import { ClaimStatus, ClaimTargetType } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
+import { recordAuditEvent } from "../services/audit.service.js";
 
 const CLAIM_LEGAL_VERSION = "CLAIM_RESPONSIBILITY_V1";
 
@@ -199,6 +200,8 @@ export async function createClaimRequest(req, res, next) {
       }
     });
 
+    await recordAuditEvent({ req, action: "claim.created", subjectType: "claim", subjectId: claim.id, metadata: { targetType: claim.targetType, requestType: claim.requestType, venueId: claim.venueId || null, artistId: claim.artistId || null, legalVersion: claim.legalAcknowledgementVersion } });
+
     return res.status(201).json({ item: mapClaim(claim) });
   } catch (error) {
     next(error);
@@ -385,6 +388,8 @@ export async function decideClaim(req, res, next) {
         }
       });
     });
+
+    await recordAuditEvent({ req, action: "claim.decided", subjectType: "claim", subjectId: updated.id, metadata: { status: updated.status, targetType: updated.targetType, requestType: updated.requestType, venueId: updated.venueId || null, artistId: updated.artistId || null } });
 
     res.json({ item: mapClaim(updated) });
   } catch (error) {

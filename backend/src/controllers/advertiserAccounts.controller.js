@@ -6,6 +6,7 @@ import {
 } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
+import { recordAuditEvent } from "../services/audit.service.js";
 
 const uuid = z.string().uuid();
 const idSchema = z.object({ id: uuid });
@@ -149,6 +150,7 @@ export async function createAdvertiserAccount(req, res, next) {
         approvedAt: approved ? new Date() : null
       }
     });
+    await recordAuditEvent({ req, action: "advertiser_account.created", subjectType: "advertiser_account", subjectId: item.id, metadata: { type: item.type, status: item.status, source: item.source } });
     return res.status(201).json({ item: mapAccount(item, { includeSensitive: true }) });
   } catch (error) {
     return next(error);
@@ -167,6 +169,7 @@ export async function updateAdvertiserAccount(req, res, next) {
       where: { id },
       data: { ...payload, ...approvalData }
     });
+    await recordAuditEvent({ req, action: "advertiser_account.updated", subjectType: "advertiser_account", subjectId: item.id, metadata: { status: item.status, fields: Object.keys(payload) } });
     return res.json({ item: mapAccount(item, { includeSensitive: true }) });
   } catch (error) {
     return next(error);
@@ -218,6 +221,7 @@ export async function approveAdvertiserAccessRequest(req, res, next) {
         }
       });
     });
+    await recordAuditEvent({ req, action: "advertiser_account.access_approved", subjectType: "advertiser_account", subjectId: item.id, metadata: { status: item.status } });
     return res.json({ item: mapAccount(item, { includeSensitive: true }) });
   } catch (error) {
     return next(error);
@@ -265,6 +269,7 @@ export async function rejectAdvertiserAccessRequest(req, res, next) {
         }
       });
     });
+    await recordAuditEvent({ req, action: "advertiser_account.access_rejected", subjectType: "advertiser_account", subjectId: item.id, metadata: { status: item.status } });
     return res.json({ item: mapAccount(item, { includeSensitive: true }) });
   } catch (error) {
     return next(error);

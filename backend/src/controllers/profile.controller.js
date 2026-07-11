@@ -7,7 +7,9 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { isFeatureEnabled } from "../middlewares/featureFlags.js";
 import { uploadBufferToR2 } from "../services/r2Storage.service.js";
+import { recordAuditEvent } from "../services/audit.service.js";
 import { canUseReservedUsername, isReservedUsername, isUsernameSyntaxValid, RESERVED_USERNAME_MESSAGE } from "../utils/usernamePolicy.js";
+import { hashPassword } from "../utils/passwordSecurity.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "../../");
@@ -34,6 +36,7 @@ const passwordSchema = z.object({
   message: "A nova senha deve ser diferente da senha atual.",
   path: ["newPassword"]
 });
+const reauthenticationSchema = z.object({ currentPassword: z.string().min(1).max(128) });
 const userSelect = { id: true, email: true, username: true, firstName: true, lastName: true, phone: true, instagramHandle: true, avatarUrl: true, city: true, neighborhood: true, postalCode: true, role: true, canUseReservedBrandUsername: true };
 
 export async function updateMyProfile(req, res, next) {
@@ -52,6 +55,7 @@ export async function updateMyProfile(req, res, next) {
       data: { ...data, phone: data.phone || null, instagramHandle: data.instagramHandle || null },
       select: userSelect
     });
+    await recordAuditEvent({ req, action: "profile.updated", subjectType: "user", subjectId: user.id, metadata: { fields: ["firstName", "lastName", "username", "phone", "instagramHandle"] } });
     return res.json({ item: user });
   } catch (error) { return next(error); }
 }
@@ -63,12 +67,26 @@ export async function updateMyPassword(req, res, next) {
     if (!current || !(await bcrypt.compare(data.currentPassword, current.passwordHash))) {
       return res.status(401).json({ error: "invalid_current_password", message: "A senha atual está incorreta." });
     }
-    const passwordHash = await bcrypt.hash(data.newPassword, 10);
+    const passwordHash = await hashPassword(data.newPassword);
     await prisma.$transaction([
       prisma.user.update({ where: { id: req.user.id }, data: { passwordHash } }),
       prisma.refreshToken.updateMany({ where: { userId: req.user.id, revokedAt: null }, data: { revokedAt: new Date() } })
     ]);
+    await recordAuditEvent({ req, action: "profile.password_changed", subjectType: "user", subjectId: req.user.id, metadata: { sessionsRevoked: true } });
     return res.status(204).send();
+  } catch (error) { return next(error); }
+}
+
+export async function revokeMySessions(req, res, next) {
+  try {
+    const { currentPassword } = reauthenticationSchema.parse(req.body || {});
+    const current = await prisma.user.findUnique({ where: { id: req.user.id }, select: { passwordHash: true } });
+    if (!current || !(await bcrypt.compare(currentPassword, current.passwordHash))) {
+      return res.status(401).json({ error: "invalid_current_password", message: "A senha atual esta incorreta." });
+    }
+    const result = await prisma.refreshToken.updateMany({ where: { userId: req.user.id, revokedAt: null }, data: { revokedAt: new Date() } });
+    await recordAuditEvent({ req, action: "profile.sessions_revoked", subjectType: "user", subjectId: req.user.id, metadata: { revokedRefreshTokens: result.count } });
+    return res.json({ message: "Sessoes encerradas. Entre novamente para continuar.", revokedSessions: result.count });
   } catch (error) { return next(error); }
 }
 
@@ -76,6 +94,7 @@ export async function updateMyLocation(req, res, next) {
   try {
     const data = locationSchema.parse(req.body || {});
     const user = await prisma.user.update({ where: { id: req.user.id }, data, select: userSelect });
+    await recordAuditEvent({ req, action: "profile.location_updated", subjectType: "user", subjectId: user.id, metadata: { fields: ["city", "neighborhood", "postalCode"] } });
     return res.json({ item: user });
   } catch (error) { return next(error); }
 }
@@ -104,6 +123,7 @@ export async function uploadMyAvatar(req, res, next) {
     }
 
     const user = await prisma.user.update({ where: { id: req.user.id }, data: { avatarUrl }, select: userSelect });
+    await recordAuditEvent({ req, action: "profile.avatar_updated", subjectType: "user", subjectId: user.id, metadata: { storage: isFeatureEnabled("R2_SHARED_UPLOADS_ENABLED") ? "r2" : "local" } });
     return res.status(201).json({ item: user });
   } catch (error) { return next(error); }
 }

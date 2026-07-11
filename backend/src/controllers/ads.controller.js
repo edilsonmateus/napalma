@@ -4,6 +4,8 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { isFeatureEnabled } from "../middlewares/featureFlags.js";
 import { AD_PLACEMENTS } from "../config/adPlacements.js";
+import { adTargetingSchema } from "../utils/adTargetingPolicy.js";
+import { safeHttpUrl } from "../utils/safeUrl.js";
 
 const slotEnum = z.nativeEnum(AdSlot);
 
@@ -16,7 +18,7 @@ const createCampaignSchema = z.object({
   priority: z.number().int().min(1).max(10).default(1),
   runInAllSlots: z.boolean().default(false),
   isEnabled: z.boolean().default(true),
-  targeting: z.record(z.any()).optional().nullable()
+  targeting: adTargetingSchema.optional().nullable()
 });
 
 const updateCampaignSchema = createCampaignSchema.partial();
@@ -25,7 +27,7 @@ const createCreativeSchema = z.object({
   slot: slotEnum,
   title: z.string().optional().nullable(),
   imageUrl: z.string().url(),
-  destinationUrl: z.string().url().optional().nullable(),
+  destinationUrl: safeHttpUrl.optional().nullable(),
   altText: z.string().optional().nullable(),
   width: z.number().int().positive().optional().nullable(),
   height: z.number().int().positive().optional().nullable(),

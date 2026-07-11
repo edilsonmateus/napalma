@@ -9,6 +9,7 @@ import {
   processMockPaymentOrder
 } from "../services/adPayments.service.js";
 import { prisma } from "../lib/prisma.js";
+import { recordAuditEvent } from "../services/audit.service.js";
 
 const uuid = z.string().uuid();
 
@@ -34,7 +35,9 @@ export async function createMyPaymentOrder(req, res, next) {
       campaignId: uuid.optional().nullable(),
       returnPath: z.string().max(500).optional()
     }).parse(req.body);
-    return sendResult(res, await createMockPaymentOrder({ accountId, ...payload, userId: req.user.id }), 201);
+    const result = await createMockPaymentOrder({ accountId, ...payload, userId: req.user.id });
+    if (!result.error) await recordAuditEvent({ req, action: "ads.payment_order_created", subjectType: "advertiser_account", subjectId: accountId, metadata: { packageCode: payload.packageCode, campaignId: payload.campaignId || null, provider: "mock" } });
+    return sendResult(res, result, 201);
   } catch (error) { return next(error); }
 }
 
@@ -42,7 +45,9 @@ export async function allocateMyWalletCredits(req, res, next) {
   try {
     const accountId = uuid.parse(req.params.accountId);
     const payload = z.object({ campaignId: uuid, amount: z.number().int().positive().max(1000000) }).parse(req.body);
-    return sendResult(res, await allocateWalletCreditsToCampaign({ accountId, ...payload, userId: req.user.id }));
+    const result = await allocateWalletCreditsToCampaign({ accountId, ...payload, userId: req.user.id });
+    if (!result.error) await recordAuditEvent({ req, action: "ads.wallet_allocated", subjectType: "ad_campaign", subjectId: payload.campaignId, metadata: { accountId, amount: payload.amount } });
+    return sendResult(res, result);
   } catch (error) { return next(error); }
 }
 
@@ -61,7 +66,9 @@ export async function processMyMockPaymentOrder(req, res, next) {
   try {
     const orderId = uuid.parse(req.params.id);
     const { outcome } = z.object({ outcome: z.enum(["approved", "pending", "rejected", "cancelled"]) }).parse(req.body);
-    return sendResult(res, await processMockPaymentOrder({ orderId, outcome, userId: req.user.id }));
+    const result = await processMockPaymentOrder({ orderId, outcome, userId: req.user.id });
+    if (!result.error) await recordAuditEvent({ req, action: "ads.mock_payment_processed", subjectType: "payment_order", subjectId: orderId, metadata: { outcome, actorScope: "advertiser" } });
+    return sendResult(res, result);
   } catch (error) { return next(error); }
 }
 
@@ -75,6 +82,8 @@ export async function processAdminMockPaymentOrder(req, res, next) {
   try {
     const orderId = uuid.parse(req.params.id);
     const { outcome } = z.object({ outcome: z.enum(["approved", "pending", "rejected", "cancelled"]) }).parse(req.body);
-    return sendResult(res, await processMockPaymentOrder({ orderId, outcome, userId: req.user.id, skipAccess: true }));
+    const result = await processMockPaymentOrder({ orderId, outcome, userId: req.user.id, skipAccess: true });
+    if (!result.error) await recordAuditEvent({ req, action: "ads.mock_payment_processed", subjectType: "payment_order", subjectId: orderId, metadata: { outcome, actorScope: "admin" } });
+    return sendResult(res, result);
   } catch (error) { return next(error); }
 }

@@ -1,6 +1,8 @@
 import { AdSlot, AdvertiserAccountType } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
+import { adTargetingSchema } from "../utils/adTargetingPolicy.js";
+import { safeHttpUrl } from "../utils/safeUrl.js";
 
 const uuid = z.string().uuid();
 const accountParams = z.object({ accountId: uuid });
@@ -12,13 +14,13 @@ const campaignPayload = z.object({
   startsAt: z.string().datetime().optional().nullable(),
   endsAt: z.string().datetime().optional().nullable(),
   runInAllSlots: z.boolean().default(false),
-  targeting: z.record(z.any()).optional().nullable()
+  targeting: adTargetingSchema.optional().nullable()
 });
 const creativePayload = z.object({
   slot: z.nativeEnum(AdSlot),
   title: z.string().trim().max(160).optional().nullable(),
   imageUrl: z.string().url(),
-  destinationUrl: z.string().url().optional().nullable(),
+  destinationUrl: safeHttpUrl.optional().nullable(),
   altText: z.string().trim().max(300).optional().nullable(),
   width: z.number().int().positive().optional().nullable(),
   height: z.number().int().positive().optional().nullable(),

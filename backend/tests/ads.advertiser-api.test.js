@@ -21,6 +21,9 @@ const prismaMock = vi.hoisted(() => ({
   user: {
     findUnique: vi.fn()
   },
+  auditLog: {
+    create: vi.fn()
+  },
   $transaction: vi.fn()
 }));
 

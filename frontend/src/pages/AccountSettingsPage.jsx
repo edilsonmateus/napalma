@@ -3,7 +3,7 @@ import { ArrowLeft, Camera, ChevronRight, Pencil, UserRound } from "lucide-react
 import { Link, useNavigate } from "react-router-dom";
 import LocationBaseCard from "../components/settings/LocationBaseCard";
 import { logout } from "../services/auth.service";
-import { updateProfileDetails, updateProfilePassword, uploadProfileAvatar } from "../services/profile.service";
+import { revokeProfileSessions, updateProfileDetails, updateProfilePassword, uploadProfileAvatar } from "../services/profile.service";
 import { getMyArtists } from "../services/artistWorkspace.service";
 import { useAuthStore } from "../store/authStore";
 import { isReservedUsername, isUsernameSyntaxValid, RESERVED_USERNAME_MESSAGE } from "../utils/usernamePolicy";
@@ -22,6 +22,9 @@ export default function AccountSettingsPage() {
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [passwordBusy, setPasswordBusy] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState("");
+  const [revokePassword, setRevokePassword] = useState("");
+  const [revokeBusy, setRevokeBusy] = useState(false);
+  const [revokeMessage, setRevokeMessage] = useState("");
 
   useEffect(() => {
     getMyArtists().then(setArtists).catch(() => setArtists([]));
@@ -116,6 +119,20 @@ export default function AccountSettingsPage() {
     navigate("/explore", { replace: true });
   }
 
+  async function handleRevokeSessions(event) {
+    event.preventDefault();
+    setRevokeBusy(true); setRevokeMessage("");
+    try {
+      const result = await revokeProfileSessions(revokePassword);
+      setRevokePassword("");
+      setRevokeMessage(result.message);
+      clearAuth();
+      navigate("/login?securitySessionsRevoked=1", { replace: true });
+    } catch (error) {
+      setRevokeMessage(error?.response?.data?.message || "Nao foi possivel encerrar as sessoes.");
+    } finally { setRevokeBusy(false); }
+  }
+
   if (!user) return null;
 
   return (
@@ -167,6 +184,7 @@ export default function AccountSettingsPage() {
         <div className="settings-list account-settings-links">
           <Link to="/help" className="settings-link-row">Ajuda <ChevronRight size={16}/></Link>
           <Link to="/anunciar" className="settings-link-row">Anunciar no 77Gira <ChevronRight size={16}/></Link>
+          <Link to="/settings/privacy" className="settings-link-row">Privacidade e dados <ChevronRight size={16}/></Link>
           <Link to="/privacy" className="settings-link-row">Privacidade <ChevronRight size={16}/></Link>
           <Link to="/terms" className="settings-link-row">Termos de Uso <ChevronRight size={16}/></Link>
           <Link to="/about" className="settings-link-row">Sobre o 77Gira <ChevronRight size={16}/></Link>
@@ -176,6 +194,12 @@ export default function AccountSettingsPage() {
       <section className="clean-card account-settings-section account-session-section">
         <h3>Sessão</h3>
         <button className="auth-btn account-logout-btn" type="button" onClick={handleLogout}>Sair da conta</button>
+        <form className="account-session-revoke" onSubmit={handleRevokeSessions}>
+          <strong>Encerrar sessões em todos os dispositivos</strong><p>Use se você perdeu um dispositivo ou suspeita de acesso indevido. Será necessário entrar novamente.</p>
+          <label>Senha atual<input required type="password" autoComplete="current-password" value={revokePassword} onChange={(event) => setRevokePassword(event.target.value)} /></label>
+          {revokeMessage ? <small className="account-form-error" role="alert">{revokeMessage}</small> : null}
+          <button className="chip" disabled={revokeBusy}>{revokeBusy ? "Encerrando..." : "Encerrar todas as sessões"}</button>
+        </form>
       </section>
     </section>
   );
