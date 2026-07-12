@@ -47,7 +47,7 @@ export default function AdvertisePage() {
         <div className="ads-brand-lockup" aria-label="77Gira Ads">
           <img src="/logoads77gira.svg" alt="77Gira Ads" className="ads-brand-logo" />
         </div>
-        <h2>Publicidade para quem quer participar da cena, não apenas interromper.</h2>
+        <h2>Publicidade para quem quer participar da cena, sem atravessar o samba.</h2>
         <p>
           O 77Gira conecta casas, artistas, produtores, marcas e público em torno da agenda real do samba.
           A publicidade entra com revisão, contexto e controle para preservar a experiência do usuário.
