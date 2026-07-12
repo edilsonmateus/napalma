@@ -13,11 +13,13 @@ export async function getEvents(params = {}) {
   try {
     const { data } = await api.get("/events", { params });
     if (!data?.items || !Array.isArray(data.items)) {
-      return allowMockFallback ? fallbackEvents : [];
+      if (allowMockFallback) return fallbackEvents;
+      throw new Error("invalid_events_response");
     }
     return data.items;
-  } catch (_error) {
-    return allowMockFallback ? fallbackEvents : [];
+  } catch (error) {
+    if (allowMockFallback) return fallbackEvents;
+    throw error;
   }
 }
 
@@ -30,11 +32,13 @@ export async function getRegions() {
   try {
     const { data } = await api.get("/regions");
     if (!data?.items || !Array.isArray(data.items)) {
-      return allowMockFallback ? fallbackRegions : [];
+      if (allowMockFallback) return fallbackRegions;
+      throw new Error("invalid_regions_response");
     }
     return data.items;
-  } catch (_error) {
-    return allowMockFallback ? fallbackRegions : [];
+  } catch (error) {
+    if (allowMockFallback) return fallbackRegions;
+    throw error;
   }
 }
 
@@ -72,11 +76,13 @@ export async function getVenues(params = {}) {
   try {
     const { data } = await api.get("/venues", { params });
     if (!data?.items || !Array.isArray(data.items)) {
-      return allowMockFallback ? fallbackVenues : [];
+      if (allowMockFallback) return fallbackVenues;
+      throw new Error("invalid_venues_response");
     }
     return data.items;
-  } catch (_error) {
-    return allowMockFallback ? fallbackVenues : [];
+  } catch (error) {
+    if (allowMockFallback) return fallbackVenues;
+    throw error;
   }
 }
 

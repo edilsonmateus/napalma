@@ -8724,6 +8724,18 @@ button.venue-card {
   margin: 6px 0 14px;
 }
 
+.explore-programming-loading,
+.explore-programming-refreshing {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: .82rem;
+  line-height: 1.45;
+}
+
+.explore-programming-refreshing {
+  margin: 6px 0 10px;
+}
+
 .venue-flow-skeleton {
   overflow: hidden;
 }

@@ -76,12 +76,20 @@ import {
   uploadImageFile
 } from "../services/events.service";
 
+const publicCatalogQueryOptions = {
+  retry: 4,
+  retryDelay: (attempt) => Math.min(1000 * (2 ** attempt), 8000),
+  refetchOnWindowFocus: "always",
+  refetchOnReconnect: "always",
+  staleTime: 0
+};
+
 export function useEventsQuery(filters = {}) {
-  return useQuery({ queryKey: ["events", filters], queryFn: () => getEvents(filters) });
+  return useQuery({ queryKey: ["events", filters], queryFn: () => getEvents(filters), ...publicCatalogQueryOptions });
 }
 
 export function useRegionsQuery() {
-  return useQuery({ queryKey: ["regions"], queryFn: getRegions });
+  return useQuery({ queryKey: ["regions"], queryFn: getRegions, ...publicCatalogQueryOptions });
 }
 
 export function useAdminRegionsQuery(params = {}, enabled = true) {
@@ -121,7 +129,7 @@ export function useMyPelaHoraQuery(enabled = true) {
 }
 
 export function useVenuesQuery(filters = {}) {
-  return useQuery({ queryKey: ["venues", filters], queryFn: () => getVenues(filters) });
+  return useQuery({ queryKey: ["venues", filters], queryFn: () => getVenues(filters), ...publicCatalogQueryOptions });
 }
 
 export function useArtistsQuery(filters = {}) {

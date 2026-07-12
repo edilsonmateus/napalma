@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { CalendarClock, Filter, MapPin, X } from "lucide-react";
 import { useAdDeliveryQuery, useEventsQuery, useRegionsQuery, useVenuesQuery } from "../hooks/useEventsQuery";
@@ -205,10 +205,10 @@ export default function ExplorePage() {
   const [debouncedQuery, setDebouncedQuery] = useState(prefs.query);
   const { city, region, query, limit, filterDate, filterHour, liveOnly, timeScope } = prefs;
   const selectedRegion = region === "Todas" ? undefined : region;
-  const { data: events = [], isLoading: eventsLoading, isError } = useEventsQuery(
+  const { data: events = [], isLoading: eventsLoading, isFetching: eventsFetching, isError: eventsError, refetch: refetchEvents } = useEventsQuery(
     selectedRegion ? { region: selectedRegion } : {}
   );
-  const { data: venues = [], isLoading: venuesLoading } = useVenuesQuery(
+  const { data: venues = [], isLoading: venuesLoading, isFetching: venuesFetching, isError: venuesError, refetch: refetchVenues } = useVenuesQuery(
     selectedRegion ? { region: selectedRegion } : {}
   );
   const { data: regions = [] } = useRegionsQuery();
@@ -227,12 +227,45 @@ export default function ExplorePage() {
     }
   }, [prefs.region, regionOptions]);
   const [routeModeVenueId, setRouteModeVenueId] = useState("");
+  const resumeRefreshTimersRef = useRef([]);
+  const lastResumeRefreshAtRef = useRef(0);
   const { data: exploreAd } = useAdDeliveryQuery("explore_feed_large", true);
   const adToRender = useMemo(() => exploreAd || null, [exploreAd]);
 
   useEffect(() => {
     trackAnalyticsEvent("explore_view", { source: "explore" });
   }, []);
+
+  useEffect(() => {
+    function refreshProgrammingAfterResume() {
+      if (document.visibilityState !== "visible") return;
+      const now = Date.now();
+      if (now - lastResumeRefreshAtRef.current < 1000) return;
+      lastResumeRefreshAtRef.current = now;
+
+      resumeRefreshTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+      refetchEvents();
+      refetchVenues();
+      resumeRefreshTimersRef.current = [2200, 7000].map((delay) => window.setTimeout(() => {
+        refetchEvents();
+        refetchVenues();
+      }, delay));
+    }
+
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") refreshProgrammingAfterResume();
+    }
+
+    window.addEventListener("focus", refreshProgrammingAfterResume);
+    window.addEventListener("online", refreshProgrammingAfterResume);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.removeEventListener("focus", refreshProgrammingAfterResume);
+      window.removeEventListener("online", refreshProgrammingAfterResume);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      resumeRefreshTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [refetchEvents, refetchVenues]);
   const venueByName = useMemo(() => {
     const map = new Map();
     for (const venue of venues) {
@@ -242,6 +275,8 @@ export default function ExplorePage() {
   }, [venues]);
   const canLoadMore = false;
   const isLoadingState = venuesLoading || eventsLoading;
+  const isRefreshingProgramming = !isLoadingState && (eventsFetching || venuesFetching);
+  const catalogError = eventsError || venuesError;
   const hasTimeFilter = Boolean(filterDate || filterHour);
   const activeTimeFilterLabel = useMemo(() => {
     if (!hasTimeFilter) return "";
@@ -815,7 +850,7 @@ export default function ExplorePage() {
         </section>
       ) : null}
       <AdSlotCard ad={adToRender} slot="explore_feed_large" />
-      {!eventsLoading && !isError ? (
+      {!eventsLoading && !catalogError ? (
         <div className="explore-summary-bar">
           <span>{visibleEventsCount} {visibleEventsCount === 1 ? "samba" : "sambas"}</span>
           <span>{scopeLabel}</span>
@@ -828,6 +863,7 @@ export default function ExplorePage() {
 
       {isLoadingState ? (
         <div className="explore-loading-grid" aria-live="polite" aria-busy="true">
+          <p className="explore-programming-loading">Estamos conectando à programação. Isso pode levar alguns instantes.</p>
           {Array.from({ length: 4 }).map((_, idx) => (
             <article key={`skeleton-${idx}`} className="venue-card venue-flow-card venue-flow-skeleton">
               <div className="venue-flow-cover" />
@@ -840,8 +876,15 @@ export default function ExplorePage() {
           ))}
         </div>
       ) : null}
-      {isError ? <p className="empty">Não foi possível carregar os sambas agora.</p> : null}
-      {!isLoadingState && !isError && grouped.length === 0 ? (
+      {isRefreshingProgramming ? <p className="meta-line explore-programming-refreshing" aria-live="polite">Atualizando a programação…</p> : null}
+      {catalogError ? (
+        <div className="empty empty-highlight explore-empty-action" role="status">
+          <p>Não foi possível conectar à programação agora.</p>
+          <small className="meta-line">O 77Gira continua tentando. Você também pode atualizar manualmente.</small>
+          <button className="chip" type="button" onClick={() => { refetchEvents(); refetchVenues(); }}>Tentar novamente</button>
+        </div>
+      ) : null}
+      {!isLoadingState && !catalogError && grouped.length === 0 ? (
         <div className="empty empty-highlight explore-empty-action">
           <p>Sem eventos para este filtro no momento.</p>
           <small className="meta-line">Tente limpar filtros, trocar região ou ajustar dia/hora.</small>
@@ -858,7 +901,7 @@ export default function ExplorePage() {
           </div>
         </div>
       ) : null}
-      {!isLoadingState && grouped.map((group, groupIndex) => (
+      {!isLoadingState && !catalogError && grouped.map((group, groupIndex) => (
         <div key={group.label} className="day-group" style={{ "--reveal-index": groupIndex }}>
           <h4 className="day-group-title">
             <span>{group.label}</span>
@@ -973,7 +1016,7 @@ export default function ExplorePage() {
           </div>
         </div>
       ))}
-      {!venuesLoading && !isError && canLoadMore ? (
+      {!venuesLoading && !catalogError && canLoadMore ? (
         <button className="chip load-more" onClick={() => setPrefs((prev) => ({ ...prev, limit: prev.limit + 8 }))}>
           Carregar mais casas
         </button>
