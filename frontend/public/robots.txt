@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Authenticated and operational areas must not be indexed.
+Disallow: /login
+Disallow: /signup
+Disallow: /settings/
+Disallow: /workspace/
+Disallow: /onboarding
+
+Sitemap: https://www.77gira.com.br/sitemap.xml
