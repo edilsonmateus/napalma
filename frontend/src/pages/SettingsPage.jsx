@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { MoreVertical, Share2 } from "lucide-react";
+import { MoreVertical, Share2, UserRound } from "lucide-react";
 import QRCode from "qrcode";
 import { useAuthStore } from "../store/authStore";
 import { isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
@@ -88,7 +88,9 @@ export default function SettingsPage() {
         <h2>Configurações</h2>
       </header>
       <div className="settings-profile clean-card">
-        <div className="settings-avatar">{user?.avatarUrl ? <img src={user.avatarUrl} alt=""/> : user?.firstName?.[0] || "7"}</div>
+        <div className="settings-avatar" aria-hidden="true">
+          {user?.avatarUrl ? <img src={user.avatarUrl} alt="" /> : user ? user?.firstName?.[0] || user?.email?.[0]?.toUpperCase() : <UserRound size={21} strokeWidth={1.8} />}
+        </div>
         <div>
           <strong>{user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : "Sua conta"}</strong>
           {user ? <p>{user.email}</p> : null}
