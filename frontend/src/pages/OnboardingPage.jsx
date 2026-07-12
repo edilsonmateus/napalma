@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import onboardingSlides from "../data/onboardingSlides";
-import { ONBOARDING_STORAGE_KEY } from "../utils/onboarding";
+import { markOnboardingAsSeen } from "../utils/onboarding";
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
@@ -16,11 +16,7 @@ export default function OnboardingPage() {
   );
 
   function finishOnboarding() {
-    try {
-      localStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
-    } catch (_error) {
-      // no-op
-    }
+    markOnboardingAsSeen();
     navigate("/explore", { replace: true });
   }
 
@@ -46,9 +42,9 @@ export default function OnboardingPage() {
         <h1>{slide.title}</h1>
         <p>{slide.description}</p>
 
-        <div className="onboarding-indicators" aria-label="Indicador de paginas">
+        <div className="onboarding-indicators" role="group" aria-label={`Etapa ${activeIndex + 1} de ${total}`}>
           {indicators.map((indicator) => (
-            <span key={indicator.id} className={`onboarding-dot ${indicator.active ? "active" : ""}`} />
+            <span key={indicator.id} className={`onboarding-dot ${indicator.active ? "active" : ""}`} aria-hidden="true" />
           ))}
         </div>
 

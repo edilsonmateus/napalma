@@ -5,7 +5,7 @@ import BottomNav from "./components/layout/BottomNav";
 import { useTrackAudienceVisitMutation } from "./hooks/useEventsQuery";
 import { me as fetchCurrentUser } from "./services/auth.service";
 import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "./utils/roles";
-import { ONBOARDING_STORAGE_KEY } from "./utils/onboarding";
+import { ONBOARDING_COMPLETED_EVENT, ONBOARDING_STORAGE_KEY } from "./utils/onboarding";
 import { getOrCreateVisitorId } from "./utils/visitor";
 import { setupInstallPromptCapture } from "./utils/installPrompt";
 import { isDefinitiveSessionFailure } from "./utils/authSession";
@@ -111,6 +111,19 @@ export default function App() {
 
   useEffect(() => {
     setupInstallPromptCapture();
+  }, []);
+
+  useEffect(() => {
+    function syncOnboardingState() {
+      try {
+        setHasSeenOnboarding(localStorage.getItem(ONBOARDING_STORAGE_KEY) === "true");
+      } catch (_error) {
+        setHasSeenOnboarding(false);
+      }
+    }
+
+    window.addEventListener(ONBOARDING_COMPLETED_EVENT, syncOnboardingState);
+    return () => window.removeEventListener(ONBOARDING_COMPLETED_EVENT, syncOnboardingState);
   }, []);
 
   useEffect(() => {

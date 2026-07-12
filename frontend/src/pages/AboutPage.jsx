@@ -7,7 +7,7 @@ export default function AboutPage() {
 
       <article className="clean-card legal-card"><h3>O que somos</h3><p>O 77Gira é uma plataforma brasileira dedicada à cultura do samba. Reunimos agenda, descoberta, perfis profissionais e ferramentas de gestão em uma experiência pensada para quem frequenta, produz, recebe, apresenta e impulsiona a cena.</p></article>
 
-      <article className="clean-card legal-card"><h3>Nossa missão</h3><p>Diminuir a distância entre o público e a roda, dar visibilidade qualificada a artistas e casas e oferecer infraestrutura digital para uma cadeia cultural que se movimenta todos os dias.</p></article>
+      <article className="clean-card legal-card"><h3>Nossa missão</h3><p>Diminuir a distância entre o público e o Samba, dar visibilidade qualificada a artistas e casas e oferecer infraestrutura digital para uma cadeia cultural que se movimenta todos os dias.</p></article>
 
       <article className="clean-card legal-card"><h3>Para o público</h3><p>Uma agenda viva para encontrar o que acontece agora ou nos próximos dias, filtrar por região e horário, salvar eventos, seguir artistas, organizar rotas e compartilhar planos com os amigos.</p></article>
 
