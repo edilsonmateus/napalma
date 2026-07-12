@@ -11,10 +11,18 @@ export async function attachUser(req, _res, next) {
 
   if (!token) return next();
 
+  let payload;
   try {
-    const payload = jwt.verify(token, env.jwtSecret);
-    if (!payload?.sub) return next();
+    payload = jwt.verify(token, env.jwtSecret);
+  } catch (_error) {
+    // An invalid or expired access token is not a server failure. Protected
+    // routes will answer 401 and the client can use its refresh token.
+    return next();
+  }
 
+  if (!payload?.sub) return next();
+
+  try {
     const user = await prisma.user.findUnique({
       where: { id: String(payload.sub) },
       select: {
@@ -37,8 +45,14 @@ export async function attachUser(req, _res, next) {
     req.user = user;
     req.userRole = user.role;
     return next();
-  } catch (_error) {
-    return next();
+  } catch (cause) {
+    // Do not disguise a database/network failure as an unauthenticated user.
+    // A false 401 would make the frontend erase a valid local session.
+    const error = new Error("Nao foi possivel validar a sessao agora.");
+    error.code = "auth_context_unavailable";
+    error.statusCode = 503;
+    error.cause = cause;
+    return next(error);
   }
 }
 

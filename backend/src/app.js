@@ -79,6 +79,14 @@ export function createApp() {
       });
     }
 
+    if (err?.code === "auth_context_unavailable") {
+      return res.status(503).json({
+        error: "auth_context_unavailable",
+        message: "Nao foi possivel validar a sessao agora. Tente novamente em instantes.",
+        requestId: req.requestId
+      });
+    }
+
     if (err instanceof ZodError) {
       return res.status(400).json({
         error: "validation_error",
