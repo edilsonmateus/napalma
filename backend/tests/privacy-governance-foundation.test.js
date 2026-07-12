@@ -179,4 +179,22 @@ describe("privacy governance foundation", () => {
     expect(app).toContain("req.path");
     expect(app).toContain("cors_origin_denied");
   });
+
+  it("keeps legal pages able to render their internal policy links", () => {
+    const privacyPage = read("frontend/src/pages/PrivacyPage.jsx");
+    const termsPage = read("frontend/src/pages/TermsPage.jsx");
+    expect(privacyPage).toContain('import { Link } from "react-router-dom"');
+    expect(termsPage).toContain('import { Link } from "react-router-dom"');
+    expect(privacyPage).toContain('<Link to="/terms">');
+    expect(termsPage).toContain('<Link to="/privacy">');
+  });
+
+  it("keeps policy version 1.1 aligned between legal copy and consent records", () => {
+    const privacyPage = read("frontend/src/pages/PrivacyPage.jsx");
+    const privacyService = read("frontend/src/services/privacy.service.js");
+    const privacyController = read("backend/src/controllers/privacy.controller.js");
+    expect(privacyPage).toContain("Versão 1.1");
+    expect(privacyService).toContain('policyVersion: "1.1"');
+    expect(privacyController).toContain('const POLICY_VERSION = "1.1"');
+  });
 });

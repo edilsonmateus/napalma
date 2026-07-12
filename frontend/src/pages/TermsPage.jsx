@@ -1,4 +1,5 @@
 import BackLink from "../components/common/BackLink";
+import { Link } from "react-router-dom";
 
 export default function TermsPage() {
   return (

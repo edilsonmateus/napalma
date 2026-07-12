@@ -733,7 +733,7 @@ export default function ExplorePage() {
       {showOnTrackLocationSheet ? (
         <ExploreSheet title="Tô na Pista" onClose={() => setShowOnTrackLocationSheet(false)}>
           <div className="on-track-copy"><p><strong>Para usar o Tô na Pista, precisamos saber sua cidade, bairro e CEP.</strong></p><p>Essas informações ajudam o 77Gira a entender sua base de circulação e sugerir experiências mais coerentes com o lugar onde você está.</p><p>Não pedimos seu endereço completo.</p></div>
-          <div className="explore-sheet-actions on-track-actions"><button className="chip" type="button" onClick={() => setShowOnTrackLocationSheet(false)}>Agora não</button>{user ? <Link className="chip active" to="/settings#location">Cadastrar localização</Link> : <Link className="chip active" to="/login">Entrar para continuar</Link>}</div>
+          <div className="explore-sheet-actions on-track-actions"><button className="chip" type="button" onClick={() => setShowOnTrackLocationSheet(false)}>Agora não</button>{user ? <Link className="chip active" to="/settings/account?edit=location#location-base-editor">Cadastrar localização</Link> : <Link className="chip active" to="/login">Entrar para continuar</Link>}</div>
         </ExploreSheet>
       ) : null}
       {showOnTrackSheet ? (

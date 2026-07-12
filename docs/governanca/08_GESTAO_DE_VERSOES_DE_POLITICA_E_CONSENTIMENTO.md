@@ -46,3 +46,17 @@ Correcoes tipograficas, esclarecimentos sem efeito pratico e mudancas puramente 
 ## Limites
 
 Este fluxo e uma base tecnica e operacional. A definicao de quando renovar consentimento, qual base legal aplicar e por quanto tempo reter dados deve ser confirmada para a operacao real por assessoria juridica especializada.
+
+## Historico de publicacao
+
+### Versao 1.1 - 11/07/2026
+
+- detalha localizacao-base, sessao temporaria e registros do `To na Pista`;
+- descreve equipes, reivindicacoes, declaracoes de legitimidade e auditoria;
+- esclarece publicidade contextual, impressoes, cliques, frequencia e relatorios agregados;
+- registra o estado simulado da carteira de patacos e do gateway de teste, sem cobranca real;
+- inclui armazenamento de criativos no Cloudflare R2 quando habilitado;
+- incorpora a Central de Privacidade, exportacao, solicitacoes de direitos e encerramento de sessoes;
+- atualiza transparencia sobre operadores, transferencia internacional, retencao e resposta a incidentes.
+
+As decisoes anteriores permanecem no historico. Novas decisoes opcionais passam a registrar a versao 1.1; eventual reapresentacao obrigatoria de consentimento deve ser definida por finalidade antes da ativacao comercial ampla.

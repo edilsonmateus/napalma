@@ -21,7 +21,7 @@ describe("Tô na Pista minimum home location", () => {
   it("offers a friendly fallback and settings editor without requiring an address", () => {
     const explore = read("frontend/src/pages/ExplorePage.jsx"); const location = read("frontend/src/components/settings/LocationBaseCard.jsx");
     expect(explore).toContain("Para usar o Tô na Pista, precisamos saber sua cidade, bairro e CEP.");
-    expect(explore).toContain('to="/settings#location"');
+    expect(explore).toContain('to="/settings/account?edit=location#location-base-editor"');
     expect(location).toContain("Não pedimos seu endereço completo");
     expect(location).not.toContain("logradouro");
   });

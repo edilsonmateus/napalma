@@ -6,7 +6,7 @@ import { getPrivacyRetentionPreview } from "../services/privacyRetention.service
 import { buildPrivacyExport } from "../services/privacyExport.service.js";
 import { getSecurityReadiness } from "../config/env.js";
 
-const POLICY_VERSION = "1.0";
+const POLICY_VERSION = "1.1";
 const PRIVACY_REQUEST_SLA_DAYS = Number.parseInt(process.env.PRIVACY_REQUEST_SLA_DAYS || "15", 10) || 15;
 const consentPurposeSchema = z.enum(["cultural_personalization", "ads_personalization"]);
 const consentSchema = z.object({

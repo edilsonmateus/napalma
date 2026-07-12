@@ -19,11 +19,32 @@ describe("user account settings", () => {
     expect(controller).toContain("revokedAt: new Date()");
   });
 
-  it("keeps email read-only and exposes the profile editor", () => {
+  it("keeps email read-only and exposes the profile editor through the pencil action", () => {
     const page = read("frontend/src/pages/AccountSettingsPage.jsx");
     expect(page).toContain("<Pencil");
+    expect(page).toContain('aria-label={editingProfile ? "Fechar edição" : "Editar dados pessoais"}');
     expect(page).toContain('value={user.email} readOnly');
     expect(page).toContain("updateProfilePassword");
+  });
+
+  it("moves institutional links into a semantic account footer", () => {
+    const page = read("frontend/src/pages/AccountSettingsPage.jsx");
+    const css = read("frontend/src/styles/globals.css");
+    expect(page).toContain('<footer className="account-footer">');
+    expect(page).toContain('aria-label="Suporte, informações institucionais e documentos legais"');
+    expect(page).toContain('to="/settings/privacy"');
+    expect(page).toContain('to="/privacy"');
+    expect(css).toContain(".account-footer__links { display: grid");
+  });
+
+  it("keeps base location inside personal-data editing and routes To na Pista there", () => {
+    const account = read("frontend/src/pages/AccountSettingsPage.jsx");
+    const explore = read("frontend/src/pages/ExplorePage.jsx");
+    const locationEditor = read("frontend/src/components/settings/LocationBaseCard.jsx");
+    expect(account).toContain('get("edit") !== "location"');
+    expect(account).toContain('<LocationBaseCard user={user}');
+    expect(explore).toContain('/settings/account?edit=location#location-base-editor');
+    expect(locationEditor).toContain('id="location-base-editor"');
   });
 
   it("accepts empty optional profile fields", () => {

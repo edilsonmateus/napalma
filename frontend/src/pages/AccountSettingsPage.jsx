@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Camera, ChevronRight, Pencil, UserRound } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Camera, ChevronRight, Pencil } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import BackLink from "../components/common/BackLink";
 import LocationBaseCard from "../components/settings/LocationBaseCard";
 import { logout } from "../services/auth.service";
 import { revokeProfileSessions, updateProfileDetails, updateProfilePassword, uploadProfileAvatar } from "../services/profile.service";
@@ -10,6 +11,7 @@ import { isReservedUsername, isUsernameSyntaxValid, RESERVED_USERNAME_MESSAGE } 
 
 export default function AccountSettingsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const avatarInputRef = useRef(null);
   const { token, refreshToken, user, setAuth, clearAuth } = useAuthStore();
   const [avatarBusy, setAvatarBusy] = useState(false);
@@ -39,6 +41,13 @@ export default function AccountSettingsPage() {
       instagramHandle: user?.instagramHandle || ""
     });
   }, [user?.id, user?.firstName, user?.lastName, user?.username, user?.phone, user?.instagramHandle]);
+
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get("edit") !== "location") return;
+    setEditingProfile(true);
+    const frame = window.requestAnimationFrame(() => document.getElementById("location-base-editor")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [location.search]);
 
   async function saveProfile(event) {
     event.preventDefault();
@@ -138,13 +147,13 @@ export default function AccountSettingsPage() {
   return (
     <section className="settings-screen account-settings-screen">
       <header className="account-settings-header">
-        <Link to="/settings" className="account-settings-back"><ArrowLeft size={18}/> Voltar para Configurações</Link>
+        <BackLink to="/settings">Voltar para Configurações</BackLink>
         <h2>Conta e preferências</h2>
         <p>Gerencie sua identidade, localização e informações do 77Gira.</p>
       </header>
 
-      <section className="clean-card account-settings-section">
-        <div className="account-settings-section-title"><UserRound size={18}/><div><strong>Dados pessoais</strong><small>Foto e identidade da sua conta.</small></div><button className="account-edit-button" type="button" onClick={() => { setEditingProfile((current) => !current); setProfileMessage(""); }} aria-label="Editar dados pessoais"><Pencil size={15}/></button></div>
+      <section className="account-settings-section account-personal-section">
+        <div className="account-settings-section-title"><div><strong>Dados pessoais</strong><small>Foto e identidade da sua conta.</small></div><button className={`account-edit-button${editingProfile ? "" : " account-edit-button--icon"}`} type="button" title={editingProfile ? "Fechar edição" : "Editar dados pessoais"} aria-label={editingProfile ? "Fechar edição" : "Editar dados pessoais"} onClick={() => { setEditingProfile((current) => !current); setProfileMessage(""); }}>{editingProfile ? "Fechar edição" : <Pencil size={15} strokeWidth={1.8}/>}</button></div>
         <div className="account-profile-row">
           <input ref={avatarInputRef} className="settings-avatar-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarChange}/>
           <button className="settings-avatar" type="button" disabled={avatarBusy} onClick={() => avatarInputRef.current?.click()} aria-label="Alterar foto de perfil">
@@ -161,6 +170,7 @@ export default function AccountSettingsPage() {
           <div className="form-actions-inline"><button className="chip active" disabled={profileBusy}>{profileBusy ? "Salvando..." : "Salvar dados"}</button><button className="chip" type="button" onClick={() => setEditingProfile(false)}>Cancelar</button></div>
         </form> : null}
         {profileMessage ? <small className="account-form-message" role="status">{profileMessage}</small> : null}
+        {editingProfile ? <LocationBaseCard user={user} token={token} refreshToken={refreshToken} setAuth={setAuth}/> : null}
         {editingProfile ? <form className="account-password-form" onSubmit={savePassword}>
           <strong>Alterar senha</strong>
           <p>Ao concluir, todas as sessões abertas serão encerradas.</p>
@@ -171,27 +181,13 @@ export default function AccountSettingsPage() {
         </form> : null}
       </section>
 
-      <LocationBaseCard user={user} token={token} refreshToken={refreshToken} setAuth={setAuth}/>
-
-      <section className="clean-card account-settings-section">
-        <div className="account-settings-section-title"><UserRound size={18}/><div><strong>Perfis e acessos</strong><small>Artistas, casas e ambientes vinculados à sua conta.</small></div></div>
+      <section className="account-settings-section">
+        <div className="account-settings-section-title"><div><strong>Perfis e acessos</strong><small>Artistas, casas e ambientes vinculados à sua conta.</small></div></div>
         {artists.map((artist) => <Link className="account-access-row" to={`/artistas/${artist.slug || artist.id}`} key={artist.id}><span><strong>{artist.name}</strong><small>Perfil de artista reivindicado</small></span><ChevronRight size={16}/></Link>)}
         <Link className="settings-link-row" to="/settings">Abrir Hub de Gestão <ChevronRight size={16}/></Link>
       </section>
 
-      <section className="clean-card account-settings-section">
-        <h3>Suporte e informações</h3>
-        <div className="settings-list account-settings-links">
-          <Link to="/help" className="settings-link-row">Ajuda <ChevronRight size={16}/></Link>
-          <Link to="/anunciar" className="settings-link-row">Anunciar no 77Gira <ChevronRight size={16}/></Link>
-          <Link to="/settings/privacy" className="settings-link-row">Privacidade e dados <ChevronRight size={16}/></Link>
-          <Link to="/privacy" className="settings-link-row">Privacidade <ChevronRight size={16}/></Link>
-          <Link to="/terms" className="settings-link-row">Termos de Uso <ChevronRight size={16}/></Link>
-          <Link to="/about" className="settings-link-row">Sobre o 77Gira <ChevronRight size={16}/></Link>
-        </div>
-      </section>
-
-      <section className="clean-card account-settings-section account-session-section">
+      <section className="account-settings-section account-session-section">
         <h3>Sessão</h3>
         <button className="auth-btn account-logout-btn" type="button" onClick={handleLogout}>Sair da conta</button>
         <form className="account-session-revoke" onSubmit={handleRevokeSessions}>
@@ -201,6 +197,22 @@ export default function AccountSettingsPage() {
           <button className="chip" disabled={revokeBusy}>{revokeBusy ? "Encerrando..." : "Encerrar todas as sessões"}</button>
         </form>
       </section>
+      <footer className="account-footer">
+        <nav className="account-footer__links" aria-label="Suporte, informações institucionais e documentos legais">
+          <Link to="/help">Ajuda</Link>
+          <Link to="/anunciar">Anunciar no 77Gira</Link>
+          <Link to="/settings/privacy">Privacidade e dados</Link>
+          <Link to="/privacy">Privacidade</Link>
+          <Link to="/terms">Termos de Uso</Link>
+          <Link to="/about">Sobre o 77Gira</Link>
+        </nav>
+        <div className="account-footer__meta">
+          <strong>77Gira v1.0.0</strong>
+          <p>Feito em casa, feito com alma.</p>
+          <small>Desenhado e codificado por 77 Giramundo</small>
+          <small>© 2026 Todos os direitos reservados.</small>
+        </div>
+      </footer>
     </section>
   );
 }

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { MapPin } from "lucide-react";
 import { updateProfileLocation } from "../../services/profile.service";
 
 const maskCep = (value) => {
@@ -48,14 +47,13 @@ export default function LocationBaseCard({ user, token, refreshToken, setAuth })
   }
 
   return (
-    <section id="location" className="clean-card settings-location-card">
+    <section id="location-base-editor" className="settings-location-card account-location-editor">
       <header>
-        <span><MapPin size={17}/></span>
         <div>
           <h3>Sua localização-base</h3>
           <p>Cidade, bairro e CEP liberam o Tô na Pista. Não pedimos seu endereço completo.</p>
         </div>
-        <em className={complete ? "is-complete" : ""}>{complete ? "Completa" : "Pendente"}</em>
+        <span className={`settings-location-status${complete ? " is-complete" : ""}`}>{complete ? "Completa" : "Pendente"}</span>
       </header>
       <form onSubmit={submit}>
         <label>
