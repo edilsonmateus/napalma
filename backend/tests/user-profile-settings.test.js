@@ -29,11 +29,16 @@ describe("user account settings", () => {
 
   it("moves institutional links into a semantic account footer", () => {
     const page = read("frontend/src/pages/AccountSettingsPage.jsx");
+    const login = read("frontend/src/pages/LoginPage.jsx");
+    const settings = read("frontend/src/pages/SettingsPage.jsx");
+    const footer = read("frontend/src/components/layout/InstitutionalFooter.jsx");
     const css = read("frontend/src/styles/globals.css");
-    expect(page).toContain('<footer className="account-footer">');
-    expect(page).toContain('aria-label="Suporte, informações institucionais e documentos legais"');
-    expect(page).toContain('to="/settings/privacy"');
-    expect(page).toContain('to="/privacy"');
+    expect(page).toContain("<InstitutionalFooter />");
+    expect(login).toContain('<InstitutionalFooter className="auth-institutional-footer" />');
+    expect(settings).toContain('<InstitutionalFooter className="settings-institutional-footer" />');
+    expect(footer).toContain('aria-label="Suporte, informações institucionais e documentos legais"');
+    expect(footer).toContain('user ? "/settings/privacy" : "/privacy"');
+    expect(footer).toContain('to="/privacy"');
     expect(css).toContain(".account-footer__links { display: grid");
   });
 

@@ -32,6 +32,10 @@ function formatHour(value) {
   return new Date(value).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
 
+function formatDateLong(value) {
+  return new Date(value).toLocaleDateString("pt-BR", { day: "2-digit", month: "long" });
+}
+
 function estimateTransitMinutes(prevRegion, nextRegion) {
   if (!prevRegion || !nextRegion) return 35;
   return prevRegion === nextRegion ? 25 : 55;
@@ -47,6 +51,78 @@ function riskTone(riskLevel) {
   if (riskLevel === "ok") return "live-status-live";
   if (riskLevel === "tight") return "live-status-soon";
   return "live-status-ended";
+}
+
+function riskSummary(riskScore) {
+  if (riskScore <= 1) return "Risco baixo";
+  if (riskScore <= 3) return "Risco moderado";
+  return "Risco alto";
+}
+
+function RouteActions({ item }) {
+  return (
+    <div className="pela-hora-route-actions" aria-label={`Rotas para ${item.title}`}>
+      <a href={buildGoogleMapsLink(item)} target="_blank" rel="noreferrer" className="saved-route-chip" aria-label={`Abrir rota no Maps para ${item.title}`} title="Maps">
+        <img src={mapsIcon} alt="" aria-hidden="true" className="route-icon-img route-icon-img-maps" />
+      </a>
+      <a href={buildWazeLink(item)} target="_blank" rel="noreferrer" className="saved-route-chip" aria-label={`Abrir rota no Waze para ${item.title}`} title="Waze">
+        <img src={wazeIcon} alt="" aria-hidden="true" className="route-icon-img route-icon-img-waze" />
+      </a>
+      <a href={buildUberLink(item)} target="_blank" rel="noreferrer" className="saved-route-chip" aria-label={`Abrir rota no Uber para ${item.title}`} title="Uber">
+        <img src={uberIcon} alt="" aria-hidden="true" className="route-icon-img route-icon-img-uber" />
+      </a>
+    </div>
+  );
+}
+
+function PelaHoraTimeline({
+  items,
+  statusLabel = "Selecionado",
+  withRoutes = false,
+  attendedMap = {},
+  onToggleAttended
+}) {
+  return (
+    <div className={`pela-hora-timeline ${withRoutes ? "is-saved" : ""}`}>
+      {items.map((item, idx) => {
+        const nextTransit = items[idx + 1]?.transitMinutesFromPrev || 0;
+        const attended = Boolean(attendedMap[item.id]);
+        return (
+          <div key={item.id || item.eventId} className="pela-hora-timeline-row">
+            <time className="pela-hora-timeline-time">{formatHour(item.startsAt)}</time>
+            <div className="pela-hora-timeline-track" aria-hidden="true">
+              <span className={`pela-hora-timeline-dot ${idx === 0 ? "start" : ""} ${idx === items.length - 1 ? "end" : ""}`} />
+              {idx < items.length - 1 ? <span className="pela-hora-timeline-line" /> : null}
+            </div>
+            <div className="pela-hora-timeline-content">
+              <strong>{item.title}</strong>
+              <span>{item.venue}{item.region ? ` · ${item.region}` : ""}</span>
+              {withRoutes ? (
+                <div className="pela-hora-timeline-utilities">
+                  <RouteActions item={item} />
+                  <button
+                    type="button"
+                    className={`pela-hora-attended-btn ${attended ? "active" : ""}`}
+                    onClick={() => onToggleAttended(item.id)}
+                  >
+                    {attended ? "Eu fui" : "Marcar presença"}
+                  </button>
+                </div>
+              ) : null}
+              {idx < items.length - 1 && nextTransit > 0 ? (
+                <span className="pela-hora-transit-note" aria-label={`${nextTransit} minutos de deslocamento`}>
+                  <span aria-hidden="true">⌁</span> {nextTransit} min
+                </span>
+              ) : null}
+            </div>
+            <small className={`pela-hora-timeline-status ${attended ? "is-attended" : ""}`}>
+              {attended ? "Confirmado" : statusLabel}
+            </small>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function PelaHoraPage() {
@@ -134,19 +210,11 @@ export default function PelaHoraPage() {
   }
 
   return (
-    <section className="screen screen-explore">
+    <section className="screen screen-explore pela-hora-screen">
       <header className="page-header">
         <h2>Pela Hora</h2>
         <p>Monte seu plano do dia com 2 ou mais sambas, em ordem de horário. Eu sei que vai dar bololo.</p>
       </header>
-
-      <section className="clean-card pela-hora-howto">
-        <h4>Como funciona</h4>
-        <p className="meta-line helper-text">1. Escolha uma data.</p>
-        <p className="meta-line helper-text">2. Escolha os sambas manualmente ou receba uma sugestão pronta.</p>
-        <p className="meta-line helper-text">3. Salve seu plano e acompanhe o roteiro do dia.</p>
-        <p className="meta-line helper-text">4. Delete um plano. Apague as provas, quem viu, mentiu.</p>
-      </section>
 
       {!user ? (
         <div className="empty login-gate">
@@ -158,11 +226,14 @@ export default function PelaHoraPage() {
       {user ? (
         <div className="venue-form pela-hora-setup">
           <h3 className="section-title">Passo 1 - Nome e data do plano</h3>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Dê um nome ao seu plano" />
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          <div className="chip-row">
-            <button className={`chip ${mode === "manual" ? "active" : ""}`} type="button" onClick={() => setMode("manual")}>Escolher eu mesmo</button>
-            <button className={`chip ${mode === "automatic" ? "active" : ""}`} type="button" onClick={() => setMode("automatic")}>Receber sugestão</button>
+          <p className="pela-hora-step-help">Defina o plano e escolha como deseja montar seu roteiro.</p>
+          <div className="pela-hora-plan-meta">
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nome do plano" />
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div className="pela-hora-mode-actions">
+            <button className={`pela-hora-action-btn ${mode === "manual" ? "active" : ""}`} type="button" onClick={() => setMode("manual")}>Escolher eu mesmo</button>
+            <button className={`pela-hora-action-btn ${mode === "automatic" ? "active" : ""}`} type="button" onClick={() => setMode("automatic")}>Receber sugestão</button>
           </div>
         </div>
       ) : null}
@@ -170,7 +241,7 @@ export default function PelaHoraPage() {
       {user && mode === "manual" ? (
         <>
           <h3 className="section-title">Passo 2 - Escolha os eventos do seu plano</h3>
-          <p className="meta-line">Toque no evento para adicionar. Toque novamente para remover.</p>
+          <p className="pela-hora-step-help">Toque para adicionar ao roteiro. Toque novamente para remover.</p>
           {eventsLoading ? <p className="empty helper-empty">Carregando sambas...</p> : null}
           {filteredByDate.length === 0 ? (
             <div className="empty helper-empty">
@@ -178,7 +249,7 @@ export default function PelaHoraPage() {
               <small className="meta-line">Tente outra data ou use a sugestão automática.</small>
             </div>
           ) : null}
-          <div className="venue-list">
+          <div className="venue-list pela-hora-event-list">
             {filteredByDate.map((event) => (
               <button key={event.id} type="button" className={`venue-card ${selectedEventIds.includes(event.id) ? "active-card" : ""}`} onClick={() => toggleEvent(event.id)}>
                 <div>
@@ -216,24 +287,7 @@ export default function PelaHoraPage() {
                 {selectedTimeline.items.length} {selectedTimeline.items.length === 1 ? "samba" : "sambas"} | deslocamento estimado {selectedTimeline.totalTransit} min
               </p>
               <p className="meta-line">{riskCopy(selectedTimeline.riskScore)}</p>
-              <div className="schedule-timeline">
-                {selectedTimeline.items.map((item, idx) => (
-                  <div key={item.id} className="schedule-event-row">
-                    <div className="schedule-dot-col">
-                      <span className={`schedule-dot ${idx === 0 ? "start" : ""} ${idx === selectedTimeline.items.length - 1 ? "end" : ""}`} />
-                      {idx < selectedTimeline.items.length - 1 ? <span className="schedule-line" /> : null}
-                    </div>
-                    <div className="schedule-event-content">
-                      <p className="meta-line"><strong>{item.title}</strong> ({formatDateTime(item.startsAt)})</p>
-                      <small className={`live-status ${riskTone(item.riskLevel)}`}>{item.riskLevel}</small>
-                      {idx < selectedTimeline.items.length - 1 ? (
-                        <small className="meta-line">Deslocamento previsto: {selectedTimeline.items[idx + 1].transitMinutesFromPrev} min</small>
-                      ) : null}
-                    </div>
-                    <div className="schedule-time-col">{formatHour(item.startsAt)}</div>
-                  </div>
-                ))}
-              </div>
+              <PelaHoraTimeline items={selectedTimeline.items} />
             </div>
           ) : null}
         </>
@@ -250,23 +304,17 @@ export default function PelaHoraPage() {
             </div>
           ) : null}
           {suggestion ? (
-            <div className="clean-card">
-              <p className="meta-line">Risco: {suggestion.riskScore} | Deslocamento: {suggestion.totalTransitMinutes} min</p>
+            <div className="clean-card schedule-card pela-hora-suggestion-card">
+              <h4>Roteiro sugerido</h4>
+              <p className="meta-line">Risco: {suggestion.riskScore} | deslocamento estimado {suggestion.totalTransitMinutes} min</p>
               <p className="meta-line">{riskCopy(suggestion.riskScore)}</p>
-              <div className="venue-list">
-                {suggestion.items.map((item) => (
-                  <p key={item.eventId} className="meta-line">
-                    {item.title} - {item.venue} ({formatDateTime(item.startsAt)}){" "}
-                    <span className={`live-status ${riskTone(item.riskLevel)}`}>[{item.riskLevel}]</span>
-                  </p>
-                ))}
-              </div>
+              <PelaHoraTimeline items={suggestion.items} statusLabel="Sugerido" />
             </div>
           ) : null}
         </>
       ) : null}
 
-      {user ? <button className="btn-primary" type="button" onClick={handleSave}>Salvar plano do dia</button> : null}
+      {user ? <button className="pela-hora-action-btn pela-hora-save-btn" type="button" onClick={handleSave}>Salvar plano do dia</button> : null}
       {user ? <AppToast toast={toast} onClose={() => setToast({ text: "", type: "info" })} /> : null}
 
       <h3 className="section-title">Planos salvos</h3>
@@ -284,7 +332,7 @@ export default function PelaHoraPage() {
               <h3>{itinerary.title}</h3>
               <div className="itinerary-saved-head-actions">
                 <small className={`live-status ${riskTone(itinerary.riskScore <= 1 ? "ok" : itinerary.riskScore <= 3 ? "tight" : "risky")}`}>
-                  risco {itinerary.riskScore}
+                  {riskSummary(itinerary.riskScore)}
                 </small>
                 <button
                   type="button"
@@ -296,70 +344,16 @@ export default function PelaHoraPage() {
                 </button>
               </div>
             </div>
-            <p className="meta-line">
-              {new Date(itinerary.date).toLocaleDateString("pt-BR")} · {itinerary.mode === "manual" ? "manual" : "automático"}
+            <p className="meta-line itinerary-saved-summary">
+              {itinerary.items.length} sambas · {itinerary.totalTransitMinutes} min em deslocamento · {formatDateLong(itinerary.date)}
             </p>
-            <p className="meta-line">{itinerary.items.length} sambas · deslocamento {itinerary.totalTransitMinutes} min</p>
-            <div className="saved-mini-timeline">
-              {itinerary.items.slice(0, 3).map((item, idx, arr) => (
-                <div key={item.id} className="saved-mini-row">
-                  <div className="saved-mini-dot-col">
-                    <span className={`schedule-dot ${idx === 0 ? "start" : ""} ${idx === arr.length - 1 ? "end" : ""}`} />
-                    {idx < arr.length - 1 ? <span className="schedule-line" /> : null}
-                  </div>
-                  <div className="saved-mini-content">
-                    <div className="saved-mini-head">
-                      <p className="meta-line saved-mini-title"><strong>{item.title}</strong></p>
-                      <div className="saved-mini-head-right">
-                        <small className="meta-line saved-mini-time">{formatHour(item.startsAt)}</small>
-                        <small className="meta-line saved-route-label">Partiu →</small>
-                        <div className="saved-route-actions">
-                          <a
-                            href={buildGoogleMapsLink(item)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="saved-route-chip"
-                            aria-label={`Abrir rota no Maps para ${item.title}`}
-                            title="Maps"
-                          >
-                            <img src={mapsIcon} alt="" aria-hidden="true" className="route-icon-img route-icon-img-maps" />
-                          </a>
-                          <a
-                            href={buildWazeLink(item)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="saved-route-chip"
-                            aria-label={`Abrir rota no Waze para ${item.title}`}
-                            title="Waze"
-                          >
-                            <img src={wazeIcon} alt="" aria-hidden="true" className="route-icon-img route-icon-img-waze" />
-                          </a>
-                          <a
-                            href={buildUberLink(item)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="saved-route-chip"
-                            aria-label={`Abrir rota no Uber para ${item.title}`}
-                            title="Uber"
-                          >
-                            <img src={uberIcon} alt="" aria-hidden="true" className="route-icon-img route-icon-img-uber" />
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                    <small className="meta-line">{item.venue}</small>
-                    <button
-                      type="button"
-                      className={`chip saved-attended-chip ${attendedMap[item.id] ? "active" : ""}`}
-                      onClick={() => toggleAttended(item.id)}
-                    >
-                      Eu fui
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {itinerary.items.length > 3 ? <small className="meta-line">+{itinerary.items.length - 3} sambas no plano</small> : null}
-            </div>
+            <PelaHoraTimeline
+              items={itinerary.items}
+              statusLabel="Confirmado"
+              withRoutes
+              attendedMap={attendedMap}
+              onToggleAttended={toggleAttended}
+            />
           </article>
         ))}
       </div>

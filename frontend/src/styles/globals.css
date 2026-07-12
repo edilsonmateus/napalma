@@ -11404,6 +11404,22 @@ button.venue-card {
 .account-footer__links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 18px; align-content: start; }
 .account-footer__links a { min-width: 0; min-height: 34px; color: var(--text-secondary); font-size: .76rem; line-height: 1.35; text-decoration: none; overflow-wrap: anywhere; }
 .account-footer__links a:hover { color: #ffbf36; text-decoration: underline; text-underline-offset: 3px; }
+.institutional-footer { box-sizing: border-box; }
+.auth-screen > .auth-institutional-footer {
+  position: relative;
+  left: 50%;
+  width: min(820px, calc(100vw - 32px));
+  margin-top: 38px;
+  padding: 28px 0 8px !important;
+  border-top: 1px solid rgba(255,255,255,.14);
+  transform: translateX(-50%);
+}
+.settings-screen > .settings-institutional-footer {
+  width: min(100%, 820px);
+  margin: 38px auto 0;
+  padding: 28px 0 8px !important;
+  border-top: 1px solid rgba(255,255,255,.14);
+}
 @media (max-width: 767px) {
   .account-settings-screen { width: min(calc(100% - 28px), 820px); padding-top: 20px; padding-bottom: 92px; }
   .account-settings-header { margin-bottom: 24px; }
@@ -11414,6 +11430,8 @@ button.venue-card {
   .settings-location-card form .chip { width: 100%; margin-top: 2px; }
   .account-footer { grid-template-columns: 1fr; gap: 24px; }
   .account-footer__links { grid-template-columns: repeat(2, minmax(0, 1fr)); order: -1; }
+  .auth-screen > .auth-institutional-footer,
+  .settings-screen > .settings-institutional-footer { margin-top: 30px; padding-top: 24px !important; }
 }
 @media (max-width: 380px) {
   .account-footer__links { grid-template-columns: 1fr; }
@@ -11774,6 +11792,460 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
 @media (max-width: 680px) {
   body .artist-workspace-picker select { width: 100%; max-width: none; }
   body .artist-team-invite > div :where(input, select, button) { width: 100%; }
+}
+
+/* Pela Hora — composição compacta, com programação como foco visual. */
+.pela-hora-screen .page-header {
+  margin-bottom: 26px;
+}
+
+.pela-hora-screen .page-header h2 {
+  margin-bottom: 4px;
+}
+
+.pela-hora-screen .page-header p {
+  max-width: 640px;
+  font-size: .84rem;
+  line-height: 1.45;
+}
+
+.pela-hora-screen .section-title {
+  margin: 28px 0 5px;
+  color: #eeeaf2;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.pela-hora-setup {
+  gap: 10px;
+  margin: 0 0 18px;
+}
+
+.pela-hora-step-help {
+  margin: 0;
+  color: #938d9e;
+  font-size: .76rem;
+  line-height: 1.42;
+}
+
+.pela-hora-plan-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, .52fr);
+  gap: 8px;
+}
+
+.pela-hora-screen .pela-hora-plan-meta input {
+  box-sizing: border-box;
+  min-height: 42px;
+  margin: 0;
+  border: 1px solid #302d36;
+  border-radius: 8px;
+  background: #121116;
+  color: #eeeaf2;
+  padding: 9px 12px;
+  font-size: .82rem;
+  line-height: 1.2;
+}
+
+.pela-hora-screen .pela-hora-plan-meta input:focus {
+  border-color: rgba(255, 191, 54, .52);
+  box-shadow: 0 0 0 2px rgba(255, 176, 0, .09);
+  outline: 0;
+}
+
+.pela-hora-mode-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.pela-hora-action-btn {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 14px;
+  border: 1px solid #383440;
+  border-radius: 8px;
+  background: #16141a;
+  color: #e9e4ed;
+  font: inherit;
+  font-size: .76rem;
+  font-weight: 650;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color .16s ease, background-color .16s ease, transform .16s ease;
+}
+
+.pela-hora-action-btn:hover {
+  border-color: rgba(255, 191, 54, .48);
+  background: #1b1820;
+}
+
+.pela-hora-action-btn:focus-visible {
+  outline: 2px solid rgba(255, 191, 54, .55);
+  outline-offset: 2px;
+}
+
+.pela-hora-action-btn.active,
+.pela-hora-save-btn {
+  border-color: transparent;
+  background: linear-gradient(104deg, #8e35a9 0%, #d93161 52%, #ff9d19 100%);
+  color: #fff;
+  box-shadow: none;
+  overflow: hidden;
+  background-clip: padding-box;
+  isolation: isolate;
+}
+
+.pela-hora-save-btn {
+  display: flex;
+  width: fit-content;
+  min-width: 148px;
+  margin: 20px auto 0;
+}
+
+.pela-hora-event-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.pela-hora-event-list .venue-card {
+  min-height: 76px;
+  padding: 12px;
+  border: 1px solid #302d36;
+  border-radius: 9px;
+  background: #151319;
+  box-shadow: none;
+  text-align: left;
+}
+
+.pela-hora-event-list .venue-card:hover {
+  border-color: #46404d;
+  background: #19171d;
+  transform: none;
+}
+
+.pela-hora-event-list .venue-card.active-card {
+  border-color: rgba(226, 153, 255, .46);
+  background: linear-gradient(90deg, rgba(143, 56, 169, .12), rgba(21, 19, 25, .96) 42%);
+  box-shadow: inset 3px 0 0 rgba(203, 107, 234, .72);
+  opacity: 1;
+}
+
+.pela-hora-event-list .venue-card h3 {
+  margin: 0 0 4px;
+  font-size: .88rem;
+  line-height: 1.25;
+}
+
+.pela-hora-event-list .venue-card .meta-line {
+  font-size: .74rem;
+  line-height: 1.3;
+}
+
+.pela-hora-event-list .event-select-actions {
+  align-self: start;
+  padding-top: 1px;
+}
+
+.pela-hora-event-list .event-select-actions small {
+  font-size: .7rem;
+  white-space: nowrap;
+}
+
+.pela-hora-screen .schedule-card {
+  margin-top: 16px;
+}
+
+@media (max-width: 680px) {
+  .pela-hora-screen .page-header { margin-bottom: 22px; }
+  .pela-hora-screen .section-title { margin-top: 24px; }
+  .pela-hora-plan-meta { grid-template-columns: 1fr; }
+  .pela-hora-mode-actions { justify-content: flex-start; }
+  .pela-hora-action-btn { flex: 1 1 0; min-width: 0; }
+  .pela-hora-save-btn { width: 100%; margin-top: 18px; }
+  .pela-hora-event-list .venue-card { min-height: 72px; padding: 11px; }
+  .pela-hora-event-list .event-select-actions small { white-space: normal; text-align: right; }
+}
+
+/* Pela Hora — timeline de programação e planos salvos. */
+.pela-hora-screen .schedule-card,
+.pela-hora-screen .itinerary-saved-card {
+  overflow: hidden;
+  border: 1px solid #343238;
+  border-radius: 14px;
+  background: #121214;
+  box-shadow: none;
+}
+
+.pela-hora-screen .schedule-card {
+  padding: 16px;
+}
+
+.pela-hora-screen .schedule-card h4 {
+  margin: 0 0 7px;
+  color: #f0edf3;
+  font-size: .95rem;
+  line-height: 1.2;
+}
+
+.pela-hora-screen .schedule-card > .meta-line {
+  margin: 0 0 4px;
+  color: #aaa4b1;
+  font-size: .78rem;
+  line-height: 1.38;
+}
+
+.pela-hora-timeline {
+  display: grid;
+  margin-top: 16px;
+}
+
+.pela-hora-timeline-row {
+  display: grid;
+  grid-template-columns: 50px 18px minmax(0, 1fr) minmax(74px, auto);
+  column-gap: 8px;
+  align-items: stretch;
+  min-width: 0;
+  padding: 0 0 22px;
+}
+
+.pela-hora-timeline-row:last-child {
+  padding-bottom: 0;
+}
+
+.pela-hora-timeline-time {
+  padding-top: 0;
+  color: #f3eff7;
+  font-size: .82rem;
+  font-weight: 700;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+
+.pela-hora-timeline-track {
+  position: relative;
+  min-height: 58px;
+}
+
+.pela-hora-timeline-dot {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  z-index: 1;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #151319;
+  border-radius: 999px;
+  background: #5ea7ff;
+  box-shadow: 0 0 0 1px rgba(94, 167, 255, .28);
+  transform: translateX(-50%);
+}
+
+.pela-hora-timeline-dot.start {
+  background: #53e08b;
+  box-shadow: 0 0 0 1px rgba(83, 224, 139, .35);
+}
+
+.pela-hora-timeline-dot.end {
+  background: #ff9f3f;
+  box-shadow: 0 0 0 1px rgba(255, 159, 63, .36);
+}
+
+.pela-hora-timeline-line {
+  position: absolute;
+  top: 13px;
+  right: auto;
+  bottom: -22px;
+  left: 50%;
+  width: 1px;
+  background: rgba(169, 164, 174, .28);
+  transform: translateX(-50%);
+}
+
+.pela-hora-timeline-content {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 4px;
+}
+
+.pela-hora-timeline-content strong {
+  overflow: hidden;
+  color: #f1edf4;
+  font-size: .88rem;
+  font-weight: 700;
+  line-height: 1.26;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pela-hora-timeline-content > span:not(.pela-hora-transit-note) {
+  overflow: hidden;
+  color: #9992a2;
+  font-size: .73rem;
+  line-height: 1.32;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pela-hora-transit-note {
+  width: fit-content;
+  margin: 13px 0 0;
+  padding: 5px 10px;
+  border: 1px solid rgba(163, 171, 188, .18);
+  border-radius: 999px;
+  color: #b9b3c1;
+  font-size: .66rem;
+  line-height: 1;
+}
+
+.pela-hora-timeline-status {
+  justify-self: end;
+  padding-top: 1px;
+  color: #63e69a;
+  font-size: .67rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  line-height: 1.2;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.pela-hora-timeline-utilities {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.pela-hora-route-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pela-hora-route-actions .saved-route-chip {
+  width: 27px;
+  height: 27px;
+  opacity: .84;
+}
+
+.pela-hora-route-actions .saved-route-chip img {
+  width: 21px;
+  height: 21px;
+}
+
+.pela-hora-attended-btn {
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid #393540;
+  border-radius: 6px;
+  background: #19171d;
+  color: #d3ced8;
+  font: inherit;
+  font-size: .67rem;
+  font-weight: 650;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pela-hora-attended-btn.active {
+  border-color: rgba(83, 224, 139, .45);
+  background: rgba(24, 91, 56, .24);
+  color: #9de8b9;
+}
+
+.pela-hora-screen .itinerary-saved-card {
+  width: 100%;
+  gap: 0;
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0;
+}
+
+.pela-hora-screen .itinerary-saved-card > * {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.pela-hora-screen .itinerary-saved-head {
+  padding: 18px 20px 7px;
+}
+
+.pela-hora-screen .itinerary-saved-head h3 {
+  color: #f2eef5;
+  font-size: 1rem;
+}
+
+.pela-hora-screen .itinerary-saved-head .live-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .68rem;
+  font-weight: 700;
+}
+
+.pela-hora-screen .itinerary-saved-head .live-status::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+  content: "";
+}
+
+.pela-hora-screen .itinerary-saved-card > .meta-line {
+  margin: 0;
+  padding: 0 20px 5px;
+  color: #a29baa;
+  font-size: .75rem;
+  line-height: 1.35;
+}
+
+.pela-hora-screen .itinerary-saved-card > .pela-hora-timeline {
+  margin: 13px 0 0;
+  padding: 18px 20px 20px;
+  border-top: 1px solid rgba(175, 167, 184, .16);
+}
+
+.pela-hora-screen .itinerary-saved-card .pela-hora-timeline-row {
+  grid-template-columns: 50px 18px minmax(0, 1fr) minmax(74px, auto);
+  padding-bottom: 22px;
+}
+
+.pela-hora-screen .plan-delete-btn {
+  min-width: auto;
+  min-height: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: .68rem;
+}
+
+@media (max-width: 680px) {
+  .pela-hora-screen .schedule-card { padding: 14px; }
+  .pela-hora-timeline-row,
+  .pela-hora-screen .itinerary-saved-card .pela-hora-timeline-row {
+    grid-template-columns: 42px 15px minmax(0, 1fr) 66px;
+    column-gap: 6px;
+  }
+  .pela-hora-timeline-content strong,
+  .pela-hora-timeline-content > span:not(.pela-hora-transit-note) { white-space: normal; }
+  .pela-hora-timeline-track { min-height: 62px; }
+  .pela-hora-timeline-status { font-size: .6rem; }
+  .pela-hora-screen .itinerary-saved-head { align-items: flex-start; }
+  .pela-hora-screen .itinerary-saved-head-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .pela-hora-screen .plan-delete-btn { opacity: 1; pointer-events: auto; transform: none; }
 }
 
 

@@ -7,6 +7,7 @@ import { useAuthStore } from "../store/authStore";
 import { getRoleHome } from "../utils/roles";
 import { promptInstallApp, subscribeInstallPrompt } from "../utils/installPrompt";
 import { getOrCreateVisitorId } from "../utils/visitor";
+import InstitutionalFooter from "../components/layout/InstitutionalFooter";
 
 const DEMO_ACCOUNTS = [
   { label: "Admin", email: "admin@napalma.app" },
@@ -245,10 +246,7 @@ export default function LoginPage() {
         </div>
       ) : null}
 
-      <footer className="auth-settings-footer">
-        <strong>77Gira v1.0.0</strong>
-        <p>Feito em casa, feito com alma. Desenhado e codificado por 77 Giramundo © 2026 Todos os direitos reservados.</p>
-      </footer>
+      <InstitutionalFooter className="auth-institutional-footer" />
     </section>
   );
 }

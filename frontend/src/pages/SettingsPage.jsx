@@ -6,6 +6,7 @@ import { useAuthStore } from "../store/authStore";
 import { isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
 import { promptInstallApp, subscribeInstallPrompt } from "../utils/installPrompt";
 import ManagementHub from "../components/settings/ManagementHub";
+import InstitutionalFooter from "../components/layout/InstitutionalFooter";
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
@@ -159,10 +160,7 @@ export default function SettingsPage() {
         </div>
       ) : null}
 
-      <footer className="auth-settings-footer">
-        <strong>77Gira v1.0.0</strong>
-        <p>Feito em casa, feito com alma. Desenhado e codificado por 77 Giramundo © 2026 Todos os direitos reservados.</p>
-      </footer>
+      <InstitutionalFooter className="settings-institutional-footer" />
     </section>
   );
 }

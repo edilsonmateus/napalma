@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Camera, ChevronRight, Pencil } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import BackLink from "../components/common/BackLink";
+import InstitutionalFooter from "../components/layout/InstitutionalFooter";
 import LocationBaseCard from "../components/settings/LocationBaseCard";
 import { logout } from "../services/auth.service";
 import { revokeProfileSessions, updateProfileDetails, updateProfilePassword, uploadProfileAvatar } from "../services/profile.service";
@@ -197,22 +198,7 @@ export default function AccountSettingsPage() {
           <button className="chip" disabled={revokeBusy}>{revokeBusy ? "Encerrando..." : "Encerrar todas as sessões"}</button>
         </form>
       </section>
-      <footer className="account-footer">
-        <nav className="account-footer__links" aria-label="Suporte, informações institucionais e documentos legais">
-          <Link to="/help">Ajuda</Link>
-          <Link to="/anunciar">Anunciar no 77Gira</Link>
-          <Link to="/settings/privacy">Privacidade e dados</Link>
-          <Link to="/privacy">Privacidade</Link>
-          <Link to="/terms">Termos de Uso</Link>
-          <Link to="/about">Sobre o 77Gira</Link>
-        </nav>
-        <div className="account-footer__meta">
-          <strong>77Gira v1.0.0</strong>
-          <p>Feito em casa, feito com alma.</p>
-          <small>Desenhado e codificado por 77 Giramundo</small>
-          <small>© 2026 Todos os direitos reservados.</small>
-        </div>
-      </footer>
+      <InstitutionalFooter />
     </section>
   );
 }
