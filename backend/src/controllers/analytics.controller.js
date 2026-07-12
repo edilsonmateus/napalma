@@ -22,7 +22,10 @@ const TRACKABLE_EVENT_TYPES = new Set([
   "artist_link_click",
   "artist_booking_click",
   "artist_epk_share",
-  "artist_media_click"
+  "artist_media_click",
+  "render_error",
+  "unhandled_runtime_error",
+  "api_health_unavailable"
 ]);
 
 const analyticsEventSchema = z.object({
@@ -40,7 +43,8 @@ const analyticsEventSchema = z.object({
 
 const SAFE_METADATA_KEYS = new Set([
   "action", "channel", "provider", "mediaId", "type", "platform",
-  "durationMinutes", "enabled", "liveEventsCount", "length", "filterDate", "filterHour"
+  "durationMinutes", "enabled", "liveEventsCount", "length", "filterDate", "filterHour",
+  "kind", "route", "message", "online", "status"
 ]);
 
 function sanitizeAnalyticsMetadata(metadata) {

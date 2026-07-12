@@ -16,13 +16,16 @@ function resolveApiBaseUrl() {
 }
 
 export const apiBaseUrl = resolveApiBaseUrl();
+export const apiHealthUrl = apiBaseUrl.replace(/\/api$/, "");
 
 export const api = axios.create({
-  baseURL: apiBaseUrl
+  baseURL: apiBaseUrl,
+  timeout: 15000
 });
 
 const authlessApi = axios.create({
-  baseURL: apiBaseUrl
+  baseURL: apiBaseUrl,
+  timeout: 15000
 });
 
 api.interceptors.request.use((config) => {

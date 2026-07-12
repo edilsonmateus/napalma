@@ -9,6 +9,8 @@ import { ONBOARDING_STORAGE_KEY } from "./utils/onboarding";
 import { getOrCreateVisitorId } from "./utils/visitor";
 import { setupInstallPromptCapture } from "./utils/installPrompt";
 import { isDefinitiveSessionFailure } from "./utils/authSession";
+import { apiHealthUrl } from "./services/api";
+import { trackClientDiagnostic } from "./services/analytics.service";
 
 const ExplorePage = lazy(() => import("./pages/ExplorePage"));
 const EventDetailPage = lazy(() => import("./pages/EventDetailPage"));
@@ -46,14 +48,18 @@ const SPLASH_MS_MOBILE = 5000;
 const SPLASH_MS_DESKTOP = 2000;
 
 function RequireRole({ user, allowedRoles, children }) {
+  const sessionStatus = useAuthStore((state) => state.sessionStatus);
   if (!user) return <Navigate to="/settings" replace />;
+  if (sessionStatus === "degraded") return <Navigate to="/explore" replace />;
   if (!allowedRoles.includes(user.role)) return <Navigate to={getRoleHome(user.role)} replace />;
   return children;
 }
 
 function RequireAuth({ user, children }) {
   const location = useLocation();
+  const sessionStatus = useAuthStore((state) => state.sessionStatus);
   if (!user) return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />;
+  if (sessionStatus === "degraded") return <Navigate to="/explore" replace />;
   return children;
 }
 
@@ -78,6 +84,8 @@ export default function App() {
   const setSessionStatus = useAuthStore((state) => state.setSessionStatus);
   const [authReady, setAuthReady] = useState(() => !useAuthStore.getState().token);
   const [sessionRetryNonce, setSessionRetryNonce] = useState(0);
+  const [allowPublicWhileDegraded, setAllowPublicWhileDegraded] = useState(false);
+  const [apiHealth, setApiHealth] = useState("checking");
   const { mutate: trackAudienceVisit } = useTrackAudienceVisitMutation();
   const isBackofficeMode = isAdminRole(user?.role) || isProducerRole(user?.role) || isVenueRole(user?.role);
   const isOnboardingRoute = location.pathname === "/onboarding";
@@ -103,6 +111,63 @@ export default function App() {
 
   useEffect(() => {
     setupInstallPromptCapture();
+  }, []);
+
+  useEffect(() => {
+    if (sessionStatus !== "degraded") setAllowPublicWhileDegraded(false);
+  }, [sessionStatus]);
+
+  useEffect(() => {
+    let active = true;
+    let retryTimer = null;
+
+    async function checkApiHealth() {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 4500);
+      try {
+        const response = await fetch(`${apiHealthUrl}/health`, {
+          signal: controller.signal,
+          cache: "no-store"
+        });
+        if (!response.ok) throw new Error(`health_${response.status}`);
+        if (active) setApiHealth("ready");
+      } catch (error) {
+        if (!active) return;
+        setApiHealth("unavailable");
+        trackClientDiagnostic("api_health_unavailable", {
+          kind: error?.name === "AbortError" ? "timeout" : "network",
+          route: location.pathname,
+          message: String(error?.message || "health_check_failed")
+        });
+        retryTimer = window.setTimeout(checkApiHealth, 12000);
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    }
+
+    checkApiHealth();
+    return () => {
+      active = false;
+      if (retryTimer) window.clearTimeout(retryTimer);
+    };
+  }, [location.pathname]);
+
+  useEffect(() => {
+    function reportUnhandled(type, reason) {
+      trackClientDiagnostic(type, {
+        kind: "unhandled",
+        route: window.location.pathname,
+        message: String(reason?.message || reason || "unknown").slice(0, 120)
+      });
+    }
+    const onError = (event) => reportUnhandled("unhandled_runtime_error", event.error || event.message);
+    const onRejection = (event) => reportUnhandled("unhandled_runtime_error", event.reason);
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => {
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
   }, []);
 
   useEffect(() => {
@@ -229,12 +294,15 @@ export default function App() {
     return <div className="session-validation-screen"><span className="session-validation-spinner"/><strong>Validando sua sessão...</strong></div>;
   }
 
-  if (token && sessionStatus === "degraded") {
+  if (token && sessionStatus === "degraded" && !allowPublicWhileDegraded) {
     return (
       <div className="session-validation-screen session-validation-degraded">
         <strong>Sua conta continua conectada</strong>
         <p>{sessionMessage || "O serviço está temporariamente indisponível. Seus dados de acesso foram preservados."}</p>
-        <button className="auth-btn auth-btn-primary" type="button" onClick={() => setSessionRetryNonce((value) => value + 1)}>Tentar novamente</button>
+        <div className="session-validation-actions">
+          <button className="auth-btn auth-btn-primary" type="button" onClick={() => setSessionRetryNonce((value) => value + 1)}>Tentar novamente</button>
+          <button className="chip" type="button" onClick={() => setAllowPublicWhileDegraded(true)}>Continuar no Explorar</button>
+        </div>
       </div>
     );
   }
@@ -242,6 +310,7 @@ export default function App() {
   return (
     <div className={`app-shell ${isBackofficeMode ? "app-shell-admin" : ""} ${isAdsRoute ? "app-shell-ads" : ""}`}>
       {isOffline ? <div className="offline-banner">Você está offline. Algumas ações podem falhar.</div> : null}
+      {!isOffline && apiHealth === "unavailable" ? <div className="offline-banner api-health-banner">Estamos reconectando aos serviços. Você pode continuar navegando.</div> : null}
       <main className="app-content">
         <Suspense fallback={<div className="empty">Carregando pagina...</div>}>
           <Routes>
