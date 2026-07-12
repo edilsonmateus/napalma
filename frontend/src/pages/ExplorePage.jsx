@@ -276,6 +276,7 @@ export default function ExplorePage() {
   const canLoadMore = false;
   const isLoadingState = venuesLoading || eventsLoading;
   const isRefreshingProgramming = !isLoadingState && (eventsFetching || venuesFetching);
+  const isProgrammingLoading = isLoadingState || isRefreshingProgramming;
   const catalogError = eventsError || venuesError;
   const hasTimeFilter = Boolean(filterDate || filterHour);
   const activeTimeFilterLabel = useMemo(() => {
@@ -570,7 +571,13 @@ export default function ExplorePage() {
             </Link>
           )}
         </div>
-        <div className="explore-brand-separator" aria-hidden="true" />
+        <div
+          className={`explore-brand-separator ${isProgrammingLoading ? "is-loading" : ""}`}
+          aria-hidden="true"
+        />
+        <span className="explore-programming-status" role="status" aria-live="polite">
+          {isProgrammingLoading ? "Atualizando a programação." : ""}
+        </span>
       </header>
 
       <div className="explore-top-actions">
@@ -863,7 +870,6 @@ export default function ExplorePage() {
 
       {isLoadingState ? (
         <div className="explore-loading-grid" aria-live="polite" aria-busy="true">
-          <p className="explore-programming-loading">Estamos conectando à programação. Isso pode levar alguns instantes.</p>
           {Array.from({ length: 4 }).map((_, idx) => (
             <article key={`skeleton-${idx}`} className="venue-card venue-flow-card venue-flow-skeleton">
               <div className="venue-flow-cover" />
@@ -876,7 +882,6 @@ export default function ExplorePage() {
           ))}
         </div>
       ) : null}
-      {isRefreshingProgramming ? <p className="meta-line explore-programming-refreshing" aria-live="polite">Atualizando a programação…</p> : null}
       {catalogError ? (
         <div className="empty empty-highlight explore-empty-action" role="status">
           <p>Não foi possível conectar à programação agora.</p>

@@ -5062,9 +5062,39 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 }
 
 .explore-brand-separator {
+  /* Set this token to 0 to disable the loading glow without changing its state logic. */
+  --explore-loading-glow: .28;
   width: 100%;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.46);
+  transition: background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.explore-brand-separator.is-loading {
+  background: linear-gradient(
+    90deg,
+    rgba(132, 69, 227, 0.18) 0%,
+    rgba(239, 52, 113, 0.76) 36%,
+    rgba(255, 153, 32, 0.9) 52%,
+    rgba(132, 69, 227, 0.18) 100%
+  );
+  background-size: 220% 100%;
+  box-shadow: 0 0 8px rgba(255, 131, 39, var(--explore-loading-glow));
+  animation: explore-programming-progress 1.25s linear infinite;
+}
+
+.explore-programming-status {
+  position: absolute;
+  width: 1px;
   height: 1px;
-  background: rgba(157, 166, 182, 0.28);
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .screen-explore {
@@ -8736,6 +8766,11 @@ button.venue-card {
   margin: 6px 0 10px;
 }
 
+@keyframes explore-programming-progress {
+  from { background-position: 200% 0; }
+  to { background-position: -20% 0; }
+}
+
 .venue-flow-skeleton {
   overflow: hidden;
 }
@@ -10198,7 +10233,8 @@ button.venue-card {
   .venue-flow-card,
   .live-chip-dot,
   .venue-flow-placeholder .venue-flow-cover,
-  .ad-slot-media.placeholder {
+  .ad-slot-media.placeholder,
+  .explore-brand-separator.is-loading {
     animation: none !important;
   }
 
