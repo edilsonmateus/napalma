@@ -7,6 +7,8 @@ const controller = fs.readFileSync(path.join(root, "backend/src/controllers/adve
 const routes = fs.readFileSync(path.join(root, "backend/src/routes/index.js"), "utf8");
 const uploadGuard = fs.readFileSync(path.join(root, "backend/src/middlewares/advertiserAccess.js"), "utf8");
 const app = fs.readFileSync(path.join(root, "frontend/src/App.jsx"), "utf8");
+const advertise = fs.readFileSync(path.join(root, "frontend/src/pages/AdvertisePage.jsx"), "utf8");
+const signup = fs.readFileSync(path.join(root, "frontend/src/pages/SignupPage.jsx"), "utf8");
 
 describe("advertiser self-service portal security", () => {
   it("requires authentication and feature flags on self-service routes", () => {
@@ -33,5 +35,13 @@ describe("advertiser self-service portal security", () => {
     expect(controller).toContain('source: "self_service_request"');
     expect(controller).toContain('status: "invited"');
     expect(controller).toContain("requestMyAdvertiserAccess");
+  });
+
+  it("explains authentication before a visitor enters the advertiser workspace", () => {
+    expect(advertise).toContain('to="/explore" className="advertise-back-link"');
+    expect(advertise).toContain('id="advertise-account-gate"');
+    expect(advertise).toContain("Faça login para solicitar acesso");
+    expect(advertise).toContain('state={{ from: "/workspace/anunciante" }}');
+    expect(signup).toContain("navigate(redirectTo || getRoleHome(data.user.role)");
   });
 });

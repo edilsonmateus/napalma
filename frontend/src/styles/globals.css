@@ -1025,6 +1025,67 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   padding: 24px !important;
 }
 
+.advertise-page .advertise-back-link {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 28px;
+  align-items: center;
+  margin-bottom: 14px;
+  color: var(--ads-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.advertise-page .advertise-back-link:hover {
+  color: var(--ads-blue);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.advertise-page .advertise-account-gate {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid #bfdbfe;
+  border-left: 3px solid var(--ads-blue);
+  border-radius: var(--ads-radius-md);
+  background: #eff6ff;
+}
+
+.advertise-page .advertise-account-gate strong {
+  display: block;
+  color: #1e3a8a !important;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.advertise-page .advertise-account-gate p {
+  max-width: 560px;
+  margin: 5px 0 0;
+  color: #4b638e !important;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.advertise-page .advertise-account-gate__actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.advertise-page .advertise-account-gate__actions .btn-primary,
+.advertise-page .advertise-account-gate__actions .chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
 .advertise-page .advertise-hero h2,
 .advertiser-console .advertiser-console-topbar h2,
 .app-shell-admin .ads-admin-console .ads-admin-hero h2 {
@@ -12246,6 +12307,23 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
   .pela-hora-screen .itinerary-saved-head { align-items: flex-start; }
   .pela-hora-screen .itinerary-saved-head-actions { flex-wrap: wrap; justify-content: flex-end; }
   .pela-hora-screen .plan-delete-btn { opacity: 1; pointer-events: auto; transform: none; }
+}
+
+@media (max-width: 680px) {
+  .advertise-page .advertise-account-gate {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 14px;
+  }
+  .advertise-page .advertise-account-gate__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+  }
+  .advertise-page .advertise-account-gate__actions :where(.btn-primary, .chip) {
+    width: 100%;
+    min-height: 40px !important;
+  }
 }
 
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { register } from "../services/auth.service";
 import { useAuthStore } from "../store/authStore";
 import { getRoleHome } from "../utils/roles";
@@ -8,6 +8,7 @@ import { isReservedUsername, isUsernameSyntaxValid, RESERVED_USERNAME_MESSAGE } 
 
 export default function SignupPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, setAuth } = useAuthStore();
   const [form, setForm] = useState({
     firstName: "",
@@ -21,6 +22,9 @@ export default function SignupPage() {
   });
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const redirectTo = typeof location.state?.from === "string" && location.state.from.startsWith("/") && !location.state.from.startsWith("/signup")
+    ? location.state.from
+    : "";
 
   if (user) {
     return <Navigate to={getRoleHome(user.role)} replace />;
@@ -47,7 +51,7 @@ export default function SignupPage() {
     try {
       const data = await register({ ...form, city: location.city || undefined, neighborhood: location.neighborhood || undefined, postalCode: location.postalCode || undefined, visitorId: getOrCreateVisitorId() });
       setAuth({ token: data.accessToken, refreshToken: data.refreshToken, user: data.user });
-      navigate(getRoleHome(data.user.role), { replace: true });
+      navigate(redirectTo || getRoleHome(data.user.role), { replace: true });
     } catch (error) {
       setMessage(error?.response?.data?.message || "Não foi possível criar conta agora.");
     } finally {

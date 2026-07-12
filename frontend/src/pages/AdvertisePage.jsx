@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { trackAnalyticsEvent } from "../services/analytics.service";
+import { useAuthStore } from "../store/authStore";
 
 const AUDIENCES = [
   ["Casas", "Impulsione agenda, noites especiais e campanhas de ocupação."],
@@ -16,6 +17,9 @@ const STEPS = [
 ];
 
 export default function AdvertisePage() {
+  const user = useAuthStore((state) => state.user);
+  const [showAccountGate, setShowAccountGate] = useState(false);
+
   useEffect(() => {
     trackAnalyticsEvent("advertise_page_view", { source: "advertise_page" });
   }, []);
@@ -27,9 +31,19 @@ export default function AdvertisePage() {
     });
   }
 
+  function requestAdvertiserAccess(source) {
+    trackAdvertiseClick(source);
+    if (user) return;
+    setShowAccountGate(true);
+    if (typeof window !== "undefined") {
+      window.requestAnimationFrame(() => document.getElementById("advertise-account-gate")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+    }
+  }
+
   return (
     <section className="screen screen-history advertise-page">
       <header className="advertise-hero clean-card">
+        <Link to="/explore" className="advertise-back-link">← Voltar ao 77Gira</Link>
         <div className="ads-brand-lockup" aria-label="77Gira Ads">
           <img src="/logoads77gira.svg" alt="77Gira Ads" className="ads-brand-logo" />
         </div>
@@ -39,9 +53,25 @@ export default function AdvertisePage() {
           A publicidade entra com revisão, contexto e controle para preservar a experiência do usuário.
         </p>
         <div className="advertise-actions">
-          <Link to="/workspace/anunciante" className="btn-primary" onClick={() => trackAdvertiseClick("request_access_hero")}>Solicitar acesso</Link>
-          <Link to="/login" state={{ from: "/workspace/anunciante" }} className="chip" onClick={() => trackAdvertiseClick("login_hero")}>Já tenho conta</Link>
+          {user ? (
+            <Link to="/workspace/anunciante" className="btn-primary" onClick={() => trackAdvertiseClick("request_access_hero")}>Solicitar acesso</Link>
+          ) : (
+            <button type="button" className="btn-primary" onClick={() => requestAdvertiserAccess("request_access_hero")}>Solicitar acesso</button>
+          )}
+          {!user ? <Link to="/login" state={{ from: "/workspace/anunciante" }} className="chip" onClick={() => trackAdvertiseClick("login_hero")}>Já tenho conta</Link> : null}
         </div>
+        {!user && showAccountGate ? (
+          <div className="advertise-account-gate" id="advertise-account-gate" role="status">
+            <div>
+              <strong>Para solicitar acesso comercial, entre ou crie sua conta 77Gira.</strong>
+              <p>Seu acesso identifica quem faz a solicitação e permite retomar este fluxo após a autenticação.</p>
+            </div>
+            <div className="advertise-account-gate__actions">
+              <Link to="/login" state={{ from: "/workspace/anunciante" }} className="btn-primary" onClick={() => trackAdvertiseClick("login_required_gate")}>Faça login para solicitar acesso</Link>
+              <Link to="/signup" state={{ from: "/workspace/anunciante" }} className="chip" onClick={() => trackAdvertiseClick("signup_required_gate")}>Criar conta 77Gira</Link>
+            </div>
+          </div>
+        ) : null}
       </header>
 
       <div className="advertise-grid">
@@ -97,8 +127,8 @@ export default function AdvertisePage() {
       <aside className="clean-card advertise-access-note">
         <strong>Acesso ao workspace</strong>
         <p>
-          O painel operacional fica em <code>/workspace/anunciante</code>. Se você ainda não estiver logado,
-          o app vai pedir login e retornar para a solicitação comercial.
+          O painel operacional fica em <code>/workspace/anunciante</code>. Visitantes recebem primeiro uma orientação
+          para entrar ou criar uma conta e retornam automaticamente para concluir a solicitação comercial.
         </p>
       </aside>
 
@@ -106,11 +136,15 @@ export default function AdvertisePage() {
         <div>
           <span className="eyebrow">Próximo passo</span>
           <h3>Solicite sua conta anunciante.</h3>
-          <p>Se você ainda não tem conta no 77Gira, crie uma conta comum e volte para concluir a solicitação comercial.</p>
+          <p>Se você ainda não tem conta no 77Gira, crie seu acesso e volte automaticamente para concluir a solicitação comercial.</p>
         </div>
         <div className="advertise-actions">
-          <Link to="/workspace/anunciante" className="btn-primary" onClick={() => trackAdvertiseClick("request_access_footer")}>Começar agora</Link>
-          <Link to="/signup" className="chip" onClick={() => trackAdvertiseClick("signup_footer")}>Criar conta</Link>
+          {user ? (
+            <Link to="/workspace/anunciante" className="btn-primary" onClick={() => trackAdvertiseClick("request_access_footer")}>Começar agora</Link>
+          ) : (
+            <button type="button" className="btn-primary" onClick={() => requestAdvertiserAccess("request_access_footer")}>Solicitar acesso</button>
+          )}
+          <Link to="/signup" state={{ from: "/workspace/anunciante" }} className="chip" onClick={() => trackAdvertiseClick("signup_footer")}>Criar conta</Link>
         </div>
       </footer>
     </section>
