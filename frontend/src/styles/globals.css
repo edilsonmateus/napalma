@@ -1563,11 +1563,15 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 .app-recovery-card p:not(.eyebrow) { margin: 0; color: var(--text-secondary); line-height: 1.55; }
 .app-recovery-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
 .api-health-banner { background: rgba(188, 119, 20, .18); color: #ffe2a5; }
-.session-validation-spinner { width: 24px; height: 24px; border: 2px solid rgba(255,255,255,.18); border-top-color: #ffb81c; border-radius: 50%; animation: session-spin .75s linear infinite; }
-@keyframes session-spin { to { transform: rotate(360deg); } }
+.session-validation-spinner { width: 24px; height: 24px; display: block; object-fit: contain; animation: session-logo-spin-pause 3s linear infinite; transform-origin: center; }
+@keyframes session-logo-spin-pause {
+  0% { transform: rotate(0deg); }
+  33.333% { transform: rotate(360deg); }
+  100% { transform: rotate(360deg); }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .session-validation-spinner { animation: none; border-top-color: rgba(255,255,255,.55); }
+  .session-validation-spinner { animation: none; }
 }
 
 .artist-related-grid, .artist-insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }

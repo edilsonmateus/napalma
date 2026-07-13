@@ -304,7 +304,7 @@ export default function App() {
   }
 
   if (token && (!authReady || sessionStatus === "checking")) {
-    return <div className="session-validation-screen"><span className="session-validation-spinner"/><strong>Validando sua sessão...</strong></div>;
+    return <div className="session-validation-screen"><img src="/assets/brand/icon_mono_77Gira.svg" alt="" aria-hidden="true" className="session-validation-spinner"/><strong>Validando sua sessão...</strong></div>;
   }
 
   if (token && sessionStatus === "degraded" && !allowPublicWhileDegraded) {
