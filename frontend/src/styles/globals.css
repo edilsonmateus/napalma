@@ -8715,9 +8715,9 @@ button.venue-card {
   flex: 0 0 auto;
   white-space: nowrap;
   font-size: 11px;
-  color: #a89ac0;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid #2d2d35;
+  color: rgba(225, 218, 235, 0.68);
+  background: rgba(255, 255, 255, 0.06);
+  border: 0;
   border-radius: 999px;
   padding: 3px 8px;
 }
@@ -8733,8 +8733,13 @@ button.venue-card {
 }
 
 .explore-summary-clear:hover {
-  color: #f0e8ff;
-  border-color: rgba(168, 154, 192, 0.38);
+  color: #f5efff;
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.explore-summary-clear:focus-visible {
+  outline: 2px solid var(--user-button-focus, rgba(255, 191, 54, 0.72));
+  outline-offset: 2px;
 }
 
 .explore-empty-action {
@@ -12048,6 +12053,186 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
   width: fit-content;
   min-width: 148px;
   margin: 20px auto 0;
+}
+
+/* Public user interface button system.
+ * Keep this layer scoped to consumer-facing screens so Admin, Ads and
+ * professional workspaces retain their own control language.
+ * Contrast can be tuned progressively through the three surface tokens. */
+:root {
+  --user-button-surface: rgba(255, 255, 255, 0.075);
+  --user-button-surface-hover: rgba(255, 255, 255, 0.115);
+  --user-button-surface-strong: rgba(255, 255, 255, 0.15);
+  --user-button-text: rgba(255, 255, 255, 0.92);
+  --user-button-muted: rgba(255, 255, 255, 0.52);
+  --user-button-focus: rgba(255, 191, 54, 0.72);
+}
+
+:is(
+  .screen-explore,
+  .screen-decision,
+  .screen-radar,
+  .screen-history,
+  .artist-epk-screen,
+  .artist-directory-screen,
+  .settings-screen,
+  .auth-screen
+) :is(
+  .chip,
+  .auth-btn,
+  .artist-epk-action,
+  .artist-directory-action,
+  .explore-top-pill,
+  .explore-top-icon,
+  .pela-hora-action-btn,
+  .radar-action-chip,
+  .route-inline-trigger,
+  .share-action,
+  .share-link,
+  .settings-account-menu,
+  .plan-delete-btn
+) {
+  border: 0;
+  background-color: var(--user-button-surface);
+  color: var(--user-button-text);
+  box-shadow: none;
+  text-decoration: none;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease,
+    opacity 0.16s ease,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+:is(
+  .screen-explore,
+  .screen-decision,
+  .screen-radar,
+  .screen-history,
+  .artist-epk-screen,
+  .artist-directory-screen,
+  .settings-screen,
+  .auth-screen
+) :is(
+  .chip,
+  .auth-btn,
+  .artist-epk-action,
+  .artist-directory-action,
+  .explore-top-pill,
+  .explore-top-icon,
+  .pela-hora-action-btn,
+  .radar-action-chip,
+  .route-inline-trigger,
+  .share-action,
+  .share-link,
+  .settings-account-menu,
+  .plan-delete-btn
+):hover {
+  border: 0;
+  background-color: var(--user-button-surface-hover);
+  color: #fff;
+}
+
+:is(
+  .screen-explore,
+  .screen-decision,
+  .screen-radar,
+  .screen-history,
+  .artist-epk-screen,
+  .artist-directory-screen,
+  .settings-screen,
+  .auth-screen
+) :is(
+  button,
+  a,
+  summary
+):focus-visible {
+  outline: 2px solid var(--user-button-focus);
+  outline-offset: 3px;
+}
+
+/* Selected controls use filled surfaces instead of outlines. */
+:is(.screen-explore, .screen-radar, .screen-history, .artist-epk-screen, .auth-screen) .chip.active,
+.screen-explore :is(.explore-top-pill, .explore-top-icon).active,
+.pela-hora-screen .pela-hora-action-btn.active,
+.pela-hora-screen .pela-hora-save-btn,
+.artist-epk-screen .artist-epk-action-primary,
+:is(.settings-screen, .auth-screen) .auth-btn-primary {
+  border: 0;
+  background: var(--gradient-samba);
+  color: #fff;
+  box-shadow: none;
+}
+
+.screen-explore .live-filter-chip.has-live:not(.active) {
+  border: 0;
+  background: rgba(39, 216, 109, 0.1);
+  color: #77efa5;
+}
+
+.screen-explore .live-filter-chip.has-live.active {
+  border: 0;
+  background: linear-gradient(135deg, #118645, #24c768);
+  color: #f5fff8;
+}
+
+/* Tô na Pista remains the expressive exception: no static outline, but its
+ * amber surface and glow continue to signal the proximity experience. */
+.screen-explore .on-track-chip {
+  border: 0;
+  background: rgba(255, 122, 24, 0.1);
+  color: #ffd2a8;
+  box-shadow: 0 0 14px rgba(255, 122, 24, 0.1);
+}
+
+.screen-explore .on-track-chip:hover {
+  background: rgba(255, 122, 24, 0.16);
+  box-shadow: 0 0 17px rgba(255, 122, 24, 0.15);
+}
+
+.screen-explore .on-track-chip.active {
+  border: 0;
+  background: linear-gradient(135deg, #e8411b, #ff9f18);
+  color: #fff;
+  animation: onTrackGlow 1.35s ease-out infinite;
+}
+
+:is(.screen-explore, .screen-decision, .screen-radar, .screen-history, .pela-hora-screen) :is(.route-icon-btn, .saved-route-chip, .on-track-route-btn) {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:is(.screen-explore, .screen-decision, .screen-radar, .screen-history, .pela-hora-screen) :is(.route-icon-btn, .saved-route-chip, .on-track-route-btn):hover {
+  border: 0;
+  background: var(--user-button-surface);
+}
+
+:is(.screen-decision, .screen-radar, .screen-history, .pela-hora-screen) :is(.decision-radar-muted, .radar-action-chip.is-disabled, .chip:disabled, button:disabled) {
+  border: 0;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--user-button-muted);
+  box-shadow: none;
+}
+
+:is(.screen-explore, .screen-decision, .screen-radar, .artist-epk-screen) :is(.event-promote-chip, .artist-directory-action) {
+  border: 0 !important;
+  background: rgba(255, 185, 0, 0.1);
+  color: #ffc85a !important;
+}
+
+.pela-hora-screen .plan-delete-btn {
+  border: 0;
+  background: rgba(239, 68, 68, 0.11);
+  color: #fca5a5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-explore .on-track-chip.active {
+    animation: none;
+    box-shadow: 0 0 14px rgba(255, 122, 24, 0.18);
+  }
 }
 
 .pela-hora-event-list {
