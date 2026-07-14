@@ -26,6 +26,8 @@ const ON_TRACK_DISMISSED_KEY = "77gira:on-track-dismissed-event";
 const ON_TRACK_DURATION_MS = 60 * 60 * 1000;
 const ON_TRACK_RECOMMENDATION_WINDOW_MS = 12 * 60 * 60 * 1000;
 const ON_TRACK_INITIAL_NOTIFICATION_DELAY_MS = 3 * 60 * 1000;
+const LIVE_CLOCK_INTERVAL_MS = 15 * 1000;
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_PREFS = { city: "São Paulo", region: "Todas", query: "", limit: 8, filterDate: "", filterHour: "", liveOnly: false, timeScope: "semana" };
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, "0")}:00`);
 const CITY_OPTIONS = [
@@ -152,24 +154,29 @@ function ExploreSheet({ title, children, onClose }) {
   );
 }
 
-function getLiveProgress(startsAt, endsAt) {
+function getEventInterval(startsAt, endsAt) {
   const start = new Date(startsAt).getTime();
   let end = new Date(endsAt).getTime();
-  const now = Date.now();
   if (Number.isNaN(start) || Number.isNaN(end)) return null;
-  if (end <= start) end += 24 * 60 * 60 * 1000;
+  if (end <= start) end += ONE_DAY_MS;
   const total = end - start;
   if (total <= 0) return null;
-  const elapsed = Math.max(0, Math.min(now - start, total));
-  const percent = Math.max(0, Math.min(100, (elapsed / total) * 100));
+  return { start, end, total };
+}
+
+function getLiveProgress(startsAt, endsAt, nowMs) {
+  const interval = getEventInterval(startsAt, endsAt);
+  if (!interval) return null;
+  const elapsed = Math.max(0, Math.min(nowMs - interval.start, interval.total));
+  const percent = Math.max(0, Math.min(100, (elapsed / interval.total) * 100));
   let tone = "fresh";
   if (percent >= 86) tone = "last-call";
   else if (percent >= 61) tone = "attention";
   return { percent, tone };
 }
 
-function LiveProgressBar({ event }) {
-  const progress = getLiveProgress(event.startsAt, event.endsAt);
+function LiveProgressBar({ event, nowMs }) {
+  const progress = getLiveProgress(event.startsAt, event.endsAt, nowMs);
   if (!progress) return null;
   return (
     <div className={`live-progress live-progress-${progress.tone}`}>
@@ -182,6 +189,7 @@ function LiveProgressBar({ event }) {
 
 export default function ExplorePage() {
   const user = useAuthStore((state) => state.user);
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [prefs, setPrefs] = useState(loadPrefs);
   const [showCitySheet, setShowCitySheet] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
@@ -231,6 +239,21 @@ export default function ExplorePage() {
   const lastResumeRefreshAtRef = useRef(0);
   const { data: exploreAd } = useAdDeliveryQuery("explore_feed_large", true);
   const adToRender = useMemo(() => exploreAd || null, [exploreAd]);
+
+  useEffect(() => {
+    function syncClock() {
+      if (document.visibilityState === "visible") setNowMs(Date.now());
+    }
+
+    const timer = window.setInterval(syncClock, LIVE_CLOCK_INTERVAL_MS);
+    window.addEventListener("focus", syncClock);
+    document.addEventListener("visibilitychange", syncClock);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", syncClock);
+      document.removeEventListener("visibilitychange", syncClock);
+    };
+  }, []);
 
   useEffect(() => {
     trackAnalyticsEvent("explore_view", { source: "explore" });
@@ -286,16 +309,14 @@ export default function ExplorePage() {
     return `Todos os dias • ${filterHour}`;
   }, [filterDate, filterHour, hasTimeFilter]);
   const eventRows = useMemo(() => {
-    const now = Date.now();
     const q = debouncedQuery.trim().toLowerCase();
     const rows = [];
     for (const event of events) {
       const eventDate = new Date(event.startsAt);
-      const eventEndsAt = new Date(event.endsAt);
-      const time = eventDate.getTime();
-      const endTime = eventEndsAt.getTime();
-      if (Number.isNaN(time) || Number.isNaN(endTime)) continue;
-      if (endTime < now) continue;
+      const interval = getEventInterval(event.startsAt, event.endsAt);
+      if (!interval) continue;
+      const { start: time, end: endTime } = interval;
+      if (endTime <= nowMs) continue;
       const venue = venueByName.get(String(event.venue || "").toLowerCase());
       if (!venue) continue;
       if (selectedRegion && venue.region !== selectedRegion) continue;
@@ -303,11 +324,11 @@ export default function ExplorePage() {
         const haystack = `${venue.name} ${venue.neighborhood} ${venue.region} ${event.title} ${event.artist}`.toLowerCase();
         if (!haystack.includes(q)) continue;
       }
-      const isLiveNow = Boolean(event.isLiveNow) || (time <= now && endTime >= now);
+      const isLiveNow = time <= nowMs && nowMs < endTime;
       if (liveOnly && !isLiveNow) continue;
-      if (!filterDate && timeScope === "hoje" && !isSameDay(eventDate, new Date())) continue;
+      if (!filterDate && timeScope === "hoje" && !isSameDay(eventDate, new Date(nowMs))) continue;
       if (!filterDate && timeScope === "semana") {
-        const weekLimit = now + (7 * 24 * 60 * 60 * 1000);
+        const weekLimit = nowMs + (7 * ONE_DAY_MS);
         if (time > weekLimit) continue;
       }
       if (filterDate) {
@@ -330,12 +351,12 @@ export default function ExplorePage() {
       });
     }
     return rows.sort((a, b) => new Date(a.nextEvent.startsAt).getTime() - new Date(b.nextEvent.startsAt).getTime());
-  }, [events, venueByName, selectedRegion, debouncedQuery, filterDate, filterHour, liveOnly, timeScope]);
+  }, [events, venueByName, selectedRegion, debouncedQuery, filterDate, filterHour, liveOnly, timeScope, nowMs]);
   const liveEventsCount = useMemo(() => eventRows.filter((row) => row.isLiveNow).length, [eventRows]);
   const onTrackActive = Boolean(
     onTrackSession?.id
       && onTrackSession?.expiresAt
-      && onTrackSession.expiresAt > Date.now()
+      && onTrackSession.expiresAt > nowMs
   );
   const onTrackLocation = onTrackSession?.location || null;
   const userDisplayName = user
@@ -345,7 +366,6 @@ export default function ExplorePage() {
   const userInitial = userDisplayName?.trim()?.[0]?.toUpperCase() || "7";
   const onTrackRecommendations = useMemo(() => {
     if (!onTrackActive) return [];
-    const now = Date.now();
     return eventRows
       .map((row) => {
         const startsAt = new Date(row.nextEvent.startsAt).getTime();
@@ -354,7 +374,7 @@ export default function ExplorePage() {
       })
       .filter((row) => {
         if (Number.isNaN(row.startsAt)) return false;
-        return row.isLiveNow || (row.startsAt >= now && row.startsAt <= now + ON_TRACK_RECOMMENDATION_WINDOW_MS);
+        return row.isLiveNow || (row.startsAt >= nowMs && row.startsAt <= nowMs + ON_TRACK_RECOMMENDATION_WINDOW_MS);
       })
       .sort((a, b) => {
         if (a.distance !== null && b.distance !== null && a.distance !== b.distance) return a.distance - b.distance;
@@ -362,7 +382,7 @@ export default function ExplorePage() {
         return a.startsAt - b.startsAt;
       })
       .slice(0, 2);
-  }, [eventRows, onTrackActive, onTrackLocation]);
+  }, [eventRows, onTrackActive, onTrackLocation, nowMs]);
   const onTrackSuggestion = onTrackRecommendations[0] || null;
   const scopeLabel = timeScope === "hoje" ? "Hoje" : "Semana";
   const activeFilterCount = [
@@ -933,7 +953,7 @@ export default function ExplorePage() {
                     <span className="event-region"><MapPin size={12} /> {venue.region}</span>
                     {routeModeVenueId === venue.id ? <span className="event-route-venue">{venue.name}</span> : null}
                   </div>
-                  {routeModeVenueId !== venue.id && isLiveNow ? <LiveProgressBar event={nextEvent} /> : null}
+                  {routeModeVenueId !== venue.id && isLiveNow ? <LiveProgressBar event={nextEvent} nowMs={nowMs} /> : null}
                   {routeModeVenueId !== venue.id ? (
                     <div className="venue-flow-body">
                       <div className="venue-flow-head">
