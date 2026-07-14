@@ -5176,20 +5176,6 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
     0 0 14px rgba(107, 63, 160, 0.13);
 }
 
-.history-logo-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.history-brand-logo {
-  width: min(10.2vw, 42px);
-  height: auto;
-  display: block;
-  flex-shrink: 0;
-}
-
 .screen-decision {
   --screen-gap: 12px;
   --screen-radius: 16px;

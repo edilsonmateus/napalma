@@ -62,16 +62,11 @@ export default function HistoryPage() {
 
   return (
     <section className="screen screen-history history-clean">
-      <header className="page-header history-logo-header">
+      <header className="page-header">
         <div>
           <h2>Meu Histórico</h2>
           <p>Seus rolês, metas e evolução.</p>
         </div>
-        <img
-          src="/assets/brand/logoBase77Gira.svg"
-          alt="77Gira"
-          className="history-brand-logo"
-        />
       </header>
 
       <h3 className="section-title">Sambas que você já foi</h3>
