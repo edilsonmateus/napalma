@@ -12066,6 +12066,164 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
   --user-button-text: rgba(255, 255, 255, 0.92);
   --user-button-muted: rgba(255, 255, 255, 0.52);
   --user-button-focus: rgba(255, 191, 54, 0.72);
+  --user-container-border: rgba(255, 255, 255, 0.055);
+  --user-container-divider: rgba(255, 255, 255, 0.045);
+  --user-container-border-hover: rgba(255, 255, 255, 0.1);
+}
+
+/* Public container hierarchy. Neutral borders are intentionally half as
+ * bright as before; semantic, selected, focus and legal boundaries keep
+ * their stronger contrast. */
+:is(
+  .screen-explore,
+  .screen-decision,
+  .screen-radar,
+  .screen-history,
+  .artist-epk-screen,
+  .artist-directory-screen,
+  .settings-screen,
+  .auth-screen
+) {
+  --screen-border: var(--user-container-border);
+}
+
+:is(
+  .screen-explore,
+  .screen-decision,
+  .screen-radar,
+  .screen-history,
+  .artist-epk-screen,
+  .artist-directory-screen,
+  .settings-screen,
+  .auth-screen
+) :is(.clean-card, .empty, .modal-card, .share-more) {
+  border-color: var(--user-container-border);
+}
+
+:is(.auth-screen, .settings-screen).clean-card,
+:is(.auth-screen, .settings-screen) > .clean-card {
+  border-color: var(--user-container-border);
+}
+
+.screen-explore .venue-flow-card,
+.screen-radar .venue-event-item,
+.screen-decision .venue-card {
+  background:
+    linear-gradient(#121212, #121212) padding-box,
+    linear-gradient(
+      120deg,
+      rgba(107, 63, 160, 0.5),
+      rgba(200, 16, 46, 0.5),
+      rgba(255, 184, 28, 0.5),
+      rgba(107, 63, 160, 0.5)
+    ) border-box;
+}
+
+.screen-explore .explore-sheet {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.screen-explore :is(.explore-sheet-section, .explore-sheet-actions) {
+  border-top-color: var(--user-container-divider);
+}
+
+.screen-explore .event-card {
+  border-color: var(--user-container-border);
+}
+
+.screen-explore .event-card:hover {
+  border-color: var(--user-container-border-hover);
+}
+
+.artist-epk-screen .artist-epk-hero {
+  border-color: rgba(185, 157, 216, 0.1);
+}
+
+.artist-epk-screen .artist-epk-tags span {
+  border-color: rgba(201, 184, 221, 0.09);
+}
+
+.artist-epk-screen .artist-epk-history {
+  border-color: var(--user-container-border);
+}
+
+.artist-epk-screen .artist-claim-cta {
+  border-color: rgba(107, 63, 160, 0.5);
+}
+
+.artist-epk-screen .artist-epk-links a {
+  border-bottom-color: var(--user-container-divider);
+}
+
+.artist-directory-screen .artist-directory-list {
+  border-color: var(--user-container-border);
+}
+
+.artist-directory-screen :is(.artist-directory-row, .artist-directory-invitations article) {
+  border-top-color: var(--user-container-divider);
+}
+
+.screen-decision .decision-card,
+.screen-radar :is(.decision-card, .radar-item) {
+  border-color: var(--user-container-border);
+}
+
+.screen-radar .radar-item:hover {
+  border-color: var(--screen-accent);
+  border-left-color: var(--screen-accent);
+}
+
+:is(.screen-decision, .screen-radar) .share-more {
+  border-color: var(--user-container-border);
+}
+
+.pela-hora-screen .pela-hora-transit-note {
+  border-color: var(--user-container-divider);
+}
+
+.account-settings-screen > :is(.account-settings-section, .settings-location-card, .account-footer),
+.account-personal-section .account-location-editor {
+  border-top-color: rgba(255, 255, 255, 0.07);
+}
+
+.privacy-center-screen > .clean-card {
+  border-top-color: var(--user-container-border);
+}
+
+.privacy-center-screen :is(.privacy-consent-list, .privacy-request-history) {
+  border-color: var(--user-container-border);
+}
+
+.privacy-center-screen :is(.privacy-consent-list, .privacy-request-history) article {
+  border-bottom-color: var(--user-container-divider);
+}
+
+.privacy-center-screen .privacy-data-categories article {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.privacy-center-screen > .privacy-center-summary {
+  border-color: rgba(116, 163, 255, 0.2);
+}
+
+.privacy-center-screen > .privacy-danger-zone {
+  border-top-color: rgba(239, 119, 119, 0.35);
+}
+
+.screen-history .clean-card.unlocked {
+  border-color: rgba(114, 98, 143, 0.28);
+}
+
+:is(.screen-explore, .screen-decision, .screen-radar, .screen-history) .empty-highlight {
+  border-color: rgba(76, 54, 95, 0.5);
+}
+
+.screen-history .achievements-completed {
+  border-color: var(--user-container-border);
+}
+
+.screen-decision .share-panel {
+  border-top-color: var(--user-container-divider);
 }
 
 :is(
@@ -12586,6 +12744,25 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
     width: 100%;
     min-height: 40px !important;
   }
+}
+
+/* Pela Hora is declared late in this stylesheet; keep its neutral structure
+ * aligned with the public container hierarchy without weakening selection. */
+.pela-hora-screen .pela-hora-event-list .venue-card,
+.pela-hora-screen :is(.schedule-card, .itinerary-saved-card) {
+  border-color: var(--user-container-border);
+}
+
+.pela-hora-screen .pela-hora-event-list .venue-card:hover {
+  border-color: var(--user-container-border-hover);
+}
+
+.pela-hora-screen .pela-hora-event-list .venue-card.active-card {
+  border-color: rgba(226, 153, 255, .46);
+}
+
+.pela-hora-screen .itinerary-saved-card > .pela-hora-timeline {
+  border-top-color: var(--user-container-divider);
 }
 
 
