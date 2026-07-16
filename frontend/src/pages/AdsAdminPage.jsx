@@ -55,17 +55,20 @@ const CREDITS_PURCHASE_ENABLED =
 const SLOT_OPTIONS = [
   "explore_feed_large",
   "venue_detail_inline",
-  "radar_header"
+  "radar_header",
+  "venue_menu_sponsor"
 ];
 const SLOT_LABELS = {
   explore_feed_large: "Explorar (Card Grande)",
   venue_detail_inline: "Detalhe da Casa",
-  radar_header: "Topo do Radar"
+  radar_header: "Topo do Radar",
+  venue_menu_sponsor: "Cardapio da Casa"
 };
 const SLOT_RATIOS = {
   explore_feed_large: 580 / 350,
   venue_detail_inline: 580 / 240,
-  radar_header: 580 / 258
+  radar_header: 580 / 258,
+  venue_menu_sponsor: 3 / 4
 };
 
 const INITIAL_CAMPAIGN = {
@@ -104,6 +107,7 @@ const INITIAL_ADVERTISER_ACCOUNT = {
   legalName: "",
   contactEmail: "",
   contactPhone: "",
+  commercialCategory: "",
   notes: ""
 };
 
@@ -429,6 +433,7 @@ export default function AdsAdminPage() {
       legalName: item.legalName || "",
       contactEmail: item.contactEmail || "",
       contactPhone: item.contactPhone || "",
+      commercialCategory: item.commercialCategory || "",
       notes: item.notes || ""
     });
     setShowAdvertiserForm(true);
@@ -1130,6 +1135,12 @@ export default function AdsAdminPage() {
               placeholder="Telefone (opcional)"
               value={advertiserForm.contactPhone}
               onChange={(event) => setAdvertiserForm((current) => ({ ...current, contactPhone: event.target.value }))}
+            />
+            <input
+              maxLength={80}
+              placeholder="Categoria comercial (ex.: cerveja)"
+              value={advertiserForm.commercialCategory}
+              onChange={(event) => setAdvertiserForm((current) => ({ ...current, commercialCategory: event.target.value }))}
             />
             <textarea
               maxLength={2000}

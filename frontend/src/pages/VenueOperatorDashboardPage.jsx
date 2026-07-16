@@ -108,7 +108,7 @@ export default function VenueOperatorDashboardPage() {
           {adsSummary.slots.map((slot) => (
             <article key={slot.slot} className="venue-card">
               <div>
-                <h3>{slot.slot === "venue_detail_inline" ? "Detalhe da Casa" : slot.slot === "radar_header" ? "Topo do Radar" : "Explorar (Card Grande)"}</h3>
+                <h3>{slot.slot === "venue_detail_inline" ? "Detalhe da Casa" : slot.slot === "radar_header" ? "Topo do Radar" : slot.slot === "venue_menu_sponsor" ? "Patrocínio do Cardápio" : "Explorar (Card Grande)"}</h3>
                 <p className="meta-line">{slot.impressions} impressoes • {slot.clicks} cliques</p>
               </div>
               <small className="meta-line">CTR {slot.ctr}%</small>

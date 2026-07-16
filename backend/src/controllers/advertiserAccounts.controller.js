@@ -20,6 +20,7 @@ const createAccountSchema = z.object({
   documentNumber: nullableText(40),
   contactEmail: z.string().trim().email().max(200).nullable().optional(),
   contactPhone: nullableText(40),
+  commercialCategory: nullableText(80),
   notes: nullableText(2000)
 });
 const updateAccountSchema = createAccountSchema.partial();
@@ -58,6 +59,7 @@ function mapAccount(item, { includeSensitive = false } = {}) {
     legalName: item.legalName,
     contactEmail: item.contactEmail,
     contactPhone: item.contactPhone,
+    commercialCategory: item.commercialCategory,
     notes: item.notes,
     approvedAt: item.approvedAt,
     createdAt: item.createdAt,

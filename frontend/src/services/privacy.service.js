@@ -6,7 +6,7 @@ export async function getMyPrivacyOverview() {
 }
 
 export async function setPrivacyConsent(purpose, isGranted) {
-  const { data } = await api.post(`/me/privacy/consents/${purpose}`, { isGranted, policyVersion: "1.1" });
+  const { data } = await api.post(`/me/privacy/consents/${purpose}`, { isGranted, policyVersion: "1.2" });
   return data.item;
 }
 

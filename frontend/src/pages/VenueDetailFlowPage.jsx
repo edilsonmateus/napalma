@@ -141,6 +141,7 @@ export default function VenueDetailFlowPage() {
             ) : null}
           </div>
           <div className="share-actions">
+            {venue.hasPublishedMenu ? <Link className="chip venue-menu-link" to={`/venues/${venue.id}/menu`}>Ver cardápio</Link> : null}
             <button
               type="button"
               className="chip"

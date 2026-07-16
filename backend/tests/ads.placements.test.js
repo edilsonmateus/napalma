@@ -13,7 +13,7 @@ describe("Ads canonical placement catalog", () => {
   it("maps every current AdSlot exactly once", () => {
     const legacySlots = AD_PLACEMENTS.map((placement) => placement.legacySlot);
     expect(legacySlots).toEqual(Object.values(AdSlot));
-    expect(new Set(legacySlots).size).toBe(3);
+    expect(new Set(legacySlots).size).toBe(4);
   });
 
   it("centralizes dimensions and keeps purchasing disabled", () => {

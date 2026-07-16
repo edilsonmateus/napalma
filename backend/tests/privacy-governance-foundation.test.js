@@ -68,7 +68,7 @@ describe("privacy governance foundation", () => {
     const vendors = read("docs/governanca/09_REGISTRO_DE_OPERADORES_E_FORNECEDORES.md");
     expect(controller).toContain("PRIVACY_REQUEST_SLA_DAYS");
     expect(controller).toContain("dueAt: privacyRequestDueAt()");
-    expect(schema).toContain("dueAt          DateTime?");
+    expect(schema).toMatch(/dueAt\s+DateTime\?/);
     expect(vendors).toContain("Cadastro minimo por fornecedor");
   });
 
@@ -189,12 +189,12 @@ describe("privacy governance foundation", () => {
     expect(termsPage).toContain('<Link to="/privacy">');
   });
 
-  it("keeps policy version 1.1 aligned between legal copy and consent records", () => {
+  it("keeps policy version 1.2 aligned between legal copy and consent records", () => {
     const privacyPage = read("frontend/src/pages/PrivacyPage.jsx");
     const privacyService = read("frontend/src/services/privacy.service.js");
     const privacyController = read("backend/src/controllers/privacy.controller.js");
-    expect(privacyPage).toContain("Versão 1.1");
-    expect(privacyService).toContain('policyVersion: "1.1"');
-    expect(privacyController).toContain('const POLICY_VERSION = "1.1"');
+    expect(privacyPage).toContain("Versão 1.2");
+    expect(privacyService).toContain('policyVersion: "1.2"');
+    expect(privacyController).toContain('const POLICY_VERSION = "1.2"');
   });
 });

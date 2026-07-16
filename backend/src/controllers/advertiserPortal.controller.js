@@ -37,6 +37,7 @@ const accessRequestPayload = z.object({
   legalName: z.string().trim().max(200).optional().nullable(),
   contactEmail: z.string().trim().email().max(200).optional().nullable(),
   contactPhone: z.string().trim().max(40).optional().nullable(),
+  commercialCategory: z.string().trim().max(80).optional().nullable(),
   objective: z.enum(["brand_campaign", "boost_event", "boost_venue", "agency", "other"]).default("brand_campaign"),
   message: z.string().trim().min(10).max(1200)
 });
@@ -134,6 +135,7 @@ export async function requestMyAdvertiserAccess(req, res, next) {
           legalName: payload.legalName || null,
           contactEmail: payload.contactEmail || req.user.email || null,
           contactPhone: payload.contactPhone || null,
+          commercialCategory: payload.commercialCategory || null,
           notes,
           createdByUserId: req.user.id
         }

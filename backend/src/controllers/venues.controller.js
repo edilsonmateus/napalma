@@ -200,7 +200,8 @@ function mapVenuePayload(venue) {
     state: venue.state,
     imageUrl: venue.imageUrl,
     openDays: venue.openDays ?? [],
-    eventsCount: venue._count?.events ?? 0
+    eventsCount: venue._count?.events ?? 0,
+    hasPublishedMenu: venue.menu?.status === "published"
   };
 }
 
@@ -218,7 +219,8 @@ export async function getVenueById(req, res, next) {
         },
         _count: {
           select: { events: true }
-        }
+        },
+        menu: { select: { status: true } }
       }
     });
 
@@ -285,6 +287,7 @@ export async function listVenues(req, res, next) {
     const items = await prisma.venue.findMany({
       where: filters.length ? { AND: filters } : undefined,
       include: {
+        menu: { select: { status: true } },
         _count: {
           select: { events: true }
         }

@@ -9,7 +9,7 @@ function CreativeSurface({ slot, imageUrl, title, altText, description, cta, cam
   const displayTitle = title || campaignName || "Seu anúncio";
   const displayDescription = description || "Conteúdo patrocinado no 77Gira";
   const displayCta = cta || spec.cta;
-  const hasNativeCopy = slot !== "venue_detail_inline";
+  const hasNativeCopy = !["venue_detail_inline", "venue_menu_sponsor"].includes(slot);
 
   return (
     <article className={`ads-native-preview-creative ads-native-preview-creative-${slot}`}>
@@ -58,6 +58,18 @@ function RadarTouchpoint(props) {
   </>;
 }
 
+function MenuTouchpoint(props) {
+  return <>
+    <div className="ads-admin-preview-venue-hero" />
+    <strong className="ads-admin-preview-venue-name">Cardapio Essencial</strong>
+    <span className="ads-admin-preview-venue-disclosure">PUBLICIDADE</span>
+    <span className="ads-admin-preview-venue-text">Cardapio apresentado por:</span>
+    <CreativeSurface slot="venue_menu_sponsor" {...props} />
+    <p className="ads-admin-preview-section-title">Petiscos</p>
+    <div className="ads-admin-preview-radar-list"><i /><i /><i /></div>
+  </>;
+}
+
 export default function AdsMobilePreview({ slot, imageUrl, title, altText, description, cta, campaignName, className = "", showMeta = true, compact = false }) {
   const spec = getAdsSlotSpec(slot);
   const classes = ["ads-mobile-slot-preview", `ads-mobile-slot-preview-${slot}`, compact ? "ads-mobile-slot-preview-compact" : "", className].filter(Boolean).join(" ");
@@ -70,7 +82,8 @@ export default function AdsMobilePreview({ slot, imageUrl, title, altText, descr
         <div className="ads-mobile-content">
           {slot === "venue_detail_inline" ? <VenueTouchpoint {...props} /> : null}
           {slot === "radar_header" ? <RadarTouchpoint {...props} /> : null}
-          {slot !== "venue_detail_inline" && slot !== "radar_header" ? <ExploreTouchpoint {...props} /> : null}
+          {slot === "venue_menu_sponsor" ? <MenuTouchpoint {...props} /> : null}
+          {!["venue_detail_inline", "radar_header", "venue_menu_sponsor"].includes(slot) ? <ExploreTouchpoint {...props} /> : null}
         </div>
       </div>
       {showMeta ? <p>{spec.label}<small>Peça: {spec.imageDimensions} · touchpoint: {spec.cardDimensions}</small></p> : null}

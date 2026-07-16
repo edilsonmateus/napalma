@@ -33,6 +33,33 @@ enum AdSlot {
   explore_feed_large
   venue_detail_inline
   radar_header
+  venue_menu_sponsor
+}
+
+enum VenueMenuStatus {
+  draft
+  published
+  archived
+}
+
+enum VenueMenuItemStatus {
+  draft
+  published
+  unavailable
+  archived
+}
+
+enum VenueMenuPriceMode {
+  exact
+  from
+  hidden
+  consultation
+}
+
+enum VenueMenuInteractionType {
+  want_to_try
+  recommend
+  save
 }
 
 enum AdEventType {
@@ -241,19 +268,22 @@ model User {
   privacyRequests             PrivacyRequest[]         @relation("PrivacyRequestRequester")
   privacyRequestsHandled      PrivacyRequest[]         @relation("PrivacyRequestHandledBy")
   auditLogs                   AuditLog[]               @relation("AuditLogActor")
+  venueMenuInteractions       VenueMenuInteraction[]
+  menuReviews                 VenueMenu[]              @relation("VenueMenuReviewedBy")
+  menuAdInventoryAcceptances  VenueMenu[]              @relation("VenueMenuAdInventoryAcceptedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model PrivacyConsentRecord {
-  id            String                  @id @default(uuid())
+  id            String                @id @default(uuid())
   userId        String
   purpose       PrivacyConsentPurpose
   policyVersion String
   isGranted     Boolean
-  source        String                  @default("privacy_center")
-  createdAt     DateTime                @default(now())
+  source        String                @default("privacy_center")
+  createdAt     DateTime              @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -261,16 +291,16 @@ model PrivacyConsentRecord {
 }
 
 model PrivacyRequest {
-  id             String               @id @default(uuid())
-  userId         String
-  type           PrivacyRequestType
-  status         PrivacyRequestStatus @default(received)
-  details        String?
-  requestedAt    DateTime             @default(now())
-  dueAt          DateTime?
-  resolvedAt     DateTime?
+  id              String               @id @default(uuid())
+  userId          String
+  type            PrivacyRequestType
+  status          PrivacyRequestStatus @default(received)
+  details         String?
+  requestedAt     DateTime             @default(now())
+  dueAt           DateTime?
+  resolvedAt      DateTime?
   handledByUserId String?
-  resolutionNote String?
+  resolutionNote  String?
 
   user      User  @relation("PrivacyRequestRequester", fields: [userId], references: [id], onDelete: Cascade)
   handledBy User? @relation("PrivacyRequestHandledBy", fields: [handledByUserId], references: [id], onDelete: SetNull)
@@ -492,28 +522,29 @@ model AdCampaign {
 }
 
 model AdvertiserAccount {
-  id               String                  @id @default(uuid())
-  name             String
-  type             AdvertiserAccountType   @default(unclassified)
-  status           AdvertiserAccountStatus @default(draft)
-  source           String                  @default("manual")
-  legacyKey        String?                 @unique
-  legalName        String?
-  documentNumber   String?
-  contactEmail     String?
-  contactPhone     String?
-  notes            String?
-  createdByUserId  String?
-  approvedByUserId String?
-  approvedAt       DateTime?
+  id                 String                  @id @default(uuid())
+  name               String
+  type               AdvertiserAccountType   @default(unclassified)
+  status             AdvertiserAccountStatus @default(draft)
+  source             String                  @default("manual")
+  legacyKey          String?                 @unique
+  legalName          String?
+  documentNumber     String?
+  contactEmail       String?
+  contactPhone       String?
+  notes              String?
+  commercialCategory String?
+  createdByUserId    String?
+  approvedByUserId   String?
+  approvedAt         DateTime?
 
-  createdBy     User?                  @relation("AdvertiserAccountCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  approvedBy    User?                  @relation("AdvertiserAccountApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
-  memberships   AdvertiserMembership[]
-  campaigns     AdCampaign[]
-  wallet        AdvertiserWallet?
-  paymentOrders AdPaymentOrder[]
-  creditEntries AdCreditLedgerEntry[]
+  createdBy         User?                  @relation("AdvertiserAccountCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  approvedBy        User?                  @relation("AdvertiserAccountApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  memberships       AdvertiserMembership[]
+  campaigns         AdCampaign[]
+  wallet            AdvertiserWallet?
+  paymentOrders     AdPaymentOrder[]
+  creditEntries     AdCreditLedgerEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -681,23 +712,23 @@ model AdEventLog {
   deliveryId String?
   createdAt  DateTime    @default(now())
 
-  campaign AdCampaign @relation(fields: [campaignId], references: [id])
-  creative AdCreative @relation(fields: [creativeId], references: [id])
+  campaign AdCampaign  @relation(fields: [campaignId], references: [id])
+  creative AdCreative  @relation(fields: [creativeId], references: [id])
   delivery AdDelivery? @relation(fields: [deliveryId], references: [id], onDelete: SetNull)
-  venue    Venue?     @relation(fields: [venueId], references: [id])
-  user     User?      @relation(fields: [userId], references: [id])
+  venue    Venue?      @relation(fields: [venueId], references: [id])
+  user     User?       @relation(fields: [userId], references: [id])
 
+  @@unique([deliveryId, type])
   @@index([campaignId, type, createdAt])
   @@index([creativeId, type, createdAt])
   @@index([userId, type, createdAt])
   @@index([venueId, type, createdAt])
   @@index([deliveryId, type])
-  @@unique([deliveryId, type])
 }
 
 model AdDelivery {
-  id                   String   @id @default(uuid())
-  token                String   @unique
+  id                   String    @id @default(uuid())
+  token                String    @unique
   slot                 AdSlot
   campaignId           String
   creativeId           String
@@ -709,10 +740,10 @@ model AdDelivery {
   renderedAt           DateTime?
   impressionRecordedAt DateTime?
   clickRecordedAt      DateTime?
-  createdAt            DateTime @default(now())
+  createdAt            DateTime  @default(now())
 
-  campaign AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  creative AdCreative @relation(fields: [creativeId], references: [id], onDelete: Cascade)
+  campaign AdCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creative AdCreative   @relation(fields: [creativeId], references: [id], onDelete: Cascade)
   events   AdEventLog[]
 
   @@index([slot, createdAt])
@@ -779,9 +810,70 @@ model Venue {
   producerAccesses ProducerVenueAccess[]
   claimRequests    ClaimRequest[]        @relation("ClaimVenue")
   adEvents         AdEventLog[]
+  menu             VenueMenu?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model VenueMenu {
+  id               String          @id @default(uuid())
+  venueId          String          @unique
+  status           VenueMenuStatus @default(draft)
+  pricesVisible    Boolean         @default(true)
+  reviewedAt       DateTime?
+  reviewedByUserId String?
+  adInventoryAcceptedAt       DateTime?
+  adInventoryAcceptedByUserId String?
+  adInventoryPolicyVersion    String?
+  publishedAt      DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  venue      Venue           @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  reviewedBy User?           @relation("VenueMenuReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  adInventoryAcceptedBy User? @relation("VenueMenuAdInventoryAcceptedBy", fields: [adInventoryAcceptedByUserId], references: [id], onDelete: SetNull)
+  items      VenueMenuItem[]
+
+  @@index([status, updatedAt])
+}
+
+model VenueMenuItem {
+  id           String              @id @default(uuid())
+  menuId       String
+  category     String
+  name         String
+  description  String?
+  priceCents   Int?
+  priceMode    VenueMenuPriceMode  @default(exact)
+  servingLabel String?
+  status       VenueMenuItemStatus @default(draft)
+  tags         String[]
+  isHighlight  Boolean             @default(false)
+  sortOrder    Int                 @default(0)
+  archivedAt   DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  menu         VenueMenu              @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  interactions VenueMenuInteraction[]
+
+  @@index([menuId, status, category, sortOrder])
+}
+
+model VenueMenuInteraction {
+  id        String                   @id @default(uuid())
+  userId    String
+  itemId    String
+  type      VenueMenuInteractionType
+  createdAt DateTime                 @default(now())
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item VenueMenuItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId, type])
+  @@index([itemId, type])
+  @@index([userId, createdAt])
 }
 
 model ProducerVenueAccess {

@@ -16,7 +16,7 @@ export default function TermsPage() {
 
       <article className="clean-card legal-card"><h3>5. Contratações de artistas</h3><p>O formulário de contratação aproxima interessados e equipes autorizadas. Salvo quando informado expressamente, o 77Gira não é parte da negociação, não recebe pagamento, não representa o artista e não garante resposta, disponibilidade, preço, contratação ou execução do evento. As partes são responsáveis por verificar identidade, condições comerciais, contratos, tributos, licenças e segurança.</p></article>
 
-      <article className="clean-card legal-card"><h3>6. Publicidade</h3><p>Campanhas e criativos devem identificar corretamente o anunciante, observar a legislação, respeitar direitos de terceiros e não induzir o público a erro. Materiais podem passar por revisão e ser rejeitados, pausados ou removidos. Aprovação interna não transfere ao 77Gira a responsabilidade pelo conteúdo, oferta, produto ou destino anunciado.</p></article>
+      <article className="clean-card legal-card"><h3>6. Publicidade</h3><p>Campanhas e criativos devem identificar corretamente o anunciante, observar a legislação, respeitar direitos de terceiros e não induzir o público a erro. Materiais podem passar por revisão e ser rejeitados, pausados ou removidos. Aprovação interna não transfere ao 77Gira a responsabilidade pelo conteúdo, oferta, produto ou destino anunciado.</p><p>O Cardápio Essencial gratuito pode exibir publicidade identificada, em inventário administrado exclusivamente pelo 77Gira. A casa não seleciona, aprova, rejeita ou bloqueia anunciantes em razão de preferências ou contratos próprios; por isso, inclusive marcas concorrentes podem ser exibidas. Cabe à casa verificar previamente se o uso do recurso é compatível com obrigações externas assumidas por ela.</p><p>Essas exibições não geram cashback, Patacos, remuneração ou participação em receita para a casa e não criam necessariamente patrocínio, endosso ou relação comercial direta entre a marca anunciante e o estabelecimento.</p></article>
 
       <article className="clean-card legal-card"><h3>7. Conteúdo enviado e propriedade intelectual</h3><p>Você mantém os direitos sobre o conteúdo que envia e declara possuir autorizações para utilizá-lo. Ao publicar, concede ao 77Gira licença não exclusiva, gratuita e limitada ao funcionamento, divulgação e melhoria do serviço, incluindo hospedar, adaptar tecnicamente, exibir e distribuir esse conteúdo dentro dos canais do produto.</p><p>Marcas, interfaces, software, textos institucionais e elementos próprios do 77Gira são protegidos e não podem ser copiados ou explorados sem autorização. Denúncias de violação podem ser enviadas ao suporte.</p></article>
 
@@ -32,7 +32,7 @@ export default function TermsPage() {
 
       <article className="clean-card legal-card"><h3>12. Alterações e legislação</h3><p>Podemos atualizar estes Termos para acompanhar a evolução do produto ou da legislação. Mudanças relevantes serão comunicadas por meios adequados. Aplicam-se as leis brasileiras, inclusive as normas de proteção de dados e do consumidor quando cabíveis, respeitado o foro assegurado pela legislação aplicável.</p></article>
 
-      <p className="meta-line legal-updated">Última atualização: 06/07/2026</p>
+      <p className="meta-line legal-updated">Última atualização: 15/07/2026</p>
       <BackLink to="/settings">Voltar para Configurações</BackLink>
     </section>
   );

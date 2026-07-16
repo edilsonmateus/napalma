@@ -141,7 +141,7 @@ export default function LoginPage() {
   }
 
   return (
-    <section className="auth-screen clean-card">
+    <section className="auth-screen">
       <header className="page-header">
         <h2>Entrar</h2>
         <p>Use seu email e senha para acessar sua conta.</p>

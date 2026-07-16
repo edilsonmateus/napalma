@@ -6,7 +6,7 @@ import { uploadCreativeToR2 } from "../services/r2Storage.service.js";
 
 const uploadSchema = z.object({
   campaignId: z.string().uuid(),
-  slot: z.enum(["explore_feed_large", "venue_detail_inline", "radar_header"])
+  slot: z.enum(["explore_feed_large", "venue_detail_inline", "radar_header", "venue_menu_sponsor"])
 });
 const FORMAT_TO_MIME = { jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
 const FORMAT_TO_EXTENSION = { jpeg: "jpg", png: "png", webp: "webp" };

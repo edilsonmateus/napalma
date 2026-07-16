@@ -9,8 +9,8 @@ describe("final product legal and support copy", () => {
   it("updates privacy coverage for current data flows", () => {
     const privacy = page("PrivacyPage");
     for (const topic of ["Contrata", "campanhas", "armazenamento local", "Seus direitos", "Patacos", "Cloudflare R2"]) expect(privacy).toContain(topic);
-    expect(privacy).toContain("Versão 1.1");
-    expect(privacy).toContain("11/07/2026");
+    expect(privacy).toContain("Versão 1.2");
+    expect(privacy).toContain("15/07/2026");
   });
 
   it("covers professional profiles, bookings, ads and user conduct in terms", () => {

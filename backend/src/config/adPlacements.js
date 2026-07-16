@@ -77,5 +77,29 @@ export const AD_PLACEMENTS = Object.freeze([
     supportsFrequencyCap: true,
     inventory: { dailyImpressionCap: 900, maxAdsPerPage: 1 },
     commercialRules: { purchaseEnabled: false, pricingConfigured: false, billingMode: "valid_impression" }
+  },
+  {
+    key: "venue_menu_sponsor",
+    legacySlot: AdSlot.venue_menu_sponsor,
+    name: "Cardapio da Casa - Publicidade",
+    description: "Criativo publicitario vertical apresentado antes dos itens do Cardapio Essencial.",
+    channel: "app",
+    page: "venue_menu",
+    surface: "sponsor_header",
+    format: "display_image",
+    recommendedWidth: 900,
+    recommendedHeight: 1200,
+    aspectRatio: "3:4",
+    allowedMimeTypes: IMAGE_MIME_TYPES,
+    maxFileSizeBytes: FIVE_MB,
+    isMobileEnabled: true,
+    isDesktopEnabled: true,
+    isActive: true,
+    isCommerciallyAvailable: false,
+    requiresApproval: true,
+    supportsTargeting: true,
+    supportsFrequencyCap: true,
+    inventory: { dailyImpressionCap: 500, maxAdsPerPage: 1 },
+    commercialRules: { purchaseEnabled: false, pricingConfigured: false, billingMode: "valid_impression", venueRestrictionsRequired: true }
   }
 ]);

@@ -79,6 +79,14 @@ export default function PrivacyPage() {
       </article>
 
       <article className="clean-card legal-card">
+        <h3>7.1. Cardápios, interações e patrocínios</h3>
+        <p>Casas podem publicar um Cardápio Essencial com itens, descrições, preços, disponibilidade, porções e características. As informações são fornecidas e revisadas pela equipe autorizada da casa; valores e disponibilidade podem mudar e devem ser confirmados no local.</p>
+        <p>Usuários autenticados podem indicar que desejam provar, recomendam ou querem salvar um item. Essas escolhas ficam vinculadas à conta para sincronização e prevenção de abuso. A casa visualiza apenas sinais agregados quando houver volume mínimo suficiente; não recebe a identidade individual de quem interagiu.</p>
+        <p>Cardápios podem conter publicidade identificada pelas expressões “PUBLICIDADE” e “Cardápio apresentado por”. O inventário é administrado exclusivamente pelo 77Gira; a elegibilidade e a entrega podem considerar política comercial, período, orçamento, ritmo, frequência, localização, contexto editorial e disponibilidade, sem permitir que a casa selecione, aprove, rejeite ou bloqueie anunciantes.</p>
+        <p>A publicidade não altera preços, não representa recomendação individual do usuário nem cria necessariamente parceria entre a marca e a casa. As exibições não geram cashback, Patacos, remuneração ou participação automática em receita para a casa.</p>
+      </article>
+
+      <article className="clean-card legal-card">
         <h3>8. Patacos e processamento de pagamentos</h3>
         <p>Patacos são unidades de mídia usadas para organizar orçamento e veiculação de campanhas. Durante a fase de desenvolvimento, o gateway disponível é uma simulação controlada: ele registra ordens, estados de teste e movimentações de carteira, mas não realiza cobrança real nem solicita dados bancários ou de cartão.</p>
         <p>Antes da ativação de um meio de pagamento real, esta política e os fluxos de transparência serão atualizados para informar o provedor, os dados tratados, as responsabilidades, as finalidades e as regras aplicáveis à transação. Dados financeiros processados diretamente por um futuro provedor estarão também sujeitos aos termos e à política desse prestador.</p>
@@ -133,7 +141,7 @@ export default function PrivacyPage() {
         <p>A versão, a data e as decisões de consentimento registradas permitem distinguir as regras vigentes em cada momento. A versão atual permanecerá disponível nesta página.</p>
       </article>
 
-      <p className="meta-line legal-updated">Versão 1.1 · Última atualização: 11/07/2026</p>
+      <p className="meta-line legal-updated">Versão 1.2 · Última atualização: 15/07/2026</p>
       <BackLink to="/settings">Voltar para Configurações</BackLink>
     </section>
   );

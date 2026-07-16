@@ -120,6 +120,14 @@ function mapCampaign(item) {
   };
 }
 
+function venueCampaignPrecedence(campaign, venueId) {
+  const targeting = campaign.targeting || {};
+  const venueIds = [...(Array.isArray(targeting.venueIds) ? targeting.venueIds : []), targeting.venueId].filter(Boolean);
+  if (venueId && venueIds.includes(venueId)) return 3;
+  if (targeting.region || targeting.city || targeting.regions?.length || targeting.cities?.length) return 2;
+  return 1;
+}
+
 function normalizeTarget(value) {
   return String(value || "").trim().toLocaleLowerCase("pt-BR");
 }
@@ -317,7 +325,7 @@ export async function getAdDelivery(req, res, next) {
         ]
       },
       include: {
-        advertiserAccount: { select: { status: true } },
+        advertiserAccount: { select: { id: true, name: true, status: true, commercialCategory: true } },
         creatives: {
           where: {
             isEnabled: true,
@@ -333,6 +341,10 @@ export async function getAdDelivery(req, res, next) {
       orderBy: [{ priority: "desc" }, { updatedAt: "desc" }]
     })
     ]);
+
+    if (slot === "venue_menu_sponsor" && (!context.venueId || !isFeatureEnabled("ADS_MENU_SPONSOR_ENABLED"))) {
+      return res.json({ item: null, blockedReason: "menu_sponsor_not_enabled" });
+    }
 
     if (usedInventory >= Number(placement.inventory?.dailyImpressionCap || 0)) {
       return res.json({ item: null, blockedReason: "inventory_exhausted", message: "Este posicionamento atingiu a capacidade planejada hoje." });
@@ -388,7 +400,7 @@ export async function getAdDelivery(req, res, next) {
         const campaign = item.campaign;
         const remainingRatio = Math.max(0, campaign.budgetCredits - campaign.spentCredits) / Math.max(1, campaign.budgetCredits);
         const deliveryPressure = (deliveredToday.get(campaign.id) || 0) / Math.max(1, campaign.budgetCredits);
-        return (campaign.priority * 10) + (remainingRatio * 5) - (deliveryPressure * 8) + Math.random();
+        return (venueCampaignPrecedence(campaign, context.venueId) * 100) + (campaign.priority * 10) + (remainingRatio * 5) - (deliveryPressure * 8) + Math.random();
       };
       return score(b) - score(a);
     })[0];
@@ -719,7 +731,7 @@ export async function getAdsReport(req, res, next) {
     const slotClk = new Map(clicksBySlot.map((item) => [item.slot, item._count._all]));
     const slotRequests = new Map(deliveryRequestsBySlot.map((item) => [item.slot, item._count._all]));
     const slotRendered = new Map(renderedBySlot.map((item) => [item.slot, item._count._all]));
-    const slots = ["explore_feed_large", "venue_detail_inline", "radar_header"].map((slot) => {
+    const slots = Object.values(AdSlot).map((slot) => {
       const impressions = slotImp.get(slot) || 0;
       const clicks = slotClk.get(slot) || 0;
       const placement = placementFor(slot);
@@ -880,7 +892,7 @@ export async function getVenueAdsSummary(req, res, next) {
 
     const slotImp = new Map(impressionsBySlot.map((item) => [item.slot, item._count._all]));
     const slotClk = new Map(clicksBySlot.map((item) => [item.slot, item._count._all]));
-    const slots = ["explore_feed_large", "venue_detail_inline", "radar_header"].map((slot) => {
+    const slots = Object.values(AdSlot).map((slot) => {
       const impressions = slotImp.get(slot) || 0;
       const clicks = slotClk.get(slot) || 0;
       return {

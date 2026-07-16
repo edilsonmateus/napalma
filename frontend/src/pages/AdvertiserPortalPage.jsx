@@ -27,7 +27,7 @@ const REQUEST_DRAFT_KEY = "77gira.ads.advertiserRequestDraft";
 
 const ACCOUNT_TYPES = [["brand", "Marca"], ["venue", "Casa"], ["producer", "Produtor"], ["artist", "Artista"], ["agency", "Agência"], ["group", "Grupo"], ["unclassified", "Outro"]];
 const OBJECTIVES = [["brand_campaign", "Campanha de marca"], ["boost_event", "Impulsionar evento"], ["boost_venue", "Impulsionar casa"], ["agency", "Gerenciar campanhas de clientes"], ["other", "Outro objetivo"]];
-const INITIAL_REQUEST = { name: "", type: "brand", legalName: "", contactEmail: "", contactPhone: "", objective: "brand_campaign", message: "" };
+const INITIAL_REQUEST = { name: "", type: "brand", legalName: "", contactEmail: "", contactPhone: "", commercialCategory: "", objective: "brand_campaign", message: "" };
 const INITIAL_CAMPAIGN = { advertiser: "", name: "", startsAt: "", endsAt: "", objective: "brand_campaign", targetCity: "", targetRegion: "", dailyPacingCap: "" };
 const INITIAL_CREATIVE = { slot: "explore_feed_large", title: "", destinationUrl: "", altText: "", asset: null };
 
@@ -64,6 +64,17 @@ const SLOT_CATALOG = [
     maxMb: 5,
     description: "Destaque compacto no espaço de planejamento do público.",
     cta: "Abrir"
+  },
+  {
+    id: "venue_menu_sponsor",
+    name: "Cardapio apresentado por",
+    area: "Cardapio da casa",
+    touchpoint: "Patrocinio vertical",
+    ratio: "3 / 4",
+    dimensions: "Criativo 900 x 1200 px",
+    maxMb: 5,
+    description: "Apresenta a marca antes da selecao do Cardapio Essencial, em inventario administrado pelo 77Gira.",
+    cta: "Conhecer"
   }
 ];
 
@@ -417,6 +428,7 @@ export default function AdvertiserPortalPage() {
             {requests.length ? <p>Seu pedido para <b>{requests[0].name}</b> está em {STATUS_LABELS[requests[0].status] || requests[0].status}. Você continuará usando este mesmo login.</p> : <>
               <label>Nome público<input required value={requestForm.name} onChange={(event) => setRequestForm({ ...requestForm, name: event.target.value })} placeholder="Marca, casa ou projeto" /></label>
               <label>Tipo de anunciante<select value={requestForm.type} onChange={(event) => setRequestForm({ ...requestForm, type: event.target.value })}>{ACCOUNT_TYPES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+              <label>Categoria comercial<input value={requestForm.commercialCategory} onChange={(event) => setRequestForm({ ...requestForm, commercialCategory: event.target.value })} placeholder="Ex.: cerveja, banco, mobilidade" /></label>
               <label>Objetivo<select value={requestForm.objective} onChange={(event) => setRequestForm({ ...requestForm, objective: event.target.value })}>{OBJECTIVES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
               <label>Resumo da intenção<textarea required minLength={10} rows="5" value={requestForm.message} onChange={(event) => setRequestForm({ ...requestForm, message: event.target.value })} placeholder="O que você pretende anunciar e qual resultado espera?" /></label>
               <button className="btn-primary" disabled={busy}>{busy ? "Enviando..." : "Enviar solicitação"}</button>

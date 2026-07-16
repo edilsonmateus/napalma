@@ -40,6 +40,20 @@ export const ADS_SLOT_SPECS = {
     format: "compact-reminder",
     imageFit: "cover",
     placementHint: "Peça compacta de lembrete, com leitura rápida e baixa fricção."
+  },
+  venue_menu_sponsor: {
+    surface: "Cardápio da casa",
+    label: "Cardápio apresentado por",
+    description: "Publicidade vertical antes dos itens do Cardápio Essencial.",
+    cta: "Conhecer",
+    ratio: "900:1200",
+    aspectRatio: "3 / 4",
+    cardAspectRatio: "3 / 4",
+    imageDimensions: "900 x 1200 px",
+    cardDimensions: "900 x 1200 px",
+    format: "menu-sponsor",
+    imageFit: "cover",
+    placementHint: "Criativo vertical em largura controlada para preservar o acesso rápido ao cardápio."
   }
 };
 

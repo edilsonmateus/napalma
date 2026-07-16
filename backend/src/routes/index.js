@@ -99,6 +99,19 @@ import { createMyAdvertiserCampaign, createMyAdvertiserCreative, deleteMyAdverti
 import { decideMyArtistInvitation, inviteArtistTeamMember, listArtistTeam, listMyArtistInvitations, revokeArtistTeamMember, updateArtistTeamMember } from "../controllers/artistTeam.controller.js";
 import { allocateMyWalletCredits, createMyPaymentOrder, getAdsBillingOperations, getMyAdvertiserWallet, getMyPaymentOrder, processAdminMockPaymentOrder, processMyMockPaymentOrder } from "../controllers/adPayments.controller.js";
 import { createMyDeletionRequest, createMyPrivacyRequest, exportMyPrivacyData, getMyPrivacyOverview, getPrivacyRetentionPreviewForAdmin, getSecurityReadinessForAdmin, listAuditLogs, listPrivacyRequests, setMyPrivacyConsent, updatePrivacyRequest } from "../controllers/privacy.controller.js";
+import {
+  addVenueMenuInteraction,
+  archiveVenueMenuItem,
+  createVenueMenuItem,
+  importVenueMenuItems,
+  getManagedVenueMenu,
+  getPublicVenueMenu,
+  removeVenueMenuInteraction,
+  reorderVenueMenuItems,
+  restoreVenueMenuItem,
+  updateVenueMenu,
+  updateVenueMenuItem
+} from "../controllers/venueMenus.controller.js";
 
 export const router = Router();
 
@@ -122,6 +135,7 @@ const canUploadAdCreativeToR2 = [
 const canManageAdReviews = [...canManageAds, requireFeatureFlag("ADS_REVIEW_WORKFLOW_ENABLED")];
 const canManageAcquisition = [requireAuth, requireRole(["admin"])];
 const canUploadImages = [requireAuth, requireRole(["admin", "producer", "venue_manager"])];
+const canManageVenueMenus = [requireAuth, requireRole(["admin", "producer", "venue_manager"]), requireFeatureFlag("VENUE_MENU_ENABLED")];
 const authLimiter = createRateLimiter({
   keyPrefix: "auth",
   windowMs: 60_000,
@@ -145,6 +159,12 @@ const adsTrackLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 60,
   message: "Muitas interacoes de anuncio no momento. Aguarde alguns segundos."
+});
+const menuInteractionLimiter = createRateLimiter({
+  keyPrefix: "menu-interaction",
+  windowMs: 60_000,
+  max: 30,
+  message: "Muitas interacoes no cardapio. Aguarde um instante."
 });
 const adsDeliveryLimiter = createRateLimiter({
   keyPrefix: "ads-delivery",
@@ -277,6 +297,17 @@ router.patch("/admin/regions/:id", ...canReviewClaims, updateRegion);
 router.delete("/admin/regions/:id", ...canReviewClaims, deleteRegion);
 router.get("/venues", listVenues);
 router.get("/venues/:id", getVenueById);
+router.get("/venues/:id/menu", requireFeatureFlag("VENUE_MENU_ENABLED"), getPublicVenueMenu);
+router.get("/venues/:id/menu/manage", ...canManageVenueMenus, getManagedVenueMenu);
+router.patch("/venues/:id/menu", ...canManageVenueMenus, updateVenueMenu);
+router.post("/venues/:id/menu/items", ...canManageVenueMenus, createVenueMenuItem);
+router.post("/venues/:id/menu/items/import", ...canManageVenueMenus, importVenueMenuItems);
+router.patch("/venues/:id/menu/items/reorder", ...canManageVenueMenus, reorderVenueMenuItems);
+router.patch("/venues/:id/menu/items/:itemId", ...canManageVenueMenus, updateVenueMenuItem);
+router.delete("/venues/:id/menu/items/:itemId", ...canManageVenueMenus, archiveVenueMenuItem);
+router.post("/venues/:id/menu/items/:itemId/restore", ...canManageVenueMenus, restoreVenueMenuItem);
+router.post("/venues/:id/menu/items/:itemId/interactions/:type", requireAuth, requireFeatureFlag("VENUE_MENU_INTERACTIONS_ENABLED"), menuInteractionLimiter, addVenueMenuInteraction);
+router.delete("/venues/:id/menu/items/:itemId/interactions/:type", requireAuth, requireFeatureFlag("VENUE_MENU_INTERACTIONS_ENABLED"), menuInteractionLimiter, removeVenueMenuInteraction);
 router.post("/venues", ...canManageCatalog, createVenue);
 router.patch("/venues/:id", ...canManageCatalog, updateVenue);
 router.delete("/venues/:id", ...canManageCatalog, deleteVenue);

@@ -40,6 +40,7 @@ import {
 import { getArtistById, getEventById, getVenueById, request77FirstKit } from "../services/events.service";
 import { useAuthStore } from "../store/authStore";
 import { isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
+import { useManagedVenueMenuQuery } from "../hooks/useVenueMenu";
 
 const initialVenueForm = {
   name: "",
@@ -599,6 +600,8 @@ export default function VenuesAdminPage() {
     if (!isHouseRole) return null;
     return houseVenues.find((venue) => venue.id === houseActiveVenueId) || houseVenues[0] || null;
   }, [isHouseRole, houseVenues, houseActiveVenueId]);
+  const { data: houseMenuData } = useManagedVenueMenuQuery(houseActiveVenue?.id, isHouseRole && Boolean(houseActiveVenue?.id));
+  const houseMenuActiveCount = (houseMenuData?.item?.items || []).filter((item) => item.status !== "archived").length;
   const filteredVenues = useMemo(() => {
     const q = venueSearch.trim().toLowerCase();
     if (!q) return venues;
@@ -1913,6 +1916,11 @@ export default function VenuesAdminPage() {
             <button className={`chip ${activeSection === "profile" ?"active" : ""}`} onClick={() => setSearchParams({ section: "profile" })}>
               Dados da Casa
             </button>
+            {houseActiveVenue ?(
+              <Link className="chip house-menu-nav-link" to={`/settings/venues/${houseActiveVenue.id}/menu`}>
+                Cardápio Essencial
+              </Link>
+            ) : null}
             <button className={`chip ${activeSection === "managers" ?"active" : ""}`} onClick={() => setSearchParams({ section: "managers" })}>
               Produtores
             </button>
@@ -1930,6 +1938,7 @@ export default function VenuesAdminPage() {
               {showOverview ?<article className="clean-card"><h4>Impressões (30d)</h4><p>{houseAdsSummary?.summary?.impressions ?? 0}</p></article> : null}
               {showOverview ?<article className="clean-card"><h4>Cliques (30d)</h4><p>{houseAdsSummary?.summary?.clicks ?? 0}</p></article> : null}
               {showOverview ?<article className="clean-card"><h4>CTR (30d)</h4><p>{houseAdsSummary?.summary?.ctr ?? 0}%</p></article> : null}
+              {showOverview && houseActiveVenue ?<article className="clean-card house-menu-entry"><h4>Itens no cardápio</h4><p>{houseMenuActiveCount}/30</p></article> : null}
               {showOverview ?<article className="clean-card"><h4>Radar da casa (30d)</h4><p>{audienceSummary?.scoped?.radarUsers ?? 0}</p></article> : null}
               {showOverview ?<article className="clean-card"><h4>Público presente (30d)</h4><p>{audienceSummary?.scoped?.attendeesUsers ?? 0}</p></article> : null}
               {showEvents && !isHouseProgramaçãoClean ?<article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
@@ -1937,6 +1946,14 @@ export default function VenuesAdminPage() {
               {showManagers ?<article className="clean-card"><h4>Produtores</h4><p>{totalManagers}</p></article> : null}
               {showHouseClaims ?<article className="clean-card"><h4>Solicitacoes</h4><p>{myClaims.filter((c) => c.status === "pending").length} pendentes</p></article> : null}
             </div> : null}
+            {showOverview && !houseActiveVenue ?<p className="empty">Sem filial aprovada. Abra "Solicitar Acesso" no menu lateral para liberar a operação.</p> : null}
+            {showOverview && houseActiveVenue ?<>
+              {houseAdsLoading ?<p className="empty">Carregando métricas de anúncios...</p> : null}
+              <aside className="clean-card ops-ads-entry-card">
+                <div><span className="eyebrow">77Gira Ads</span><strong>Impulsione a casa ou uma noite específica.</strong><p className="meta-line">Abra o workspace de anunciante com a casa já contextualizada. Campanhas e criativos passam por revisão antes de qualquer veiculação.</p></div>
+                <Link className="btn-primary" to={buildAdvertiserIntentUrl({ name: houseDisplayName, accountName: houseDisplayName, campaignName: houseDisplayName, type: "venue", objective: "boost_venue" })}>Promover casa</Link>
+              </aside>
+            </> : null}
             {showImpact ? (
               <ImpactSummaryPanel
                 venueId={houseActiveVenue?.id}
@@ -1950,41 +1967,6 @@ export default function VenuesAdminPage() {
       )}
 
       <div className={`admin-section-stack${isHouseRole ?" house-section-stack" : ""}${isHouseRole && (showOverview || showEvents) ?" no-divider" : ""}${isHouseProgramaçãoClean ?" house-events-focus" : ""}${showAcquisition || showImpact ?" acquisition-stack-hidden" : ""}`}>
-      {showOverview && isHouseRole ?(
-        <>
-          {!houseActiveVenue ?(
-            <p className="empty">Sem filial aprovada. Abra "Solicitar Acesso" no menu lateral para liberar a operação.</p>
-          ) : null}
-          {houseActiveVenue ?(
-            <>
-              {houseAdsLoading ?<p className="empty">Carregando métricas de anúncios...</p> : null}
-              <aside className="clean-card ops-ads-entry-card">
-                <div>
-                  <span className="eyebrow">77Gira Ads</span>
-                  <strong>Impulsione a casa ou uma noite específica.</strong>
-                  <p className="meta-line">
-                    Abra o workspace de anunciante com a casa já contextualizada. Campanhas e criativos passam por revisão
-                    antes de qualquer veiculação.
-                  </p>
-                </div>
-                <Link
-                  className="btn-primary"
-                  to={buildAdvertiserIntentUrl({
-                    name: houseDisplayName,
-                    accountName: houseDisplayName,
-                    campaignName: houseDisplayName,
-                    type: "venue",
-                    objective: "boost_venue"
-                  })}
-                >
-                  Promover casa
-                </Link>
-              </aside>
-            </>
-          ) : null}
-        </>
-      ) : null}
-
       {showVenues && isProducer ?(
         <article className="danger-zone-card">
           <h3>Zona de Perigo</h3>
@@ -2204,6 +2186,7 @@ export default function VenuesAdminPage() {
               ) : null}
             </div>
             <div className="venue-actions">
+              <Link className="chip" to={`/settings/venues/${venue.id}/menu`}>Cardápio</Link>
               <button className="chip" onClick={() => handleVenueEdit(venue)}>Editar</button>
               <button className="chip" onClick={() => handleVenueDelete(venue.id)} disabled={deleteVenueMutation.isPending}>
                 {isProducer ?"Remover da carteira" : "Excluir"}
