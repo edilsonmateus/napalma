@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   allocateMyWalletCredits,
@@ -11,6 +11,7 @@ import {
   getMyAdvertiserAccessRequests,
   getMyAdvertiserAccounts,
   getMyAdvertiserCampaigns,
+  getMyPaymentOrder,
   getMyAdvertiserWallet,
   requestMyAdvertiserAccess,
   submitMyAdvertiserReview,
@@ -19,6 +20,7 @@ import {
   uploadMyAdvertiserCreative
 } from "../services/advertiserPortal.service";
 import { useAuthStore } from "../store/authStore";
+import AdsPlacementMockup from "../components/ads/AdsPlacementMockup";
 
 const WRITERS = ["owner", "admin", "campaign_manager"];
 const BILLING_ROLES = ["owner", "admin", "billing_manager"];
@@ -30,6 +32,7 @@ const OBJECTIVES = [["brand_campaign", "Campanha de marca"], ["boost_event", "Im
 const INITIAL_REQUEST = { name: "", type: "brand", legalName: "", contactEmail: "", contactPhone: "", commercialCategory: "", objective: "brand_campaign", message: "" };
 const INITIAL_CAMPAIGN = { advertiser: "", name: "", startsAt: "", endsAt: "", objective: "brand_campaign", targetCity: "", targetRegion: "", dailyPacingCap: "" };
 const INITIAL_CREATIVE = { slot: "explore_feed_large", title: "", destinationUrl: "", altText: "", asset: null };
+const ACCEPTED_CREATIVE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const SLOT_CATALOG = [
   {
@@ -38,7 +41,10 @@ const SLOT_CATALOG = [
     area: "Explorar",
     touchpoint: "Banner rotativo no feed",
     ratio: "58 / 35",
-    dimensions: "Foto 580 × 350 px · card final 580 × 455 px",
+    aspectRatio: "58:35",
+    width: 580,
+    height: 350,
+    dimensions: "Arquivo do criativo: 580 × 350 px",
     maxMb: 5,
     description: "Destaque visual entre casas e eventos que o público está descobrindo.",
     cta: "Ver destaque"
@@ -49,7 +55,10 @@ const SLOT_CATALOG = [
     area: "Perfil da casa",
     touchpoint: "Banner contextual",
     ratio: "29 / 12",
-    dimensions: "Banner 580 × 240 px",
+    aspectRatio: "29:12",
+    width: 580,
+    height: 240,
+    dimensions: "Arquivo do criativo e card no app: 580 × 240 px",
     maxMb: 5,
     description: "Mensagem contextual dentro da página de uma casa de show.",
     cta: "Conhecer"
@@ -60,7 +69,10 @@ const SLOT_CATALOG = [
     area: "Radar",
     touchpoint: "Banner de planejamento",
     ratio: "290 / 129",
-    dimensions: "Foto 580 × 258 px · card final 580 × 350 px",
+    aspectRatio: "290:129",
+    width: 580,
+    height: 258,
+    dimensions: "Arquivo do criativo: 580 × 258 px",
     maxMb: 5,
     description: "Destaque compacto no espaço de planejamento do público.",
     cta: "Abrir"
@@ -71,7 +83,10 @@ const SLOT_CATALOG = [
     area: "Cardapio da casa",
     touchpoint: "Patrocinio vertical",
     ratio: "3 / 4",
-    dimensions: "Criativo 900 x 1200 px",
+    aspectRatio: "3:4",
+    width: 900,
+    height: 1200,
+    dimensions: "Arquivo do criativo e card no app: 900 × 1200 px",
     maxMb: 5,
     description: "Apresenta a marca antes da selecao do Cardapio Essencial, em inventario administrado pelo 77Gira.",
     cta: "Conhecer"
@@ -85,6 +100,46 @@ const STATUS_LABELS = {
 };
 
 function labelFor(items, value, fallback = "Outro") { return items.find(([key]) => key === value)?.[1] || fallback; }
+function slotById(slotId) { return SLOT_CATALOG.find((item) => item.id === slotId); }
+
+function inspectCreativeFile(file, slot) {
+  if (!file) return Promise.resolve({ tone: "error", title: "Selecione um arquivo", message: "Escolha uma imagem JPG, PNG ou WebP para continuar." });
+  if (!ACCEPTED_CREATIVE_TYPES.includes(file.type)) return Promise.resolve({ tone: "error", title: "Formato não aceito", message: "Use uma imagem JPG, PNG ou WebP." });
+  if (file.size > slot.maxMb * 1024 * 1024) return Promise.resolve({ tone: "error", title: "Arquivo acima do limite", message: `O arquivo tem mais de ${slot.maxMb} MB. Escolha uma imagem menor.` });
+
+  return new Promise((resolve) => {
+    const previewUrl = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(previewUrl);
+      const actualRatio = image.naturalWidth / image.naturalHeight;
+      const expectedRatio = slot.width / slot.height;
+      if (Math.abs(actualRatio - expectedRatio) / expectedRatio > 0.12) {
+        resolve({
+          tone: "error",
+          title: "Proporção incompatível com este posicionamento",
+          message: `Este arquivo tem ${image.naturalWidth} × ${image.naturalHeight} px. Envie uma imagem ${slot.width} × ${slot.height} px, na proporção ${slot.aspectRatio}.`
+        });
+        return;
+      }
+      resolve({ tone: "success", title: "Arquivo compatível", message: `${image.naturalWidth} × ${image.naturalHeight} px · pronto para ${slot.name}.` });
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(previewUrl);
+      resolve({ tone: "error", title: "Não foi possível ler a imagem", message: "Escolha outro arquivo JPG, PNG ou WebP." });
+    };
+    image.src = previewUrl;
+  });
+}
+
+function creativeUploadMessage(error, slot) {
+  const code = error?.response?.data?.error;
+  if (code === "invalid_aspect_ratio") return `Criativo não salvo: envie uma imagem ${slot.width} × ${slot.height} px, na proporção ${slot.aspectRatio}.`;
+  if (code === "invalid_file_type") return "Criativo não salvo: use um arquivo JPG, PNG ou WebP.";
+  if (code === "invalid_dimensions") return "Criativo não salvo: não foi possível identificar as dimensões da imagem.";
+  if (code === "r2_not_configured") return "Criativo não salvo: o armazenamento de mídia está indisponível no momento. Tente novamente em instantes.";
+  return error?.response?.data?.message || "Não foi possível enviar o criativo. Confira o arquivo e tente novamente.";
+}
 function formatDate(value) {
   if (!value) return "Sem data definida";
   return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
@@ -100,7 +155,7 @@ function workspaceArea(pathname) {
 }
 function campaignState(campaign) {
   const creatives = campaign.creatives || [];
-  const approvedCreative = creatives.some((item) => item.reviewStatus === "approved");
+  const approvedCreative = creatives.some((item) => item.reviewStatus === "approved" && item.isEnabled);
   const hasBudget = Number(campaign.budgetCredits || 0) > 0;
   if (campaign.status === "ended") return { key: "ended", label: "Encerrado", current: 4 };
   if (campaign.status === "paused") return { key: "paused", label: "Pausado", current: 4 };
@@ -113,18 +168,22 @@ function campaignState(campaign) {
   return { key: "draft", label: "Rascunho", current: 2 };
 }
 
+function campaignReadyToActivate(campaign) {
+  return campaign.status !== "active"
+    && campaign.status !== "paused"
+    && campaign.status !== "ended"
+    && campaign.reviewStatus === "approved"
+    && Number(campaign.budgetCredits || 0) > Number(campaign.spentCredits || 0)
+    && (campaign.creatives || []).some((item) => item.reviewStatus === "approved" && item.isEnabled);
+}
+
 function SlotSurface({ slot, selected, disabled, creative, onSelect }) {
   const image = creative?.imageUrl || "";
   const title = creative?.title || "Seu anúncio";
   return (
     <button type="button" className={`ads-slot-surface ${selected ? "selected" : ""} ${disabled ? "disabled" : ""}`} onClick={() => !disabled && onSelect(slot.id)} disabled={disabled}>
-      <div className="ads-slot-surface-meta"><span>{slot.area}</span>{selected ? <b>Selecionado</b> : null}</div>
-      <div className={`ads-slot-device ads-slot-device-${slot.id}`}>
-        <div className="ads-slot-appbar"><i /> <strong>77gira</strong><em>•••</em></div>
-        {slot.id === "explore_feed_large" ? <><div className="ads-slot-placeholder-line" /><article className="ads-explore-preview-card"><div className="ads-explore-preview-image">{image ? <img src={image} alt="Prévia do criativo" /> : <span>Seu criativo</span>}<b>ADS</b></div><div className="ads-explore-preview-copy"><strong>{title}</strong><small>Conteúdo patrocinado no Explorar</small><em>Ver destaque</em></div></article><div className="ads-slot-feed-lines"><i /><i /></div></> : null}
-        {slot.id === "venue_detail_inline" ? <><div className="ads-slot-venue-hero" /><div className="ads-slot-feed-lines"><i /><i /></div><div className="ads-slot-ad" style={{ aspectRatio: slot.ratio }}>{image ? <img src={image} alt="Prévia do criativo" /> : <span>Seu criativo</span>}</div></> : null}
-        {slot.id === "radar_header" ? <><div className="ads-slot-ad" style={{ aspectRatio: slot.ratio }}>{image ? <img src={image} alt="Prévia do criativo" /> : <span>Seu criativo</span>}</div><div className="ads-slot-radar-list"><i /><i /><i /></div></> : null}
-      </div>
+      <div className="ads-slot-surface-meta"><span>{slot.area}</span><b className={selected ? "" : "idle"}>{selected ? "Selecionado" : "Selecione"}</b></div>
+      <AdsPlacementMockup slot={slot.id} imageUrl={image} title={title} />
       <div className="ads-slot-surface-copy"><strong>{slot.name}</strong><small>{slot.touchpoint} · {slot.dimensions}</small></div>
     </button>
   );
@@ -144,7 +203,9 @@ export default function AdvertiserPortalPage() {
   const [requestForm, setRequestForm] = useState(() => readRequestDraft(user?.email));
   const [campaignForm, setCampaignForm] = useState(INITIAL_CAMPAIGN);
   const [creative, setCreative] = useState(INITIAL_CREATIVE);
-  const [creativePreviewUrl, setCreativePreviewUrl] = useState("");
+  const [creativeDrafts, setCreativeDrafts] = useState({});
+  const [creativePreviewUrls, setCreativePreviewUrls] = useState({});
+  const [creativeFeedback, setCreativeFeedback] = useState(null);
   const [wizardStep, setWizardStep] = useState("objective");
   const [wizardCampaignId, setWizardCampaignId] = useState("");
   const [selectedSlots, setSelectedSlots] = useState([]);
@@ -153,13 +214,30 @@ export default function AdvertiserPortalPage() {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("info");
   const [busy, setBusy] = useState(false);
+  const creativeDraftsRef = useRef({});
+  const activeCreativeSlotRef = useRef(INITIAL_CREATIVE.slot);
 
   const selectedAccount = accounts.find((item) => item.id === accountId);
   const campaigns = data.items || [];
   const canWrite = WRITERS.includes(data.membership?.role);
   const canBill = BILLING_ROLES.includes(data.membership?.role);
-  const wizardCampaign = campaigns.find((item) => item.id === wizardCampaignId);
+  const savedWizardCampaign = campaigns.find((item) => item.id === wizardCampaignId);
   const selectedSlotItems = SLOT_CATALOG.filter((item) => selectedSlots.includes(item.id));
+  const activeCreativeSlot = slotById(creative.slot) || SLOT_CATALOG[0];
+  const creativePreviewUrl = creativePreviewUrls[creative.slot] || "";
+  const localCreativePreviews = Object.entries(creativeDrafts)
+    .filter(([slotId, draft]) => selectedSlots.includes(slotId) && (draft.asset || draft.title.trim() || draft.destinationUrl.trim()))
+    .map(([slotId, draft]) => ({ slot: slotId, imageUrl: creativePreviewUrls[slotId] || "", title: draft.title }));
+  const localCreativeSlots = new Set(localCreativePreviews.map((item) => item.slot));
+  const wizardCampaign = localCreativePreviews.length
+    ? {
+        ...savedWizardCampaign,
+        creatives: [
+          ...(savedWizardCampaign?.creatives || []).filter((item) => !localCreativeSlots.has(item.slot)),
+          ...localCreativePreviews
+        ]
+      }
+    : savedWizardCampaign;
   const filteredCampaigns = campaigns.filter((item) => {
     const state = campaignState(item);
     const text = `${item.name} ${item.advertiser}`.toLowerCase();
@@ -168,12 +246,17 @@ export default function AdvertiserPortalPage() {
 
   function showMessage(text, type = "info") { setMessage(text); setMessageType(type); }
   function buildCampaignTargeting() {
+    const city = campaignForm.targetCity.trim();
+    const region = campaignForm.targetRegion.trim();
+    const dailyImpressionCap = Number(campaignForm.dailyPacingCap);
     return {
       objective: campaignForm.objective,
       slots: selectedSlots,
-      cities: campaignForm.targetCity.trim() ? [campaignForm.targetCity.trim()] : [],
-      regions: campaignForm.targetRegion.trim() ? [campaignForm.targetRegion.trim()] : [],
-      dailyImpressionCap: Number(campaignForm.dailyPacingCap) || null
+      ...(city ? { cities: [city] } : {}),
+      ...(region ? { regions: [region] } : {}),
+      ...(Number.isInteger(dailyImpressionCap) && dailyImpressionCap > 0
+        ? { dailyImpressionCap }
+        : {})
     };
   }
   function openArea(next) { navigate(`/workspace/anunciante/${next === "new" ? "novo-anuncio" : next === "wallet" ? "carteira" : "campanhas"}`); }
@@ -206,22 +289,63 @@ export default function AdvertiserPortalPage() {
   }
   async function loadCampaigns(id = accountId) {
     if (!id) return;
-    try { setData(await getMyAdvertiserCampaigns(id)); }
+    try {
+      const response = await getMyAdvertiserCampaigns(id);
+      setData(response);
+      return response;
+    }
     catch (error) { showMessage(error?.response?.data?.message || "Não foi possível carregar campanhas.", "error"); }
   }
   async function loadWallet(id = accountId) {
     if (!id || !CREDITS_PURCHASE_ENABLED) return;
-    try { const response = await getMyAdvertiserWallet(id); setWallet(response.item); }
+    try {
+      const response = await getMyAdvertiserWallet(id);
+      setWallet(response.item);
+      return response.item;
+    }
     catch (error) { showMessage(error?.response?.data?.message || "Não foi possível carregar a carteira.", "error"); }
   }
 
   useEffect(() => { loadAccounts(); }, []);
   useEffect(() => { loadCampaigns(accountId); loadWallet(accountId); }, [accountId]);
+  useEffect(() => { creativeDraftsRef.current = creativeDrafts; }, [creativeDrafts]);
   useEffect(() => {
-    if (!creative.asset) { setCreativePreviewUrl(""); return undefined; }
-    const nextUrl = URL.createObjectURL(creative.asset); setCreativePreviewUrl(nextUrl);
-    return () => URL.revokeObjectURL(nextUrl);
-  }, [creative.asset]);
+    const urls = Object.fromEntries(Object.entries(creativeDrafts)
+      .filter(([, draft]) => draft.asset)
+      .map(([slotId, draft]) => [slotId, URL.createObjectURL(draft.asset)]));
+    setCreativePreviewUrls(urls);
+    return () => Object.values(urls).forEach((url) => URL.revokeObjectURL(url));
+  }, [creativeDrafts]);
+  useEffect(() => {
+    const previousSlot = activeCreativeSlotRef.current;
+    if (previousSlot !== creative.slot) {
+      activeCreativeSlotRef.current = creative.slot;
+      setCreative(creativeDraftsRef.current[creative.slot] || { ...INITIAL_CREATIVE, slot: creative.slot });
+      setCreativeFeedback(null);
+      return;
+    }
+    if (!selectedSlots.includes(creative.slot)) return;
+    setCreativeDrafts((items) => ({ ...items, [creative.slot]: creative }));
+  }, [creative, selectedSlots]);
+  useEffect(() => {
+    setCreativeDrafts((items) => Object.fromEntries(Object.entries(items).filter(([slotId]) => selectedSlots.includes(slotId))));
+    setCreative((current) => {
+      if (selectedSlots.includes(current.slot)) return current;
+      const slotId = selectedSlots[0] || INITIAL_CREATIVE.slot;
+      return creativeDraftsRef.current[slotId] || { ...INITIAL_CREATIVE, slot: slotId };
+    });
+    setCreativeFeedback(null);
+  }, [selectedSlots]);
+  useEffect(() => {
+    if (!creative.asset || !selectedSlots.includes(creative.slot)) return undefined;
+    let cancelled = false;
+    void inspectCreativeFile(creative.asset, activeCreativeSlot).then((feedback) => {
+      if (cancelled) return;
+      setCreativeFeedback(feedback);
+      if (feedback.tone === "error") showMessage(`Criativo não salvo: ${feedback.message}`, "error");
+    });
+    return () => { cancelled = true; };
+  }, [creative.asset, creative.slot, selectedSlots, activeCreativeSlot]);
   useEffect(() => {
     try { localStorage.setItem(REQUEST_DRAFT_KEY, JSON.stringify(requestForm)); } catch { /* no-op */ }
   }, [requestForm]);
@@ -232,10 +356,31 @@ export default function AdvertiserPortalPage() {
     const routeStep = searchParams.get("step");
     if (["objective", "placement", "budget", "review"].includes(routeStep)) setWizardStep(routeStep);
     if (status) {
+      const describeApprovedPayment = async () => {
+        const paymentOrderId = searchParams.get("paymentOrder");
+        const [campaignResponse, walletSnapshot, orderResponse] = await Promise.all([
+          loadCampaigns(accountId),
+          loadWallet(accountId),
+          paymentOrderId ? getMyPaymentOrder(paymentOrderId) : Promise.resolve(null)
+        ]);
+        if (status !== "approved") return;
+        const campaign = campaignResponse?.items?.find((item) => item.id === returnedCampaign);
+        const linkedCredits = Number(campaign?.budgetCredits || 0);
+        const freeCredits = Number(walletSnapshot?.balance || 0);
+        const creditedNow = Number(orderResponse?.item?.creditAmount || 0);
+        showMessage(
+          creditedNow > 0 && linkedCredits > 0
+            ? `${creditedNow} patacos confirmados e vinculados a esta campanha. Orçamento desta campanha: ${linkedCredits}. Saldo livre na carteira: ${freeCredits}.`
+            : linkedCredits > 0
+              ? `Patacos confirmados e vinculados a esta campanha. Orçamento desta campanha: ${linkedCredits}. Saldo livre na carteira: ${freeCredits}.`
+            : `Patacos confirmados. Saldo livre na carteira: ${freeCredits}.`,
+          "success"
+        );
+      };
+      void describeApprovedPayment();
       showMessage(status === "approved" ? "Patacos confirmados. O orçamento da campanha foi atualizado." : "A simulação terminou sem alterar o saldo.", status === "approved" ? "success" : "warning");
-      loadCampaigns(accountId); loadWallet(accountId);
     }
-  }, [searchParams]);
+  }, [searchParams, accountId]);
   useEffect(() => {
     const routeCampaignId = searchParams.get("campaignId");
     const current = campaigns.find((item) => item.id === routeCampaignId);
@@ -273,6 +418,9 @@ export default function AdvertiserPortalPage() {
     } : { ...INITIAL_CAMPAIGN, advertiser: selectedAccount?.name || "", objective: intentObjective });
     setSelectedSlots(existing ? [...new Set((existing.creatives || []).map((item) => item.slot))] : []);
     setCreative(INITIAL_CREATIVE);
+    setCreativeDrafts({});
+    activeCreativeSlotRef.current = INITIAL_CREATIVE.slot;
+    setCreativeFeedback(null);
     const params = new URLSearchParams();
     if (accountId) params.set("accountId", accountId);
     if (existing?.id) params.set("campaignId", existing.id);
@@ -301,31 +449,70 @@ export default function AdvertiserPortalPage() {
   }
 
   function toggleSlot(slotId) { setSelectedSlots((items) => items.includes(slotId) ? items.filter((item) => item !== slotId) : [...items, slotId]); }
+  function changeCreativeSlot(slotId) {
+    setCreative((current) => ({ ...current, slot: slotId }));
+    setCreativeFeedback(null);
+  }
+  async function selectCreativeAsset(file) {
+    setCreative((current) => ({ ...current, asset: file || null }));
+    if (!file) return setCreativeFeedback(null);
+    const feedback = await inspectCreativeFile(file, activeCreativeSlot);
+    setCreativeFeedback(feedback);
+    if (feedback.tone === "error") showMessage(`Criativo não salvo: ${feedback.message}`, "error");
+  }
   async function uploadCreative(event) {
     event.preventDefault();
-    if (!wizardCampaignId || !creative.asset || !selectedSlots.includes(creative.slot)) return showMessage("Escolha um posicionamento selecionado e o arquivo correspondente.", "warning");
+    if (!wizardCampaignId || !selectedSlots.length) return showMessage("Escolha pelo menos um posicionamento antes de salvar os criativos.", "warning");
+    const drafts = { ...creativeDrafts, [creative.slot]: creative };
+    const savedSlots = new Set((savedWizardCampaign?.creatives || []).map((item) => item.slot));
+    const draftsToUpload = selectedSlots
+      .map((slotId) => ({ slotId, draft: drafts[slotId] }))
+      .filter(({ draft }) => draft?.asset);
+    const missingSlots = selectedSlots.filter((slotId) => !savedSlots.has(slotId) && !drafts[slotId]?.asset);
+    if (missingSlots.length) return showMessage(`Escolha um arquivo para: ${missingSlots.map((slotId) => slotById(slotId)?.name).join(", ")}.`, "warning");
+    if (!draftsToUpload.length) return showMessage("Todos os posicionamentos escolhidos já possuem criativos salvos.", "success");
+
+    for (const { slotId, draft } of draftsToUpload) {
+      const feedback = await inspectCreativeFile(draft.asset, slotById(slotId));
+      if (feedback.tone === "error") {
+        setCreativeFeedback(feedback);
+        return showMessage(`Criativo não salvo: ${feedback.message}`, "error");
+      }
+    }
     setBusy(true);
     try {
-      const asset = await uploadMyAdvertiserCreative({ file: creative.asset, campaignId: wizardCampaignId, slot: creative.slot });
-      const imageUrl = asset.publicUrl || asset.url;
-      if (!imageUrl) throw new Error("O envio da imagem foi concluído sem uma URL pública. Tente novamente.");
-      await createMyAdvertiserCreative(wizardCampaignId, { slot: creative.slot, title: creative.title || null, destinationUrl: creative.destinationUrl || null, altText: creative.altText || null, imageUrl, width: asset.width, height: asset.height, storageProvider: asset.storageProvider, storageKey: asset.storageKey, mimeType: asset.mimeType, fileSizeBytes: asset.fileSizeBytes, checksum: asset.checksum, assetVersion: asset.assetVersion });
+      for (const { slotId, draft } of draftsToUpload) {
+        const asset = await uploadMyAdvertiserCreative({ file: draft.asset, campaignId: wizardCampaignId, slot: slotId });
+        const imageUrl = asset.publicUrl || asset.url;
+        if (!imageUrl) throw new Error("O envio da imagem foi concluído sem uma URL pública. Tente novamente.");
+        await createMyAdvertiserCreative(wizardCampaignId, { slot: slotId, title: draft.title || null, destinationUrl: draft.destinationUrl || null, altText: draft.altText || null, imageUrl, width: asset.width, height: asset.height, storageProvider: asset.storageProvider, storageKey: asset.storageKey, mimeType: asset.mimeType, fileSizeBytes: asset.fileSizeBytes, checksum: asset.checksum, assetVersion: asset.assetVersion });
+      }
       await updateMyAdvertiserCampaign(wizardCampaignId, {
         runInAllSlots: selectedSlots.length === SLOT_CATALOG.length,
         targeting: buildCampaignTargeting()
       });
       const refreshed = await getMyAdvertiserCampaigns(accountId);
       setData(refreshed);
+      setCreativeDrafts((items) => {
+        const next = { ...items };
+        draftsToUpload.forEach(({ slotId }) => delete next[slotId]);
+        return next;
+      });
       setCreative((current) => ({ ...INITIAL_CREATIVE, slot: current.slot }));
+      setCreativeFeedback(null);
       const refreshedCampaign = refreshed.items?.find((item) => item.id === wizardCampaignId);
       const completedAllSlots = selectedSlots.length && selectedSlots.every((slot) => refreshedCampaign?.creatives?.some((creativeItem) => creativeItem.slot === slot));
       if (completedAllSlots) {
         showMessage("Criativos salvos. Você avançou para o orçamento da campanha.", "success");
         goWizardStep("budget", wizardCampaignId);
       } else {
-        showMessage("Criativo salvo. Envie os arquivos restantes para continuar.", "success");
+        showMessage(`${draftsToUpload.length} criativo${draftsToUpload.length > 1 ? "s" : ""} salvo${draftsToUpload.length > 1 ? "s" : ""}. Envie os arquivos restantes para continuar.`, "success");
       }
-    } catch (error) { showMessage(error?.response?.data?.message || "Não foi possível enviar o criativo.", "error"); }
+    } catch (error) {
+      const message = creativeUploadMessage(error, activeCreativeSlot);
+      setCreativeFeedback({ tone: "error", title: "Criativo não salvo", message });
+      showMessage(message, "error");
+    }
     finally { setBusy(false); }
   }
   async function continueFromPlacement() {
@@ -395,14 +582,19 @@ export default function AdvertiserPortalPage() {
   }
   async function duplicateCampaign(item) {
     setBusy(true);
-    try { await duplicateMyAdvertiserCampaign(item.id); await loadCampaigns(); showMessage("Campanha duplicada como rascunho. Revise antes de enviar.", "success"); }
+    try {
+      const copiedCampaign = await duplicateMyAdvertiserCampaign(item.id);
+      await loadCampaigns();
+      showMessage("Campanha duplicada como rascunho. Revise antes de enviar.", "success");
+      beginWizard(copiedCampaign);
+    }
     catch (error) { showMessage(error?.response?.data?.message || "Não foi possível duplicar esta campanha.", "error"); }
     finally { setBusy(false); }
   }
   async function changeLifecycle(item) {
     const nextStatus = item.status === "active" ? "paused" : "active";
     setBusy(true);
-    try { await setMyAdvertiserCampaignLifecycle(item.id, nextStatus); await loadCampaigns(); showMessage(nextStatus === "paused" ? "Campanha pausada." : "Campanha retomada.", "success"); }
+    try { await setMyAdvertiserCampaignLifecycle(item.id, nextStatus); await loadCampaigns(); showMessage(nextStatus === "paused" ? "Campanha pausada." : item.status === "paused" ? "Campanha retomada." : "Campanha colocada no ar.", "success"); }
     catch (error) { showMessage(error?.response?.data?.message || "Não foi possível alterar a veiculação.", "error"); }
     finally { setBusy(false); }
   }
@@ -418,7 +610,7 @@ export default function AdvertiserPortalPage() {
         <div><img src="/logoads77gira.svg" alt="77Gira Ads" /><h1>Workspace do anunciante</h1><p>Planeje, publique e acompanhe campanhas em uma operação controlada.</p></div>
         <Link to="/anunciar" className="chip">Como funciona</Link>
       </header>
-      {message ? <p className={`ads-workspace-message ${messageType}`}>{message}</p> : null}
+      {message ? <div className={`ads-workspace-message ${messageType}`} role={messageType === "error" ? "alert" : "status"}>{messageType === "error" ? <><strong>Ação não concluída</strong><span>{message}</span></> : message}</div> : null}
 
       {!accounts.length ? (
         <section className="ads-access-grid">
@@ -451,7 +643,7 @@ export default function AdvertiserPortalPage() {
           <div className="ads-campaign-filters"><input placeholder="Buscar campanha ou anunciante" value={campaignQuery} onChange={(event) => setCampaignQuery(event.target.value)} /><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="all">Todos os status</option><option value="draft">Rascunhos</option><option value="awaiting_creative">Aguardando criativo</option><option value="pending_review">Em revisão</option><option value="approved">Aprovadas</option><option value="active">No ar</option><option value="ended">Encerradas</option></select></div>
           {!filteredCampaigns.length ? <article className="ads-empty-campaigns"><strong>Nenhuma campanha neste recorte.</strong><p>Crie um anúncio para iniciar um rascunho guiado.</p></article> : <div className="ads-campaign-grid-v2">{filteredCampaigns.map((item) => {
             const state = campaignState(item); const steps = ["Criada", "Criativo", "Revisão", "No ar"];
-            return <article key={item.id} className="ads-campaign-card-v2"><header><div><span>{item.advertiser}</span><h3>{item.name}</h3><p>{formatDate(item.startsAt)} → {formatDate(item.endsAt)}</p></div><b className={`ads-stage ${state.key}`}>{state.label}</b></header><div className="ads-progress-v2">{steps.map((label, index) => <span key={label} className={index + 1 <= state.current ? "done" : ""}><i />{label}</span>)}</div>{item.metrics ? <div className="ads-campaign-live-metrics" aria-label={`Métricas da campanha ${item.name}`}><span><b>{item.metrics.impressions}</b> impressões</span><span><b>{item.metrics.clicks}</b> cliques</span><span><b>{item.metrics.ctr}%</b> CTR</span><span><b>{item.metrics.remainingPatacos}</b> patacos</span></div> : null}<footer><button className="chip" type="button" onClick={() => beginWizard(item)}>Editar</button>{canWrite ? <><button className="chip" type="button" disabled={busy} onClick={() => duplicateCampaign(item)}>Duplicar</button>{["active", "paused"].includes(item.status) ? <button className="chip" type="button" disabled={busy} onClick={() => changeLifecycle(item)}>{item.status === "active" ? "Pausar" : "Retomar"}</button> : null}<button className="chip" type="button" disabled={busy} onClick={() => removeOrEnd(item)}>{item.status === "draft" && ["draft", "pending_review", "rejected", "changes_requested"].includes(item.reviewStatus || "draft") ? "Excluir" : "Encerrar"}</button></> : null}</footer></article>;
+            return <article key={item.id} className="ads-campaign-card-v2"><header><div><span>{item.advertiser}</span><h3>{item.name}</h3><p>{formatDate(item.startsAt)} → {formatDate(item.endsAt)}</p></div><b className={`ads-stage ${state.key}`}>{state.label}</b></header><div className="ads-progress-v2">{steps.map((label, index) => <span key={label} className={index + 1 <= state.current ? "done" : ""}><i />{label}</span>)}</div>{item.metrics ? <div className="ads-campaign-live-metrics" aria-label={`Métricas da campanha ${item.name}`}><span><b>{item.metrics.impressions}</b> impressões</span><span><b>{item.metrics.clicks}</b> cliques</span><span><b>{item.metrics.ctr}%</b> CTR</span><span><b>{item.metrics.remainingPatacos}</b> patacos</span></div> : null}<footer><button className="chip" type="button" onClick={() => beginWizard(item)}>Editar</button>{canWrite ? <><button className="chip" type="button" disabled={busy} onClick={() => duplicateCampaign(item)}>Duplicar</button>{campaignReadyToActivate(item) ? <button className="btn-primary" type="button" disabled={busy} onClick={() => changeLifecycle(item)}>Colocar no ar</button> : null}{["active", "paused"].includes(item.status) ? <button className="chip" type="button" disabled={busy} onClick={() => changeLifecycle(item)}>{item.status === "active" ? "Pausar" : "Retomar"}</button> : null}<button className="chip" type="button" disabled={busy} onClick={() => removeOrEnd(item)}>{item.status === "draft" && ["draft", "pending_review", "rejected", "changes_requested"].includes(item.reviewStatus || "draft") ? "Excluir" : "Encerrar"}</button></> : null}</footer></article>;
           })}</div>}
         </section> : null}
 
@@ -460,6 +652,7 @@ export default function AdvertiserPortalPage() {
           <ol className="ads-wizard-steps">{wizardSteps.map(([id, title, helper], index) => <li key={id} className={wizardStep === id ? "active" : wizardSteps.findIndex(([key]) => key === wizardStep) > index ? "complete" : ""}><span>{index + 1}</span><div><strong>{title}</strong><small>{helper}</small></div></li>)}</ol>
           {wizardStep === "objective" ? <aside className="ads-targeting-panel"><div><span>ALCANCE INICIAL</span><strong>Defina apenas o contexto que faz sentido para esta campanha.</strong><p>Sem filtros, a campanha usa o inventário compatível. Cidade, região e ritmo diário são opcionais.</p></div><label>Cidade<input value={campaignForm.targetCity} onChange={(event) => setCampaignForm({ ...campaignForm, targetCity: event.target.value })} placeholder="Ex.: São Paulo" /></label><label>Região ou bairro<input value={campaignForm.targetRegion} onChange={(event) => setCampaignForm({ ...campaignForm, targetRegion: event.target.value })} placeholder="Ex.: Zona Norte" /></label><label>Máximo de impressões por dia<input type="number" min="1" value={campaignForm.dailyPacingCap} onChange={(event) => setCampaignForm({ ...campaignForm, dailyPacingCap: event.target.value })} placeholder="Automático" /></label></aside> : null}
           <div className="ads-wizard-panel">
+            {wizardStep === "placement" && creativeFeedback ? <div className={`ads-creative-feedback ${creativeFeedback.tone}`} role={creativeFeedback.tone === "error" ? "alert" : "status"}><strong>{creativeFeedback.title}</strong><span>{creativeFeedback.message}</span></div> : null}
             {wizardStep === "objective" ? <form className="ads-wizard-form" onSubmit={saveObjective}><div><span>ETAPA 1</span><h3>Objetivo e período</h3><p>Comece pelo contexto. Nada será publicado neste momento.</p></div><label>Anunciante<input required value={campaignForm.advertiser} onChange={(event) => setCampaignForm({ ...campaignForm, advertiser: event.target.value })} placeholder="Nome exibido no anúncio" /></label><label>Nome da campanha<input required value={campaignForm.name} onChange={(event) => setCampaignForm({ ...campaignForm, name: event.target.value })} placeholder="Ex.: Noite especial de samba" /></label><label>Objetivo<select value={campaignForm.objective} onChange={(event) => setCampaignForm({ ...campaignForm, objective: event.target.value })}>{OBJECTIVES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label><div className="ads-two-fields"><label>Início<input type="datetime-local" value={campaignForm.startsAt} onChange={(event) => setCampaignForm({ ...campaignForm, startsAt: event.target.value })} /></label><label>Fim<input type="datetime-local" value={campaignForm.endsAt} onChange={(event) => setCampaignForm({ ...campaignForm, endsAt: event.target.value })} /></label></div><button className="btn-primary" disabled={busy}>{busy ? "Salvando..." : "Salvar e escolher posição"}</button></form> : null}
             {wizardStep === "placement" ? <div className="ads-placement-step"><div><span>ETAPA 2</span><h3>Onde este anúncio aparece?</h3><p>Escolha os posicionamentos antes do upload. Cada espaço usa sua proporção real de exibição.</p></div><div className="ads-slot-carousel">{SLOT_CATALOG.map((slot) => <SlotSurface key={slot.id} slot={slot} selected={selectedSlots.includes(slot.id)} creative={wizardCampaign?.creatives?.find((item) => item.slot === slot.id)} onSelect={toggleSlot} />)}</div><div className="ads-slot-dots">{SLOT_CATALOG.map((slot) => <i key={slot.id} className={selectedSlots.includes(slot.id) ? "active" : ""} />)}</div>{selectedSlotItems.length ? <form className="ads-upload-form" onSubmit={uploadCreative}><div><span>CRIATIVO PARA {labelFor(SLOT_CATALOG.map((item) => [item.id, item.name]), creative.slot)}</span><p>Recomendado: {SLOT_CATALOG.find((item) => item.id === creative.slot)?.dimensions} · máximo 5 MB.</p></div><label>Posicionamento<select value={creative.slot} onChange={(event) => setCreative({ ...creative, slot: event.target.value })}>{selectedSlotItems.map((slot) => <option value={slot.id} key={slot.id}>{slot.name}</option>)}</select></label><label>Arquivo<input required type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setCreative({ ...creative, asset: event.target.files?.[0] || null })} /></label><label>Título do anúncio<input value={creative.title} onChange={(event) => setCreative({ ...creative, title: event.target.value })} placeholder="Título visível ou interno" /></label><label>Destino<input type="url" value={creative.destinationUrl} onChange={(event) => setCreative({ ...creative, destinationUrl: event.target.value })} placeholder="https://..." /></label>{creativePreviewUrl ? <div className="ads-upload-preview"><img src={creativePreviewUrl} alt="Prévia local do criativo" /><span>Prévia do arquivo selecionado</span></div> : null}<button className="chip active" type="submit" disabled={busy}>{busy ? "Enviando criativo..." : "Salvar criativo e avançar"}</button></form> : <p className="ads-wizard-hint">Selecione pelo menos um posicionamento para preparar o upload.</p>}<div className="ads-wizard-actions"><button className="chip" type="button" onClick={() => goWizardStep("objective")}>Voltar</button><button className="btn-primary" type="button" disabled={busy} onClick={continueFromPlacement}>Continuar para orçamento</button></div></div> : null}
             {wizardStep === "budget" ? <div className="ads-budget-step"><div><span>ETAPA 3</span><h3>Orçamento de mídia</h3><p>Patacos confirmados ficam vinculados a esta campanha. O gateway abaixo é uma simulação sem cobrança real.</p></div><div className="ads-wallet-inline"><strong>{wallet.balance}</strong><span>patacos livres na carteira</span></div><div className="ads-package-grid">{(wallet.packages?.length ? wallet.packages : [{ code: "test_controlled", name: "Teste controlado", credits: 100 }, { code: "local_boost", name: "Impulso local", credits: 300 }, { code: "presence_campaign", name: "Campanha de presença", credits: 750 }]).map((item) => <article key={item.code}><span>{item.name}</span><strong>{item.credits} patacos</strong><p>Ambiente de simulação. O valor não é cobrado.</p><button className="chip active" disabled={busy || !wallet.runtime?.available || !canBill} type="button" onClick={() => startPayment(item.code)}>{canBill ? "Testar aquisição" : "Sem permissão financeira"}</button></article>)}</div><div className="ads-wizard-actions"><button className="chip" type="button" onClick={() => goWizardStep("placement")}>Voltar</button><button className="btn-primary" type="button" onClick={() => goWizardStep("review")}>Continuar para revisão</button></div></div> : null}

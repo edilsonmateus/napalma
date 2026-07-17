@@ -17,6 +17,7 @@ describe("ADS review workflow", () => {
   it("protects all review endpoints with the feature flag and admin guard", () => {
     expect(routes).toContain('const canManageAdReviews = [...canManageAds, requireFeatureFlag("ADS_REVIEW_WORKFLOW_ENABLED")]');
     expect(routes).toContain('router.post("/ads/reviews/:entityType/:id/approve", ...canManageAdReviews');
+    expect(routes).toContain('router.post("/ads/reviews/:entityType/:id/request-changes", ...canManageAdReviews');
     expect(routes).toContain('router.post("/ads/reviews/:entityType/:id/reject", ...canManageAdReviews');
   });
 
@@ -24,5 +25,7 @@ describe("ADS review workflow", () => {
     expect(page).toContain("VITE_ADS_REVIEW_WORKFLOW_ENABLED");
     expect(page).toMatch(/REVIEW_WORKFLOW_ENABLED\s+\?\s+\[\["reviews", "Revisão", reviewQueueCount\]\]/);
     expect(page).toContain('adsSection === "reviews" && REVIEW_WORKFLOW_ENABLED');
+    expect(page).toContain("Solicitar ajustes");
+    expect(page).toContain("ReviewPlacementPreview");
   });
 });

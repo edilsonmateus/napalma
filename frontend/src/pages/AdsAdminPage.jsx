@@ -38,7 +38,7 @@ import {
   useUploadAdCreativeAssetMutation
 } from "../hooks/useEventsQuery";
 import { useAuthStore } from "../store/authStore";
-import AdsMobilePreview from "../components/ads/AdsMobilePreview";
+import AdsPlacementMockup from "../components/ads/AdsPlacementMockup";
 import { getAdsBillingOperations, processAdminMockPaymentOrder } from "../services/events.service";
 
 const ADVERTISER_ACCOUNTS_ENABLED =
@@ -69,6 +69,12 @@ const SLOT_RATIOS = {
   venue_detail_inline: 580 / 240,
   radar_header: 580 / 258,
   venue_menu_sponsor: 3 / 4
+};
+const SLOT_ASPECT_RATIOS = {
+  explore_feed_large: "58 / 35",
+  venue_detail_inline: "29 / 12",
+  radar_header: "290 / 129",
+  venue_menu_sponsor: "3 / 4"
 };
 
 const INITIAL_CAMPAIGN = {
@@ -140,6 +146,26 @@ function getReviewContextText(item) {
   return "Valide intenção comercial, período e relação com a conta anunciante antes de aprovar.";
 }
 
+function ReviewPlacementPreview({ item }) {
+  const isCreative = item.entityType === "creative";
+  const slot = isCreative ? item.slot : "explore_feed_large";
+  const imageUrl = isCreative ? item.imageUrl : "";
+  const title = isCreative ? (item.title || item.campaign?.name || item.label) : item.label;
+  const placeholder = isCreative ? "Arquivo do criativo indisponível" : "Campanha sem imagem própria";
+
+  return (
+    <div className="ads-review-placement-preview">
+      <div className={`ads-review-asset ${imageUrl ? "has-image" : "is-placeholder"}`} style={{ "--ads-review-aspect": SLOT_ASPECT_RATIOS[slot] || "58 / 35" }}>
+        {imageUrl ? <img src={imageUrl} alt={item.altText || title} /> : <span>{placeholder}</span>}
+      </div>
+      <div className="ads-review-mobile-preview">
+        <AdsPlacementMockup slot={slot} imageUrl={imageUrl} title={title} className="ads-review-placement-device" />
+        <small>{isCreative ? "Prévia de veiculação no touchpoint selecionado." : "A prévia será preenchida quando um criativo for enviado."}</small>
+      </div>
+    </div>
+  );
+}
+
 function hasApprovedReview(value) {
   return !REVIEW_WORKFLOW_ENABLED || value === null || value === "approved" || value === "active";
 }
@@ -148,20 +174,24 @@ function hasCampaignBudget(campaign) {
   return CREDITS_PURCHASE_ENABLED && Number(campaign.creditBalance || campaign.budgetCredits || 0) > 0;
 }
 
-function getCampaignOpsBlockers(campaign) {
-  const now = Date.now();
+function getCampaignReadinessBlockers(campaign) {
   const approvedCreatives = (campaign.creatives || []).filter(
     (creative) => creative.isEnabled && hasApprovedReview(creative.reviewStatus)
   );
   const blockers = [];
+  if (!hasApprovedReview(campaign.reviewStatus)) blockers.push("aguarda aprovação da campanha");
+  if (!approvedCreatives.length) blockers.push("sem criativo aprovado e habilitado");
+  if (!hasCampaignBudget(campaign)) blockers.push("sem patacos/créditos vinculados");
+  if (campaign.endsAt && new Date(campaign.endsAt).getTime() < Date.now()) blockers.push("janela de veiculação encerrada");
+  return blockers;
+}
+
+function getCampaignOpsBlockers(campaign) {
+  const now = Date.now();
+  const blockers = [];
   if (!campaign.isEnabled || campaign.status !== "active") blockers.push("Campanha precisa estar ativa e habilitada.");
   if (campaign.startsAt && new Date(campaign.startsAt).getTime() > now) blockers.push("Janela de veiculação ainda não começou.");
-  if (campaign.endsAt && new Date(campaign.endsAt).getTime() < now) blockers.push("Janela de veiculação encerrada.");
-  if (!hasApprovedReview(campaign.reviewStatus)) blockers.push("Campanha ainda não foi aprovada pela revisão 77Gira.");
-  if (!approvedCreatives.length) blockers.push("Nenhum criativo aprovado e habilitado.");
-  if (!hasCampaignBudget(campaign)) {
-    blockers.push(CREDITS_PURCHASE_ENABLED ? "Sem patacos/créditos vinculados." : "Camada de patacos/checkout ainda não liberada.");
-  }
+  getCampaignReadinessBlockers(campaign).forEach((blocker) => blockers.push(blocker));
   return blockers;
 }
 
@@ -176,6 +206,7 @@ export default function AdsAdminPage() {
   const [selectedAdvertiserId, setSelectedAdvertiserId] = useState(null);
   const [selectedReview, setSelectedReview] = useState(null);
   const [reviewReason, setReviewReason] = useState("");
+  const [reviewView, setReviewView] = useState("pending");
   const { data: campaigns = [], isLoading } = useAdCampaignsQuery(true);
   const { data: reviewQueue = { campaigns: [], creatives: [] }, isLoading: reviewQueueLoading } = useAdReviewQueueQuery(REVIEW_WORKFLOW_ENABLED);
   const { data: reviewHistory = [] } = useAdReviewHistoryQuery(selectedReview?.entityType, selectedReview?.id, REVIEW_WORKFLOW_ENABLED && Boolean(selectedReview));
@@ -224,6 +255,7 @@ export default function AdsAdminPage() {
   const [campaignToLinkId, setCampaignToLinkId] = useState("");
   const [message, setMessage] = useState("");
   const [confirmEndCampaign, setConfirmEndCampaign] = useState(null);
+  const [selectedCampaignCreatives, setSelectedCampaignCreatives] = useState(null);
   const [billing, setBilling] = useState(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingProcessingId, setBillingProcessingId] = useState("");
@@ -231,7 +263,7 @@ export default function AdsAdminPage() {
   async function handleReviewDecision(item, decision) {
     try {
       await decideReview.mutateAsync({ entityType: item.entityType, id: item.id, decision, reason: reviewReason });
-      setMessage(decision === "approve" ? "Item aprovado." : "Item rejeitado.");
+      setMessage(decision === "approve" ? "Item aprovado." : decision === "request-changes" ? "Ajustes solicitados ao anunciante." : "Item rejeitado e removido da fila pendente.");
       setReviewReason("");
     } catch (error) {
       setMessage(error?.response?.data?.message || "Não foi possível registrar a decisão.");
@@ -356,6 +388,16 @@ export default function AdsAdminPage() {
   const reviewCampaignCount = reviewQueue.campaigns?.length || 0;
   const reviewCreativeCount = reviewQueue.creatives?.length || 0;
   const reviewQueueCount = reviewCampaignCount + reviewCreativeCount;
+  const reviewBuckets = {
+    pending: { label: "Pendentes", campaigns: reviewQueue.campaigns || [], creatives: reviewQueue.creatives || [] },
+    changes: { label: "Ajustes solicitados", campaigns: reviewQueue.changesRequested?.campaigns || [], creatives: reviewQueue.changesRequested?.creatives || [] },
+    rejected: { label: "Rejeitadas", campaigns: reviewQueue.rejected?.campaigns || [], creatives: reviewQueue.rejected?.creatives || [] }
+  };
+  const activeReviewBucket = reviewBuckets[reviewView];
+  const activeReviewItems = [
+    ...activeReviewBucket.campaigns.map((item) => ({ ...item, entityType: "campaign", label: item.name, detail: item.advertiser })),
+    ...activeReviewBucket.creatives.map((item) => ({ ...item, entityType: "creative", label: item.title || item.slot, detail: item.campaign?.name || "Criativo" }))
+  ];
   const activeCampaignCount = orderedCampaigns.filter((item) => item.status === "active").length;
   const creativeCount = orderedCampaigns.reduce((total, item) => total + item.creatives.length, 0);
   const healthIssueCount = activeWithoutCreatives.length + activeMissingSlots.length + expiredActiveCampaigns.length + campaignsBlockedByCredits.length;
@@ -606,29 +648,36 @@ export default function AdsAdminPage() {
     try {
       await updateCampaign.mutateAsync({
         id: item.id,
-        payload: { status }
+        payload: {
+          status,
+          isEnabled: status === "active"
+        }
       });
-      setMessage(`Campanha atualizada para ${status}.`);
+      setMessage(status === "active" ? "Campanha colocada no ar." : `Campanha atualizada para ${status}.`);
     } catch (_error) {
       setMessage("Falha ao atualizar status da campanha.");
     }
   }
 
   async function applyStatusBulk(status) {
-    if (filteredCampaigns.length === 0) {
-      setMessage("Nenhuma campanha no filtro atual.");
+    const eligibleCampaigns = filteredCampaigns.filter((item) => {
+      if (status === "active") return item.status !== "ended" && getCampaignReadinessBlockers(item).length === 0;
+      return item.status === "active";
+    });
+    if (eligibleCampaigns.length === 0) {
+      setMessage(status === "active" ? "Nenhuma campanha pronta para entrar no ar no filtro atual." : "Nenhuma campanha ativa no filtro atual.");
       return;
     }
     try {
       await Promise.all(
-        filteredCampaigns.map((item) =>
+        eligibleCampaigns.map((item) =>
           updateCampaign.mutateAsync({
             id: item.id,
-            payload: { status }
+            payload: { status, isEnabled: status === "active" }
           })
         )
       );
-      setMessage(`Status aplicado em lote: ${status}.`);
+      setMessage(status === "active" ? "Campanhas prontas foram colocadas no ar." : "Campanhas ativas foram pausadas.");
     } catch (_error) {
       setMessage("Falha ao aplicar status em lote.");
     }
@@ -703,17 +752,6 @@ export default function AdsAdminPage() {
       setMessage(error?.response?.data?.message || "Não foi possível enviar o criativo ao R2.");
     } finally {
       event.target.value = "";
-    }
-  }
-
-  async function toggleCampaign(item) {
-    try {
-      await updateCampaign.mutateAsync({
-        id: item.id,
-        payload: { isEnabled: !item.isEnabled }
-      });
-    } catch (_error) {
-      setMessage("Falha ao atualizar campanha.");
     }
   }
 
@@ -909,8 +947,8 @@ export default function AdsAdminPage() {
       <section className="ads-review-section">
         <div className="admin-list-header">
           <div>
-            <strong>Fila de revisão ({reviewQueue.campaigns.length + reviewQueue.creatives.length})</strong>
-            <p className="meta-line">Campanhas e criativos aguardando decisao administrativa.</p>
+            <strong>{activeReviewBucket.label} ({activeReviewItems.length})</strong>
+            <p className="meta-line">{reviewView === "pending" ? "Campanhas e criativos aguardando decisão administrativa." : reviewView === "changes" ? "Itens devolvidos ao anunciante para correção antes de uma nova revisão." : "Itens encerrados por rejeição definitiva, mantidos para consulta e auditoria."}</p>
           </div>
         </div>
         <div className="ads-review-guidance clean-card">
@@ -927,44 +965,38 @@ export default function AdsAdminPage() {
             <span>{reviewCreativeCount} criativo(s)</span>
           </div>
         </div>
+        <div className="ads-review-tabs" role="tablist" aria-label="Estado das revisões">
+          {Object.entries(reviewBuckets).map(([id, bucket]) => <button key={id} type="button" role="tab" aria-selected={reviewView === id} className={reviewView === id ? "active" : ""} onClick={() => setReviewView(id)}>{bucket.label} <b>{bucket.campaigns.length + bucket.creatives.length}</b></button>)}
+        </div>
         {reviewQueueLoading ? <p className="empty">Carregando fila...</p> : null}
-        {!reviewQueueLoading && reviewQueue.campaigns.length + reviewQueue.creatives.length === 0 ? <p className="empty">Nenhum item aguardando revisão.</p> : null}
+        {!reviewQueueLoading && activeReviewItems.length === 0 ? <p className="empty">Nenhum item neste recorte.</p> : null}
         <div className="ads-review-grid">
-          {[
-            ...reviewQueue.campaigns.map((item) => ({ ...item, entityType: "campaign", label: item.name, detail: item.advertiser })),
-            ...reviewQueue.creatives.map((item) => ({ ...item, entityType: "creative", label: item.title || item.slot, detail: item.campaign?.name || "Criativo" }))
-          ].map((item) => (
+          {activeReviewItems.map((item) => (
             <article key={`${item.entityType}-${item.id}`} className="clean-card ads-review-card">
               <div className="advertiser-readonly-title">
                 <div><h3>{item.label}</h3><p className="meta-line">{item.entityType === "campaign" ? "Campanha" : "Criativo"} · {item.detail}</p></div>
-                <span className="status-badge status-pending_review">pendente</span>
+                <span className={`status-badge status-${item.reviewStatus || "pending_review"}`}>{reviewView === "changes" ? "ajustes" : reviewView === "rejected" ? "rejeitada" : "pendente"}</span>
               </div>
-              {item.imageUrl ? <img className="ads-review-image" src={item.imageUrl} alt={item.altText || item.label} /> : null}
+              <ReviewPlacementPreview item={item} />
               <div className="ads-review-context">
                 <strong>{getReviewContextText(item)}</strong>
                 <ul>
                   {getReviewChecklist(item).map((row) => <li key={row}>{row}</li>)}
                 </ul>
               </div>
-              {item.entityType === "creative" && item.imageUrl ? (
-                <div className="ads-review-mobile-preview">
-                  <AdsMobilePreview
-                    slot={item.slot}
-                    imageUrl={item.imageUrl}
-                    title={item.title || item.campaign?.name || item.label}
-                    altText={item.altText || item.label}
-                    campaignName={item.campaign?.name}
-                    compact
-                  />
-                </div>
-              ) : null}
               <p className="meta-line">Enviado em {item.submittedAt ? new Date(item.submittedAt).toLocaleString("pt-BR") : "agora"}</p>
-              <textarea placeholder="Motivo (obrigatorio para rejeitar)" value={selectedReview?.id === item.id ? reviewReason : ""} onFocus={() => setSelectedReview(item)} onChange={(event) => { setSelectedReview(item); setReviewReason(event.target.value); }} />
-              <div className="form-actions-inline">
-                <button type="button" className="chip active" disabled={decideReview.isPending} onClick={() => handleReviewDecision(item, "approve")}>Aprovar</button>
-                <button type="button" className="chip" disabled={decideReview.isPending || (selectedReview?.id === item.id && reviewReason.trim().length < 3)} onClick={() => handleReviewDecision(item, "reject")}>Rejeitar</button>
-                <button type="button" className="chip" onClick={() => setSelectedReview(item)}>Historico</button>
-              </div>
+              {reviewView === "pending" ? <>
+                <textarea placeholder="Motivo obrigatório para solicitar ajuste ou rejeitar" value={selectedReview?.id === item.id ? reviewReason : ""} onFocus={() => setSelectedReview(item)} onChange={(event) => { setSelectedReview(item); setReviewReason(event.target.value); }} />
+                <div className="form-actions-inline">
+                  <button type="button" className="chip active" disabled={decideReview.isPending} onClick={() => handleReviewDecision(item, "approve")}>Aprovar</button>
+                  <button type="button" className="chip" disabled={decideReview.isPending || (selectedReview?.id === item.id && reviewReason.trim().length < 3)} onClick={() => handleReviewDecision(item, "request-changes")}>Solicitar ajustes</button>
+                  <button type="button" className="chip danger" disabled={decideReview.isPending || (selectedReview?.id === item.id && reviewReason.trim().length < 3)} onClick={() => handleReviewDecision(item, "reject")}>Rejeitar</button>
+                  <button type="button" className="chip" onClick={() => setSelectedReview(item)}>Histórico</button>
+                </div>
+              </> : <>
+                <div className="ads-review-decision-note"><strong>{reviewView === "changes" ? "Ajuste solicitado" : "Rejeição definitiva"}</strong><p>{item.reviewNotes || "Motivo registrado no histórico de revisão."}</p></div>
+                <div className="form-actions-inline"><button type="button" className="chip" onClick={() => setSelectedReview(item)}>Histórico</button></div>
+              </>}
               {selectedReview?.entityType === item.entityType && selectedReview?.id === item.id && reviewHistory.length ? (
                 <ul className="ads-review-history">{reviewHistory.map((entry) => <li key={entry.id}>{entry.action} · {new Date(entry.createdAt).toLocaleString("pt-BR")}{entry.reason ? ` · ${entry.reason}` : ""}</li>)}</ul>
               ) : null}
@@ -1586,98 +1618,19 @@ export default function AdsAdminPage() {
       </section>
       ) : null}
 
-      {(adsSection === "campaigns") ? (
-      <section className="ads-manual-admin-panel clean-card">
-        <div className="ads-manual-admin-heading">
-          <div>
-            <span className="eyebrow">Ação manual avançada</span>
-            <strong>Criar campanha interna</strong>
-            <p className="meta-line">
-              Atalho reservado para campanhas 77Gira, correções operacionais ou exceções aprovadas. O fluxo principal
-              deve começar no workspace do anunciante.
-            </p>
-          </div>
-          <button type="button" className="chip" onClick={() => setShowManualCampaignForm((current) => !current)}>
-            {showManualCampaignForm ? "Ocultar" : "Criar manualmente"}
-          </button>
-        </div>
-      {showManualCampaignForm ? (
-      <form className="venue-form ads-manual-admin-form" onSubmit={handleCreateCampaign}>
-        <h3 className="section-title">Nova campanha manual</h3>
-        <input
-          placeholder="Anunciante"
-          value={campaignForm.advertiser}
-          onChange={(e) => setCampaignForm((prev) => ({ ...prev, advertiser: e.target.value }))}
-          required
-        />
-        <input
-          placeholder="Nome da campanha"
-          value={campaignForm.name}
-          onChange={(e) => setCampaignForm((prev) => ({ ...prev, name: e.target.value }))}
-          required
-        />
-        <div className="form-actions-inline">
-          <input
-            type="datetime-local"
-            value={campaignForm.startsAt}
-            onChange={(e) => setCampaignForm((prev) => ({ ...prev, startsAt: e.target.value }))}
-          />
-          <input
-            type="datetime-local"
-            value={campaignForm.endsAt}
-            onChange={(e) => setCampaignForm((prev) => ({ ...prev, endsAt: e.target.value }))}
-          />
-        </div>
-        <div className="form-actions-inline">
-          <select value={campaignForm.status} onChange={(e) => setCampaignForm((prev) => ({ ...prev, status: e.target.value }))}>
-            <option value="draft">Rascunho</option>
-            <option value="active">Ativa</option>
-            <option value="paused">Pausada</option>
-            <option value="ended">Encerrada</option>
-          </select>
-          <input
-            type="number"
-            min="1"
-            max="10"
-            value={campaignForm.priority}
-            onChange={(e) => setCampaignForm((prev) => ({ ...prev, priority: Number(e.target.value || 1) }))}
-          />
-        </div>
-        <label className="meta-line">
-          <input
-            type="checkbox"
-            checked={campaignForm.runInAllSlots}
-            onChange={(e) => setCampaignForm((prev) => ({ ...prev, runInAllSlots: e.target.checked }))}
-          /> Rodar em todos os slots
-        </label>
-        <label className="meta-line">
-          <input
-            type="checkbox"
-            checked={campaignForm.isEnabled}
-            onChange={(e) => setCampaignForm((prev) => ({ ...prev, isEnabled: e.target.checked }))}
-          /> Campanha habilitada
-        </label>
-        <button className="btn-primary" type="submit" disabled={createCampaign.isPending}>
-          {createCampaign.isPending ? "Criando..." : "Criar campanha"}
-        </button>
-      </form>
-      ) : null}
-      </section>
-      ) : null}
-
       {(adsSection === "creatives") ? (
       <section className="ads-manual-admin-panel clean-card">
         <div className="ads-manual-admin-heading">
           <div>
-            <span className="eyebrow">Ação manual avançada</span>
-            <strong>Adicionar criativo a uma campanha</strong>
+            <span className="eyebrow">Ferramenta interna</span>
+            <strong>Adicionar criativo manualmente</strong>
             <p className="meta-line">
               Use para ajustes internos, reposição de asset ou campanhas operadas pela equipe. O fluxo completo de
               envio e revisão deve permanecer conectado ao workspace do anunciante.
             </p>
           </div>
           <button type="button" className="chip" onClick={() => setShowManualCreativeForm((current) => !current)}>
-            {showManualCreativeForm ? "Ocultar" : "Adicionar manualmente"}
+            {showManualCreativeForm ? "Ocultar formulário" : "Adicionar criativo"}
           </button>
         </div>
       {showManualCreativeForm ? (
@@ -1755,8 +1708,8 @@ export default function AdsAdminPage() {
       <section className="ads-creative-ops">
         <div className="admin-list-header">
           <div>
-            <strong>Criativos em operação ({creativeCount})</strong>
-            <p className="meta-line">Assets vinculados a campanhas, slots e revisão de entrega.</p>
+            <strong>Biblioteca de criativos ({creativeCount})</strong>
+            <p className="meta-line">Arquivos aprovados, em revisão e suspensos. A entrega normal é habilitada pela aprovação; estes controles são apenas para intervenção operacional.</p>
           </div>
         </div>
         <div className="ads-creative-grid">
@@ -1769,18 +1722,18 @@ export default function AdsAdminPage() {
                     <p className="meta-line">{campaign.name} · {campaign.advertiser}</p>
                   </div>
                   <span className={`status-badge ${creative.isEnabled ? "status-active" : "status-draft"}`}>
-                    {creative.isEnabled ? "ativo" : "inativo"}
+                    {creative.isEnabled ? "habilitado" : "suspenso"}
                   </span>
                 </div>
-                <div className="ads-slot-preview">
+                <div className={`ads-slot-preview ads-slot-preview-${creative.slot || "generic"}`}>
                   <small>{SLOT_LABELS[creative.slot] || creative.slot}</small>
                   <img src={creative.imageUrl} alt={creative.altText || creative.title || creative.slot} />
                 </div>
                 <p className="meta-line">
                   Destino: {creative.destinationUrl || "sem link"} · Revisão: {creative.reviewStatus || "draft"}
                 </p>
-                <button className="chip" type="button" onClick={() => toggleCreative(creative)}>
-                  {creative.isEnabled ? "Desligar criativo" : "Ligar criativo"}
+                <button className="chip" type="button" disabled={creative.reviewStatus !== "approved"} title={creative.reviewStatus !== "approved" ? "A aprovação habilita este criativo automaticamente." : "Controle excepcional de entrega"} onClick={() => toggleCreative(creative)}>
+                  {creative.isEnabled ? "Suspender entrega" : "Retomar entrega"}
                 </button>
               </article>
             ))
@@ -1849,8 +1802,11 @@ export default function AdsAdminPage() {
       <>
       {isLoading ? <p className="empty">Carregando campanhas...</p> : null}
       {!isLoading ? (
-        <div className="admin-list-header">
-          <strong>Campanhas ({filteredCampaigns.length})</strong>
+        <div className="admin-list-header ads-campaigns-header">
+          <div>
+            <strong>Operação de campanhas ({filteredCampaigns.length})</strong>
+            <p className="meta-line">Acompanhe prontidão e veiculação. A revisão editorial e os arquivos ficam em seus ambientes próprios.</p>
+          </div>
           <input
             className="search-input"
             placeholder="Buscar campanha ou anunciante..."
@@ -1865,70 +1821,116 @@ export default function AdsAdminPage() {
             <option value="ended">Encerrada</option>
           </select>
           <div className="admin-actions-row">
-            <button className="chip" type="button" onClick={() => applyStatusBulk("active")}>Ativar filtradas</button>
-            <button className="chip" type="button" onClick={() => applyStatusBulk("paused")}>Pausar filtradas</button>
+            <button className="chip" type="button" onClick={() => applyStatusBulk("active")}>Colocar prontas no ar</button>
+            <button className="chip" type="button" onClick={() => applyStatusBulk("paused")}>Pausar ativas</button>
           </div>
         </div>
       ) : null}
 
-      <div className="venue-list">
-        {filteredCampaigns.map((item) => (
-          <article key={item.id} className="venue-card">
-            <div>
+      <div className="venue-list ads-campaigns-list">
+        {filteredCampaigns.map((item) => {
+          const readinessBlockers = getCampaignReadinessBlockers(item);
+          const slotLabels = [...new Set(item.creatives.map((creative) => SLOT_LABELS[creative.slot] || creative.slot))];
+          const isEnded = item.status === "ended";
+          const isActive = item.status === "active";
+          const canActivate = !isEnded && readinessBlockers.length === 0;
+          return (
+          <article key={item.id} className="venue-card ads-campaign-operation-card">
+            <div className="ads-campaign-operation-summary">
               <h3>{item.name}</h3>
               <p className="meta-line">{item.advertiser} - prioridade {item.priority}</p>
-              <p className="meta-line">
-                Status:
-                {" "}
+              <div className="ads-campaign-operation-status">
                 <span className={`status-badge status-${item.status}`}>{item.status}</span>
-                {" "}
-                | {item.runInAllSlots ? "Todos os slots" : "Por slot"}
-              </p>
+                <span>{item.runInAllSlots ? "Todos os slots compatíveis" : "Posições definidas"}</span>
+                <span>{item.creatives.length} criativo(s)</span>
+              </div>
               {item.startsAt || item.endsAt ? (
                 <p className="meta-line">
                   Janela: {item.startsAt ? new Date(item.startsAt).toLocaleString("pt-BR") : "sem inicio"} ate {item.endsAt ? new Date(item.endsAt).toLocaleString("pt-BR") : "sem fim"}
                 </p>
               ) : null}
-              <p className="meta-line">Criativos: {item.creatives.length}</p>
-              {SLOT_OPTIONS.map((slot) => {
-                const slotCreative = item.creatives.find((creative) => creative.slot === slot);
-                if (!slotCreative) return null;
-                return (
-                  <div key={`${item.id}-${slot}`} className="ads-slot-preview">
-                    <small>{SLOT_LABELS[slot] || slot}</small>
-                    <img src={slotCreative.imageUrl} alt={slotCreative.altText || slotCreative.title || slot} />
+              {slotLabels.length ? <p className="meta-line">Posições: {slotLabels.join(" · ")}</p> : null}
+              {readinessBlockers.length ? (
+                <p className="ads-campaign-readiness">Para veicular: {readinessBlockers.join(" · ")}.</p>
+              ) : (
+                <p className="ads-campaign-ready">Pronta para operação comercial.</p>
+              )}
+            </div>
+            <div className="ads-campaign-operation-actions">
+              <button className="chip" type="button" onClick={() => setSelectedCampaignCreatives(item)}>
+                Ver criativos ({item.creatives.length})
+              </button>
+              {!isEnded && !isActive ? (
+                <button className="chip active" type="button" disabled={!canActivate} title={!canActivate ? readinessBlockers.join("; ") : ""} onClick={() => setCampaignStatus(item, "active")}>
+                  {item.status === "paused" ? "Retomar campanha" : "Colocar no ar"}
+                </button>
+              ) : null}
+              {isActive ? <button className="chip" type="button" onClick={() => setCampaignStatus(item, "paused")}>Pausar campanha</button> : null}
+              {!isEnded ? <button className="chip" type="button" onClick={() => setConfirmEndCampaign(item)}>Encerrar</button> : null}
+              <button className="chip" type="button" onClick={() => duplicateCampaign(item)}>Duplicar</button>
+            </div>
+          </article>
+          );
+        })}
+      </div>
+      {!isLoading && filteredCampaigns.length === 0 ? <p className="empty">Nenhuma campanha encontrada neste filtro.</p> : null}
+
+      <section className="ads-manual-admin-panel clean-card">
+        <div className="ads-manual-admin-heading">
+          <div>
+            <span className="eyebrow">Ferramenta interna</span>
+            <strong>Criar campanha interna</strong>
+            <p className="meta-line">Use apenas para campanhas 77Gira, correções operacionais ou exceções aprovadas. O fluxo comercial começa no workspace do anunciante.</p>
+          </div>
+          <button type="button" className="chip" onClick={() => setShowManualCampaignForm((current) => !current)}>
+            {showManualCampaignForm ? "Ocultar formulário" : "Criar campanha"}
+          </button>
+        </div>
+        {showManualCampaignForm ? (
+          <form className="venue-form ads-manual-admin-form" onSubmit={handleCreateCampaign}>
+            <h3 className="section-title">Nova campanha manual</h3>
+            <input placeholder="Anunciante" value={campaignForm.advertiser} onChange={(e) => setCampaignForm((prev) => ({ ...prev, advertiser: e.target.value }))} required />
+            <input placeholder="Nome da campanha" value={campaignForm.name} onChange={(e) => setCampaignForm((prev) => ({ ...prev, name: e.target.value }))} required />
+            <div className="form-actions-inline">
+              <input type="datetime-local" value={campaignForm.startsAt} onChange={(e) => setCampaignForm((prev) => ({ ...prev, startsAt: e.target.value }))} />
+              <input type="datetime-local" value={campaignForm.endsAt} onChange={(e) => setCampaignForm((prev) => ({ ...prev, endsAt: e.target.value }))} />
+            </div>
+            <div className="form-actions-inline">
+              <select value={campaignForm.status} onChange={(e) => setCampaignForm((prev) => ({ ...prev, status: e.target.value }))}>
+                <option value="draft">Rascunho</option><option value="active">Ativa</option><option value="paused">Pausada</option><option value="ended">Encerrada</option>
+              </select>
+              <input type="number" min="1" max="10" value={campaignForm.priority} onChange={(e) => setCampaignForm((prev) => ({ ...prev, priority: Number(e.target.value || 1) }))} />
+            </div>
+            <label className="meta-line"><input type="checkbox" checked={campaignForm.runInAllSlots} onChange={(e) => setCampaignForm((prev) => ({ ...prev, runInAllSlots: e.target.checked }))} /> Rodar em todos os slots</label>
+            <label className="meta-line"><input type="checkbox" checked={campaignForm.isEnabled} onChange={(e) => setCampaignForm((prev) => ({ ...prev, isEnabled: e.target.checked }))} /> Campanha habilitada</label>
+            <button className="btn-primary" type="submit" disabled={createCampaign.isPending}>{createCampaign.isPending ? "Criando..." : "Criar campanha"}</button>
+          </form>
+        ) : null}
+      </section>
+      </>
+      ) : null}
+
+      {selectedCampaignCreatives ? (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setSelectedCampaignCreatives(null)}>
+          <div className="modal-card ads-campaign-creatives-modal" role="dialog" aria-modal="true" aria-labelledby="campaign-creatives-title" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="advertiser-readonly-title">
+              <div><h3 id="campaign-creatives-title">Criativos de {selectedCampaignCreatives.name}</h3><p className="meta-line">Arquivos vinculados à campanha e seus respectivos touchpoints.</p></div>
+              <button className="chip" type="button" onClick={() => setSelectedCampaignCreatives(null)}>Fechar</button>
+            </div>
+            <div className="ads-campaign-creatives-modal-grid">
+              {selectedCampaignCreatives.creatives.map((creative) => (
+                <article key={creative.id} className="ads-campaign-creative-detail">
+                  <div className="ads-review-asset" style={{ "--ads-review-aspect": SLOT_ASPECT_RATIOS[creative.slot] || "58 / 35" }}>
+                    {creative.imageUrl ? <img src={creative.imageUrl} alt={creative.altText || creative.title || SLOT_LABELS[creative.slot] || creative.slot} /> : <span>Arquivo indisponível</span>}
                   </div>
-                );
-              })}
-              {item.creatives.map((creative) => (
-                <p key={creative.id} className="meta-line">
-                  [{creative.slot}] {creative.title || "Sem titulo"} - {creative.isEnabled ? "ativo" : "inativo"}
-                  {" "}
-                  <button className="btn-link" type="button" onClick={() => toggleCreative(creative)}>
-                    {creative.isEnabled ? "desligar" : "ligar"}
-                  </button>
-                </p>
+                  <strong>{creative.title || "Criativo sem título"}</strong>
+                  <small>{SLOT_LABELS[creative.slot] || creative.slot} · {creative.reviewStatus || "sem revisão"}</small>
+                </article>
               ))}
             </div>
-            <button className="chip" type="button" onClick={() => toggleCampaign(item)}>
-              {item.isEnabled ? "Desligar campanha" : "Ligar campanha"}
-            </button>
-            <button className="chip" type="button" onClick={() => setCampaignStatus(item, "active")}>
-              Ativar
-            </button>
-            <button className="chip" type="button" onClick={() => setCampaignStatus(item, "paused")}>
-              Pausar
-            </button>
-            <button className="chip" type="button" onClick={() => setConfirmEndCampaign(item)}>
-              Encerrar
-            </button>
-            <button className="chip" type="button" onClick={() => duplicateCampaign(item)}>
-              Duplicar
-            </button>
-          </article>
-        ))}
-      </div>
-      </>
+            {selectedCampaignCreatives.creatives.length === 0 ? <p className="empty">Esta campanha ainda não possui criativos.</p> : null}
+          </div>
+        </div>
       ) : null}
 
       {confirmEndCampaign ? (

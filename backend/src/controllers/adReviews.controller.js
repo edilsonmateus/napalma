@@ -30,6 +30,8 @@ async function transition(req, res, next, { action, expected, toStatus, requireR
         reviewedByUserId: action === "submit" ? null : req.user.id,
         requiresReviewAfterEdit: false
       };
+      if (entityType === "creative" && action === "approve") data.isEnabled = true;
+      if (entityType === "creative" && ["request_changes", "reject"].includes(action)) data.isEnabled = false;
       const updated = await repo.update({ where: { id }, data });
       await tx.adReviewLog.create({ data: { entityType, entityId: id, action, fromStatus: current.reviewStatus, toStatus, actorUserId: req.user.id, reason: reason || null } });
       return updated;
@@ -43,6 +45,7 @@ async function transition(req, res, next, { action, expected, toStatus, requireR
 
 export const submitAdReview = (req, res, next) => transition(req, res, next, { action: "submit", expected: ["draft", "rejected", "changes_requested"], toStatus: "pending_review" });
 export const approveAdReview = (req, res, next) => transition(req, res, next, { action: "approve", expected: ["pending_review"], toStatus: "approved" });
+export const requestAdReviewChanges = (req, res, next) => transition(req, res, next, { action: "request_changes", expected: ["pending_review"], toStatus: "changes_requested", requireReason: true });
 export const rejectAdReview = (req, res, next) => transition(req, res, next, { action: "reject", expected: ["pending_review"], toStatus: "rejected", requireReason: true });
 
 export async function getAdReviewHistory(req, res, next) {
@@ -55,10 +58,21 @@ export async function getAdReviewHistory(req, res, next) {
 
 export async function listAdReviewQueue(_req, res, next) {
   try {
-    const [campaigns, creatives] = await Promise.all([
-      prisma.adCampaign.findMany({ where: { reviewStatus: "pending_review" }, orderBy: { submittedAt: "asc" } }),
-      prisma.adCreative.findMany({ where: { reviewStatus: "pending_review" }, include: { campaign: { select: { id: true, name: true, advertiser: true } } }, orderBy: { submittedAt: "asc" } })
+    const campaignInclude = { creatives: { orderBy: { createdAt: "desc" }, take: 4 } };
+    const creativeInclude = { campaign: { select: { id: true, name: true, advertiser: true } } };
+    const [campaigns, creatives, changesRequestedCampaigns, changesRequestedCreatives, rejectedCampaigns, rejectedCreatives] = await Promise.all([
+      prisma.adCampaign.findMany({ where: { reviewStatus: "pending_review" }, include: campaignInclude, orderBy: { submittedAt: "asc" } }),
+      prisma.adCreative.findMany({ where: { reviewStatus: "pending_review" }, include: creativeInclude, orderBy: { submittedAt: "asc" } }),
+      prisma.adCampaign.findMany({ where: { reviewStatus: "changes_requested" }, include: campaignInclude, orderBy: { updatedAt: "desc" }, take: 100 }),
+      prisma.adCreative.findMany({ where: { reviewStatus: "changes_requested" }, include: creativeInclude, orderBy: { updatedAt: "desc" }, take: 100 }),
+      prisma.adCampaign.findMany({ where: { reviewStatus: "rejected" }, include: campaignInclude, orderBy: { rejectedAt: "desc" }, take: 100 }),
+      prisma.adCreative.findMany({ where: { reviewStatus: "rejected" }, include: creativeInclude, orderBy: { rejectedAt: "desc" }, take: 100 })
     ]);
-    res.json({ campaigns, creatives });
+    res.json({
+      campaigns,
+      creatives,
+      changesRequested: { campaigns: changesRequestedCampaigns, creatives: changesRequestedCreatives },
+      rejected: { campaigns: rejectedCampaigns, creatives: rejectedCreatives }
+    });
   } catch (error) { next(error); }
 }

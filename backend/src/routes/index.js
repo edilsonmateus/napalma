@@ -94,7 +94,7 @@ import {
   updateAdvertiserAccount,
   updateAdvertiserMembership
 } from "../controllers/advertiserAccounts.controller.js";
-import { approveAdReview, getAdReviewHistory, listAdReviewQueue, rejectAdReview, submitAdReview } from "../controllers/adReviews.controller.js";
+import { approveAdReview, getAdReviewHistory, listAdReviewQueue, rejectAdReview, requestAdReviewChanges, submitAdReview } from "../controllers/adReviews.controller.js";
 import { createMyAdvertiserCampaign, createMyAdvertiserCreative, deleteMyAdvertiserCampaign, duplicateMyAdvertiserCampaign, endMyAdvertiserCampaign, listMyAdvertiserAccessRequests, listMyAdvertiserAccounts, listMyAdvertiserCampaigns, requestMyAdvertiserAccess, setMyAdvertiserCampaignLifecycle, submitMyAdvertiserReview, updateMyAdvertiserCampaign, updateMyAdvertiserCreative } from "../controllers/advertiserPortal.controller.js";
 import { decideMyArtistInvitation, inviteArtistTeamMember, listArtistTeam, listMyArtistInvitations, revokeArtistTeamMember, updateArtistTeamMember } from "../controllers/artistTeam.controller.js";
 import { allocateMyWalletCredits, createMyPaymentOrder, getAdsBillingOperations, getMyAdvertiserWallet, getMyPaymentOrder, processAdminMockPaymentOrder, processMyMockPaymentOrder } from "../controllers/adPayments.controller.js";
@@ -367,6 +367,7 @@ router.get("/ads/reviews/queue", ...canManageAdReviews, listAdReviewQueue);
 router.get("/ads/reviews/:entityType/:id/history", ...canManageAdReviews, getAdReviewHistory);
 router.post("/ads/reviews/:entityType/:id/submit", ...canManageAdReviews, submitAdReview);
 router.post("/ads/reviews/:entityType/:id/approve", ...canManageAdReviews, approveAdReview);
+router.post("/ads/reviews/:entityType/:id/request-changes", ...canManageAdReviews, requestAdReviewChanges);
 router.post("/ads/reviews/:entityType/:id/reject", ...canManageAdReviews, rejectAdReview);
 router.get("/ads/advertiser-accounts", ...canManageAdvertiserAccounts, listAdvertiserAccounts);
 router.get("/ads/advertiser-accounts/:id", ...canManageAdvertiserAccounts, getAdvertiserAccount);

@@ -21,11 +21,19 @@ describe("Ads canonical placement catalog", () => {
       expect(placement.key).toBe(placement.legacySlot);
       expect(placement.recommendedWidth).toBeGreaterThan(0);
       expect(placement.recommendedHeight).toBeGreaterThan(0);
+      expect(placement.renderedCardDimensions).toMatch(/^\d+ x \d+$/);
       expect(placement.allowedMimeTypes).toEqual(["image/jpeg", "image/png", "image/webp"]);
       expect(placement.maxFileSizeBytes).toBe(5 * 1024 * 1024);
       expect(placement.commercialRules.purchaseEnabled).toBe(false);
       expect(placement.commercialRules.pricingConfigured).toBe(false);
     }
+  });
+
+  it("distinguishes upload images from the full native cards", () => {
+    const explore = AD_PLACEMENTS.find((placement) => placement.key === "explore_feed_large");
+    const radar = AD_PLACEMENTS.find((placement) => placement.key === "radar_header");
+    expect(explore).toMatchObject({ recommendedWidth: 580, recommendedHeight: 350, renderedCardDimensions: "580 x 455" });
+    expect(radar).toMatchObject({ recommendedWidth: 580, recommendedHeight: 258, renderedCardDimensions: "580 x 350" });
   });
 
   it("exposes the versioned catalog through a read-only controller", () => {

@@ -16,6 +16,7 @@ export const AD_PLACEMENTS = Object.freeze([
     // A imagem é a área de foto; o copy nativo completa o card 580 x 455.
     recommendedWidth: 580,
     recommendedHeight: 350,
+    renderedCardDimensions: "580 x 455",
     aspectRatio: "58:35",
     allowedMimeTypes: IMAGE_MIME_TYPES,
     maxFileSizeBytes: FIVE_MB,
@@ -40,6 +41,7 @@ export const AD_PLACEMENTS = Object.freeze([
     format: "display_image",
     recommendedWidth: 580,
     recommendedHeight: 240,
+    renderedCardDimensions: "580 x 240",
     aspectRatio: "29:12",
     allowedMimeTypes: IMAGE_MIME_TYPES,
     maxFileSizeBytes: FIVE_MB,
@@ -65,6 +67,7 @@ export const AD_PLACEMENTS = Object.freeze([
     // A imagem é a área de foto; o texto nativo completa o card 580 x 350.
     recommendedWidth: 580,
     recommendedHeight: 258,
+    renderedCardDimensions: "580 x 350",
     aspectRatio: "290:129",
     allowedMimeTypes: IMAGE_MIME_TYPES,
     maxFileSizeBytes: FIVE_MB,
@@ -89,6 +92,7 @@ export const AD_PLACEMENTS = Object.freeze([
     format: "display_image",
     recommendedWidth: 900,
     recommendedHeight: 1200,
+    renderedCardDimensions: "900 x 1200",
     aspectRatio: "3:4",
     allowedMimeTypes: IMAGE_MIME_TYPES,
     maxFileSizeBytes: FIVE_MB,

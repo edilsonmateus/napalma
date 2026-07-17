@@ -308,14 +308,16 @@ export async function setMyAdvertiserCampaignLifecycle(req, res, next) {
   try {
     const { campaignId } = campaignParams.parse(req.params);
     const { status } = z.object({ status: z.enum(["active", "paused"]) }).parse(req.body);
-    const current = await prisma.adCampaign.findUnique({ where: { id: campaignId } });
+    const current = await prisma.adCampaign.findUnique({ where: { id: campaignId }, include: { creatives: true } });
     if (!current?.advertiserAccountId) return res.status(404).json({ error: "campaign_not_found" });
     const access = await membership(req.user.id, current.advertiserAccountId);
     if (!access) return deny(res);
     if (!WRITE_ROLES.includes(access.role)) return deny(res, true);
-    if (!["active", "paused"].includes(current.status)) return res.status(409).json({ error: "invalid_campaign_lifecycle", message: "A campanha precisa estar ativada para ser pausada ou retomada." });
-    if (status === "active" && (current.reviewStatus !== "approved" || current.budgetCredits <= current.spentCredits)) {
-      return res.status(409).json({ error: "campaign_not_ready", message: "A campanha precisa de revisão aprovada e patacos disponíveis para entrar no ar." });
+    if (current.status === "ended") return res.status(409).json({ error: "campaign_ended", message: "Uma campanha encerrada não pode ser retomada." });
+    if (status === "paused" && current.status !== "active") return res.status(409).json({ error: "invalid_campaign_lifecycle", message: "A campanha precisa estar no ar para ser pausada." });
+    const hasApprovedCreative = current.creatives.some((creative) => creative.isEnabled && creative.reviewStatus === "approved");
+    if (status === "active" && (current.reviewStatus !== "approved" || current.budgetCredits <= current.spentCredits || !hasApprovedCreative)) {
+      return res.status(409).json({ error: "campaign_not_ready", message: "A campanha precisa de revisão aprovada, criativo aprovado e patacos disponíveis para entrar no ar." });
     }
     const item = await prisma.adCampaign.update({ where: { id: campaignId }, data: { status, isEnabled: status === "active" }, include: { creatives: true } });
     return res.json({ item });

@@ -39,9 +39,13 @@ export async function uploadAdCreativeAsset(req, res, next) {
     const expectedRatio = placement.recommendedWidth / placement.recommendedHeight;
     const actualRatio = metadata.width / metadata.height;
     if (Math.abs(actualRatio - expectedRatio) / expectedRatio > 0.12) {
+      const imageDimensions = `${placement.recommendedWidth} x ${placement.recommendedHeight}`;
+      const cardContext = placement.renderedCardDimensions !== imageDimensions
+        ? ` O card completo no app mede ${placement.renderedCardDimensions} e inclui copy nativo do 77Gira.`
+        : "";
       return res.status(400).json({
         error: "invalid_aspect_ratio",
-        message: `Proporcao invalida para ${slot}. Use ${placement.aspectRatio}.`
+        message: `Proporcao invalida para ${slot}. Envie uma imagem ${imageDimensions}, na proporcao ${placement.aspectRatio}.${cardContext}`
       });
     }
 
