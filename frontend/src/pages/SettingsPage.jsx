@@ -12,6 +12,7 @@ export default function SettingsPage() {
   const { user } = useAuthStore();
 
   const canOpenVenuesPanel = Boolean(user) && (isAdminRole(user?.role) || isProducerRole(user?.role) || isVenueRole(user?.role));
+  const canManageOperations = isAdminRole(user?.role) || Boolean(user?.operationScopes?.length);
   const qrCanvasRef = useRef(null);
   const [showInstallBtn, setShowInstallBtn] = useState(false);
   const [showShareBtn, setShowShareBtn] = useState(false);
@@ -136,7 +137,7 @@ export default function SettingsPage() {
           </Link>
         </div>
 
-        <ManagementHub user={user} canManageVenues={canOpenVenuesPanel} canManageAds={isAdminRole(user?.role)} canManageUsers={isAdminRole(user?.role)}/>
+        <ManagementHub user={user} canManageVenues={canOpenVenuesPanel} canManageAds={isAdminRole(user?.role)} canManageUsers={isAdminRole(user?.role)} canManageOperations={canManageOperations}/>
 
         {!user ? <div className="auth-actions">
             <>

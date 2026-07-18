@@ -143,6 +143,23 @@ export async function getPushStatus(req, res) {
   return res.json({ activeSubscriptions });
 }
 
+/** Internal health summary. It deliberately returns aggregate counts only. */
+export async function getOperationsNotificationsOverview(_req, res, next) {
+  try {
+    const now = new Date();
+    const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const [activeSubscriptions, activeSessions, deliveriesLast24h, expiredSubscriptions] = await Promise.all([
+      prisma.pushSubscription.count({ where: { isActive: true } }),
+      prisma.toNaPistaSession.count({ where: { isActive: true, expiresAt: { gt: now } } }),
+      prisma.toNaPistaDelivery.count({ where: { sentAt: { gte: since } } }),
+      prisma.pushSubscription.count({ where: { isActive: false } })
+    ]);
+    return res.json({ item: { activeSubscriptions, activeSessions, deliveriesLast24h, inactiveSubscriptions: expiredSubscriptions, generatedAt: now.toISOString() } });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function sendTestPush(req, res) {
   if (!hasPushConfig()) {
     return res.status(503).json({

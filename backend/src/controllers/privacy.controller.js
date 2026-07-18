@@ -1,10 +1,12 @@
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
 import { recordAuditEvent } from "../services/audit.service.js";
 import { getPrivacyRetentionPreview } from "../services/privacyRetention.service.js";
 import { buildPrivacyExport } from "../services/privacyExport.service.js";
 import { getSecurityReadiness } from "../config/env.js";
+import { env } from "../config/env.js";
 
 const POLICY_VERSION = "1.2";
 const PRIVACY_REQUEST_SLA_DAYS = Number.parseInt(process.env.PRIVACY_REQUEST_SLA_DAYS || "15", 10) || 15;
@@ -25,6 +27,17 @@ const requestListSchema = z.object({
 const requestDecisionSchema = z.object({
   status: z.enum(["received", "in_review", "completed", "rejected", "cancelled"]),
   resolutionNote: z.string().trim().max(1000).optional().nullable()
+});
+const operationsRequestListSchema = z.object({
+  status: z.enum(["all", "received", "in_review", "completed", "rejected", "cancelled"]).default("all"),
+  query: z.string().trim().max(120).optional().default(""),
+  limit: z.coerce.number().int().min(1).max(100).default(50)
+});
+const operationsRequestActionSchema = z.object({
+  action: z.enum(["take_ownership", "request_information", "conclude_with_retention"]),
+  note: z.string().trim().min(5).max(1000).optional(),
+  confirmationProtocol: z.string().trim().max(32).optional(),
+  webauthnProof: z.string().trim().max(1200).optional()
 });
 const auditListSchema = z.object({
   action: z.string().trim().min(1).max(120).optional(),
@@ -49,6 +62,33 @@ function privacyRequestDueAt(requestedAt = new Date()) {
   const dueAt = new Date(requestedAt);
   dueAt.setDate(dueAt.getDate() + PRIVACY_REQUEST_SLA_DAYS);
   return dueAt;
+}
+
+function getOperationalRisk(item) {
+  const now = Date.now();
+  const dueAt = item.dueAt ? new Date(item.dueAt).getTime() : null;
+  const dueSoon = dueAt && dueAt - now <= 3 * 24 * 60 * 60 * 1000;
+  if (item.type === "deletion" || item.type === "anonymization") return dueSoon ? "high" : "medium";
+  if (dueSoon) return "medium";
+  return "low";
+}
+
+function safeRequesterName(user) {
+  return [user?.firstName, user?.lastName].filter(Boolean).join(" ") || "Pessoa solicitante";
+}
+
+function mapOperationsQueueItem(item) {
+  return {
+    id: item.id,
+    protocol: `PR-${item.id.slice(0, 8).toUpperCase()}`,
+    requesterName: safeRequesterName(item.user),
+    type: item.type,
+    status: item.status,
+    requestedAt: item.requestedAt,
+    dueAt: item.dueAt,
+    risk: getOperationalRisk(item),
+    responsible: item.handledBy ? safeRequesterName(item.handledBy) : null
+  };
 }
 
 function latestConsents(records) {
@@ -169,6 +209,179 @@ export async function updatePrivacyRequest(req, res, next) {
       select: requestSelect
     });
     await recordAuditEvent({ req, action: "privacy.request_updated", subjectType: "privacy_request", subjectId: item.id, metadata: { from: current.status, to: item.status, type: item.type } });
+    return res.json({ item });
+  } catch (error) { next(error); }
+}
+
+/**
+ * Operations Center endpoints deliberately return a redacted queue. Contact
+ * details and request narrative are visible only through the audited detail
+ * endpoint below, preventing accidental exposure through filters or lists.
+ */
+export async function listOperationsPrivacyRequests(req, res, next) {
+  try {
+    const { status, query, limit } = operationsRequestListSchema.parse(req.query || {});
+    const queryFilter = query
+      ? {
+          OR: [
+            { id: { contains: query, mode: "insensitive" } },
+            { user: { is: { firstName: { contains: query, mode: "insensitive" } } } },
+            { user: { is: { lastName: { contains: query, mode: "insensitive" } } } }
+          ]
+        }
+      : {};
+    const items = await prisma.privacyRequest.findMany({
+      where: { ...(status !== "all" ? { status } : {}), ...queryFilter },
+      orderBy: [{ dueAt: "asc" }, { requestedAt: "asc" }],
+      take: limit,
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        requestedAt: true,
+        dueAt: true,
+        user: { select: { firstName: true, lastName: true } },
+        handledBy: { select: { firstName: true, lastName: true } }
+      }
+    });
+    return res.json({ items: items.map(mapOperationsQueueItem) });
+  } catch (error) { next(error); }
+}
+
+export async function getOperationsPrivacyRequestDetail(req, res, next) {
+  try {
+    const item = await prisma.privacyRequest.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        details: true,
+        requestedAt: true,
+        dueAt: true,
+        resolvedAt: true,
+        resolutionNote: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            username: true,
+            role: true,
+            createdAt: true,
+            _count: { select: { managedVenues: true, artistAccesses: true, advertiserMemberships: true, adCampaigns: true, claims: true } }
+          }
+        },
+        handledBy: { select: { id: true, firstName: true, lastName: true } }
+      }
+    });
+    if (!item) return res.status(404).json({ error: "privacy_request_not_found", message: "Solicitação não encontrada." });
+
+    const counts = item.user._count;
+    const linkedProfiles = [
+      { label: "Conta comum", count: 1 },
+      ...(counts.managedVenues ? [{ label: "Casa vinculada", count: counts.managedVenues }] : []),
+      ...(counts.artistAccesses ? [{ label: "Perfil de artista", count: counts.artistAccesses }] : []),
+      ...(counts.advertiserMemberships ? [{ label: "Conta anunciante", count: counts.advertiserMemberships }] : [])
+    ];
+    const retentionItems = [
+      ...(counts.adCampaigns ? [{ key: "ad_campaigns", label: "Campanhas 77Gira Ads", count: counts.adCampaigns, reason: "Registros comerciais e de auditoria podem exigir retenção." }] : []),
+      ...(counts.claims ? [{ key: "claims", label: "Reivindicações e evidências", count: counts.claims, reason: "Evidências podem ser preservadas para prevenção de fraude e defesa de direitos." }] : []),
+      { key: "audit", label: "Trilha de auditoria", count: 1, reason: "Eventos sensíveis permanecem pelo período necessário à segurança e conformidade." }
+    ];
+    const history = await prisma.auditLog.findMany({
+      where: { subjectType: "privacy_request", subjectId: item.id },
+      orderBy: { createdAt: "desc" },
+      take: 30,
+      select: { id: true, action: true, createdAt: true, metadata: true, actor: { select: { firstName: true, lastName: true } } }
+    });
+    await recordAuditEvent({
+      req,
+      action: "privacy.operations_detail_opened",
+      subjectType: "privacy_request",
+      subjectId: item.id,
+      metadata: { purpose: "operations_center", sensitiveFields: ["contact", "request_details"] }
+    });
+    return res.json({
+      item: {
+        ...mapOperationsQueueItem(item),
+        details: item.details,
+        resolutionNote: item.resolutionNote,
+        resolvedAt: item.resolvedAt,
+        requester: { id: item.user.id, email: item.user.email, username: item.user.username, role: item.user.role, createdAt: item.user.createdAt },
+        linkedProfiles,
+        retentionItems,
+        history: history.map((entry) => ({
+          id: entry.id,
+          action: entry.action,
+          createdAt: entry.createdAt,
+          actorName: entry.actor ? safeRequesterName(entry.actor) : "Sistema"
+        }))
+      }
+    });
+  } catch (error) { next(error); }
+}
+
+export async function actOnOperationsPrivacyRequest(req, res, next) {
+  try {
+    const { action, note, confirmationProtocol, webauthnProof } = operationsRequestActionSchema.parse(req.body || {});
+    if (action === "request_information" && !note) {
+      return res.status(400).json({ error: "privacy_action_note_required", message: "Explique quais informações ou confirmações adicionais são necessárias." });
+    }
+    if (action === "conclude_with_retention" && (!note || note.length < 20)) {
+      return res.status(400).json({ error: "privacy_retention_justification_required", message: "Registre uma justificativa de pelo menos 20 caracteres para concluir com retenção." });
+    }
+    const current = await prisma.privacyRequest.findUnique({ where: { id: req.params.id }, select: { id: true, type: true, status: true } });
+    if (!current) return res.status(404).json({ error: "privacy_request_not_found", message: "Solicitação não encontrada." });
+    if (["completed", "rejected", "cancelled"].includes(current.status)) {
+      return res.status(409).json({ error: "privacy_request_closed", message: "Esta solicitação já foi encerrada e não aceita novas ações operacionais." });
+    }
+    if (action === "conclude_with_retention") {
+      if (!["deletion", "anonymization"].includes(current.type)) {
+        return res.status(409).json({ error: "privacy_retention_action_not_applicable", message: "Esta conclusão reforçada só se aplica a solicitações de exclusão ou anonimização." });
+      }
+      const expectedProtocol = `PR-${current.id.slice(0, 8).toUpperCase()}`;
+      if (String(confirmationProtocol || "").toUpperCase() !== expectedProtocol) {
+        return res.status(400).json({ error: "privacy_protocol_confirmation_invalid", message: "Digite o protocolo exato da solicitação antes de concluir." });
+      }
+      const biometricCredentials = await prisma.operationWebAuthnCredential.count({ where: { userId: req.user.id } });
+      if (biometricCredentials) {
+        try {
+          const proof = jwt.verify(webauthnProof || "", env.jwtSecret);
+          if (proof.sub !== req.user.id || proof.purpose !== "operations_sensitive_confirmation") throw new Error("invalid purpose");
+        } catch {
+          return res.status(403).json({ error: "privacy_webauthn_confirmation_required", message: "Confirme esta decisão com a biometria cadastrada neste dispositivo." });
+        }
+      }
+      const item = await prisma.privacyRequest.update({
+        where: { id: current.id },
+        data: { status: "completed", handledByUserId: req.user.id, resolvedAt: new Date(), resolutionNote: note },
+        select: requestSelect
+      });
+      await recordAuditEvent({
+        req,
+        action: "privacy.operations_retention_concluded",
+        subjectType: "privacy_request",
+        subjectId: item.id,
+        metadata: { from: current.status, to: "completed", decision: "retention_documented", confirmation: "typed_protocol" }
+      });
+      return res.json({ item, message: "Solicitação concluída com retenções documentadas. Nenhum dado foi excluído automaticamente." });
+    }
+    const item = await prisma.privacyRequest.update({
+      where: { id: current.id },
+      data: { status: "in_review", handledByUserId: req.user.id },
+      select: requestSelect
+    });
+    await recordAuditEvent({
+      req,
+      action: action === "take_ownership" ? "privacy.operations_taken" : "privacy.operations_information_requested",
+      subjectType: "privacy_request",
+      subjectId: item.id,
+      // The request text can contain personal data. The audit trail proves the
+      // action happened without duplicating free-form content in a second record.
+      metadata: { from: current.status, to: "in_review", informationRequested: action === "request_information", noteProvided: Boolean(note) }
+    });
     return res.json({ item });
   } catch (error) { next(error); }
 }

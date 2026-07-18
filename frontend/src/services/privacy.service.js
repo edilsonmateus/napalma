@@ -25,6 +25,21 @@ export async function updatePrivacyRequest(id, payload) {
   return data.item;
 }
 
+export async function listOperationsPrivacyRequests(params = {}) {
+  const { data } = await api.get("/admin/operations/privacy-requests", { params });
+  return data.items || [];
+}
+
+export async function getOperationsPrivacyRequestDetail(id) {
+  const { data } = await api.get(`/admin/operations/privacy-requests/${id}`);
+  return data.item;
+}
+
+export async function actOnOperationsPrivacyRequest(id, payload) {
+  const { data } = await api.post(`/admin/operations/privacy-requests/${id}/actions`, payload);
+  return data.item;
+}
+
 export async function listAuditLogs(params = {}) {
   const { data } = await api.get("/admin/audit-logs", { params });
   return data.items || [];

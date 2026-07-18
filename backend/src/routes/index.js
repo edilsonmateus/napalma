@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireRole } from "../middlewares/rbac.js";
+import { requireAnyOperationScope, requireOperationScope } from "../middlewares/operationsAccess.js";
 import { requireAuth } from "../middlewares/auth.js";
 import { createEvent, deleteEvent, getEventById, listEvents, updateEvent } from "../controllers/events.controller.js";
 import { request77FirstKit } from "../controllers/first77.controller.js";
@@ -9,6 +10,7 @@ import {
   createVenue,
   deleteVenue,
   getVenueById,
+  listOperationsVenues,
   listVenueProducers,
   listVenues,
   removeVenueManager,
@@ -54,6 +56,7 @@ import {
   activateToNaPista,
   deactivateToNaPista,
   deliverToNaPistaSuggestion,
+  getOperationsNotificationsOverview,
   getPushStatus,
   getToNaPistaStatus,
   sendTestPush,
@@ -67,7 +70,9 @@ import {
   listAcquisitionLeads,
   updateAcquisitionLead
 } from "../controllers/acquisition.controller.js";
-import { createClaimRequest, decideClaim, listClaims, listMyClaims } from "../controllers/claims.controller.js";
+import { createClaimRequest, decideClaim, getOperationsClaimDetail, listClaims, listMyClaims, listOperationsClaims } from "../controllers/claims.controller.js";
+import { getOperationsModerationQueue, getOperationsSettingsOverview, listOperationsAccessGrants, setOperationsAccessGrant } from "../controllers/operations.controller.js";
+import { getOperationsConfirmationOptions, getOperationsRegistrationOptions, getOperationsWebAuthnStatus, verifyOperationsConfirmation, verifyOperationsRegistration } from "../controllers/operationsWebauthn.controller.js";
 import { uploadImage } from "../controllers/uploads.controller.js";
 import { imageUpload } from "../middlewares/upload.js";
 import { createRateLimiter } from "../middlewares/rateLimit.js";
@@ -98,7 +103,7 @@ import { approveAdReview, getAdReviewHistory, listAdReviewQueue, rejectAdReview,
 import { createMyAdvertiserCampaign, createMyAdvertiserCreative, deleteMyAdvertiserCampaign, duplicateMyAdvertiserCampaign, endMyAdvertiserCampaign, listMyAdvertiserAccessRequests, listMyAdvertiserAccounts, listMyAdvertiserCampaigns, requestMyAdvertiserAccess, setMyAdvertiserCampaignLifecycle, submitMyAdvertiserReview, updateMyAdvertiserCampaign, updateMyAdvertiserCreative } from "../controllers/advertiserPortal.controller.js";
 import { decideMyArtistInvitation, inviteArtistTeamMember, listArtistTeam, listMyArtistInvitations, revokeArtistTeamMember, updateArtistTeamMember } from "../controllers/artistTeam.controller.js";
 import { allocateMyWalletCredits, createMyPaymentOrder, getAdsBillingOperations, getMyAdvertiserWallet, getMyPaymentOrder, processAdminMockPaymentOrder, processMyMockPaymentOrder } from "../controllers/adPayments.controller.js";
-import { createMyDeletionRequest, createMyPrivacyRequest, exportMyPrivacyData, getMyPrivacyOverview, getPrivacyRetentionPreviewForAdmin, getSecurityReadinessForAdmin, listAuditLogs, listPrivacyRequests, setMyPrivacyConsent, updatePrivacyRequest } from "../controllers/privacy.controller.js";
+import { actOnOperationsPrivacyRequest, createMyDeletionRequest, createMyPrivacyRequest, exportMyPrivacyData, getMyPrivacyOverview, getOperationsPrivacyRequestDetail, getPrivacyRetentionPreviewForAdmin, getSecurityReadinessForAdmin, listAuditLogs, listOperationsPrivacyRequests, listPrivacyRequests, setMyPrivacyConsent, updatePrivacyRequest } from "../controllers/privacy.controller.js";
 import {
   addVenueMenuInteraction,
   archiveVenueMenuItem,
@@ -222,8 +227,11 @@ router.post("/me/privacy/export", requireAuth, privacySensitiveActionLimiter, ex
 router.post("/me/privacy/deletion-request", requireAuth, privacySensitiveActionLimiter, createMyDeletionRequest);
 router.get("/admin/privacy-requests", requireAuth, requireRole(["admin"]), listPrivacyRequests);
 router.patch("/admin/privacy-requests/:id", requireAuth, requireRole(["admin"]), updatePrivacyRequest);
+router.get("/admin/operations/privacy-requests", requireAuth, requireOperationScope("privacy"), listOperationsPrivacyRequests);
+router.get("/admin/operations/privacy-requests/:id", requireAuth, requireOperationScope("privacy"), getOperationsPrivacyRequestDetail);
+router.post("/admin/operations/privacy-requests/:id/actions", requireAuth, requireOperationScope("privacy"), actOnOperationsPrivacyRequest);
 router.get("/admin/privacy-retention/preview", requireAuth, requireRole(["admin"]), getPrivacyRetentionPreviewForAdmin);
-router.get("/admin/audit-logs", requireAuth, requireRole(["admin"]), listAuditLogs);
+router.get("/admin/audit-logs", requireAuth, requireOperationScope("audit"), listAuditLogs);
 router.get("/admin/security-readiness", requireAuth, requireRole(["admin"]), getSecurityReadinessForAdmin);
 router.get("/admin/users", requireAuth, requireRole(["admin"]), listCommonUsers);
 router.post("/admin/users", requireAuth, requireRole(["admin"]), authLimiter, createCommonUser);
@@ -235,6 +243,16 @@ router.get("/analytics/impact-summary", requireAuth, requireRole(["admin", "prod
 router.post("/push/subscribe", pushLimiter, subscribePush);
 router.post("/push/unsubscribe", pushLimiter, unsubscribePush);
 router.get("/push/status", getPushStatus);
+router.get("/admin/operations/notifications", requireAuth, requireOperationScope("notifications"), getOperationsNotificationsOverview);
+router.get("/admin/operations/moderation", requireAuth, requireOperationScope("catalog"), getOperationsModerationQueue);
+router.get("/admin/operations/settings", requireAuth, requireOperationScope("settings"), getOperationsSettingsOverview);
+router.get("/admin/operations/access-grants", requireAuth, requireRole(["admin"]), listOperationsAccessGrants);
+router.put("/admin/operations/access-grants", requireAuth, requireRole(["admin"]), setOperationsAccessGrant);
+router.get("/admin/operations/webauthn/status", requireAuth, requireAnyOperationScope, getOperationsWebAuthnStatus);
+router.get("/admin/operations/webauthn/registration-options", requireAuth, requireAnyOperationScope, getOperationsRegistrationOptions);
+router.post("/admin/operations/webauthn/registration-verify", requireAuth, requireAnyOperationScope, verifyOperationsRegistration);
+router.get("/admin/operations/webauthn/confirmation-options", requireAuth, requireAnyOperationScope, getOperationsConfirmationOptions);
+router.post("/admin/operations/webauthn/confirmation-verify", requireAuth, requireAnyOperationScope, verifyOperationsConfirmation);
 router.post("/push/to-na-pista/activate", requireAuth, pushLimiter, activateToNaPista);
 router.post("/push/to-na-pista/deactivate", pushLimiter, deactivateToNaPista);
 router.get("/push/to-na-pista/status", pushLimiter, getToNaPistaStatus);
@@ -247,8 +265,10 @@ router.delete("/acquisition/leads/:id", ...canManageAcquisition, deleteAcquisiti
 router.post("/acquisition/leads/:id/interactions", ...canManageAcquisition, createAcquisitionInteraction);
 router.get("/me/claims", requireAuth, listMyClaims);
 router.post("/me/claims", requireAuth, claimsLimiter, createClaimRequest);
-router.get("/claims", ...canReviewClaims, listClaims);
-router.patch("/claims/:id/decision", ...canReviewClaims, decideClaim);
+router.get("/claims", requireAuth, requireOperationScope("claims"), listClaims);
+router.patch("/claims/:id/decision", requireAuth, requireOperationScope("claims"), decideClaim);
+router.get("/admin/operations/claims", requireAuth, requireOperationScope("claims"), listOperationsClaims);
+router.get("/admin/operations/claims/:id", requireAuth, requireOperationScope("claims"), getOperationsClaimDetail);
 router.get("/me/radar", requireAuth, listMyRadar);
 router.post("/me/radar/:eventId", requireAuth, markEventInRadar);
 router.delete("/me/radar/:eventId", requireAuth, unmarkEventFromRadar);
@@ -296,6 +316,7 @@ router.post("/admin/regions", ...canReviewClaims, createRegion);
 router.patch("/admin/regions/:id", ...canReviewClaims, updateRegion);
 router.delete("/admin/regions/:id", ...canReviewClaims, deleteRegion);
 router.get("/venues", listVenues);
+router.get("/admin/operations/venues", requireAuth, requireOperationScope("catalog"), listOperationsVenues);
 router.get("/venues/:id", getVenueById);
 router.get("/venues/:id/menu", requireFeatureFlag("VENUE_MENU_ENABLED"), getPublicVenueMenu);
 router.get("/venues/:id/menu/manage", ...canManageVenueMenus, getManagedVenueMenu);

@@ -8,6 +8,11 @@ const querySchema = z.object({
   scope: z.enum(["managed", "public"]).optional()
 });
 
+const operationsVenuesSchema = z.object({
+  query: z.string().trim().max(120).optional().default(""),
+  limit: z.coerce.number().int().min(1).max(100).default(50)
+});
+
 const optionalAnalyticsAccessSource = z.preprocess(
   (value) => value === "" ? null : value,
   z.enum(["manual", "gateway", "trial"]).optional().nullable()
@@ -296,6 +301,66 @@ export async function listVenues(req, res, next) {
     });
 
     res.json({ items: items.map(mapVenuePayload) });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Internal operations view. This intentionally exposes only the information
+ * needed to triage public catalogue quality; contacts remain behind the
+ * regular venue-management screens.
+ */
+export async function listOperationsVenues(req, res, next) {
+  try {
+    const { query, limit } = operationsVenuesSchema.parse(req.query || {});
+    const now = new Date();
+    const where = query ? {
+      OR: [
+        { name: { contains: query, mode: "insensitive" } },
+        { city: { contains: query, mode: "insensitive" } },
+        { neighborhood: { contains: query, mode: "insensitive" } },
+        { region: { contains: query, mode: "insensitive" } }
+      ]
+    } : undefined;
+    const venues = await prisma.venue.findMany({
+      where,
+      take: limit,
+      orderBy: [{ updatedAt: "desc" }],
+      select: {
+        id: true,
+        name: true,
+        city: true,
+        state: true,
+        neighborhood: true,
+        region: true,
+        imageUrl: true,
+        updatedAt: true,
+        menu: { select: { status: true } },
+        events: {
+          where: { startDate: { gte: now } },
+          orderBy: { startDate: "asc" },
+          take: 1,
+          select: { id: true, title: true, startDate: true, status: true }
+        },
+        _count: { select: { events: true, managerAccesses: true, producerAccesses: true } }
+      }
+    });
+    res.json({
+      items: venues.map((venue) => ({
+        id: venue.id,
+        name: venue.name,
+        location: [venue.neighborhood, venue.city, venue.state].filter(Boolean).join(" · "),
+        region: venue.region,
+        hasImage: Boolean(venue.imageUrl),
+        menuStatus: venue.menu?.status || "not_configured",
+        totalEvents: venue._count.events,
+        accessCount: venue._count.managerAccesses + venue._count.producerAccesses,
+        nextEvent: venue.events[0] || null,
+        updatedAt: venue.updatedAt,
+        attention: !venue.imageUrl || !venue.events.length || !venue.menu || venue.menu.status !== "published"
+      }))
+    });
   } catch (error) {
     next(error);
   }

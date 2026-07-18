@@ -74,7 +74,8 @@ function sanitizeUser(user) {
     neighborhood: user.neighborhood ?? "",
     postalCode: user.postalCode ?? "",
     role: user.role,
-    canUseReservedBrandUsername: Boolean(user.canUseReservedBrandUsername)
+    canUseReservedBrandUsername: Boolean(user.canUseReservedBrandUsername),
+    operationScopes: (user.operationAccessGrants || []).filter((grant) => !grant.revokedAt).map((grant) => grant.scope)
   };
 }
 
@@ -135,7 +136,7 @@ export async function login(req, res, next) {
   try {
     const data = loginSchema.parse(req.body);
     const email = data.email.toLowerCase();
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { email }, include: { operationAccessGrants: true } });
 
     if (!user) {
       return res.status(401).json({
@@ -225,7 +226,7 @@ export async function refresh(req, res, next) {
 
     const stored = await prisma.refreshToken.findUnique({
       where: { tokenHash },
-      include: { user: true }
+      include: { user: { include: { operationAccessGrants: true } } }
     });
 
     if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {

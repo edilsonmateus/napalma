@@ -22,6 +22,18 @@ enum UserRole {
   attendee
 }
 
+// Internal operational permissions are deliberately separate from the public
+// account role. A person can assist a specific queue without becoming a global
+// application administrator.
+enum OperationScope {
+  privacy
+  claims
+  catalog
+  notifications
+  audit
+  settings
+}
+
 enum AdCampaignStatus {
   draft
   active
@@ -271,9 +283,61 @@ model User {
   venueMenuInteractions       VenueMenuInteraction[]
   menuReviews                 VenueMenu[]              @relation("VenueMenuReviewedBy")
   menuAdInventoryAcceptances  VenueMenu[]              @relation("VenueMenuAdInventoryAcceptedBy")
+  operationAccessGrants       OperationAccessGrant[]   @relation("OperationAccessGrantUser")
+  operationAccessGrantsIssued OperationAccessGrant[]   @relation("OperationAccessGrantIssuer")
+  operationWebAuthnCredentials OperationWebAuthnCredential[]
+  operationWebAuthnChallenges  OperationWebAuthnChallenge[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model OperationAccessGrant {
+  id              String         @id @default(uuid())
+  userId          String
+  scope           OperationScope
+  grantedByUserId String
+  createdAt       DateTime       @default(now())
+  revokedAt       DateTime?
+
+  user      User @relation("OperationAccessGrantUser", fields: [userId], references: [id], onDelete: Cascade)
+  grantedBy User @relation("OperationAccessGrantIssuer", fields: [grantedByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, scope])
+  @@index([userId, revokedAt])
+  @@index([scope, revokedAt])
+}
+
+model OperationWebAuthnCredential {
+  id          String   @id @default(uuid())
+  userId      String
+  credentialId String  @unique
+  publicKey   Bytes
+  counter     Int      @default(0)
+  transports  Json?
+  deviceType  String?
+  backedUp    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  lastUsedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model OperationWebAuthnChallenge {
+  id        String   @id @default(uuid())
+  userId    String
+  purpose   String
+  challenge String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, purpose])
+  @@index([expiresAt])
 }
 
 model PrivacyConsentRecord {

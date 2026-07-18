@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, BriefcaseBusiness, ChevronRight, ExternalLink, Image, Megaphone, Music2, Store, Users } from "lucide-react";
+import { BarChart3, BriefcaseBusiness, ChevronRight, ExternalLink, Image, Megaphone, Music2, ShieldCheck, Store, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getMyArtists } from "../../services/artistWorkspace.service";
 import { getMyAdvertiserAccounts } from "../../services/advertiserPortal.service";
@@ -7,7 +7,7 @@ import { getMyAdvertiserAccounts } from "../../services/advertiserPortal.service
 const STORAGE_KEY = "77gira.config.hubGestao.collapsed";
 const enabled = (name) => String(import.meta.env[name] || "").toLowerCase() === "true";
 
-export default function ManagementHub({ user, canManageVenues, canManageAds, canManageUsers }) {
+export default function ManagementHub({ user, canManageVenues, canManageAds, canManageUsers, canManageOperations }) {
   const [collapsed, setCollapsed] = useState(() => { try { return localStorage.getItem(STORAGE_KEY) === "true"; } catch { return false; } });
   const [artists, setArtists] = useState([]);
   const [artistId, setArtistId] = useState("");
@@ -50,9 +50,10 @@ export default function ManagementHub({ user, canManageVenues, canManageAds, can
     }
     if (canManageVenues) items.push({ to: "/settings/venues", icon: Store, title: "Gestão de casas", description: "Administre casas de samba, programação e acessos operacionais.", action: "Gerenciar casas", badge: "Casas", chip: "Casas" });
     if (canManageAds) items.push({ to: "/settings/ads", icon: Megaphone, title: "Gestão de publicidade", description: "Revise campanhas, criativos, anunciantes e entregas da plataforma.", action: "Gerenciar Ads", badge: "Admin", chip: "Ads Admin" });
+    if (canManageOperations) items.push({ to: "/operacoes", icon: ShieldCheck, title: "Central de Operações", description: "Acompanhe solicitações de privacidade e mantenha uma trilha operacional auditável.", action: "Abrir central", badge: "Admin", chip: "Operações" });
     if (canManageUsers) items.push({ to: "/settings/users", icon: Users, title: "Gestão de usuários", description: "Crie contas comuns e autorize usernames oficiais da marca.", action: "Gerenciar usuários", badge: "Admin", chip: "Usuários" });
     return items;
-  }, [advertiserAccounts.length, artist, canManageAds, canManageUsers, canManageVenues]);
+  }, [advertiserAccounts.length, artist, canManageAds, canManageOperations, canManageUsers, canManageVenues]);
 
   function toggle() {
     const next = !collapsed; setCollapsed(next);

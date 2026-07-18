@@ -156,6 +156,11 @@ export async function getArtistProfile(id) {
   }
 }
 
+export async function getOperationsVenues(params = {}) {
+  const { data } = await api.get("/admin/operations/venues", { params });
+  return data.items || [];
+}
+
 export async function followArtist(id) {
   await api.post(`/artists/${id}/follow`);
 }
@@ -392,5 +397,15 @@ export async function getClaims(status) {
 
 export async function decideClaim(id, payload) {
   const { data } = await api.patch(`/claims/${id}/decision`, payload);
+  return data.item;
+}
+
+export async function getOperationsClaims(params = {}) {
+  const { data } = await api.get("/admin/operations/claims", { params });
+  return data.items || [];
+}
+
+export async function getOperationsClaimDetail(id) {
+  const { data } = await api.get(`/admin/operations/claims/${id}`);
   return data.item;
 }

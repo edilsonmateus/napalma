@@ -15,12 +15,12 @@ describe("privacy governance foundation", () => {
     expect(schema).toContain("PrivacyRequestStatus");
   });
 
-  it("protects the privacy center and routes administrative decisions to admins", () => {
+  it("protects the privacy center and routes operational decisions through explicit internal access", () => {
     const routes = read("backend/src/routes/index.js");
     expect(routes).toContain('router.get("/me/privacy", requireAuth, getMyPrivacyOverview)');
     expect(routes).toContain('router.post("/me/privacy/requests", requireAuth, privacyRequestLimiter, createMyPrivacyRequest)');
     expect(routes).toContain('router.get("/admin/privacy-requests", requireAuth, requireRole(["admin"]), listPrivacyRequests)');
-    expect(routes).toContain('router.get("/admin/audit-logs", requireAuth, requireRole(["admin"]), listAuditLogs)');
+    expect(routes).toContain('router.get("/admin/audit-logs", requireAuth, requireOperationScope("audit"), listAuditLogs)');
   });
 
   it("does not place raw IP addresses in the audit record helper", () => {

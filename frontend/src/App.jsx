@@ -44,6 +44,7 @@ const ArtistInsightsPage = lazy(() => import("./pages/ArtistInsightsPage"));
 const ArtistClaimDirectoryPage = lazy(() => import("./pages/ArtistClaimDirectoryPage"));
 const ArtistTeamPage = lazy(() => import("./pages/ArtistTeamPage"));
 const UsersAdminPage = lazy(() => import("./pages/UsersAdminPage"));
+const OperationsCenterPage = lazy(() => import("./pages/OperationsCenterPage"));
 
 const VISIT_DAY_KEY = "napalma:last-visit-day";
 const SPLASH_MS_MOBILE = 5000;
@@ -90,10 +91,12 @@ export default function App() {
   const [apiHealth, setApiHealth] = useState("checking");
   const { mutate: trackAudienceVisit } = useTrackAudienceVisitMutation();
   const isBackofficeMode = isAdminRole(user?.role) || isProducerRole(user?.role) || isVenueRole(user?.role);
+  const canAccessOperations = isAdminRole(user?.role) || Boolean(user?.operationScopes?.length);
   const isOnboardingRoute = location.pathname === "/onboarding";
   const isAdsRoute = location.pathname === "/anunciar"
     || location.pathname.startsWith("/workspace/anunciante")
     || location.pathname === "/settings/ads";
+  const isOperationsRoute = location.pathname === "/operacoes";
   const shouldForceOnboarding = !showSplash && !hasSeenOnboarding && !isOnboardingRoute;
 
   function getDefaultRoute() {
@@ -323,7 +326,7 @@ export default function App() {
   }
 
   return (
-    <div className={`app-shell ${isBackofficeMode ? "app-shell-admin" : ""} ${isAdsRoute ? "app-shell-ads" : ""}`}>
+    <div className={`app-shell ${isBackofficeMode ? "app-shell-admin" : ""} ${isAdsRoute ? "app-shell-ads" : ""} ${isOperationsRoute ? "app-shell-operations" : ""}`}>
       {isOffline ? <div className="offline-banner">Você está offline. Algumas ações podem falhar.</div> : null}
       {!isOffline && apiHealth === "unavailable" ? <div className="offline-banner api-health-banner">Estamos reconectando aos serviços. Você pode continuar navegando.</div> : null}
       <main className="app-content">
@@ -351,6 +354,7 @@ export default function App() {
             <Route path="/settings/privacy" element={<RequireAuth user={user}><PrivacyCenterPage /></RequireAuth>} />
             <Route path="/reivindicar-artista" element={<RequireAuth user={user}><ArtistClaimDirectoryPage /></RequireAuth>} />
             <Route path="/settings/users" element={isAdminRole(user?.role) ? <UsersAdminPage /> : <Navigate to="/settings" replace />} />
+            <Route path="/operacoes" element={canAccessOperations ? <OperationsCenterPage /> : <Navigate to="/settings" replace />} />
             <Route path="/workspace/anunciante" element={<RequireAuth user={user}><AdvertiserPortalPage /></RequireAuth>} />
             <Route path="/workspace/anunciante/campanhas" element={<RequireAuth user={user}><AdvertiserPortalPage /></RequireAuth>} />
             <Route path="/workspace/anunciante/novo-anuncio" element={<RequireAuth user={user}><AdvertiserPortalPage /></RequireAuth>} />
@@ -409,7 +413,7 @@ export default function App() {
           </Routes>
         </Suspense>
       </main>
-      {!isOnboardingRoute ? <BottomNav /> : null}
+      {!isOnboardingRoute && !isOperationsRoute ? <BottomNav /> : null}
     </div>
   );
 }

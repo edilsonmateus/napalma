@@ -63,6 +63,12 @@ const claimIdSchema = z.object({
   id: z.string().uuid()
 });
 
+const operationsClaimsListSchema = z.object({
+  status: z.enum(["all", "pending", "approved", "rejected"]).default("all"),
+  query: z.string().trim().max(120).optional().default(""),
+  limit: z.coerce.number().int().min(1).max(100).default(50)
+});
+
 function slugify(value) {
   return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
@@ -117,6 +123,29 @@ function mapClaim(claim) {
           email: claim.reviewedBy.email
         }
       : null
+  };
+}
+
+function operationalClaimRisk(claim) {
+  if (claim.requestType === "ownership" || claim.requestType === "artist_inclusion") return "high";
+  if (claim.requestType === "team_access") return "medium";
+  return "low";
+}
+
+function mapOperationsClaim(claim) {
+  const target = claim.artist?.name || claim.venue?.name || "Perfil em inclusão";
+  const requesterName = [claim.requestedBy?.firstName, claim.requestedBy?.lastName].filter(Boolean).join(" ") || "Pessoa solicitante";
+  return {
+    id: claim.id,
+    protocol: `RA-${claim.id.slice(0, 8).toUpperCase()}`,
+    target,
+    targetType: claim.targetType,
+    requestType: claim.requestType || "ownership",
+    status: claim.status,
+    requesterName,
+    createdAt: claim.createdAt,
+    risk: operationalClaimRisk(claim),
+    responsible: claim.reviewedBy ? [claim.reviewedBy.firstName, claim.reviewedBy.lastName].filter(Boolean).join(" ") : null
   };
 }
 
@@ -243,6 +272,53 @@ export async function listClaims(req, res, next) {
   } catch (error) {
     next(error);
   }
+}
+
+/** Redacted list for the internal Operations Center. Evidence and contacts stay out of queues. */
+export async function listOperationsClaims(req, res, next) {
+  try {
+    const { status, query, limit } = operationsClaimsListSchema.parse(req.query || {});
+    const queryFilter = query ? {
+      OR: [
+        { id: { contains: query, mode: "insensitive" } },
+        { artist: { is: { name: { contains: query, mode: "insensitive" } } } },
+        { venue: { is: { name: { contains: query, mode: "insensitive" } } } },
+        { requestedBy: { is: { firstName: { contains: query, mode: "insensitive" } } } },
+        { requestedBy: { is: { lastName: { contains: query, mode: "insensitive" } } } }
+      ]
+    } : {};
+    const items = await prisma.claimRequest.findMany({
+      where: { ...(status !== "all" ? { status } : {}), ...queryFilter },
+      orderBy: [{ status: "asc" }, { createdAt: "asc" }],
+      take: limit,
+      select: {
+        id: true, targetType: true, requestType: true, status: true, createdAt: true,
+        artist: { select: { name: true } }, venue: { select: { name: true } },
+        requestedBy: { select: { firstName: true, lastName: true } },
+        reviewedBy: { select: { firstName: true, lastName: true } }
+      }
+    });
+    return res.json({ items: items.map(mapOperationsClaim) });
+  } catch (error) { next(error); }
+}
+
+/** Explicit detail opening is audited because it exposes evidence and contact information. */
+export async function getOperationsClaimDetail(req, res, next) {
+  try {
+    const { id } = claimIdSchema.parse(req.params);
+    const claim = await prisma.claimRequest.findUnique({
+      where: { id },
+      include: {
+        venue: { select: { id: true, name: true, region: true, city: true } },
+        artist: { select: { id: true, name: true, isVerified: true } },
+        requestedBy: { select: { id: true, firstName: true, lastName: true, email: true, username: true, role: true } },
+        reviewedBy: { select: { id: true, firstName: true, lastName: true } }
+      }
+    });
+    if (!claim) return res.status(404).json({ error: "claim_not_found", message: "Reivindicação não encontrada." });
+    await recordAuditEvent({ req, action: "claim.operations_detail_opened", subjectType: "claim", subjectId: claim.id, metadata: { purpose: "operations_center", sensitiveFields: ["contact", "document", "evidence"] } });
+    return res.json({ item: { ...mapOperationsClaim(claim), claim: mapClaim(claim) } });
+  } catch (error) { next(error); }
 }
 
 export async function decideClaim(req, res, next) {

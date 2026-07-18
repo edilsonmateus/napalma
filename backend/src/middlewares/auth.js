@@ -36,13 +36,20 @@ export async function attachUser(req, _res, next) {
         neighborhood: true,
         postalCode: true,
         role: true,
-        canUseReservedBrandUsername: true
+        canUseReservedBrandUsername: true,
+        operationAccessGrants: {
+          where: { revokedAt: null },
+          select: { scope: true }
+        }
       }
     });
 
     if (!user) return next();
 
-    req.user = user;
+    req.user = {
+      ...user,
+      operationScopes: user.operationAccessGrants.map((grant) => grant.scope)
+    };
     req.userRole = user.role;
     return next();
   } catch (cause) {
