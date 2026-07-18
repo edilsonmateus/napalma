@@ -31,7 +31,7 @@ const modules = [
   { key: "privacy", label: "Privacidade e solicitações", icon: ShieldCheck },
   { key: "claims", label: "Reivindicações de artistas", icon: UserCheck },
   { key: "venues", label: "Casas e programação", icon: Building2, pending: true },
-  { key: "territories", label: "Praças e territórios", icon: MapPinned, adminOnly: true },
+  { key: "territories", label: "Praças e regiões", icon: MapPinned, adminOnly: true },
   { key: "ads", label: "77Gira Ads", icon: Megaphone, adminOnly: true },
   { key: "moderation", label: "Qualidade e moderação", icon: Gavel, pending: true },
   { key: "notifications", label: "Notificações", icon: Bell, pending: true },
@@ -112,9 +112,9 @@ function OperationsTerritoriesPanel({ items, loading, error, onRefresh }) {
   const active = items.filter((item) => item.isActive).length;
   const coverage = items.filter((item) => item.venuesCount > 0).length;
   return <>
-    <header className="operations-heading"><div><p>PRAÇAS E TERRITÓRIOS</p><h1>Crescimento territorial com leitura antes de expansão.</h1><span>As praças organizam o catálogo e ajudam a identificar onde há cobertura real, onde falta programação e onde uma decisão de cadastro tem impacto público.</span></div><button type="button" className="operations-secondary" onClick={onRefresh} disabled={loading}><RefreshCw size={16} className={loading ? "is-spinning" : ""}/> Atualizar</button></header>
-    <div className="operations-kpis operations-kpis-compact"><article><span>Praças ativas</span><strong>{active}</strong></article><article><span>Com casas</span><strong>{coverage}</strong></article><article className="is-attention"><span>Sem cobertura</span><strong>{items.filter((item) => item.isActive && !item.venuesCount).length}</strong></article><article><span>Casas mapeadas</span><strong>{items.reduce((sum, item) => sum + item.venuesCount, 0)}</strong></article></div>
-    <section className="operations-panel operations-queue-panel"><div className="operations-panel-title"><div><p>COBERTURA ATUAL</p><h2>Praças cadastradas</h2></div><span className="operations-queue-note">Criação e edição de praças continuam na gestão administrativa já existente.</span></div><div className="operations-table-wrap"><table className="operations-table"><thead><tr><th>Praça</th><th>Cidade</th><th>Estado</th><th>Casas</th><th>Origem</th><th>Status</th><th>Atualizada</th></tr></thead><tbody>{loading ? <tr><td colSpan="7" className="operations-table-loading">Carregando praças…</td></tr> : items.length ? items.map((item) => <tr key={item.id}><td><strong>{item.name}</strong></td><td>{item.city}</td><td>{item.state}</td><td>{item.venuesCount}</td><td>{item.source === "official" ? "Oficial" : item.source === "legacy" ? "Catálogo existente" : "Base inicial"}</td><td>{item.isActive ? <span className="operations-status operations-status-completed">Ativa</span> : <span className="operations-status operations-status-cancelled">Inativa</span>}</td><td>{item.updatedAt && new Date(item.updatedAt).getTime() > 1 ? formatDate(item.updatedAt) : "—"}</td></tr>) : <tr><td colSpan="7" className="operations-table-loading">Nenhuma praça foi encontrada.</td></tr>}</tbody></table></div></section>
+    <header className="operations-heading"><div><p>PRAÇAS E REGIÕES</p><h1>Crescimento territorial com leitura antes de expansão.</h1><span>As praças representam as cidades; as regiões organizam a descoberta local e ajudam a identificar cobertura, programação e impacto público.</span></div><button type="button" className="operations-secondary" onClick={onRefresh} disabled={loading}><RefreshCw size={16} className={loading ? "is-spinning" : ""}/> Atualizar</button></header>
+    <div className="operations-kpis operations-kpis-compact"><article><span>Regiões ativas</span><strong>{active}</strong></article><article><span>Com casas</span><strong>{coverage}</strong></article><article className="is-attention"><span>Sem cobertura</span><strong>{items.filter((item) => item.isActive && !item.venuesCount).length}</strong></article><article><span>Casas mapeadas</span><strong>{items.reduce((sum, item) => sum + item.venuesCount, 0)}</strong></article></div>
+    <section className="operations-panel operations-queue-panel"><div className="operations-panel-title"><div><p>COBERTURA ATUAL</p><h2>Regiões cadastradas</h2></div><span className="operations-queue-note">Criação e edição de regiões continuam na gestão administrativa já existente.</span></div><div className="operations-table-wrap"><table className="operations-table"><thead><tr><th>Região</th><th>Praça</th><th>Estado</th><th>Casas</th><th>Origem</th><th>Status</th><th>Atualizada</th></tr></thead><tbody>{loading ? <tr><td colSpan="7" className="operations-table-loading">Carregando regiões…</td></tr> : items.length ? items.map((item) => <tr key={item.id}><td><strong>{item.name}</strong></td><td>{item.city}</td><td>{item.state}</td><td>{item.venuesCount}</td><td>{item.source === "official" ? "Oficial" : item.source === "legacy" ? "Catálogo existente" : "Base inicial"}</td><td>{item.isActive ? <span className="operations-status operations-status-completed">Ativa</span> : <span className="operations-status operations-status-cancelled">Inativa</span>}</td><td>{item.updatedAt && new Date(item.updatedAt).getTime() > 1 ? formatDate(item.updatedAt) : "—"}</td></tr>) : <tr><td colSpan="7" className="operations-table-loading">Nenhuma região foi encontrada.</td></tr>}</tbody></table></div></section>
     {error ? <p className="operations-inline-error">{error}</p> : null}
   </>;
 }
@@ -357,7 +357,7 @@ export default function OperationsCenterPage() {
     try {
       setTerritoryItems(await getAdminRegions({ includeInactive: true }));
     } catch (loadError) {
-      setTerritoriesError(loadError?.response?.data?.message || "Não foi possível carregar as praças. Tente novamente.");
+      setTerritoriesError(loadError?.response?.data?.message || "Não foi possível carregar as regiões. Tente novamente.");
     } finally {
       setTerritoriesLoading(false);
     }
