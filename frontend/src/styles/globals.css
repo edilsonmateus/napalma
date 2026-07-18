@@ -13136,8 +13136,10 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
 
 
 /* Central de Operações — superfície interna clara e densa, isolada da UI pública. */
-.operations-center-screen { min-height: 100vh; background: #f3f6f9; color: #182235; padding: 24px; }
-.app-shell-admin.app-shell-operations { background: #f3f6f9; }
+.operations-center-screen { min-height: 100vh; background: #f8fafc; color: #182235; padding: 24px; }
+/* Like 77Gira Ads, Operations owns the full viewport: no inherited dark margins. */
+.app-shell-admin.app-shell-operations { max-width: none; width: 100%; min-height: 100vh; margin: 0; padding: 0 0 88px; background: #f8fafc; color: #182235; }
+.app-shell-operations .app-content { width: 100%; min-height: 100vh; margin: 0; background: #f8fafc; }
 .operations-topbar { width: min(1240px, 100%); margin: 0 auto 12px; display: flex; justify-content: space-between; align-items: center; color: #607087; font-size: 12px; }
 .operations-topbar > span { margin-left: auto; margin-right: 12px; }.operations-biometric { min-height: 30px; font-size: 11px; }
 .operations-back { display: inline-flex; align-items: center; gap: 7px; border: 0; background: transparent; color: #345677; font-size: 13px; font-weight: 650; text-decoration: none; cursor: pointer; padding: 0; }
