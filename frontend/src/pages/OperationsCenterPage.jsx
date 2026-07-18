@@ -249,6 +249,7 @@ export default function OperationsCenterPage() {
   const [accessGrantsError, setAccessGrantsError] = useState("");
   const [webauthn, setWebauthn] = useState({ enrolled: false, credentials: 0, loading: true, error: "" });
   const swipeStart = useRef(null);
+  const menuNavRef = useRef(null);
 
   async function loadQueue(overrides = {}) {
     setLoading(true);
@@ -308,6 +309,10 @@ export default function OperationsCenterPage() {
   }
 
   useEffect(() => { if (!canAccessSection(section)) setSection("overview"); }, [section, user?.id, user?.role, operationScopes.join("|")]);
+  useEffect(() => {
+    if (window.innerWidth > 760) return;
+    menuNavRef.current?.querySelector(`[data-operations-section="${section}"]`)?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [section, isAdmin, operationScopes.join("|")]);
 
   async function loadClaims() {
     setClaimsLoading(true);
@@ -555,8 +560,8 @@ export default function OperationsCenterPage() {
     <div className="operations-shell">
       <aside className="operations-sidebar" aria-label="Módulos da Central de Operações">
         <div className="operations-brand"><Landmark size={20}/><strong>Central de Operações</strong><small>77Gira</small></div>
-        <nav>
-          {visibleModules.map(({ key, label, icon: Icon }) => <button key={key} type="button" className={section === key ? "is-active" : ""} onClick={() => setSection(key)}><Icon size={17}/><span>{label}</span></button>)}
+        <nav ref={menuNavRef}>
+          {visibleModules.map(({ key, label, icon: Icon }) => <button key={key} data-operations-section={key} type="button" className={section === key ? "is-active" : ""} onClick={() => setSection(key)}><Icon size={17}/><span>{label}</span></button>)}
         </nav>
         <div className="operations-sidebar-note"><ShieldCheck size={17}/><span><strong>Trilha protegida</strong><small>Aberturas e decisões são registradas.</small></span></div>
       </aside>

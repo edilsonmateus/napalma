@@ -10294,8 +10294,8 @@ button.venue-card {
 }
 
 .splash-logo {
-  width: min(56vw, 220px);
-  max-height: 28vh;
+  width: min(28vw, 110px);
+  max-height: 14vh;
   height: auto;
   object-fit: contain;
   display: block;
