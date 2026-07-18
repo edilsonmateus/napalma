@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Bell, Building2, ChevronRight, ClipboardList, FileClock, Gavel, Landmark, LoaderCircle, MapPinned, Megaphone, RefreshCw, Search, ShieldCheck, SlidersHorizontal, UserCheck, UsersRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { actOnOperationsPrivacyRequest, getOperationsPrivacyRequestDetail, listAuditLogs, listOperationsPrivacyRequests } from "../services/privacy.service";
@@ -248,6 +248,7 @@ export default function OperationsCenterPage() {
   const [accessGrantsLoading, setAccessGrantsLoading] = useState(false);
   const [accessGrantsError, setAccessGrantsError] = useState("");
   const [webauthn, setWebauthn] = useState({ enrolled: false, credentials: 0, loading: true, error: "" });
+  const swipeStart = useRef(null);
 
   async function loadQueue(overrides = {}) {
     setLoading(true);
@@ -525,6 +526,26 @@ export default function OperationsCenterPage() {
   ].sort((a, b) => ({ high: 0, medium: 1, low: 2 }[a.risk] - { high: 0, medium: 1, low: 2 }[b.risk])).slice(0, 6), [items, claimItems, moderationItems]);
   const adsPendingReviews = (adsData.reviews?.campaigns?.length || 0) + (adsData.reviews?.creatives?.length || 0);
 
+  function startSectionSwipe(event) {
+    if (window.innerWidth > 760) return;
+    if (event.target.closest("button, a, input, textarea, select, [data-operations-horizontal-scroll], .operations-table-wrap")) return;
+    const touch = event.touches[0];
+    swipeStart.current = { x: touch.clientX, y: touch.clientY };
+  }
+
+  function finishSectionSwipe(event) {
+    const start = swipeStart.current;
+    swipeStart.current = null;
+    if (!start || window.innerWidth > 760) return;
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (Math.abs(deltaX) < 72 || Math.abs(deltaY) > 56) return;
+    const activeIndex = visibleModules.findIndex((module) => module.key === section);
+    const nextIndex = deltaX < 0 ? activeIndex + 1 : activeIndex - 1;
+    if (visibleModules[nextIndex]) setSection(visibleModules[nextIndex].key);
+  }
+
   return <section className="operations-center-screen">
     <div className="operations-topbar">
       <Link to="/settings" className="operations-back"><ArrowLeft size={16}/> Configurações</Link>
@@ -540,7 +561,7 @@ export default function OperationsCenterPage() {
         <div className="operations-sidebar-note"><ShieldCheck size={17}/><span><strong>Trilha protegida</strong><small>Aberturas e decisões são registradas.</small></span></div>
       </aside>
 
-      <main className="operations-main">
+      <main className="operations-main" onTouchStart={startSectionSwipe} onTouchEnd={finishSectionSwipe}>
         {error ? <div className="operations-alert operations-alert-error">{error}<button type="button" onClick={() => loadQueue()}>Tentar novamente</button></div> : null}
         {section === "overview" ? <>
           <header className="operations-heading"><div><p>VISÃO GERAL</p><h1>Operação com contexto e rastreabilidade.</h1><span>Uma leitura consolidada para priorizar decisões, sem expor dados desnecessariamente.</span></div><button type="button" className="operations-secondary" onClick={loadOperationalOverview} disabled={loading}><RefreshCw size={16} className={loading ? "is-spinning" : ""}/> Atualizar tudo</button></header>
