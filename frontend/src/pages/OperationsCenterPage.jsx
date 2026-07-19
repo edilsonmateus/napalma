@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Bell, Building2, ChevronRight, ClipboardList, FileClock, Gavel, Landmark, LoaderCircle, MapPinned, Megaphone, RefreshCw, Search, ShieldCheck, SlidersHorizontal, UserCheck, UsersRound } from "lucide-react";
+import { ArrowLeft, Bell, Building2, ChevronRight, ClipboardList, FileClock, Gavel, Landmark, LoaderCircle, MapPinned, Megaphone, RefreshCw, Search, ShieldCheck, SlidersHorizontal, TrendingUp, UserCheck, UsersRound } from "lucide-react";
 import { Link } from "react-router-dom";
+import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { actOnOperationsPrivacyRequest, getOperationsPrivacyRequestDetail, listAuditLogs, listOperationsPrivacyRequests } from "../services/privacy.service";
-import { decideClaim, getAdminRegions, getAdCampaigns, getOperationsClaimDetail, getOperationsClaims, getOperationsVenues } from "../services/events.service";
+import { decideClaim, getAcquisitionAnalytics, getAcquisitionLeads, getAcquisitionLeadTimeline, getAdminRegions, getAdCampaigns, getOperationsClaimDetail, getOperationsClaims, getOperationsVenues } from "../services/events.service";
 import { getAdReviewQueue } from "../services/adReviews.service";
 import { getAdvertiserAccounts } from "../services/advertiserAccounts.service";
 import { confirmOperationsWebAuthn, enrollOperationsWebAuthn, getOperationsModerationQueue, getOperationsNotificationsOverview, getOperationsSettingsOverview, getOperationsWebAuthnStatus, listOperationsAccessGrants, setOperationsAccessGrant } from "../services/operations.service";
@@ -26,11 +27,40 @@ const STATUS_LABELS = {
   cancelled: "Cancelada"
 };
 
+const ACQUISITION_STATUS_LABELS = {
+  mapped: "Mapeada",
+  contact_started: "Contato iniciado",
+  in_conversation: "Conversa em andamento",
+  presentation_scheduled: "Apresentação marcada",
+  proposal_sent: "Proposta enviada",
+  negotiating: "Em negociação",
+  closed: "Fechada",
+  lost: "Perdida",
+  follow_up_later: "Retomar depois"
+};
+
+const ACQUISITION_RANGES = [
+  { value: 1, label: "Hoje" },
+  { value: 7, label: "7 dias" },
+  { value: 30, label: "30 dias" },
+  { value: 90, label: "90 dias" },
+  { value: 120, label: "120 dias" }
+];
+
+const ACQUISITION_LINES = [
+  { key: "newLeads", label: "Novos leads", color: "#2563eb" },
+  { key: "contacts", label: "Contatos", color: "#0f9f6e" },
+  { key: "meetings", label: "Reuniões", color: "#d97706" },
+  { key: "proposals", label: "Propostas", color: "#7c3aed" },
+  { key: "statusChanges", label: "Mudanças de etapa", color: "#e45519" }
+];
+
 const modules = [
   { key: "overview", label: "Visão geral", icon: ClipboardList },
   { key: "privacy", label: "Privacidade e solicitações", icon: ShieldCheck },
   { key: "claims", label: "Reivindicações de artistas", icon: UserCheck },
   { key: "venues", label: "Casas e programação", icon: Building2, pending: true },
+  { key: "acquisition", label: "Aquisição", icon: TrendingUp, adminOnly: true },
   { key: "territories", label: "Praças e regiões", icon: MapPinned, adminOnly: true },
   { key: "ads", label: "77Gira Ads", icon: Megaphone, adminOnly: true },
   { key: "moderation", label: "Qualidade e moderação", icon: Gavel, pending: true },
@@ -105,6 +135,51 @@ function OperationsAdsPanel({ data, loading, error, onRefresh }) {
     <header className="operations-heading"><div><p>77GIRA ADS</p><h1>Controle executivo, conectado à operação comercial.</h1><span>Use este painel para entender a fila e chegar no ambiente correto. Aprovação de criativos, inventário e campanhas continuam concentrados na Gestão de Publicidade.</span></div><button type="button" className="operations-secondary" onClick={onRefresh} disabled={loading}><RefreshCw size={16} className={loading ? "is-spinning" : ""}/> Atualizar</button></header>
     <div className="operations-kpis operations-kpis-compact"><article><span>Campanhas ativas</span><strong>{activeCampaigns}</strong></article><article className="is-attention"><span>Itens em revisão</span><strong>{pendingReviews}</strong></article><article><span>Contas pendentes</span><strong>{pendingAccounts}</strong></article><article><span>Contas aprovadas</span><strong>{accounts.filter((item) => item.status === "approved").length}</strong></article></div>
     <div className="operations-overview-grid"><section className="operations-panel"><div className="operations-panel-title"><div><p>FILA COMERCIAL</p><h2>O que exige decisão</h2></div><Link className="operations-secondary" to="/settings/ads">Abrir Gestão de Publicidade <ChevronRight size={15}/></Link></div><div className="operations-priority-list">{pendingReviews ? <button type="button" onClick={() => window.location.assign("/settings/ads")}><RiskTag risk="medium"/><span><strong>{pendingReviews} item(ns) aguardando revisão</strong><small>Campanhas e criativos seguem a política de aprovação antes da veiculação.</small></span><ChevronRight size={17}/></button> : <div className="operations-empty">Nenhum criativo ou campanha aguarda revisão.</div>}{pendingAccounts ? <button type="button" onClick={() => window.location.assign("/settings/ads")}><RiskTag risk="medium"/><span><strong>{pendingAccounts} conta(s) anunciante pendente(s)</strong><small>Valide acesso comercial antes de liberar a criação de campanhas.</small></span><ChevronRight size={17}/></button> : null}</div></section><section className="operations-panel operations-health"><p>SAÚDE DE ENTREGA</p><h2>Leitura rápida</h2><dl><div><dt>Campanhas cadastradas</dt><dd>{campaigns.length}</dd></div><div><dt>Ativas</dt><dd>{activeCampaigns}</dd></div><div><dt>Revisão pendente</dt><dd>{pendingReviews}</dd></div></dl><small>A Central não duplica ações manuais de Ads: ela reduz o caminho até a decisão correta.</small></section></div>
+  </>;
+}
+
+function acquisitionChartDate(value) {
+  if (!value) return "";
+  const [, month, day] = value.split("-");
+  return `${day}/${month}`;
+}
+
+function acquisitionHours(value) {
+  if (value === null || value === undefined) return "Sem base";
+  if (value < 1) return `${Math.max(1, Math.round(value * 60))} min`;
+  if (value < 24) return `${value.toFixed(1).replace(".0", "")} h`;
+  return `${(value / 24).toFixed(1).replace(".0", "")} dias`;
+}
+
+function OperationsAcquisitionPanel({ analytics, leads, loading, error, filters, onFiltersChange, onRefresh, onOpen }) {
+  const totals = analytics?.totals || {};
+  const series = analytics?.series || [];
+  const distribution = analytics?.statusDistribution || [];
+  const alerts = analytics?.alerts || [];
+  const maxDistribution = Math.max(1, ...distribution.map((item) => item.count || 0));
+
+  return <>
+    <header className="operations-heading"><div><p>AQUISIÇÃO</p><h1>Ritmo comercial visível antes que oportunidades esfriem.</h1><span>Acompanhe movimentos, intervalos e avanço do funil. A edição da carteira continua concentrada no painel comercial para preservar uma única fonte de verdade.</span></div><div className="operations-heading-actions"><Link className="operations-secondary" to="/settings/venues?section=acquisition">Gerir carteira completa <ChevronRight size={15}/></Link><button type="button" className="operations-secondary" onClick={onRefresh} disabled={loading}><RefreshCw size={16} className={loading ? "is-spinning" : ""}/> Atualizar</button></div></header>
+
+    <section className="operations-panel operations-acquisition-filters" aria-label="Filtros de aquisição">
+      <label><span>Período</span><select value={filters.days} onChange={(event) => onFiltersChange({ ...filters, days: Number(event.target.value) })}>{ACQUISITION_RANGES.map((range) => <option key={range.value} value={range.value}>{range.label}</option>)}</select></label>
+      <label><span>Etapa</span><select value={filters.status} onChange={(event) => onFiltersChange({ ...filters, status: event.target.value })}><option value="all">Todas as etapas</option>{Object.entries(ACQUISITION_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+      <p>Movimentos registrados no período, usando o fuso de São Paulo.</p>
+    </section>
+
+    <div className="operations-kpis operations-acquisition-kpis"><article><span>Movimentos</span><strong>{totals.movements ?? 0}</strong><small>Ações comerciais registradas</small></article><article><span>Novos leads</span><strong>{totals.newLeads ?? 0}</strong><small>Entradas na carteira</small></article><article><span>Contatos</span><strong>{totals.contacts ?? 0}</strong><small>Telefone, WhatsApp e e-mail</small></article><article><span>Reuniões</span><strong>{totals.meetings ?? 0}</strong><small>Encontros no período</small></article><article><span>Propostas</span><strong>{totals.proposals ?? 0}</strong><small>Propostas registradas</small></article><article className={totals.overdue ? "is-attention" : ""}><span>Follow-ups vencidos</span><strong>{totals.overdue ?? 0}</strong><small>Pedem ação imediata</small></article></div>
+
+    {error ? <p className="operations-inline-error">{error}</p> : null}
+    <div className="operations-acquisition-grid">
+      <section className="operations-panel operations-acquisition-chart"><div className="operations-panel-title"><div><p>MOVIMENTOS POR DIA</p><h2>Esforço distribuído na linha do tempo</h2></div><span className="operations-queue-note">Picos e lacunas ficam comparáveis no mesmo período.</span></div>{loading ? <div className="operations-loading"><LoaderCircle className="is-spinning"/> Carregando movimentos…</div> : <div className="operations-chart-canvas"><ResponsiveContainer width="100%" height="100%"><LineChart data={series} margin={{ top: 12, right: 18, left: -16, bottom: 2 }}><CartesianGrid stroke="#e6ebf1" vertical={false}/><XAxis dataKey="date" tickFormatter={acquisitionChartDate} tick={{ fill: "#6f7e91", fontSize: 10 }} axisLine={{ stroke: "#d8e0e9" }} tickLine={false}/><YAxis allowDecimals={false} tick={{ fill: "#6f7e91", fontSize: 10 }} axisLine={false} tickLine={false}/><Tooltip labelFormatter={(value) => `Dia ${acquisitionChartDate(value)}`} contentStyle={{ border: "1px solid #dce3eb", borderRadius: 7, boxShadow: "0 8px 24px rgba(24,34,53,.08)", fontSize: 11 }}/><Legend iconType="plainline" wrapperStyle={{ fontSize: 10, paddingTop: 8 }}/>{ACQUISITION_LINES.map((line) => <Line key={line.key} type="monotone" dataKey={line.key} name={line.label} stroke={line.color} strokeWidth={2} dot={series.length <= 7} activeDot={{ r: 4 }}/>)}</LineChart></ResponsiveContainer></div>}</section>
+
+      <aside className="operations-panel operations-acquisition-cadence"><div className="operations-panel-title"><div><p>CADÊNCIA</p><h2>Onde o tempo exige decisão</h2></div></div><dl><div><dt>Primeiro contato</dt><dd>{acquisitionHours(totals.averageFirstContactHours)}</dd></div><div><dt>Paradas há 7+ dias</dt><dd>{totals.stalled ?? 0}</dd></div><div><dt>Mudanças de etapa</dt><dd>{totals.statusChanges ?? 0}</dd></div><div><dt>Fechadas no período</dt><dd>{totals.closed ?? 0}</dd></div></dl><div className="operations-acquisition-alerts">{alerts.length ? alerts.slice(0, 5).map((item) => <button type="button" key={item.id} onClick={() => onOpen(item.id)}><span><strong>{item.venueName}</strong><small>{ACQUISITION_STATUS_LABELS[item.status] || item.status}</small></span><b>{item.idleDays} dias</b><ChevronRight size={15}/></button>) : <div className="operations-empty">Nenhuma oportunidade está parada há 7 dias ou mais.</div>}</div></aside>
+    </div>
+
+    <div className="operations-acquisition-bottom-grid">
+      <section className="operations-panel"><div className="operations-panel-title"><div><p>CARTEIRA ATUAL</p><h2>Distribuição por etapa</h2></div></div><div className="operations-acquisition-funnel">{distribution.length ? distribution.map((item) => <div key={item.status}><span><i style={{ width: `${Math.max(5, (item.count / maxDistribution) * 100)}%` }}/></span><strong>{ACQUISITION_STATUS_LABELS[item.status] || item.status}</strong><b>{item.count}</b></div>) : <div className="operations-empty">A distribuição aparecerá após carregar a carteira.</div>}</div></section>
+      <section className="operations-panel operations-acquisition-portfolio"><div className="operations-panel-title"><div><p>OPORTUNIDADES</p><h2>Leitura operacional</h2></div><Link className="operations-text-button" to="/settings/venues?section=acquisition">Abrir carteira <ChevronRight size={15}/></Link></div><div className="operations-acquisition-leads">{leads.length ? leads.slice(0, 8).map((lead) => <button type="button" key={lead.id} onClick={() => onOpen(lead.id)}><span><strong>{lead.venueName}</strong><small>{[lead.neighborhood, lead.region].filter(Boolean).join(" · ") || lead.city}</small></span><em>{ACQUISITION_STATUS_LABELS[lead.status] || lead.status}</em><b>{lead.nextFollowUpAt ? formatDate(lead.nextFollowUpAt) : "Sem follow-up"}</b><ChevronRight size={15}/></button>) : <div className="operations-empty">Nenhuma oportunidade encontrada nesta leitura.</div>}</div></section>
+    </div>
   </>;
 }
 
@@ -229,6 +304,12 @@ export default function OperationsCenterPage() {
   const [adsData, setAdsData] = useState({ campaigns: [], accounts: [], reviews: { campaigns: [], creatives: [] } });
   const [adsLoading, setAdsLoading] = useState(false);
   const [adsError, setAdsError] = useState("");
+  const [acquisitionData, setAcquisitionData] = useState({ analytics: null, leads: [] });
+  const [acquisitionFilters, setAcquisitionFilters] = useState({ days: 30, status: "all" });
+  const [acquisitionLoading, setAcquisitionLoading] = useState(false);
+  const [acquisitionError, setAcquisitionError] = useState("");
+  const [selectedAcquisition, setSelectedAcquisition] = useState(null);
+  const [acquisitionDetailLoading, setAcquisitionDetailLoading] = useState(false);
   const [territoryItems, setTerritoryItems] = useState([]);
   const [territoriesLoading, setTerritoriesLoading] = useState(false);
   const [territoriesError, setTerritoriesError] = useState("");
@@ -271,7 +352,7 @@ export default function OperationsCenterPage() {
       const jobs = [
         ...(canAccessSection("privacy") ? [["privacy", listOperationsPrivacyRequests({ status: "all", query: "", limit: 50 })]] : []),
         ...(canAccessSection("claims") ? [["claims", getOperationsClaims({ status: "all", limit: 50 })]] : []),
-        ...(isAdmin ? [["campaigns", getAdCampaigns()], ["accounts", getAdvertiserAccounts({ limit: 100 })], ["reviews", getAdReviewQueue()]] : []),
+        ...(isAdmin ? [["campaigns", getAdCampaigns()], ["accounts", getAdvertiserAccounts({ limit: 100 })], ["reviews", getAdReviewQueue()], ["acquisitionAnalytics", getAcquisitionAnalytics(acquisitionFilters)], ["acquisitionLeads", getAcquisitionLeads({})]] : []),
         ...(canAccessSection("moderation") ? [["moderation", getOperationsModerationQueue()]] : []),
         ...(canAccessSection("notifications") ? [["notifications", getOperationsNotificationsOverview()]] : []),
         ...(canAccessSection("audit") ? [["audit", listAuditLogs({ limit: 20 })]] : [])
@@ -281,6 +362,7 @@ export default function OperationsCenterPage() {
       setItems(result.privacy || []);
       setClaimItems(result.claims || []);
       setAdsData({ campaigns: result.campaigns || [], accounts: result.accounts || [], reviews: result.reviews || { campaigns: [], creatives: [] } });
+      setAcquisitionData({ analytics: result.acquisitionAnalytics || null, leads: result.acquisitionLeads?.items || [] });
       setModerationItems(result.moderation || []);
       setNotificationsData(result.notifications || null);
       setAuditItems(result.audit || []);
@@ -356,6 +438,45 @@ export default function OperationsCenterPage() {
   }
 
   useEffect(() => { if (section === "ads" && !adsData.campaigns.length && !adsData.accounts.length) loadOperationsAds(); }, [section]);
+
+  async function loadOperationsAcquisition(nextFilters = acquisitionFilters) {
+    setAcquisitionLoading(true);
+    setAcquisitionError("");
+    try {
+      const [analytics, leadsResponse] = await Promise.all([
+        getAcquisitionAnalytics(nextFilters),
+        getAcquisitionLeads(nextFilters.status === "all" ? {} : { status: nextFilters.status })
+      ]);
+      setAcquisitionData({ analytics, leads: leadsResponse?.items || [] });
+    } catch (loadError) {
+      setAcquisitionError(loadError?.response?.data?.message || "Não foi possível carregar a inteligência de aquisição. Tente novamente.");
+    } finally {
+      setAcquisitionLoading(false);
+    }
+  }
+
+  function changeAcquisitionFilters(nextFilters) {
+    setAcquisitionFilters(nextFilters);
+    loadOperationsAcquisition(nextFilters);
+  }
+
+  async function openAcquisitionDetail(id) {
+    setAcquisitionDetailLoading(true);
+    setAcquisitionError("");
+    try {
+      const lead = acquisitionData.leads.find((item) => item.id === id);
+      const timelineResponse = await getAcquisitionLeadTimeline(id);
+      setSelectedAcquisition({ lead: { ...(lead || {}), ...(timelineResponse?.lead || {}) }, timeline: timelineResponse?.items || [] });
+    } catch (detailError) {
+      setAcquisitionError(detailError?.response?.data?.message || "Não foi possível abrir o histórico desta oportunidade.");
+    } finally {
+      setAcquisitionDetailLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (section === "acquisition" && !acquisitionData.analytics) loadOperationsAcquisition();
+  }, [section]);
 
   async function loadOperationsTerritories() {
     setTerritoriesLoading(true);
@@ -527,8 +648,9 @@ export default function OperationsCenterPage() {
   const priority = useMemo(() => [
     ...items.filter((item) => !["completed", "rejected", "cancelled"].includes(item.status)).map((item) => ({ kind: "privacy", id: item.id, risk: item.risk, label: `${item.protocol} · ${TYPE_LABELS[item.type]}`, detail: `${item.requesterName} · ${dueLabel(item.dueAt)}` })),
     ...claimItems.filter((item) => item.status === "pending").map((item) => ({ kind: "claims", id: item.id, risk: item.risk, label: `${item.protocol} · Reivindicação de artista`, detail: `${item.target} · aguardando legitimidade` })),
+    ...(acquisitionData.analytics?.alerts || []).map((item) => ({ kind: "acquisition", id: item.id, risk: item.nextFollowUpAt && new Date(item.nextFollowUpAt).getTime() < Date.now() ? "high" : "medium", label: `Aquisição · ${item.venueName}`, detail: `${item.idleDays} dias sem movimento · ${ACQUISITION_STATUS_LABELS[item.status] || item.status}` })),
     ...moderationItems.filter((item) => item.risk === "medium").map((item) => ({ kind: "moderation", id: item.id, risk: item.risk, label: `Catálogo · ${item.issue}`, detail: `${item.entity} · ${item.context || "sem contexto"}` }))
-  ].sort((a, b) => ({ high: 0, medium: 1, low: 2 }[a.risk] - { high: 0, medium: 1, low: 2 }[b.risk])).slice(0, 6), [items, claimItems, moderationItems]);
+  ].sort((a, b) => ({ high: 0, medium: 1, low: 2 }[a.risk] - { high: 0, medium: 1, low: 2 }[b.risk])).slice(0, 6), [items, claimItems, moderationItems, acquisitionData.analytics]);
   const adsPendingReviews = (adsData.reviews?.campaigns?.length || 0) + (adsData.reviews?.creatives?.length || 0);
 
   function startSectionSwipe(event) {
@@ -570,17 +692,18 @@ export default function OperationsCenterPage() {
         {error ? <div className="operations-alert operations-alert-error">{error}<button type="button" onClick={() => loadQueue()}>Tentar novamente</button></div> : null}
         {section === "overview" ? <>
           <header className="operations-heading"><div><p>VISÃO GERAL</p><h1>Operação com contexto e rastreabilidade.</h1><span>Uma leitura consolidada para priorizar decisões, sem expor dados desnecessariamente.</span></div><button type="button" className="operations-secondary" onClick={loadOperationalOverview} disabled={loading}><RefreshCw size={16} className={loading ? "is-spinning" : ""}/> Atualizar tudo</button></header>
-          <div className="operations-kpis"><article><span>Privacidade aberta</span><strong>{summary.received + summary.inReview}</strong><small>Solicitações em tratamento</small></article><article><span>Reivindicações pendentes</span><strong>{claimItems.filter((item) => item.status === "pending").length}</strong><small>Aguardando legitimidade</small></article><article className={adsPendingReviews ? "is-attention" : ""}><span>Ads em revisão</span><strong>{adsPendingReviews}</strong><small>Campanhas e criativos</small></article><article><span>Sinais de catálogo</span><strong>{moderationItems.length}</strong><small>Qualidade pública a revisar</small></article></div>
-          <div className="operations-overview-grid"><section className="operations-panel"><div className="operations-panel-title"><div><p>FILA PRIORITÁRIA</p><h2>Casos que pedem atenção</h2></div><button type="button" className="operations-text-button" onClick={() => setSection("privacy")}>Abrir privacidade <ChevronRight size={15}/></button></div>{loading ? <div className="operations-loading"><LoaderCircle className="is-spinning"/> Carregando a leitura operacional…</div> : priority.length ? <div className="operations-priority-list">{priority.map((item) => <button type="button" key={`${item.kind}-${item.id}`} onClick={() => item.kind === "privacy" ? openDetail(item.id) : setSection(item.kind)}><RiskTag risk={item.risk}/><span><strong>{item.label}</strong><small>{item.detail}</small></span><ChevronRight size={17}/></button>)}</div> : <div className="operations-empty">Nenhum caso prioritário nesta leitura.</div>}</section><section className="operations-panel operations-health"><p>SAÚDE DA PLATAFORMA</p><h2>Base operacional</h2><dl><div><dt>Notificações em 24h</dt><dd>{notificationsData?.deliveriesLast24h ?? "—"}</dd></div><div><dt>Eventos em auditoria</dt><dd>{auditItems.length}</dd></div><div><dt>Contas Ads pendentes</dt><dd>{adsData.accounts.filter((item) => item.status === "pending").length}</dd></div></dl><small>Ações definitivas exigem revisão de retenções e confirmação reforçada. A Central apenas encaminha cada decisão ao fluxo adequado.</small></section></div>
+          <div className="operations-kpis operations-overview-kpis"><article><span>Privacidade aberta</span><strong>{summary.received + summary.inReview}</strong><small>Solicitações em tratamento</small></article><article><span>Reivindicações pendentes</span><strong>{claimItems.filter((item) => item.status === "pending").length}</strong><small>Aguardando legitimidade</small></article><article className={acquisitionData.analytics?.totals?.stalled ? "is-attention" : ""}><span>Aquisição parada</span><strong>{acquisitionData.analytics?.totals?.stalled ?? 0}</strong><small>Sem movimento há 7+ dias</small></article><article className={adsPendingReviews ? "is-attention" : ""}><span>Ads em revisão</span><strong>{adsPendingReviews}</strong><small>Campanhas e criativos</small></article><article><span>Sinais de catálogo</span><strong>{moderationItems.length}</strong><small>Qualidade pública a revisar</small></article></div>
+          <div className="operations-overview-grid"><section className="operations-panel"><div className="operations-panel-title"><div><p>FILA PRIORITÁRIA</p><h2>Casos que pedem atenção</h2></div><button type="button" className="operations-text-button" onClick={() => setSection("acquisition")}>Abrir Aquisição <ChevronRight size={15}/></button></div>{loading ? <div className="operations-loading"><LoaderCircle className="is-spinning"/> Carregando a leitura operacional…</div> : priority.length ? <div className="operations-priority-list">{priority.map((item) => <button type="button" key={`${item.kind}-${item.id}`} onClick={() => { if (item.kind === "privacy") openDetail(item.id); else if (item.kind === "acquisition") { setSection("acquisition"); openAcquisitionDetail(item.id); } else setSection(item.kind); }}><RiskTag risk={item.risk}/><span><strong>{item.label}</strong><small>{item.detail}</small></span><ChevronRight size={17}/></button>)}</div> : <div className="operations-empty">Nenhum caso prioritário nesta leitura.</div>}</section><section className="operations-panel operations-health"><p>SAÚDE DA PLATAFORMA</p><h2>Base operacional</h2><dl><div><dt>Follow-ups de aquisição vencidos</dt><dd>{acquisitionData.analytics?.totals?.overdue ?? "—"}</dd></div><div><dt>Eventos em auditoria</dt><dd>{auditItems.length}</dd></div><div><dt>Contas Ads pendentes</dt><dd>{adsData.accounts.filter((item) => item.status === "pending").length}</dd></div></dl><small>Ações definitivas exigem revisão de retenções e confirmação reforçada. A Central apenas encaminha cada decisão ao fluxo adequado.</small></section></div>
         </> : section === "privacy" ? <>
           <header className="operations-heading"><div><p>PRIVACIDADE E SOLICITAÇÕES</p><h1>Decisões pessoais, tratadas com rigor.</h1><span>A lista é redigida por padrão. Dados de contato e motivo só abrem em um caso específico e deixam registro na auditoria.</span></div><button type="button" className="operations-secondary" onClick={() => loadQueue()} disabled={loading}><RefreshCw size={16} className={loading ? "is-spinning" : ""}/> Atualizar</button></header>
           <div className="operations-kpis operations-kpis-compact"><article><span>Novas</span><strong>{summary.received}</strong></article><article><span>Em análise</span><strong>{summary.inReview}</strong></article><article className="is-attention"><span>Vencendo SLA</span><strong>{summary.highRisk}</strong></article><article><span>Concluídas</span><strong>{summary.closed}</strong></article></div>
           <section className="operations-panel operations-queue-panel"><div className="operations-filter-bar"><label><Search size={17}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nome ou protocolo" onKeyDown={(event) => event.key === "Enter" && loadQueue()}/></label><select value={status} onChange={(event) => { setStatus(event.target.value); loadQueue({ status: event.target.value }); }}><option value="all">Todos os status</option><option value="received">Novas</option><option value="in_review">Em análise</option><option value="completed">Concluídas</option><option value="rejected">Recusadas</option><option value="cancelled">Canceladas</option></select><button type="button" className="operations-secondary" onClick={() => loadQueue()}><Search size={15}/> Buscar</button></div>
             <div className="operations-table-wrap"><table className="operations-table"><thead><tr><th>Protocolo</th><th>Solicitante</th><th>Tipo</th><th>Status</th><th>Prazo</th><th>Risco</th><th>Responsável</th><th aria-label="Ações"/></tr></thead><tbody>{loading ? <tr><td colSpan="8" className="operations-table-loading">Carregando solicitações…</td></tr> : items.length ? items.map((item) => <tr key={item.id}><td><button type="button" className="operations-protocol" onClick={() => openDetail(item.id)}>{item.protocol}</button></td><td>{item.requesterName}</td><td>{TYPE_LABELS[item.type]}</td><td><StatusTag status={item.status}/></td><td>{dueLabel(item.dueAt)}</td><td><RiskTag risk={item.risk}/></td><td>{item.responsible || "Sem responsável"}</td><td><button type="button" className="operations-open" onClick={() => openDetail(item.id)}>Abrir</button></td></tr>) : <tr><td colSpan="8" className="operations-table-loading">Nenhuma solicitação corresponde aos filtros.</td></tr>}</tbody></table></div></section>
-        </> : section === "claims" ? <ClaimsOperationsPanel items={claimItems} loading={claimsLoading} error={claimError} onRefresh={loadClaims} onOpen={openClaimDetail}/> : section === "venues" ? <OperationsVenuesPanel items={venueItems} loading={venuesLoading} error={venuesError} onRefresh={loadOperationsVenues}/> : section === "territories" ? <OperationsTerritoriesPanel items={territoryItems} loading={territoriesLoading} error={territoriesError} onRefresh={loadOperationsTerritories}/> : section === "audit" ? <OperationsAuditPanel items={auditItems} loading={auditLoading} error={auditError} onRefresh={loadOperationsAudit}/> : section === "notifications" ? <OperationsNotificationsPanel data={notificationsData} loading={notificationsLoading} error={notificationsError} onRefresh={loadOperationsNotifications}/> : section === "moderation" ? <OperationsModerationPanel items={moderationItems} loading={moderationLoading} error={moderationError} onRefresh={loadOperationsModeration}/> : section === "settings" ? <OperationsSettingsPanel data={settingsData} loading={settingsLoading} error={settingsError} onRefresh={loadOperationsSettings} isAdmin={isAdmin} grants={accessGrants} grantsLoading={accessGrantsLoading} grantsError={accessGrantsError} onRefreshGrants={loadOperationsAccessGrants} onSetGrant={changeOperationsAccessGrant}/> : <OperationsAdsPanel data={adsData} loading={adsLoading} error={adsError} onRefresh={loadOperationsAds}/>} 
+        </> : section === "claims" ? <ClaimsOperationsPanel items={claimItems} loading={claimsLoading} error={claimError} onRefresh={loadClaims} onOpen={openClaimDetail}/> : section === "venues" ? <OperationsVenuesPanel items={venueItems} loading={venuesLoading} error={venuesError} onRefresh={loadOperationsVenues}/> : section === "acquisition" ? <OperationsAcquisitionPanel analytics={acquisitionData.analytics} leads={acquisitionData.leads} loading={acquisitionLoading} error={acquisitionError} filters={acquisitionFilters} onFiltersChange={changeAcquisitionFilters} onRefresh={() => loadOperationsAcquisition()} onOpen={openAcquisitionDetail}/> : section === "territories" ? <OperationsTerritoriesPanel items={territoryItems} loading={territoriesLoading} error={territoriesError} onRefresh={loadOperationsTerritories}/> : section === "audit" ? <OperationsAuditPanel items={auditItems} loading={auditLoading} error={auditError} onRefresh={loadOperationsAudit}/> : section === "notifications" ? <OperationsNotificationsPanel data={notificationsData} loading={notificationsLoading} error={notificationsError} onRefresh={loadOperationsNotifications}/> : section === "moderation" ? <OperationsModerationPanel items={moderationItems} loading={moderationLoading} error={moderationError} onRefresh={loadOperationsModeration}/> : section === "settings" ? <OperationsSettingsPanel data={settingsData} loading={settingsLoading} error={settingsError} onRefresh={loadOperationsSettings} isAdmin={isAdmin} grants={accessGrants} grantsLoading={accessGrantsLoading} grantsError={accessGrantsError} onRefreshGrants={loadOperationsAccessGrants} onSetGrant={changeOperationsAccessGrant}/> : <OperationsAdsPanel data={adsData} loading={adsLoading} error={adsError} onRefresh={loadOperationsAds}/>}
       </main>
     </div>
 
+    {(acquisitionDetailLoading || selectedAcquisition) ? <div className="operations-detail-backdrop" role="dialog" aria-modal="true" aria-label="Detalhe da oportunidade de aquisição">{acquisitionDetailLoading ? <div className="operations-detail-loading"><LoaderCircle className="is-spinning"/> Abrindo histórico comercial…</div> : <article className="operations-detail operations-acquisition-detail"><header><div><button type="button" className="operations-back" onClick={() => setSelectedAcquisition(null)}><ArrowLeft size={16}/> Voltar à aquisição</button><p>OPORTUNIDADE COMERCIAL</p><h2>{selectedAcquisition.lead.venueName}</h2><span>{[selectedAcquisition.lead.neighborhood, selectedAcquisition.lead.region, selectedAcquisition.lead.city].filter(Boolean).join(" · ") || "Local ainda não informado"}</span></div><span className="operations-status operations-status-acquisition">{ACQUISITION_STATUS_LABELS[selectedAcquisition.lead.status] || selectedAcquisition.lead.status}</span></header><div className="operations-acquisition-detail-grid"><section><p className="operations-section-label">PRÓXIMA AÇÃO</p><div className="operations-acquisition-next"><div><span>Follow-up</span><strong>{selectedAcquisition.lead.nextFollowUpAt ? formatDate(selectedAcquisition.lead.nextFollowUpAt, true) : "Ainda não agendado"}</strong></div><div><span>Temperatura</span><strong>{selectedAcquisition.lead.temperature === "hot" ? "Quente" : selectedAcquisition.lead.temperature === "cold" ? "Fria" : "Morna"}</strong></div><div><span>Contato</span><strong>{selectedAcquisition.lead.contactName || "Não informado"}</strong></div></div><p className="operations-section-label">LINHA DO TEMPO</p><div className="operations-acquisition-timeline">{selectedAcquisition.timeline.length ? selectedAcquisition.timeline.map((item) => <article key={item.id}><i/><div><strong>{item.kind === "status_changed" ? `${ACQUISITION_STATUS_LABELS[item.fromStatus] || "Início"} → ${ACQUISITION_STATUS_LABELS[item.toStatus] || item.toStatus}` : item.title}</strong><span>{item.actor?.firstName ? [item.actor.firstName, item.actor.lastName].filter(Boolean).join(" ") : "Sistema"} · {formatDate(item.occurredAt, true)}</span>{item.nextAction ? <small>Próxima ação: {item.nextAction}</small> : null}</div></article>) : <div className="operations-empty">Nenhum movimento adicional foi registrado.</div>}</div></section><aside className="operations-panel operations-acquisition-detail-summary"><p>LEITURA SEGURA</p><h3>Uma fonte de verdade</h3><span>A Central apresenta cadência e histórico. Alterações de dados, contatos e etapa permanecem na carteira administrativa de aquisição.</span><dl><div><dt>Etapa atual</dt><dd>{ACQUISITION_STATUS_LABELS[selectedAcquisition.lead.status] || selectedAcquisition.lead.status}</dd></div><div><dt>Origem</dt><dd>{selectedAcquisition.lead.source || "Não informada"}</dd></div><div><dt>Potencial</dt><dd>{selectedAcquisition.lead.potential || "Não classificado"}</dd></div></dl><Link className="operations-approve" to="/settings/venues?section=acquisition">Abrir gestão completa <ChevronRight size={15}/></Link></aside></div></article>}</div> : null}
     {(detailLoading || selected) ? <div className="operations-detail-backdrop" role="dialog" aria-modal="true" aria-label="Detalhe da solicitação">{detailLoading ? <div className="operations-detail-loading"><LoaderCircle className="is-spinning"/> Abrindo dados restritos…</div> : <article className="operations-detail"><header><div><button type="button" className="operations-back" onClick={() => setSelected(null)}><ArrowLeft size={16}/> Voltar à fila</button><p>{selected.protocol}</p><h2>{selected.requesterName} — {TYPE_LABELS[selected.type]}</h2><span>Recebida em {formatDate(selected.requestedAt, true)} · prazo {dueLabel(selected.dueAt)}</span></div><RiskTag risk={selected.risk}/></header><div className="operations-progress" aria-label="Andamento da solicitação">{["Recebida", "Validação de identidade", "Vínculos e retenções", "Execução", "Concluída"].map((label, index) => <div key={label} className={index < 2 || selected.status === "in_review" && index === 2 ? "is-done" : ""}><i>{index + 1}</i><span>{label}</span></div>)}</div><div className="operations-detail-grid"><div><section className="operations-sensitive"><div><p>DADOS RESTRITOS</p><strong>Contato e motivo da solicitação</strong></div><small>A abertura desta área foi registrada na auditoria.</small><dl><div><dt>E-mail</dt><dd>{selected.requester.email}</dd></div><div><dt>Usuário</dt><dd>@{selected.requester.username || "não informado"}</dd></div><div className="operations-request-details"><dt>Motivo informado</dt><dd>{selected.details || "Nenhum detalhe adicional foi informado."}</dd></div></dl></section><section><p className="operations-section-label">PERFIS VINCULADOS</p><div className="operations-linked-list">{selected.linkedProfiles.map((item) => <span key={item.label}><UsersRound size={14}/>{item.label}{item.count > 1 ? ` (${item.count})` : ""}</span>)}</div></section><section><p className="operations-section-label">ITENS QUE PODEM EXIGIR RETENÇÃO</p><div className="operations-retention-list">{selected.retentionItems.map((item) => <article key={item.key}><ShieldCheck size={16}/><span><strong>{item.label}{item.count > 1 ? ` (${item.count})` : ""}</strong><small>{item.reason}</small></span></article>)}</div></section></div><aside><section className="operations-owner"><p>RESPONSABILIDADE</p><strong>{selected.responsible || "Ainda não assumida"}</strong><span>Status: <StatusTag status={selected.status}/></span><small>Uma pessoa responsável reduz decisões paralelas e mantém a trilha clara.</small></section><section className="operations-history"><p>HISTÓRICO</p>{selected.history.length ? selected.history.map((entry) => <div key={entry.id}><strong>{entry.actorName}</strong><span>{entry.action.replaceAll("_", " ").replaceAll(".", " · ")}</span><small>{formatDate(entry.createdAt, true)}</small></div>) : <small>Sem eventos anteriores.</small>}</section></aside></div><footer className="operations-detail-actions"><button type="button" className="operations-secondary" onClick={() => runAction("take_ownership")} disabled={Boolean(actionLoading)}>{actionLoading === "take_ownership" ? "Assumindo…" : "Assumir solicitação"}</button><div className="operations-request-info"><textarea value={requestInfoNote} onChange={(event) => setRequestInfoNote(event.target.value)} placeholder="Registre a informação adicional necessária para seguir."/><button type="button" className="operations-secondary" onClick={() => runAction("request_information")} disabled={Boolean(actionLoading) || requestInfoNote.trim().length < 5}>{actionLoading === "request_information" ? "Registrando…" : "Solicitar informação"}</button></div><PrivacyResolutionActions request={selected} note={retentionNote} protocol={retentionProtocol} loading={actionLoading === "conclude_with_retention"} onNoteChange={setRetentionNote} onProtocolChange={setRetentionProtocol} onConfirm={() => runAction("conclude_with_retention", { note: retentionNote.trim(), confirmationProtocol: retentionProtocol.trim() })}/></footer></article>}</div> : null}
     {(claimDetailLoading || selectedClaim) ? <div className="operations-detail-backdrop" role="dialog" aria-modal="true" aria-label="Detalhe da reivindicação">{claimDetailLoading ? <div className="operations-detail-loading"><LoaderCircle className="is-spinning"/> Abrindo evidências protegidas…</div> : <article className="operations-detail operations-claim-detail"><header><div><button type="button" className="operations-back" onClick={() => setSelectedClaim(null)}><ArrowLeft size={16}/> Voltar à fila</button><p>{selectedClaim.protocol}</p><h2>{selectedClaim.target} — reivindicação</h2><span>Recebida em {formatDate(selectedClaim.createdAt, true)} · decisão gera alterações reais de acesso.</span></div><RiskTag risk={selectedClaim.risk}/></header><div className="operations-detail-grid"><div><section className="operations-sensitive"><div><p>EVIDÊNCIAS RESTRITAS</p><strong>Solicitante e declaração apresentada</strong></div><small>A abertura desta área foi registrada na auditoria.</small><dl><div><dt>E-mail oficial</dt><dd>{selectedClaim.claim.evidence.officialEmail || selectedClaim.claim.requestedBy?.email}</dd></div><div><dt>Vínculo declarado</dt><dd>{selectedClaim.claim.evidence.relationshipRole || "Não informado"}</dd></div><div className="operations-request-details"><dt>Justificativa</dt><dd>{selectedClaim.claim.justification || "Nenhuma justificativa adicional foi apresentada."}</dd></div></dl></section><section><p className="operations-section-label">ALVOS E VÍNCULOS</p><div className="operations-linked-list"><span><UsersRound size={14}/>{selectedClaim.claim.artist ? `Artista: ${selectedClaim.claim.artist.name}` : `Casa: ${selectedClaim.claim.venue?.name || "em inclusão"}`}</span><span><ShieldCheck size={14}/>Ciência legal: {selectedClaim.claim.legalAcknowledgement ? "registrada" : "ausente"}</span></div></section><section><p className="operations-section-label">DADOS DE RESPONSABILIDADE</p><div className="operations-retention-list"><article><ShieldCheck size={16}/><span><strong>{selectedClaim.claim.evidence.responsibleName || selectedClaim.requesterName}</strong><small>Contato: {selectedClaim.claim.evidence.responsiblePhone || "não informado"} · Documento informado: {selectedClaim.claim.evidence.claimantDocument ? "sim" : "não"}</small></span></article></div></section></div><aside><section className="operations-owner"><p>DECISÃO</p><strong><ClaimStatusTag status={selectedClaim.status}/></strong><small>Aprovar pode criar vínculo de gestão, verificar um artista ou aplicar uma atualização solicitada.</small></section><section className="operations-history"><p>ORIENTAÇÃO</p><div><strong>Antes de aprovar</strong><span>Confirme legitimidade, relação com o perfil e se a alteração faz sentido para o público.</span></div><div><strong>Antes de recusar</strong><span>Registre fundamento claro para a pessoa solicitante.</span></div></section></aside></div>{selectedClaim.status === "pending" ? <footer className="operations-detail-actions"><div className="operations-request-info"><textarea value={claimDecisionNote} onChange={(event) => setClaimDecisionNote(event.target.value)} placeholder="Fundamento da decisão. Obrigatório em caso de recusa."/><button type="button" className="operations-secondary" onClick={() => decideSelectedClaim("rejected")} disabled={Boolean(claimActionLoading) || claimDecisionNote.trim().length < 5}>{claimActionLoading === "rejected" ? "Recusando…" : "Recusar com fundamento"}</button></div><button type="button" className="operations-approve" onClick={() => decideSelectedClaim("approved")} disabled={Boolean(claimActionLoading)}>{claimActionLoading === "approved" ? "Aprovando…" : "Aprovar reivindicação"}</button><div className="operations-irreversible-lock"><strong>Decisão auditável</strong><span>Esta ação usa o mesmo motor transacional das reivindicações do 77Gira e registra o responsável.</span></div></footer> : null}</article>}</div> : null}
   </section>;

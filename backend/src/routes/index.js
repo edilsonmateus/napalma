@@ -67,6 +67,8 @@ import {
   createAcquisitionInteraction,
   createAcquisitionLead,
   deleteAcquisitionLead,
+  getAcquisitionAnalytics,
+  getAcquisitionLeadTimeline,
   listAcquisitionLeads,
   updateAcquisitionLead
 } from "../controllers/acquisition.controller.js";
@@ -259,7 +261,9 @@ router.get("/push/to-na-pista/status", pushLimiter, getToNaPistaStatus);
 router.post("/push/to-na-pista/notify", pushLimiter, deliverToNaPistaSuggestion);
 router.post("/push/test", requireAuth, requireRole(["admin"]), pushLimiter, sendTestPush);
 router.get("/acquisition/leads", ...canManageAcquisition, listAcquisitionLeads);
+router.get("/acquisition/analytics", ...canManageAcquisition, getAcquisitionAnalytics);
 router.post("/acquisition/leads", ...canManageAcquisition, createAcquisitionLead);
+router.get("/acquisition/leads/:id/timeline", ...canManageAcquisition, getAcquisitionLeadTimeline);
 router.patch("/acquisition/leads/:id", ...canManageAcquisition, updateAcquisitionLead);
 router.delete("/acquisition/leads/:id", ...canManageAcquisition, deleteAcquisitionLead);
 router.post("/acquisition/leads/:id/interactions", ...canManageAcquisition, createAcquisitionInteraction);

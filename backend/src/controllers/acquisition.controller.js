@@ -52,6 +52,77 @@ const interactionSchema = z.object({
 });
 
 const idSchema = z.object({ id: z.string().uuid() });
+const analyticsSchema = z.object({
+  days: z.coerce.number().int().refine((value) => [1, 7, 30, 90, 120].includes(value)).default(30),
+  status: z.enum([...STATUSES, "all"]).default("all")
+});
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const REPORT_TIME_ZONE = "America/Sao_Paulo";
+const reportDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: REPORT_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit"
+});
+const reportDateTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: REPORT_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hourCycle: "h23"
+});
+
+function formatterParts(formatter, value) {
+  return Object.fromEntries(
+    formatter.formatToParts(new Date(value))
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, Number(part.value)])
+  );
+}
+
+function dateKey(value) {
+  const { year, month, day } = formatterParts(reportDateFormatter, value);
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function timeZoneOffsetMs(value) {
+  const parts = formatterParts(reportDateTimeFormatter, value);
+  const representedAsUtc = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second
+  );
+  return representedAsUtc - new Date(value).getTime();
+}
+
+function startOfReportDay(key) {
+  const [year, month, day] = key.split("-").map(Number);
+  const targetWallClock = Date.UTC(year, month - 1, day);
+  let result = new Date(targetWallClock);
+  // Recalculate once to remain correct if the time-zone offset changes around this date.
+  result = new Date(targetWallClock - timeZoneOffsetMs(result));
+  return new Date(targetWallClock - timeZoneOffsetMs(result));
+}
+
+function reportDateKeys(days, now = new Date()) {
+  const { year, month, day } = formatterParts(reportDateFormatter, now);
+  const today = Date.UTC(year, month - 1, day);
+  return Array.from({ length: days }, (_, index) => (
+    new Date(today - (days - 1 - index) * DAY_MS).toISOString().slice(0, 10)
+  ));
+}
+
+function average(values) {
+  if (!values.length) return null;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
 
 function nullIfEmpty(value) {
   if (value === undefined) return undefined;
@@ -241,13 +312,31 @@ export async function updateAcquisitionLead(req, res, next) {
   try {
     const { id } = idSchema.parse(req.params);
     const payload = updateLeadSchema.parse(req.body);
-    const item = await prisma.acquisitionLead.update({
+    const current = await prisma.acquisitionLead.findUniqueOrThrow({
       where: { id },
-      data: buildLeadData(payload),
-      include: {
-        interactions: { orderBy: { createdAt: "desc" }, take: 1 },
-        _count: { select: { interactions: true } }
+      select: { status: true }
+    });
+    const statusChanged = payload.status !== undefined && payload.status !== current.status;
+    const item = await prisma.$transaction(async (tx) => {
+      const updated = await tx.acquisitionLead.update({
+        where: { id },
+        data: buildLeadData(payload),
+        include: {
+          interactions: { orderBy: { createdAt: "desc" }, take: 1 },
+          _count: { select: { interactions: true } }
+        }
+      });
+      if (statusChanged) {
+        await tx.acquisitionStatusHistory.create({
+          data: {
+            leadId: id,
+            fromStatus: current.status,
+            toStatus: payload.status,
+            changedByUserId: req.user?.id || null
+          }
+        });
       }
+      return updated;
     });
     res.json({ item: mapLead(item) });
   } catch (error) {
@@ -290,6 +379,197 @@ export async function createAcquisitionInteraction(req, res, next) {
     }
 
     res.status(201).json({ item: interaction });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAcquisitionLeadTimeline(req, res, next) {
+  try {
+    const { id } = idSchema.parse(req.params);
+    const lead = await prisma.acquisitionLead.findUniqueOrThrow({
+      where: { id },
+      select: {
+        id: true,
+        venueName: true,
+        status: true,
+        createdAt: true,
+        createdBy: { select: { id: true, firstName: true, lastName: true } },
+        interactions: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            type: true,
+            summary: true,
+            nextAction: true,
+            nextFollowUpAt: true,
+            createdAt: true,
+            createdBy: { select: { id: true, firstName: true, lastName: true } }
+          }
+        },
+        statusHistory: {
+          orderBy: { changedAt: "desc" },
+          select: {
+            id: true,
+            fromStatus: true,
+            toStatus: true,
+            changedAt: true,
+            changedBy: { select: { id: true, firstName: true, lastName: true } }
+          }
+        }
+      }
+    });
+
+    const items = [
+      {
+        id: `created-${lead.id}`,
+        kind: "lead_created",
+        occurredAt: lead.createdAt,
+        actor: lead.createdBy,
+        title: "Oportunidade criada"
+      },
+      ...lead.interactions.map((item) => ({
+        id: item.id,
+        kind: "interaction",
+        interactionType: item.type,
+        occurredAt: item.createdAt,
+        actor: item.createdBy,
+        title: item.summary,
+        nextAction: item.nextAction,
+        nextFollowUpAt: item.nextFollowUpAt
+      })),
+      ...lead.statusHistory.map((item) => ({
+        id: item.id,
+        kind: "status_changed",
+        occurredAt: item.changedAt,
+        actor: item.changedBy,
+        title: "Status alterado",
+        fromStatus: item.fromStatus,
+        toStatus: item.toStatus
+      }))
+    ].sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
+
+    res.json({ lead: { id: lead.id, venueName: lead.venueName, status: lead.status }, items });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAcquisitionAnalytics(req, res, next) {
+  try {
+    const { days, status } = analyticsSchema.parse(req.query);
+    const dateKeys = reportDateKeys(days);
+    const start = startOfReportDay(dateKeys[0]);
+    const leadWhere = status === "all" ? {} : { status };
+
+    const [newLeads, interactions, statusChanges, activeLeads, periodLeads, statusGroups] = await Promise.all([
+      prisma.acquisitionLead.findMany({
+        where: { ...leadWhere, createdAt: { gte: start } },
+        select: { id: true, createdAt: true }
+      }),
+      prisma.acquisitionInteraction.findMany({
+        where: { createdAt: { gte: start }, ...(status === "all" ? {} : { lead: { status } }) },
+        select: { id: true, type: true, createdAt: true, leadId: true }
+      }),
+      prisma.acquisitionStatusHistory.findMany({
+        where: { changedAt: { gte: start }, ...(status === "all" ? {} : { toStatus: status }) },
+        select: { id: true, fromStatus: true, toStatus: true, changedAt: true, leadId: true }
+      }),
+      prisma.acquisitionLead.findMany({
+        where: { status: { notIn: ["closed", "lost"] } },
+        select: {
+          id: true,
+          venueName: true,
+          status: true,
+          nextFollowUpAt: true,
+          createdAt: true,
+          interactions: { orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true } }
+        }
+      }),
+      prisma.acquisitionLead.findMany({
+        where: { ...leadWhere, createdAt: { gte: start } },
+        select: {
+          createdAt: true,
+          interactions: { orderBy: { createdAt: "asc" }, take: 1, select: { createdAt: true } }
+        }
+      }),
+      prisma.acquisitionLead.groupBy({ by: ["status"], _count: { _all: true } })
+    ]);
+
+    const buckets = new Map();
+    for (const key of dateKeys) {
+      buckets.set(key, {
+        date: key,
+        newLeads: 0,
+        contacts: 0,
+        meetings: 0,
+        proposals: 0,
+        statusChanges: 0,
+        closed: 0,
+        lost: 0,
+        notes: 0
+      });
+    }
+
+    newLeads.forEach((item) => { const bucket = buckets.get(dateKey(item.createdAt)); if (bucket) bucket.newLeads += 1; });
+    interactions.forEach((item) => {
+      const bucket = buckets.get(dateKey(item.createdAt));
+      if (!bucket) return;
+      if (["call", "whatsapp", "email"].includes(item.type)) bucket.contacts += 1;
+      else if (item.type === "meeting") bucket.meetings += 1;
+      else if (item.type === "proposal") bucket.proposals += 1;
+      else bucket.notes += 1;
+    });
+    statusChanges.forEach((item) => {
+      const bucket = buckets.get(dateKey(item.changedAt));
+      if (!bucket) return;
+      bucket.statusChanges += 1;
+      if (item.toStatus === "closed") bucket.closed += 1;
+      if (item.toStatus === "lost") bucket.lost += 1;
+    });
+
+    const now = Date.now();
+    const stalled = activeLeads
+      .map((lead) => {
+        const lastMovementAt = lead.interactions[0]?.createdAt || lead.createdAt;
+        return {
+          id: lead.id,
+          venueName: lead.venueName,
+          status: lead.status,
+          nextFollowUpAt: lead.nextFollowUpAt,
+          lastMovementAt,
+          idleDays: Math.floor((now - new Date(lastMovementAt).getTime()) / DAY_MS)
+        };
+      })
+      .filter((lead) => lead.idleDays >= 7)
+      .sort((a, b) => b.idleDays - a.idleDays);
+
+    const firstContactHours = periodLeads
+      .filter((lead) => lead.interactions[0])
+      .map((lead) => (new Date(lead.interactions[0].createdAt) - new Date(lead.createdAt)) / (60 * 60 * 1000))
+      .filter((value) => value >= 0);
+    const overdue = activeLeads.filter((lead) => lead.nextFollowUpAt && new Date(lead.nextFollowUpAt).getTime() < now).length;
+
+    res.json({
+      rangeDays: days,
+      generatedAt: new Date(),
+      totals: {
+        movements: newLeads.length + interactions.length + statusChanges.length,
+        newLeads: newLeads.length,
+        contacts: interactions.filter((item) => ["call", "whatsapp", "email"].includes(item.type)).length,
+        meetings: interactions.filter((item) => item.type === "meeting").length,
+        proposals: interactions.filter((item) => item.type === "proposal").length,
+        statusChanges: statusChanges.length,
+        closed: statusChanges.filter((item) => item.toStatus === "closed").length,
+        lost: statusChanges.filter((item) => item.toStatus === "lost").length,
+        overdue,
+        stalled: stalled.length,
+        averageFirstContactHours: average(firstContactHours)
+      },
+      series: [...buckets.values()],
+      statusDistribution: statusGroups.map((item) => ({ status: item.status, count: item._count._all })),
+      alerts: stalled.slice(0, 8)
+    });
   } catch (error) {
     next(error);
   }

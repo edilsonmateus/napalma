@@ -50,6 +50,19 @@ describe("Operations Center foundation", () => {
     expect(page).toContain("setItems(result.privacy || [])");
   });
 
+  it("connects acquisition intelligence to Operations without duplicating the editable commercial ledger", () => {
+    const page = read("frontend/src/pages/OperationsCenterPage.jsx");
+    const routes = read("backend/src/routes/index.js");
+    expect(page).toContain('{ key: "acquisition", label: "Aquisi');
+    expect(page).toContain("getAcquisitionAnalytics(acquisitionFilters)");
+    expect(page).toContain("getAcquisitionLeadTimeline");
+    expect(page).toContain('/settings/venues?section=acquisition');
+    expect(page).toContain("Uma fonte de verdade");
+    expect(routes).toContain('const canManageAcquisition = [requireAuth, requireRole(["admin"])]');
+    expect(routes).toContain('router.get("/acquisition/analytics", ...canManageAcquisition');
+    expect(routes).toContain('router.get("/acquisition/leads/:id/timeline", ...canManageAcquisition');
+  });
+
   it("keeps delegated scopes separate from public roles and leaves the global admin intact", () => {
     const schema = read("backend/prisma/schema.prisma");
     const access = read("backend/src/middlewares/operationsAccess.js");

@@ -400,6 +400,16 @@ export async function decideClaim(id, payload) {
   return data.item;
 }
 
+export async function getAcquisitionAnalytics(params = {}) {
+  const { data } = await api.get("/acquisition/analytics", { params });
+  return data;
+}
+
+export async function getAcquisitionLeadTimeline(id) {
+  const { data } = await api.get(`/acquisition/leads/${id}/timeline`);
+  return data;
+}
+
 export async function getOperationsClaims(params = {}) {
   const { data } = await api.get("/admin/operations/claims", { params });
   return data.items || [];

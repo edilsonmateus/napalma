@@ -2,6 +2,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
 import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from "recharts";
+import {
+  useAcquisitionAnalyticsQuery,
+  useAcquisitionLeadTimelineQuery,
   useAcquisitionLeadsQuery,
   useCreateAcquisitionInteractionMutation,
   useCreateAcquisitionLeadMutation,
@@ -81,6 +93,22 @@ const statusLabelMap = Object.fromEntries(statusOptions.map((item) => [item.valu
 const temperatureLabelMap = Object.fromEntries(temperatureOptions.map((item) => [item.value, item.label]));
 
 const DEFAULT_MAP_CENTER = [-23.55052, -46.633308];
+
+const analyticsRanges = [
+  { value: 1, label: "Hoje" },
+  { value: 7, label: "7 dias" },
+  { value: 30, label: "30 dias" },
+  { value: 90, label: "90 dias" },
+  { value: 120, label: "120 dias" }
+];
+
+const movementLines = [
+  { key: "newLeads", label: "Novos leads", color: "#2f6fed" },
+  { key: "contacts", label: "Contatos", color: "#13a87b" },
+  { key: "meetings", label: "Reuniões", color: "#8b5cf6" },
+  { key: "proposals", label: "Propostas", color: "#f59e0b" },
+  { key: "statusChanges", label: "Mudanças de etapa", color: "#64748b" }
+];
 
 const REGION_COORDINATES = {
   centro: [-23.5452, -46.6339],
@@ -211,6 +239,136 @@ function formatDateTime(value) {
     hour: "2-digit",
     minute: "2-digit"
   });
+}
+
+function formatChartDate(value) {
+  const [year, month, day] = String(value || "").split("-");
+  return year && month && day ? `${day}/${month}` : value;
+}
+
+function formatHours(value) {
+  if (value === null || value === undefined) return "Sem base";
+  if (value < 24) return `${Math.round(value)}h`;
+  return `${(value / 24).toFixed(1).replace(".", ",")} dias`;
+}
+
+function actorName(actor) {
+  if (!actor) return "Sistema";
+  return [actor.firstName, actor.lastName].filter(Boolean).join(" ") || "Equipe 77Gira";
+}
+
+function timelineTitle(item) {
+  if (item.kind === "status_changed") {
+    return `${statusLabelMap[item.fromStatus] || item.fromStatus || "Início"} → ${statusLabelMap[item.toStatus] || item.toStatus}`;
+  }
+  if (item.kind === "interaction") {
+    const type = interactionTypes.find((option) => option.value === item.interactionType)?.label;
+    return type ? `${type}: ${item.title}` : item.title;
+  }
+  return item.title;
+}
+
+function AcquisitionIntelligence({ filters, onFilterChange }) {
+  const { data, isLoading, isError } = useAcquisitionAnalyticsQuery(filters);
+  const totals = data?.totals || {};
+  const statusDistribution = data?.statusDistribution || [];
+  const maxStatusCount = Math.max(1, ...statusDistribution.map((item) => item.count));
+
+  return (
+    <section className="clean-card acquisition-intelligence">
+      <div className="acquisition-intelligence-header">
+        <div>
+          <span className="acquisition-eyebrow">INTELIGÊNCIA DE AQUISIÇÃO</span>
+          <h3>Pulso comercial</h3>
+          <p>Volume, cadência e intervalos que exigem ação.</p>
+        </div>
+        <div className="acquisition-analytics-filters">
+          <label>
+            <span>Período</span>
+            <select name="days" value={filters.days} onChange={onFilterChange}>
+              {analyticsRanges.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Etapa</span>
+            <select name="status" value={filters.status} onChange={onFilterChange}>
+              <option value="all">Todas as etapas</option>
+              {statusOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+          </label>
+        </div>
+      </div>
+
+      {isLoading ? <p className="empty">Calculando o pulso comercial...</p> : null}
+      {isError ? <p className="empty acquisition-analytics-error">Não foi possível carregar as métricas. Tente novamente.</p> : null}
+      {data ? (
+        <>
+          <div className="acquisition-analytics-kpis">
+            <article><span>Movimentos</span><strong>{totals.movements ?? 0}</strong><small>ações no período</small></article>
+            <article><span>Novos leads</span><strong>{totals.newLeads ?? 0}</strong><small>entradas na carteira</small></article>
+            <article><span>Contatos</span><strong>{totals.contacts ?? 0}</strong><small>ligações, mensagens e e-mails</small></article>
+            <article><span>Reuniões</span><strong>{totals.meetings ?? 0}</strong><small>movimentos registrados</small></article>
+            <article><span>Propostas</span><strong>{totals.proposals ?? 0}</strong><small>envios registrados</small></article>
+            <article className={totals.overdue ? "attention" : ""}><span>Follow-ups vencidos</span><strong>{totals.overdue ?? 0}</strong><small>pedem ação agora</small></article>
+          </div>
+
+          <div className="acquisition-intelligence-grid">
+            <article className="acquisition-chart-card">
+              <div className="acquisition-subheading">
+                <div><h4>Movimentos na linha do tempo</h4><p>Cada ponto representa ações registradas no dia.</p></div>
+                <span>{data.rangeDays === 1 ? "Hoje" : `${data.rangeDays} dias`}</span>
+              </div>
+              <div className="acquisition-chart-shell" aria-label="Gráfico de movimentos de aquisição por dia">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data.series} margin={{ top: 12, right: 12, left: -18, bottom: 4 }}>
+                    <CartesianGrid stroke="#e6ebf2" strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="date" tickFormatter={formatChartDate} tick={{ fill: "#667085", fontSize: 11 }} minTickGap={22} axisLine={false} tickLine={false} />
+                    <YAxis allowDecimals={false} tick={{ fill: "#667085", fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip labelFormatter={(value) => `Dia ${formatChartDate(value)}`} />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
+                    {movementLines.map((item) => (
+                      <Line key={item.key} type="monotone" dataKey={item.key} name={item.label} stroke={item.color} strokeWidth={2} dot={data.rangeDays <= 7} activeDot={{ r: 4 }} />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </article>
+
+            <aside className="acquisition-cadence-card">
+              <div className="acquisition-subheading"><div><h4>Cadência</h4><p>Onde o esforço perdeu ritmo.</p></div></div>
+              <div className="acquisition-cadence-metrics">
+                <p><span>Primeiro contato</span><strong>{formatHours(totals.averageFirstContactHours)}</strong></p>
+                <p><span>Oportunidades paradas</span><strong>{totals.stalled ?? 0}</strong></p>
+                <p><span>Avanços de etapa</span><strong>{totals.statusChanges ?? 0}</strong></p>
+                <p><span>Fechadas no período</span><strong>{totals.closed ?? 0}</strong></p>
+              </div>
+              <div className="acquisition-alert-list">
+                {(data.alerts || []).length ? data.alerts.slice(0, 4).map((item) => (
+                  <button key={item.id} type="button" onClick={() => document.getElementById(`acquisition-lead-${item.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })}>
+                    <span><strong>{item.venueName}</strong><small>{statusLabelMap[item.status] || item.status}</small></span>
+                    <b>{item.idleDays} dias</b>
+                  </button>
+                )) : <p className="acquisition-no-alerts">Nenhuma oportunidade está parada há 7 dias ou mais.</p>}
+              </div>
+            </aside>
+          </div>
+
+          <div className="acquisition-funnel-strip">
+            <div><h4>Carteira por etapa</h4><p>Distribuição atual, independente do período selecionado.</p></div>
+            <div className="acquisition-funnel-bars">
+              {statusDistribution.map((item) => (
+                <span key={item.status} title={`${statusLabelMap[item.status] || item.status}: ${item.count}`}>
+                  <i style={{ width: `${Math.max(8, (item.count / maxStatusCount) * 100)}%` }} />
+                  <small>{statusLabelMap[item.status] || item.status}</small>
+                  <b>{item.count}</b>
+                </span>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : null}
+    </section>
+  );
 }
 
 function formatFollowUpShort(value) {
@@ -368,6 +526,7 @@ export default function AcquisitionAdminPanel({ onToast }) {
   const [expandedLeadId, setExpandedLeadId] = useState("");
   const [interactionLeadId, setInteractionLeadId] = useState("");
   const [interactionForm, setInteractionForm] = useState(initialInteractionForm);
+  const [analyticsFilters, setAnalyticsFilters] = useState({ days: 30, status: "all" });
 
   const queryParams = useMemo(
     () => ({
@@ -380,6 +539,7 @@ export default function AcquisitionAdminPanel({ onToast }) {
   );
 
   const { data, isLoading } = useAcquisitionLeadsQuery(queryParams);
+  const { data: timelineData, isLoading: timelineLoading } = useAcquisitionLeadTimelineQuery(expandedLeadId);
   const createLead = useCreateAcquisitionLeadMutation();
   const updateLead = useUpdateAcquisitionLeadMutation();
   const deleteLead = useDeleteAcquisitionLeadMutation();
@@ -408,6 +568,11 @@ export default function AcquisitionAdminPanel({ onToast }) {
   function handleFilterChange(event) {
     const { name, value } = event.target;
     setFilters((current) => ({ ...current, [name]: value }));
+  }
+
+  function handleAnalyticsFilterChange(event) {
+    const { name, value } = event.target;
+    setAnalyticsFilters((current) => ({ ...current, [name]: name === "days" ? Number(value) : value }));
   }
 
   function resetLeadForm() {
@@ -513,6 +678,10 @@ export default function AcquisitionAdminPanel({ onToast }) {
         <article className="clean-card"><h4>Fechadas</h4><p>{summary.closed ?? 0}</p></article>
         <article className="clean-card acquisition-alert-kpi"><h4>Follow-ups vencidos</h4><p>{summary.overdue ?? 0}</p></article>
       </div>
+
+      <div className="admin-content-divider" />
+
+      <AcquisitionIntelligence filters={analyticsFilters} onFilterChange={handleAnalyticsFilterChange} />
 
       <div className="admin-content-divider" />
 
@@ -623,7 +792,7 @@ export default function AcquisitionAdminPanel({ onToast }) {
               const followUpTone = getFollowUpTone(lead.nextFollowUpAt, lead.status);
               const shortLocation = [lead.neighborhood, lead.region].filter(Boolean).join(" - ") || "Local a completar";
               return (
-                <article key={lead.id} className={`clean-card acquisition-lead-card acquisition-lead-compact${overdue ? " overdue" : ""}${expanded ? " expanded" : ""}`}>
+                <article id={`acquisition-lead-${lead.id}`} key={lead.id} className={`clean-card acquisition-lead-card acquisition-lead-compact${overdue ? " overdue" : ""}${expanded ? " expanded" : ""}`}>
                   <div className="acquisition-lead-row">
                     <div className="acquisition-lead-title">
                       <h4>{lead.venueName}</h4>
@@ -687,6 +856,29 @@ export default function AcquisitionAdminPanel({ onToast }) {
                       )}
 
                       {lead.notes ? <p className="meta-line">{lead.notes}</p> : null}
+
+                      <section className="acquisition-timeline">
+                        <div className="acquisition-timeline-heading">
+                          <h5>Linha do tempo</h5>
+                          <span>{timelineData?.items?.length || 0} movimentos</span>
+                        </div>
+                        {timelineLoading ? <p className="meta-line">Carregando histórico...</p> : null}
+                        {!timelineLoading && timelineData?.items?.length ? (
+                          <ol>
+                            {timelineData.items.map((item) => (
+                              <li key={item.id}>
+                                <i className={`timeline-dot timeline-${item.kind}`} />
+                                <div>
+                                  <strong>{timelineTitle(item)}</strong>
+                                  <span>{formatDateTime(item.occurredAt)} · {actorName(item.actor)}</span>
+                                  {item.nextAction ? <small>Próxima ação: {item.nextAction}</small> : null}
+                                </div>
+                              </li>
+                            ))}
+                          </ol>
+                        ) : null}
+                        {!timelineLoading && timelineData && !timelineData.items?.length ? <p className="meta-line">Nenhum movimento registrado.</p> : null}
+                      </section>
 
                       {interactionOpen ? (
                         <form className="acquisition-interaction-form" onSubmit={handleInteractionSubmit}>

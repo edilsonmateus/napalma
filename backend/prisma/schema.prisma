@@ -263,6 +263,7 @@ model User {
   createdRegions              Region[]                 @relation("RegionCreatedBy")
   acquisitionLeads            AcquisitionLead[]        @relation("AcquisitionLeadCreatedBy")
   acquisitionInteractions     AcquisitionInteraction[] @relation("AcquisitionInteractionCreatedBy")
+  acquisitionStatusChanges    AcquisitionStatusHistory[] @relation("AcquisitionStatusChangedBy")
   advertiserAccountsCreated   AdvertiserAccount[]      @relation("AdvertiserAccountCreatedBy")
   advertiserAccountsApproved  AdvertiserAccount[]      @relation("AdvertiserAccountApprovedBy")
   advertiserMemberships       AdvertiserMembership[]   @relation("AdvertiserMembershipUser")
@@ -1292,6 +1293,7 @@ model AcquisitionLead {
   createdByUserId    String?
   createdBy          User?                    @relation("AcquisitionLeadCreatedBy", fields: [createdByUserId], references: [id])
   interactions       AcquisitionInteraction[]
+  statusHistory      AcquisitionStatusHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1300,6 +1302,22 @@ model AcquisitionLead {
   @@index([temperature])
   @@index([nextFollowUpAt])
   @@index([city, region])
+}
+
+model AcquisitionStatusHistory {
+  id              String   @id @default(uuid())
+  leadId          String
+  fromStatus      String?
+  toStatus        String
+  changedByUserId String?
+  changedAt       DateTime @default(now())
+
+  lead      AcquisitionLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  changedBy User?           @relation("AcquisitionStatusChangedBy", fields: [changedByUserId], references: [id])
+
+  @@index([leadId, changedAt])
+  @@index([toStatus, changedAt])
+  @@index([changedByUserId, changedAt])
 }
 
 model AcquisitionInteraction {

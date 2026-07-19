@@ -36,6 +36,8 @@ import {
   getArtistProfile,
   getAdCampaigns,
   getAcquisitionLeads,
+  getAcquisitionAnalytics,
+  getAcquisitionLeadTimeline,
   getAdminRegions,
   getAdsActivity,
   getVenueAdsSummary,
@@ -336,6 +338,22 @@ export function useAcquisitionLeadsQuery(params = {}, enabled = true) {
   });
 }
 
+export function useAcquisitionAnalyticsQuery(params = {}, enabled = true) {
+  return useQuery({
+    queryKey: ["acquisition-analytics", params],
+    queryFn: () => getAcquisitionAnalytics(params),
+    enabled
+  });
+}
+
+export function useAcquisitionLeadTimelineQuery(leadId, enabled = true) {
+  return useQuery({
+    queryKey: ["acquisition-lead-timeline", leadId],
+    queryFn: () => getAcquisitionLeadTimeline(leadId),
+    enabled: Boolean(leadId && enabled)
+  });
+}
+
 export function useMyClaimsQuery(enabled = true) {
   return useQuery({
     queryKey: ["my-claims"],
@@ -474,6 +492,7 @@ export function useCreateAcquisitionLeadMutation() {
     mutationFn: createAcquisitionLead,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["acquisition-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["acquisition-analytics"] });
     }
   });
 }
@@ -484,6 +503,8 @@ export function useUpdateAcquisitionLeadMutation() {
     mutationFn: ({ id, payload }) => updateAcquisitionLead(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["acquisition-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["acquisition-analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["acquisition-lead-timeline"] });
     }
   });
 }
@@ -494,6 +515,7 @@ export function useDeleteAcquisitionLeadMutation() {
     mutationFn: deleteAcquisitionLead,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["acquisition-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["acquisition-analytics"] });
     }
   });
 }
@@ -504,6 +526,8 @@ export function useCreateAcquisitionInteractionMutation() {
     mutationFn: ({ leadId, payload }) => createAcquisitionInteraction(leadId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["acquisition-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["acquisition-analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["acquisition-lead-timeline"] });
     }
   });
 }
