@@ -156,11 +156,13 @@ export default function AccountSettingsPage() {
       <section className="account-settings-section account-personal-section">
         <div className="account-settings-section-title"><div><strong>Dados pessoais</strong><small>Foto e identidade da sua conta.</small></div><button className={`account-edit-button${editingProfile ? "" : " account-edit-button--icon"}`} type="button" title={editingProfile ? "Fechar edição" : "Editar dados pessoais"} aria-label={editingProfile ? "Fechar edição" : "Editar dados pessoais"} onClick={() => { setEditingProfile((current) => !current); setProfileMessage(""); }}>{editingProfile ? "Fechar edição" : <Pencil size={15} strokeWidth={1.8}/>}</button></div>
         <div className="account-profile-row">
-          <input ref={avatarInputRef} className="settings-avatar-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarChange}/>
-          <button className="settings-avatar" type="button" disabled={avatarBusy} onClick={() => avatarInputRef.current?.click()} aria-label="Alterar foto de perfil">
-            {user.avatarUrl ? <img src={user.avatarUrl} alt=""/> : user.firstName?.[0] || "7"}
+          <div className="settings-avatar-control">
+            <input ref={avatarInputRef} className="settings-avatar-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarChange}/>
+            <button className="settings-avatar" type="button" disabled={avatarBusy} onClick={() => avatarInputRef.current?.click()} aria-label="Alterar foto de perfil">
+              {user.avatarUrl ? <img src={user.avatarUrl} alt=""/> : user.firstName?.[0] || "7"}
+            </button>
             <span className="settings-avatar-edit" aria-hidden="true"><Camera size={10}/></span>
-          </button>
+          </div>
           <div><strong>{`${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email}</strong><p>{user.email}</p>{avatarMessage ? <small role="status">{avatarMessage}</small> : null}</div>
         </div>
         {editingProfile ? <form className="account-profile-form" onSubmit={saveProfile}>

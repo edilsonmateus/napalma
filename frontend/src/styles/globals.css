@@ -6533,6 +6533,14 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   margin: 8px 0 14px;
 }
 
+.settings-avatar-control {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  overflow: visible;
+}
+
 .settings-avatar {
   position: relative;
   width: 46px;
@@ -6553,10 +6561,16 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   overflow: hidden;
 }
 
+.settings-avatar-control .settings-avatar {
+  width: 100%;
+  height: 100%;
+  flex: 0 0 auto;
+}
+
 .settings-account-menu { display: grid; place-items: center; width: 42px; height: 42px; margin-left: auto; border: 1px solid rgba(255,255,255,.08); border-radius: 50%; color: var(--text-secondary); text-decoration: none; transition: color .15s ease, border-color .15s ease, background .15s ease; }
 .settings-account-menu:hover { color: var(--text-primary); border-color: rgba(255,176,0,.34); background: rgba(255,176,0,.06); }
 
-.settings-avatar-edit { position: absolute; right: -2px; bottom: -2px; display: grid; place-items: center; width: 18px; height: 18px; border: 2px solid var(--bg-card); border-radius: 50%; background: #ffb000; color: #17120a; }
+.settings-avatar-edit { position: absolute; z-index: 2; right: -4px; bottom: -3px; display: grid; place-items: center; width: 19px; height: 19px; border: 2px solid var(--bg-card); border-radius: 50%; background: #ffb000; color: #17120a; pointer-events: none; }
 .settings-avatar > img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
 .settings-avatar:disabled { cursor: wait; opacity: .65; }
 .settings-avatar-input { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
