@@ -26,7 +26,11 @@ const ON_TRACK_DISMISSED_KEY = "77gira:on-track-dismissed-event";
 const ON_TRACK_DURATION_MS = 60 * 60 * 1000;
 const ON_TRACK_RECOMMENDATION_WINDOW_MS = 12 * 60 * 60 * 1000;
 const ON_TRACK_INITIAL_NOTIFICATION_DELAY_MS = 3 * 60 * 1000;
-const LIVE_CLOCK_INTERVAL_MS = 15 * 1000;
+// The feed only needs minute-level precision for status/progress. A slower
+// clock avoids rebuilding the complete Explore timeline every few seconds on
+// lower-powered devices while focus/visibility listeners still refresh it
+// immediately when the user returns to the app.
+const LIVE_CLOCK_INTERVAL_MS = 60 * 1000;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_PREFS = { city: "São Paulo", region: "Todas", query: "", limit: 8, filterDate: "", filterHour: "", liveOnly: false, timeScope: "semana" };
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, "0")}:00`);
@@ -933,11 +937,10 @@ export default function ExplorePage() {
             <small className="day-group-count">{group.items.length} {group.items.length === 1 ? "samba" : "sambas"}</small>
           </h4>
           <div className="venue-list explore-venue-grid">
-            {group.items.map(({ venue, nextEvent, isLiveNow }, idx) => (
+            {group.items.map(({ venue, nextEvent, isLiveNow }) => (
               <article
-                key={`${venue.id}-${nextEvent.id}-${idx}`}
+                key={`${venue.id}-${nextEvent.id}`}
                 className={`venue-card venue-flow-card ${isLiveNow ? "venue-flow-live" : "venue-flow-upcoming"} ${routeModeVenueId === venue.id ? "route-mode" : ""}`}
-                style={{ "--reveal-item-index": idx }}
               >
                 <Link to={`/venues/${venue.id}`} className="venue-flow-link">
                   <div className="venue-flow-cover">

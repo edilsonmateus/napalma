@@ -5728,7 +5728,8 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 }
 
 .live-filter-chip.has-live .live-chip-dot {
-  animation: liveChipPulse 1.2s ease-out infinite;
+  transform-origin: center;
+  animation: liveChipPulse 1.45s ease-in-out infinite;
 }
 
 .explore-top-actions {
@@ -5823,15 +5824,8 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 }
 
 @keyframes liveChipPulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(39, 216, 109, 0.55);
-  }
-  70% {
-    box-shadow: 0 0 0 8px rgba(39, 216, 109, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(39, 216, 109, 0);
-  }
+  0%, 100% { opacity: 0.68; transform: scale(0.82); }
+  50% { opacity: 1; transform: scale(1.14); }
 }
 
 .event-grid {
@@ -6251,18 +6245,18 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   width: 0;
   border-radius: inherit;
   background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.45);
+  box-shadow: none;
   transition: width 320ms ease;
 }
 
 .live-progress-attention .live-progress-fill {
   background: #ffcf5c;
-  box-shadow: 0 0 14px rgba(255, 207, 92, 0.46);
+  box-shadow: none;
 }
 
 .live-progress-last-call .live-progress-fill {
   background: #ff6b6b;
-  box-shadow: 0 0 14px rgba(255, 107, 107, 0.5);
+  box-shadow: none;
 }
 
 .live-dot {
@@ -6270,20 +6264,14 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   height: 8px;
   border-radius: 999px;
   background: #24d16a;
-  box-shadow: 0 0 0 rgba(36, 209, 106, 0.55);
-  animation: livePulse 1.2s ease-out infinite;
+  box-shadow: none;
+  transform-origin: center;
+  animation: livePulse 1.45s ease-in-out infinite;
 }
 
 @keyframes livePulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(36, 209, 106, 0.55);
-  }
-  70% {
-    box-shadow: 0 0 0 8px rgba(36, 209, 106, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(36, 209, 106, 0);
-  }
+  0%, 100% { opacity: 0.68; transform: scale(0.82); }
+  50% { opacity: 1; transform: scale(1.14); }
 }
 
 .artist-profile-gateway {
@@ -7834,24 +7822,15 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 }
 
 .venue-flow-placeholder {
-  background:
-    linear-gradient(#121212, #121212) padding-box,
-    linear-gradient(120deg, rgba(255, 184, 28, 0.8), rgba(107, 63, 160, 0.85), rgba(200, 16, 46, 0.82), rgba(255, 184, 28, 0.8)) border-box;
+  background: #121212;
   animation: none;
-  border: none;
-  box-shadow:
-    0 10px 24px rgba(0, 0, 0, 0.3),
-    0 0 18px rgba(255, 184, 28, 0.30),
-    0 0 36px rgba(180, 120, 16, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  box-shadow: none;
 }
 
 .venue-flow-placeholder .venue-flow-cover {
-  background:
-    radial-gradient(circle at 25% 30%, rgba(255, 184, 28, 0.25), transparent 36%),
-    radial-gradient(circle at 80% 20%, rgba(107, 63, 160, 0.26), transparent 40%),
-    linear-gradient(140deg, #1a1a1a 0%, #141414 100%);
-  background-size: 170% 170%, 170% 170%, 100% 100%;
-  animation: ad-placeholder-flow 7s ease-in-out infinite alternate;
+  background: #18181a;
+  animation: none;
 }
 
 .venue-flow-placeholder .venue-flow-body h3 {
@@ -8245,34 +8224,30 @@ button.venue-card {
   display: flex;
   flex-direction: column;
   animation: none;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.055);
   background: #121212;
-  box-shadow:
-    0 10px 24px rgba(0, 0, 0, 0.32),
-    0 0 0 rgba(0, 0, 0, 0);
-  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.16s ease;
-  animation: explore-card-in 320ms ease-out both;
-  animation-delay: calc(var(--reveal-item-index, 0) * 42ms);
+  box-shadow: none;
+  transition: border-color 0.16s ease, background-color 0.16s ease;
   content-visibility: auto;
   contain-intrinsic-size: 260px;
 }
 
 .venue-flow-upcoming {
-  box-shadow:
-    0 10px 24px rgba(0, 0, 0, 0.32),
-    0 0 18px rgba(126, 88, 198, 0.30),
-    0 0 34px rgba(94, 68, 148, 0.22);
+  border-color: rgba(255, 255, 255, 0.055);
+  box-shadow: none;
 }
 
 .venue-flow-live {
-  box-shadow:
-    0 11px 26px rgba(0, 0, 0, 0.34),
-    0 0 20px rgba(64, 224, 121, 0.34),
-    0 0 40px rgba(38, 173, 95, 0.24);
+  border-color: rgba(62, 218, 119, 0.62);
+  box-shadow: none;
 }
 
 .venue-flow-card:hover {
-  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.venue-flow-live:hover {
+  border-color: rgba(62, 218, 119, 0.78);
 }
 
 .venue-flow-link:focus-visible {
@@ -8326,21 +8301,13 @@ button.venue-card {
   flex-direction: column;
   justify-content: flex-start;
   position: relative;
-  background: linear-gradient(180deg, rgba(20, 20, 27, 0.64), rgba(13, 13, 18, 0.72));
-  -webkit-backdrop-filter: blur(10px) saturate(125%);
-  backdrop-filter: blur(10px) saturate(125%);
+  background: #1b1b1d;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .venue-flow-body::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(90% 140% at 8% -28%, rgba(255, 179, 32, 0.20) 0%, rgba(255, 179, 32, 0) 58%),
-    radial-gradient(90% 140% at 82% -24%, rgba(107, 63, 160, 0.26) 0%, rgba(107, 63, 160, 0) 62%),
-    radial-gradient(70% 130% at 54% -36%, rgba(200, 16, 46, 0.18) 0%, rgba(200, 16, 46, 0) 60%);
-  opacity: 0.85;
+  content: none;
 }
 
 .venue-flow-body > * {
@@ -9139,9 +9106,8 @@ button.venue-card {
 .skeleton-line {
   height: 12px;
   border-radius: 6px;
-  background: linear-gradient(90deg, #191919 0%, #2a2a2a 50%, #191919 100%);
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+  background: #242426;
+  animation: none;
 }
 
 .skeleton-title {
@@ -12749,6 +12715,19 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
       rgba(255, 184, 28, 0.5),
       rgba(107, 63, 160, 0.5)
     ) border-box;
+}
+
+/* Explore cards deliberately use a flat information surface. The image is
+ * the expressive layer; text remains calm and cheap to paint while live
+ * state is communicated by a semantic border and its small status dot. */
+.screen-explore .venue-flow-card {
+  border: 1px solid var(--user-container-border);
+  background: #121212;
+  box-shadow: none;
+}
+
+.screen-explore .venue-flow-card.venue-flow-live {
+  border-color: rgba(62, 218, 119, 0.62);
 }
 
 .screen-explore .explore-sheet {
