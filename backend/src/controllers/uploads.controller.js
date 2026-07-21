@@ -68,7 +68,15 @@ export async function uploadImage(req, res, next) {
     const folderRaw = String(req.body?.folder || "general").trim().toLowerCase();
     const folder = FOLDER_WHITELIST.has(folderRaw) ? folderRaw : "general";
 
-    if (isFeatureEnabled("R2_SHARED_UPLOADS_ENABLED")) {
+    const sharedUploadsEnabled = isFeatureEnabled("R2_SHARED_UPLOADS_ENABLED");
+    if (!sharedUploadsEnabled && process.env.NODE_ENV === "production") {
+      return res.status(503).json({
+        error: "shared_storage_unavailable",
+        message: "O armazenamento permanente de imagens esta indisponivel. Tente novamente mais tarde."
+      });
+    }
+
+    if (sharedUploadsEnabled) {
       const uploaded = await uploadBufferToR2({
         buffer: req.file.buffer,
         mimeType: detectedMimeType,
@@ -109,6 +117,9 @@ export async function uploadImage(req, res, next) {
       }
     });
   } catch (error) {
+    if (error?.code === "r2_not_configured") {
+      return res.status(503).json({ error: "shared_storage_unavailable", message: "O armazenamento permanente de imagens esta indisponivel. Tente novamente mais tarde." });
+    }
     next(error);
   }
 }

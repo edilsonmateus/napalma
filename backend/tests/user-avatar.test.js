@@ -17,6 +17,8 @@ describe("user profile avatar", () => {
     const controller = read("backend/src/controllers/profile.controller.js");
     expect(routes).toContain('router.post("/me/profile/avatar", requireAuth, uploadLimiter, imageUpload.single("file"), uploadMyAvatar)');
     expect(controller).toContain('isFeatureEnabled("R2_SHARED_UPLOADS_ENABLED")');
+    expect(controller).toContain('process.env.NODE_ENV === "production"');
+    expect(controller).toContain('error: "shared_storage_unavailable"');
     expect(controller).toContain("resize(512, 512");
   });
 

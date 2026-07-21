@@ -361,6 +361,7 @@ async function main() {
         priceMin: price.priceMin,
         priceMax: price.priceMax,
         status: String(readRowValue(row, ["soudOut", "soldOut"]) || "").toLowerCase() === "true" ? "sold_out" : "confirmed",
+        isDemo: true,
         venueId: venue.id,
         createdByUserId: producer.id,
         artists: {

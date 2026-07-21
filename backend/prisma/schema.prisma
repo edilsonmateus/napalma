@@ -992,6 +992,7 @@ model Event {
   couvertArtistico     Float?
   pricingPolicy        Json?
   status               String     @default("confirmed")
+  isDemo               Boolean    @default(false)
   createdByUserId      String?
 
   venueId   String
@@ -1006,6 +1007,8 @@ model Event {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([isDemo, startDate])
 }
 
 model Artist {

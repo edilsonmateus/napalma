@@ -12,6 +12,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "node prisma/seed.js",
     "prisma:refresh-events": "node prisma/refresh-event-dates.js",
+    "prisma:refresh-demo-events": "prisma generate && node prisma/refresh-demo-event-dates.js",
     "prisma:seed:achievements": "node prisma/seed-achievements.js",
     "prisma:normalize:claims": "node prisma/normalize-claims-fixture.js",
     "prisma:backfill:event-artists": "node prisma/backfill-event-artists.js",

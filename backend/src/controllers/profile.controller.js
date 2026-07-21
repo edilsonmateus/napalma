@@ -102,6 +102,13 @@ export async function updateMyLocation(req, res, next) {
 export async function uploadMyAvatar(req, res, next) {
   try {
     if (!req.file) return res.status(400).json({ error: "file_required", message: "Selecione uma imagem." });
+    const sharedUploadsEnabled = isFeatureEnabled("R2_SHARED_UPLOADS_ENABLED");
+    if (!sharedUploadsEnabled && process.env.NODE_ENV === "production") {
+      return res.status(503).json({
+        error: "shared_storage_unavailable",
+        message: "O armazenamento permanente de imagens esta indisponivel. Tente novamente mais tarde."
+      });
+    }
     let buffer;
     try {
       buffer = await sharp(req.file.buffer).rotate().resize(512, 512, { fit: "cover", position: "attention" }).webp({ quality: 84 }).toBuffer();
@@ -110,7 +117,7 @@ export async function uploadMyAvatar(req, res, next) {
     }
 
     let avatarUrl;
-    if (isFeatureEnabled("R2_SHARED_UPLOADS_ENABLED")) {
+    if (sharedUploadsEnabled) {
       const uploaded = await uploadBufferToR2({ buffer, mimeType: "image/webp", extension: "webp", keyPrefix: `profiles/${req.user.id}`, metadata: { source: "77gira-user-avatar", userid: req.user.id } });
       avatarUrl = uploaded.url;
     } else {
@@ -123,7 +130,12 @@ export async function uploadMyAvatar(req, res, next) {
     }
 
     const user = await prisma.user.update({ where: { id: req.user.id }, data: { avatarUrl }, select: userSelect });
-    await recordAuditEvent({ req, action: "profile.avatar_updated", subjectType: "user", subjectId: user.id, metadata: { storage: isFeatureEnabled("R2_SHARED_UPLOADS_ENABLED") ? "r2" : "local" } });
+    await recordAuditEvent({ req, action: "profile.avatar_updated", subjectType: "user", subjectId: user.id, metadata: { storage: sharedUploadsEnabled ? "r2" : "local" } });
     return res.status(201).json({ item: user });
-  } catch (error) { return next(error); }
+  } catch (error) {
+    if (error?.code === "r2_not_configured") {
+      return res.status(503).json({ error: "shared_storage_unavailable", message: "O armazenamento permanente de imagens esta indisponivel. Tente novamente mais tarde." });
+    }
+    return next(error);
+  }
 }
