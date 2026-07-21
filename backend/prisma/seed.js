@@ -2,6 +2,7 @@
 import path from "node:path";
 import bcrypt from "bcryptjs";
 import { PrismaClient, UserRole } from "@prisma/client";
+import { assertDestructiveSeedAllowed } from "./lib/seed-safety.js";
 
 const prisma = new PrismaClient();
 
@@ -207,6 +208,10 @@ function buildMockEventTimes(index, startMinutes, endMinutes) {
 }
 
 async function main() {
+  // Este seed reconstrói integralmente o ambiente de fixtures. Em produção,
+  // deve falhar antes de qualquer leitura ou exclusão no banco.
+  assertDestructiveSeedAllowed();
+
   const enumRows = await prisma.$queryRaw`
     SELECT e.enumlabel
     FROM pg_enum e
