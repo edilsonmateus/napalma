@@ -1,4 +1,5 @@
 import express from "express";
+import path from "node:path";
 import cors from "cors";
 import morgan from "morgan";
 import { ZodError } from "zod";
@@ -51,6 +52,13 @@ export function createApp() {
   app.use(express.json({ limit: "1mb" }));
   app.use(morgan((tokens, req, res) => `${tokens.method(req, res)} ${req.path} ${tokens.status(req, res)} ${tokens["response-time"](req, res)} ms`));
   app.use("/uploads", express.static("uploads"));
+  // Available only during local development; production posters are served by R2.
+  if (isDev) {
+    app.use(
+      "/event-posters",
+      express.static(path.resolve(process.cwd(), "..", "assets", "event-posters-inbox"), { index: false })
+    );
+  }
   app.use(attachUser);
 
   app.get("/health", (_req, res) => {

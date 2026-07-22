@@ -17,6 +17,10 @@
     "prisma:normalize:claims": "node prisma/normalize-claims-fixture.js",
     "prisma:backfill:event-artists": "node prisma/backfill-event-artists.js",
     "prisma:backfill:advertisers:dry-run": "node prisma/backfill-advertiser-accounts-dry-run.js",
+    "events:posters:preview": "node scripts/import-event-posters.js",
+    "events:posters:import": "node scripts/import-event-posters.js --apply",
+    "events:posters:local": "node scripts/import-event-posters.js --apply --local",
+    "events:posters:replace": "node scripts/import-event-posters.js --apply --force",
     "privacy:retention:preview": "node scripts/privacy-retention-preview.js",
     "admin:bootstrap": "node prisma/bootstrap-admin.js",
     "push:vapid:generate": "web-push generate-vapid-keys"

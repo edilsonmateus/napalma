@@ -7,6 +7,7 @@ import VerifiedBadge from "../components/common/VerifiedBadge";
 import { getAudienceBadges } from "../utils/eventAudienceBadges";
 import AppToast from "../components/common/AppToast";
 import { trackAnalyticsEvent } from "../services/analytics.service";
+import { resolveMediaUrl } from "../services/api";
 
 const RADAR_PREFS_KEY = "napalma:radar:prefs";
 
@@ -168,7 +169,7 @@ export default function RadarPage() {
           <article key={event.id} className="radar-item">
             <Link to={`/events/${event.id}`} className="radar-item-link">
               <div className="radar-item-media">
-                {event.imageUrl ? <img src={event.imageUrl} alt={event.title} /> : <div className="radar-item-fallback" />}
+                {event.imageUrl ? <img src={resolveMediaUrl(event.posterImageUrl || event.imageUrl)} alt={event.title} /> : <div className="radar-item-fallback" />}
               </div>
                 <div className="radar-item-content">
                   <div className="radar-item-top">

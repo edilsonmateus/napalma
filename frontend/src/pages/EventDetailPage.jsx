@@ -17,6 +17,7 @@ import AppToast from "../components/common/AppToast";
 import { trackAnalyticsEvent } from "../services/analytics.service";
 import BackLink from "../components/common/BackLink";
 import ArtistProfileGateway from "../components/artists/ArtistProfileGateway";
+import { resolveMediaUrl } from "../services/api";
 
 function formatDate(value) {
   return new Date(value).toLocaleString("pt-BR");
@@ -217,7 +218,10 @@ export default function EventDetailPage() {
     <section className="screen screen-decision event-decision">
       <BackLink onClick={() => navigate(-1)}>Voltar</BackLink>
 
-      <div className="event-detail-cover" style={{ backgroundImage: `url(${event.imageUrl})` }} />
+      <div
+        className="event-detail-cover"
+        style={{ backgroundImage: `url(${resolveMediaUrl(event.posterImageUrl || event.imageUrl)})` }}
+      />
 
       <div className="decision-card">
         <p className="event-host-label">{event.venue} Recebe:</p>

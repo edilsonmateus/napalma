@@ -974,6 +974,7 @@ model Event {
   title                String
   description          String?
   imageUrl             String?
+  posterImageUrl       String?
   type                 EventType
   tags                 String[]
   startDate            DateTime

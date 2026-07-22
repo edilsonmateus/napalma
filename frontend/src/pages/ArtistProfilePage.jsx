@@ -10,6 +10,7 @@ import RelatedArtists from "../components/artists/RelatedArtists";
 import { trackAnalyticsEvent } from "../services/analytics.service";
 import BackLink from "../components/common/BackLink";
 import useClaimLegalAcknowledgement from "../hooks/useClaimLegalAcknowledgement";
+import { resolveMediaUrl } from "../services/api";
 
 function enabled(flagName) {
   return String(import.meta.env[flagName] || "").toLowerCase() === "true";
@@ -196,6 +197,9 @@ export default function ArtistProfilePage() {
                   return (
                     <Link to={`/events/${event.id}`} key={event.id} className="clean-card artist-epk-event">
                       <div className="artist-epk-date"><strong>{new Date(event.startsAt).toLocaleDateString("pt-BR", { day: "2-digit" })}</strong><span>{new Date(event.startsAt).toLocaleDateString("pt-BR", { month: "short" })}</span></div>
+                      <div className="artist-epk-event-poster">
+                        {event.posterImageUrl || event.imageUrl ? <img src={resolveMediaUrl(event.posterImageUrl || event.imageUrl)} alt={`Cartaz de ${venueName}`} /> : null}
+                      </div>
                       <div>
                         <h3>{venueName}</h3>
                         <p><CalendarClock size={14} /> {formatDate(event.startsAt)}</p>

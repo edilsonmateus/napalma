@@ -29,6 +29,7 @@ const eventBaseSchema = z.object({
   title: z.string().trim().min(3),
   description: z.string().trim().min(3).optional(),
   imageUrl: z.string().url().optional(),
+  posterImageUrl: z.string().url().optional(),
   type: eventTypeSchema,
   tags: z.array(z.string().trim().min(1)).default([]),
   startDate: z.coerce.date(),
@@ -185,7 +186,12 @@ function mapEventPayload(event) {
     tags: event.tags ?? [],
     priceLabel: formatPriceLabel(event.priceMin, event.priceMax, event.ticketType),
     priceSecondaryLabel: formatPriceSecondaryLabel(event),
-    imageUrl: event.imageUrl ?? event.venue.imageUrl ?? "",
+    // `imageUrl` remains available to older clients. Newer clients can tell an
+    // event poster apart from the venue's institutional banner and choose the
+    // right image for each surface without a data migration.
+    posterImageUrl: event.posterImageUrl ?? "",
+    venueImageUrl: event.venue.imageUrl ?? "",
+    imageUrl: event.posterImageUrl ?? event.imageUrl ?? event.venue.imageUrl ?? "",
     status: event.status ?? "confirmed"
   };
 }
@@ -218,7 +224,8 @@ function mapEventDetailPayload(event) {
     id: event.id,
     title: event.title,
     description: event.description ?? "",
-    imageUrl: event.imageUrl ?? "",
+    imageUrl: event.posterImageUrl ?? event.imageUrl ?? "",
+    posterImageUrl: event.posterImageUrl ?? "",
     type: event.type,
     tags: event.tags ?? [],
     startDate: event.startDate,
@@ -402,6 +409,7 @@ export async function createEvent(req, res, next) {
         title: data.title,
         description: data.description,
         imageUrl: data.imageUrl,
+        posterImageUrl: data.posterImageUrl,
         type: data.type,
         tags: data.tags,
         startDate: data.startDate,
@@ -578,6 +586,7 @@ export async function updateEvent(req, res, next) {
           title: data.title,
           description: data.description,
           imageUrl: data.imageUrl,
+          posterImageUrl: data.posterImageUrl,
           type: data.type,
           tags: data.tags,
           startDate: data.startDate,

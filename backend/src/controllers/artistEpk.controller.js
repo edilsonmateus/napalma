@@ -102,7 +102,9 @@ function eventPayload(event) {
     status: event.status,
     type: event.type,
     tags: event.tags,
-    imageUrl: event.imageUrl || event.venue?.imageUrl || "",
+    posterImageUrl: event.posterImageUrl || "",
+    venueImageUrl: event.venue?.imageUrl || "",
+    imageUrl: event.posterImageUrl || event.imageUrl || event.venue?.imageUrl || "",
     venue: event.venue ? { id: event.venue.id, name: event.venue.name, address: event.venue.address, neighborhood: event.venue.neighborhood, region: event.venue.region, city: event.venue.city, state: event.venue.state } : null
   };
 }

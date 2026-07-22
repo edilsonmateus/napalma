@@ -12,6 +12,7 @@ import wazeIcon from "../assets/routes/waze.svg";
 import uberIcon from "../assets/routes/uber.svg";
 import { trackAnalyticsEvent } from "../services/analytics.service";
 import BackLink from "../components/common/BackLink";
+import { resolveMediaUrl } from "../services/api";
 
 function formatDate(value) {
   return new Date(value).toLocaleString("pt-BR", {
@@ -180,7 +181,7 @@ export default function VenueDetailFlowPage() {
           const eventCard = (
             <Link key={event.id} className="venue-card venue-event-item" to={`/events/${event.id}`}>
               <div className="venue-event-media">
-                {event.imageUrl ? <img src={event.imageUrl} alt={event.title} /> : <div className="venue-event-fallback" />}
+                {event.artistImageUrl || event.posterImageUrl || event.imageUrl ? <img src={resolveMediaUrl(event.artistImageUrl || event.posterImageUrl || event.imageUrl)} alt={event.artist || event.title} /> : <div className="venue-event-fallback" />}
               </div>
               <div className="venue-event-content">
                 <div className="venue-event-top">

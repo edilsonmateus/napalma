@@ -93,6 +93,7 @@ const initialEventForm = {
   title: "",
   description: "",
   imageUrl: "",
+  posterImageUrl: "",
   type: "roda_samba",
   tags: "samba",
   startDate: "",
@@ -1270,6 +1271,7 @@ export default function VenuesAdminPage() {
         city: detail.city || "",
         state: detail.state || "SP",
         imageUrl: detail.imageUrl || "",
+        posterImageUrl: detail.posterImageUrl || "",
         openDays: Array.isArray(detail.openDays) ?detail.openDays.join(", ") : ""
       });
       setVenueEditJustification("");
@@ -1358,6 +1360,7 @@ export default function VenuesAdminPage() {
       couvertArtistico: eventForm.couvertArtistico ?Number(eventForm.couvertArtistico) : undefined,
       ticketUrl: eventForm.ticketUrl || undefined,
       imageUrl: eventForm.imageUrl || undefined,
+      posterImageUrl: eventForm.posterImageUrl || undefined,
       isRecurring: Boolean(eventForm.isRecurring),
       recurrenceDays: eventForm.isRecurring ?eventForm.recurrenceDays : [],
       recurrenceStartTime: eventForm.isRecurring ?(eventForm.recurrenceStartTime || undefined) : undefined,
@@ -1716,7 +1719,7 @@ export default function VenuesAdminPage() {
       } else if (target === "artist") {
         setArtistForm((prev) => ({ ...prev, imageUrl: uploaded.url || prev.imageUrl }));
       } else {
-        setEventForm((prev) => ({ ...prev, imageUrl: uploaded.url || prev.imageUrl }));
+        setEventForm((prev) => ({ ...prev, posterImageUrl: uploaded.url || prev.posterImageUrl }));
       }
       showToast("Imagem enviada com sucesso.");
     } catch (error) {
@@ -2976,9 +2979,9 @@ export default function VenuesAdminPage() {
           placeholder="Couvert artistico (opcional)"
         />
         <input name="ticketUrl" type="url" value={eventForm.ticketUrl} onChange={handleEventChange} placeholder="URL de ingresso" />
-        <input name="imageUrl" type="url" value={eventForm.imageUrl} onChange={handleEventChange} placeholder="URL da imagem" />
+        <input name="posterImageUrl" type="url" value={eventForm.posterImageUrl} onChange={handleEventChange} placeholder="URL do cartaz do evento" />
         <label className="meta-line">
-          Upload da imagem do evento (JPG, PNG ou WebP, ate 5MB)
+          Cartaz do evento — JPG, PNG ou WebP, até 5 MB. Recomendado: 1080 × 1350 px (4:5).
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp"

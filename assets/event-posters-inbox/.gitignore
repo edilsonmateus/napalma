@@ -1,0 +1,3 @@
+# O importador lê os arquivos individuais mapeados no CSV.
+# Arquivos ZIP são apenas apoio local e não devem seguir para o deploy.
+*.zip

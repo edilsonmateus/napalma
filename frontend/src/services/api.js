@@ -18,6 +18,14 @@ function resolveApiBaseUrl() {
 export const apiBaseUrl = resolveApiBaseUrl();
 export const apiHealthUrl = apiBaseUrl.replace(/\/api$/, "");
 
+// The API may return a relative local upload path during development. Keep
+// those assets on the API origin instead of incorrectly requesting them from Vite.
+export function resolveMediaUrl(value) {
+  const url = String(value || "").trim();
+  if (!url || /^(https?:|data:|blob:)/i.test(url)) return url;
+  return `${apiHealthUrl}${url.startsWith("/") ? url : `/${url}`}`;
+}
+
 export const api = axios.create({
   baseURL: apiBaseUrl,
   timeout: 15000

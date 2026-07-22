@@ -18,6 +18,7 @@ import mapsIcon from "../assets/routes/maps.svg";
 import wazeIcon from "../assets/routes/waze.svg";
 import uberIcon from "../assets/routes/uber.svg";
 import { useAuthStore } from "../store/authStore";
+import { resolveMediaUrl } from "../services/api";
 
 const EXPLORE_PREFS_KEY = "napalma:explore:prefs";
 const ON_TRACK_KEY = "77gira:on-track-session";
@@ -238,7 +239,7 @@ export default function ExplorePage() {
       setPrefs((prev) => ({ ...prev, region: "Todas" }));
     }
   }, [prefs.region, regionOptions]);
-  const [routeModeVenueId, setRouteModeVenueId] = useState("");
+  const [routeModeEventId, setRouteModeEventId] = useState("");
   const resumeRefreshTimersRef = useRef([]);
   const lastResumeRefreshAtRef = useRef(0);
   const { data: exploreAd } = useAdDeliveryQuery("explore_feed_large", true);
@@ -347,12 +348,7 @@ export default function ExplorePage() {
         const selectedHour = filterHour.slice(0, 2);
         if (eventHour !== selectedHour) continue;
       }
-      rows.push({
-        key: event.id,
-        venue,
-        nextEvent: event,
-        isLiveNow
-      });
+      rows.push({ key: event.id, venue, event, nextEvent: event, isLiveNow });
     }
     return rows.sort((a, b) => new Date(a.nextEvent.startsAt).getTime() - new Date(b.nextEvent.startsAt).getTime());
   }, [events, venueByName, selectedRegion, debouncedQuery, filterDate, filterHour, liveOnly, timeScope, nowMs]);
@@ -402,7 +398,7 @@ export default function ExplorePage() {
 
     const out = [];
     for (const row of rows) {
-      const key = formatGroupLabel(row.nextEvent.startsAt);
+      const key = formatGroupLabel(row.event.startsAt);
       let bucket = out.find((item) => item.label === key);
       if (!bucket) {
         bucket = { label: key, items: [] };
@@ -937,86 +933,67 @@ export default function ExplorePage() {
             <small className="day-group-count">{group.items.length} {group.items.length === 1 ? "samba" : "sambas"}</small>
           </h4>
           <div className="venue-list explore-venue-grid">
-            {group.items.map(({ venue, nextEvent, isLiveNow }) => (
+            {group.items.map(({ venue, event: eventItem, isLiveNow }) => (
               <article
-                key={`${venue.id}-${nextEvent.id}`}
-                className={`venue-card venue-flow-card ${isLiveNow ? "venue-flow-live" : "venue-flow-upcoming"} ${routeModeVenueId === venue.id ? "route-mode" : ""}`}
+                key={eventItem.id}
+                className={`venue-card venue-flow-card event-flow-card ${isLiveNow ? "venue-flow-live" : "venue-flow-upcoming"} ${routeModeEventId === eventItem.id ? "route-mode" : ""}`}
               >
-                <Link to={`/venues/${venue.id}`} className="venue-flow-link">
+                <Link to={`/events/${eventItem.baseEventId || eventItem.id}`} className="venue-flow-link event-flow-media-link" aria-label={`Abrir evento ${eventItem.title}`}>
                   <div className="venue-flow-cover">
-                    {venue.imageUrl ? (
+                    {eventItem.posterImageUrl ? (
                       <img
-                        src={venue.imageUrl}
-                        alt={venue.name}
+                        src={resolveMediaUrl(eventItem.posterImageUrl)}
+                        alt={`Cartaz de ${eventItem.title}`}
                         className="venue-flow-cover-img"
                         loading="lazy"
                         decoding="async"
                       />
-                    ) : null}
-                    <span className="event-region"><MapPin size={12} /> {venue.region}</span>
-                    {routeModeVenueId === venue.id ? <span className="event-route-venue">{venue.name}</span> : null}
-                  </div>
-                  {routeModeVenueId !== venue.id && isLiveNow ? <LiveProgressBar event={nextEvent} nowMs={nowMs} /> : null}
-                  {routeModeVenueId !== venue.id ? (
-                    <div className="venue-flow-body">
-                      <div className="venue-flow-head">
-                        <h3 className="artist-inline-with-badge">
-                          <span>{venue.name}</span>
-                          {venue.goldPartner ? <VerifiedBadge className="artist-verified-dot gold-partner-badge" title="Casa Gold Partner" iconSrc="/goldenVerificado.svg" /> : null}
-                        </h3>
-                        <button
-                          type="button"
-                          className="chip route-inline-trigger"
-                          onClick={(event) => {
-                            event.preventDefault();
-                            setRouteModeVenueId(venue.id);
-                            trackAnalyticsEvent("route_click", {
-                              venueId: venue.id,
-                              region: venue.region,
-                              city: venue.city,
-                              state: venue.state,
-                              source: "explore"
-                            });
-                          }}
-                        >
-                          <MapPin size={12} /> Partiu Agora!
-                        </button>
+                    ) : (
+                      <div className="event-poster-fallback" aria-hidden="true">
+                        <span>77Gira</span>
+                        <strong>{eventItem.title}</strong>
                       </div>
-                      <p className="meta-line venue-neighborhood-line">{venue.neighborhood}</p>
-                      {nextEvent ? (
-                        <>
-                          <p className="meta-line next-event-label">Próxima atração</p>
-                          <p className="meta-line next-event-title artist-inline-with-badge">
-                            <span>{nextEvent.title}</span>
-                            {nextEvent.artistVerified ? <VerifiedBadge className="artist-verified-dot" title="Artista verificado" /> : null}
-                          </p>
-                          {!isLiveNow ? (
-                            <small className="meta-line"><CalendarClock size={14} /> Começa às {formatHour(nextEvent.startsAt)} • {formatDayMonth(nextEvent.startsAt)}</small>
-                          ) : (
-                            <small className="meta-line event-live-inline">
-                              <span className="live-dot" />
-                              <strong>Tá rolando</strong>
-                              <span>termina às {formatHour(nextEvent.endsAt)}</span>
-                            </small>
-                          )}
-                          {getAudienceBadges(nextEvent).length > 0 ? (
-                            <div className="event-audience-row">
-                              {getAudienceBadges(nextEvent).map((badge) => (
-                                <span key={badge} className="event-audience-badge">{badge}</span>
-                              ))}
-                            </div>
-                          ) : null}
-                        </>
-                      ) : (
-                        <small className="meta-line">Sem próxima atração cadastrada</small>
-                      )}
-                    </div>
-                  ) : null}
+                    )}
+                    <span className="event-region"><MapPin size={12} /> {venue.region}</span>
+                    {routeModeEventId === eventItem.id ? <span className="event-route-venue">{venue.name}</span> : null}
+                  </div>
                 </Link>
-                {routeModeVenueId === venue.id ? (
+                {routeModeEventId !== eventItem.id && isLiveNow ? <LiveProgressBar event={eventItem} nowMs={nowMs} /> : null}
+                {routeModeEventId !== eventItem.id ? (
+                  <div className="venue-flow-body event-flow-body">
+                    <div className="venue-flow-head">
+                      <Link to={`/events/${eventItem.baseEventId || eventItem.id}`} className="event-flow-title artist-inline-with-badge">
+                        <span>{eventItem.title}</span>
+                        {eventItem.artistVerified ? <VerifiedBadge className="artist-verified-dot" title="Artista verificado" /> : null}
+                      </Link>
+                      <button
+                        type="button"
+                        className="chip route-inline-trigger"
+                        onClick={() => {
+                          setRouteModeEventId(eventItem.id);
+                          trackAnalyticsEvent("route_click", { venueId: venue.id, eventId: eventItem.baseEventId || eventItem.id, region: venue.region, city: venue.city, state: venue.state, source: "explore" });
+                        }}
+                      >
+                        <MapPin size={12} /> Partiu Agora!
+                      </button>
+                    </div>
+                    <Link to={`/venues/${venue.id}`} className="meta-line event-flow-venue artist-inline-with-badge">
+                      <span>{venue.name}</span>
+                      {venue.goldPartner ? <VerifiedBadge className="artist-verified-dot gold-partner-badge" title="Casa Gold Partner" iconSrc="/goldenVerificado.svg" /> : null}
+                    </Link>
+                    <p className="meta-line venue-neighborhood-line">{venue.neighborhood}</p>
+                    {!isLiveNow ? (
+                      <small className="meta-line"><CalendarClock size={14} /> Começa às {formatHour(eventItem.startsAt)} • {formatDayMonth(eventItem.startsAt)}</small>
+                    ) : (
+                      <small className="meta-line event-live-inline"><span className="live-dot" /><strong>Tá rolando</strong><span>termina às {formatHour(eventItem.endsAt)}</span></small>
+                    )}
+                    {getAudienceBadges(eventItem).length > 0 ? <div className="event-audience-row">{getAudienceBadges(eventItem).map((badge) => <span key={badge} className="event-audience-badge">{badge}</span>)}</div> : null}
+                  </div>
+                ) : null}
+                {routeModeEventId === eventItem.id ? (
                   <div className="venue-flow-body route-options-panel">
                     <div className="route-options-row">
-                      <a href={buildGoogleMapsLink(venue)} target="_blank" rel="noreferrer" className="route-icon-btn" title="Maps" aria-label="Abrir rota no Maps" onClick={() => trackAnalyticsEvent("route_app_click", { venueId: venue.id, region: venue.region, city: venue.city, state: venue.state, source: "explore", metadata: { provider: "maps" } })}>
+                      <a href={buildGoogleMapsLink(venue)} target="_blank" rel="noreferrer" className="route-icon-btn" title="Maps" aria-label="Abrir rota no Maps" onClick={() => trackAnalyticsEvent("route_app_click", { venueId: venue.id, eventId: eventItem.baseEventId || eventItem.id, region: venue.region, city: venue.city, state: venue.state, source: "explore", metadata: { provider: "maps" } })}>
                         <img src={mapsIcon} alt="" className="route-icon-img route-icon-img-maps" />
                       </a>
                       <a href={buildWazeLink(venue)} target="_blank" rel="noreferrer" className="route-icon-btn" title="Waze" aria-label="Abrir rota no Waze" onClick={() => trackAnalyticsEvent("route_app_click", { venueId: venue.id, region: venue.region, city: venue.city, state: venue.state, source: "explore", metadata: { provider: "waze" } })}>
@@ -1025,28 +1002,18 @@ export default function ExplorePage() {
                       <a href={buildUberLink(venue)} target="_blank" rel="noreferrer" className="route-icon-btn" title="Uber" aria-label="Abrir rota no Uber" onClick={() => trackAnalyticsEvent("route_app_click", { venueId: venue.id, region: venue.region, city: venue.city, state: venue.state, source: "explore", metadata: { provider: "uber" } })}>
                         <img src={uberIcon} alt="" className="route-icon-img route-icon-img-uber" />
                       </a>
-                      <button type="button" className="chip route-mini-chip route-chip-close route-inline-back" onClick={() => setRouteModeVenueId("")}>Voltar</button>
+                      <button type="button" className="chip route-mini-chip route-chip-close route-inline-back" onClick={() => setRouteModeEventId("")}>Voltar</button>
                     </div>
                   </div>
                 ) : null}
               </article>
             ))}
-            {group.items.length === 1 ? (
-              <article className="venue-card venue-flow-card venue-flow-placeholder" aria-hidden="true">
-                <div className="venue-flow-cover" />
-                <div className="venue-flow-body">
-                  <h3>Mais samba chegando</h3>
-                  <p className="meta-line">Em breve essa agenda enche.</p>
-                  <small className="meta-line">Fique de olho nos próximos dias.</small>
-                </div>
-              </article>
-            ) : null}
           </div>
         </div>
       ))}
       {!venuesLoading && !catalogError && canLoadMore ? (
         <button className="chip load-more" onClick={() => setPrefs((prev) => ({ ...prev, limit: prev.limit + 8 }))}>
-          Carregar mais casas
+          Carregar mais eventos
         </button>
       ) : null}
     </section>
