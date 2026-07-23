@@ -5336,15 +5336,29 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 }
 
 .explore-sticky-controls {
+  --explore-glass-background: rgba(20, 12, 29, 0.82);
+  --explore-top-fill: 20px;
   position: sticky;
   top: 0;
   z-index: 40;
   isolation: isolate;
   margin-inline: -16px;
   padding-inline: 16px;
-  background: rgba(20, 12, 29, 0.82);
+  background: var(--explore-glass-background);
   -webkit-backdrop-filter: blur(10px) saturate(112%);
   backdrop-filter: blur(10px) saturate(112%);
+}
+
+.explore-sticky-controls::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: calc(-1 * var(--explore-top-fill));
+  right: 0;
+  left: 0;
+  height: var(--explore-top-fill);
+  background: var(--explore-glass-background);
+  pointer-events: none;
 }
 
 .explore-header-row {
@@ -9134,7 +9148,7 @@ button.venue-card {
 
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   .explore-sticky-controls {
-    background: rgba(20, 12, 29, 0.97);
+    --explore-glass-background: rgba(20, 12, 29, 0.97);
   }
 
   .app-shell-explore > .bottom-nav {
@@ -10493,6 +10507,7 @@ button.venue-card {
   }
 
   .explore-sticky-controls {
+    --explore-top-fill: 14px;
     margin-inline: -10px;
     padding-inline: 10px;
   }
@@ -10504,7 +10519,7 @@ button.venue-card {
 
   .screen-explore .explore-header-row {
     min-height: 57px;
-    padding: 10px 2px 3px;
+    padding: 10px 2px 7px;
   }
 
   .page-header h1,
