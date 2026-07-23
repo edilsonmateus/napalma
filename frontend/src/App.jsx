@@ -29,6 +29,8 @@ const TermsPage = lazy(() => import("./pages/TermsPage"));
 const HelpPage = lazy(() => import("./pages/HelpPage"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const SignupPage = lazy(() => import("./pages/SignupPage"));
 const AdvertisePage = lazy(() => import("./pages/AdvertisePage"));
 const VenuesAdminPage = lazy(() => import("./pages/VenuesAdminPage"));
@@ -358,6 +360,8 @@ export default function App() {
               element={isVenueRole(user?.role) ? <Navigate to="/settings/venues?section=overview" replace /> : <HistoryPage />}
             />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/anunciar" element={<AdvertisePage />} />
             <Route path="/settings" element={<SettingsPage />} />

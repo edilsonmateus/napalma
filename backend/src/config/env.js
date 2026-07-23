@@ -8,6 +8,12 @@ export const env = {
   databaseUrl: process.env.DATABASE_URL || "",
   jwtSecret: process.env.JWT_SECRET || "dev-secret-change-me",
   publicAppUrl: process.env.PUBLIC_APP_URL || "http://localhost:5173",
+  brevoApiKey: process.env.BREVO_API_KEY || "",
+  emailFromAddress: process.env.EMAIL_FROM_ADDRESS || "",
+  emailFromName: process.env.EMAIL_FROM_NAME || "77Gira",
+  emailReplyTo: process.env.EMAIL_REPLY_TO || "",
+  passwordResetUrl: process.env.PASSWORD_RESET_URL || `${process.env.PUBLIC_APP_URL || "http://localhost:5173"}/reset-password`,
+  passwordResetTokenTtlMinutes: Math.min(120, Math.max(10, Number(process.env.PASSWORD_RESET_TOKEN_TTL_MINUTES || 30))),
   firstWebhookUrl: process.env.FIRST77_WEBHOOK_URL || "",
   firstWebhookTimeoutMs: Number(process.env.FIRST77_WEBHOOK_TIMEOUT_MS || 12000),
   vapidSubject: process.env.VAPID_SUBJECT || "mailto:contato@77gira.com.br",
@@ -35,7 +41,13 @@ export function getSecurityReadiness() {
     { key: "cors_origins", label: "Origens CORS autorizadas", ok: corsOrigins.length > 0, required: true },
     { key: "database_url", label: "Banco configurado", ok: Boolean(env.databaseUrl), required: true },
     { key: "public_app_https", label: "URL pública HTTPS", ok: !production || env.publicAppUrl.startsWith("https://"), required: true },
-    { key: "mock_payment_disabled", label: "Gateway mock desativado", ok: process.env.ADS_MOCK_PAYMENT_ENABLED !== "true", required: false }
+    { key: "mock_payment_disabled", label: "Gateway mock desativado", ok: process.env.ADS_MOCK_PAYMENT_ENABLED !== "true", required: false },
+    {
+      key: "transactional_email",
+      label: "E-mail transacional",
+      ok: !production || Boolean(env.brevoApiKey && env.emailFromAddress && env.passwordResetUrl.startsWith("https://")),
+      required: true
+    }
   ];
   return { environment: production ? "production" : "development", checks, ready: checks.filter((item) => item.required).every((item) => item.ok) };
 }

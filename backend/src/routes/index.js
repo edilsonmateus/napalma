@@ -28,7 +28,7 @@ import {
   unfollowArtist,
   updateArtist
 } from "../controllers/artists.controller.js";
-import { devLoginAdmin, login, logout, me, refresh, register } from "../controllers/auth.controller.js";
+import { devLoginAdmin, forgotPassword, login, logout, me, refresh, register, resetPassword } from "../controllers/auth.controller.js";
 import { createCommonUser, createProducerUser, listCommonUsers, listProducerUsers, setReservedUsernamePermission } from "../controllers/users.controller.js";
 import { listMyRadar, markEventInRadar, unmarkEventFromRadar } from "../controllers/radar.controller.js";
 import { listMyHistory, markEventAsAttended, unmarkEventAsAttended } from "../controllers/history.controller.js";
@@ -167,6 +167,12 @@ const adsTrackLimiter = createRateLimiter({
   max: 60,
   message: "Muitas interacoes de anuncio no momento. Aguarde alguns segundos."
 });
+const passwordRecoveryLimiter = createRateLimiter({
+  keyPrefix: "password-recovery",
+  windowMs: 15 * 60_000,
+  max: 5,
+  message: "Muitas tentativas de recuperação. Aguarde alguns minutos."
+});
 const menuInteractionLimiter = createRateLimiter({
   keyPrefix: "menu-interaction",
   windowMs: 60_000,
@@ -213,6 +219,8 @@ const privacySensitiveActionLimiter = createRateLimiter({
 
 router.post("/auth/register", authLimiter, register);
 router.post("/auth/login", authLimiter, login);
+router.post("/auth/password/forgot", passwordRecoveryLimiter, forgotPassword);
+router.post("/auth/password/reset", passwordRecoveryLimiter, resetPassword);
 router.post("/auth/dev/admin", authLimiter, devLoginAdmin);
 router.post("/auth/refresh", authLimiter, refresh);
 router.post("/auth/logout", authLimiter, logout);

@@ -47,6 +47,7 @@ export default function LoginPage() {
   }, [location.state]);
   const securityNotice = useMemo(() => {
     const params = new URLSearchParams(location.search);
+    if (params.get("passwordReset") === "1") return "Senha redefinida com sucesso. Entre com sua nova senha.";
     if (params.get("securitySessionsRevoked") === "1") return "Suas sessões foram encerradas. Entre novamente para continuar.";
     if (params.get("passwordChanged") === "1") return "Senha alterada com sucesso. Entre novamente para continuar.";
     return "";
@@ -185,6 +186,7 @@ export default function LoginPage() {
           placeholder="Senha"
           required
         />
+        <Link to="/forgot-password" className="auth-forgot-link">Esqueci minha senha</Link>
         <div className="auth-actions">
           <button type="submit" className="auth-btn auth-btn-primary" disabled={isLoading}>
             {isLoading ? "Entrando..." : "Entrar"}

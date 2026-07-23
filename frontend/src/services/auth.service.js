@@ -15,6 +15,16 @@ export async function register(payload) {
   return data;
 }
 
+export async function requestPasswordReset(email) {
+  const { data } = await api.post("/auth/password/forgot", { email });
+  return data;
+}
+
+export async function resetPassword(payload) {
+  const { data } = await api.post("/auth/password/reset", payload);
+  return data;
+}
+
 export async function me() {
   const { data } = await api.get("/auth/me");
   return data.user;

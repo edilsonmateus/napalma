@@ -240,52 +240,53 @@ model User {
   reservedUsernameGrantedByUserId String?
   reservedUsernameGrantedAt       DateTime?
 
-  markedEvents                MarkedEvent[]
-  historyEntries              UserEventHistory[]
-  achievements                UserAchievement[]
-  createdVenues               Venue[]                  @relation("VenueCreatedBy")
-  managedVenues               Venue[]                  @relation("VenueManagedBy")
-  venueAccesses               VenueManagerAccess[]
-  createdArtists              Artist[]                 @relation("ArtistCreatedBy")
-  createdEvents               Event[]                  @relation("EventCreatedBy")
-  refreshTokens               RefreshToken[]
-  adCampaigns                 AdCampaign[]
-  adEvents                    AdEventLog[]
-  itineraries                 Itinerary[]
-  audienceVisits              AudienceVisitor[]
-  pushSubscriptions           PushSubscription[]
-  toNaPistaSessions           ToNaPistaSession[]
-  producerVenueAccesses       ProducerVenueAccess[]
-  producerArtistAccesses      ProducerArtistAccess[]
-  artistFollows               ArtistFollow[]
-  claims                      ClaimRequest[]           @relation("ClaimRequestedBy")
-  claimsReviewed              ClaimRequest[]           @relation("ClaimReviewedBy")
-  createdRegions              Region[]                 @relation("RegionCreatedBy")
-  acquisitionLeads            AcquisitionLead[]        @relation("AcquisitionLeadCreatedBy")
-  acquisitionInteractions     AcquisitionInteraction[] @relation("AcquisitionInteractionCreatedBy")
-  acquisitionStatusChanges    AcquisitionStatusHistory[] @relation("AcquisitionStatusChangedBy")
-  advertiserAccountsCreated   AdvertiserAccount[]      @relation("AdvertiserAccountCreatedBy")
-  advertiserAccountsApproved  AdvertiserAccount[]      @relation("AdvertiserAccountApprovedBy")
-  advertiserMemberships       AdvertiserMembership[]   @relation("AdvertiserMembershipUser")
-  advertiserMembershipInvites AdvertiserMembership[]   @relation("AdvertiserMembershipInvitedBy")
-  adCampaignReviews           AdCampaign[]             @relation("AdCampaignReviewedBy")
-  adCreativeReviews           AdCreative[]             @relation("AdCreativeReviewedBy")
-  adReviewActions             AdReviewLog[]            @relation("AdReviewLogActor")
-  adPaymentOrdersCreated      AdPaymentOrder[]         @relation("AdPaymentOrderCreatedBy")
-  adCreditEntriesCreated      AdCreditLedgerEntry[]    @relation("AdCreditLedgerEntryCreatedBy")
-  artistAccesses              ArtistAccess[]           @relation("ArtistAccessUser")
-  artistAccessInvites         ArtistAccess[]           @relation("ArtistAccessInvitedBy")
-  artistsVerified             Artist[]                 @relation("ArtistVerifiedBy")
-  artistBookingRequests       ArtistBookingRequest[]   @relation("ArtistBookingRequester")
-  privacyConsentRecords       PrivacyConsentRecord[]
-  privacyRequests             PrivacyRequest[]         @relation("PrivacyRequestRequester")
-  privacyRequestsHandled      PrivacyRequest[]         @relation("PrivacyRequestHandledBy")
-  auditLogs                   AuditLog[]               @relation("AuditLogActor")
-  venueMenuInteractions       VenueMenuInteraction[]
-  menuReviews                 VenueMenu[]              @relation("VenueMenuReviewedBy")
-  menuAdInventoryAcceptances  VenueMenu[]              @relation("VenueMenuAdInventoryAcceptedBy")
-  operationAccessGrants       OperationAccessGrant[]   @relation("OperationAccessGrantUser")
-  operationAccessGrantsIssued OperationAccessGrant[]   @relation("OperationAccessGrantIssuer")
+  markedEvents                 MarkedEvent[]
+  historyEntries               UserEventHistory[]
+  achievements                 UserAchievement[]
+  createdVenues                Venue[]                       @relation("VenueCreatedBy")
+  managedVenues                Venue[]                       @relation("VenueManagedBy")
+  venueAccesses                VenueManagerAccess[]
+  createdArtists               Artist[]                      @relation("ArtistCreatedBy")
+  createdEvents                Event[]                       @relation("EventCreatedBy")
+  refreshTokens                RefreshToken[]
+  passwordResetTokens          PasswordResetToken[]
+  adCampaigns                  AdCampaign[]
+  adEvents                     AdEventLog[]
+  itineraries                  Itinerary[]
+  audienceVisits               AudienceVisitor[]
+  pushSubscriptions            PushSubscription[]
+  toNaPistaSessions            ToNaPistaSession[]
+  producerVenueAccesses        ProducerVenueAccess[]
+  producerArtistAccesses       ProducerArtistAccess[]
+  artistFollows                ArtistFollow[]
+  claims                       ClaimRequest[]                @relation("ClaimRequestedBy")
+  claimsReviewed               ClaimRequest[]                @relation("ClaimReviewedBy")
+  createdRegions               Region[]                      @relation("RegionCreatedBy")
+  acquisitionLeads             AcquisitionLead[]             @relation("AcquisitionLeadCreatedBy")
+  acquisitionInteractions      AcquisitionInteraction[]      @relation("AcquisitionInteractionCreatedBy")
+  acquisitionStatusChanges     AcquisitionStatusHistory[]    @relation("AcquisitionStatusChangedBy")
+  advertiserAccountsCreated    AdvertiserAccount[]           @relation("AdvertiserAccountCreatedBy")
+  advertiserAccountsApproved   AdvertiserAccount[]           @relation("AdvertiserAccountApprovedBy")
+  advertiserMemberships        AdvertiserMembership[]        @relation("AdvertiserMembershipUser")
+  advertiserMembershipInvites  AdvertiserMembership[]        @relation("AdvertiserMembershipInvitedBy")
+  adCampaignReviews            AdCampaign[]                  @relation("AdCampaignReviewedBy")
+  adCreativeReviews            AdCreative[]                  @relation("AdCreativeReviewedBy")
+  adReviewActions              AdReviewLog[]                 @relation("AdReviewLogActor")
+  adPaymentOrdersCreated       AdPaymentOrder[]              @relation("AdPaymentOrderCreatedBy")
+  adCreditEntriesCreated       AdCreditLedgerEntry[]         @relation("AdCreditLedgerEntryCreatedBy")
+  artistAccesses               ArtistAccess[]                @relation("ArtistAccessUser")
+  artistAccessInvites          ArtistAccess[]                @relation("ArtistAccessInvitedBy")
+  artistsVerified              Artist[]                      @relation("ArtistVerifiedBy")
+  artistBookingRequests        ArtistBookingRequest[]        @relation("ArtistBookingRequester")
+  privacyConsentRecords        PrivacyConsentRecord[]
+  privacyRequests              PrivacyRequest[]              @relation("PrivacyRequestRequester")
+  privacyRequestsHandled       PrivacyRequest[]              @relation("PrivacyRequestHandledBy")
+  auditLogs                    AuditLog[]                    @relation("AuditLogActor")
+  venueMenuInteractions        VenueMenuInteraction[]
+  menuReviews                  VenueMenu[]                   @relation("VenueMenuReviewedBy")
+  menuAdInventoryAcceptances   VenueMenu[]                   @relation("VenueMenuAdInventoryAcceptedBy")
+  operationAccessGrants        OperationAccessGrant[]        @relation("OperationAccessGrantUser")
+  operationAccessGrantsIssued  OperationAccessGrant[]        @relation("OperationAccessGrantIssuer")
   operationWebAuthnCredentials OperationWebAuthnCredential[]
   operationWebAuthnChallenges  OperationWebAuthnChallenge[]
 
@@ -310,16 +311,16 @@ model OperationAccessGrant {
 }
 
 model OperationWebAuthnCredential {
-  id          String   @id @default(uuid())
-  userId      String
-  credentialId String  @unique
-  publicKey   Bytes
-  counter     Int      @default(0)
-  transports  Json?
-  deviceType  String?
-  backedUp    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  lastUsedAt  DateTime?
+  id           String    @id @default(uuid())
+  userId       String
+  credentialId String    @unique
+  publicKey    Bytes
+  counter      Int       @default(0)
+  transports   Json?
+  deviceType   String?
+  backedUp     Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -327,13 +328,13 @@ model OperationWebAuthnCredential {
 }
 
 model OperationWebAuthnChallenge {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
   purpose   String
   challenge String
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -603,13 +604,13 @@ model AdvertiserAccount {
   approvedByUserId   String?
   approvedAt         DateTime?
 
-  createdBy         User?                  @relation("AdvertiserAccountCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  approvedBy        User?                  @relation("AdvertiserAccountApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
-  memberships       AdvertiserMembership[]
-  campaigns         AdCampaign[]
-  wallet            AdvertiserWallet?
-  paymentOrders     AdPaymentOrder[]
-  creditEntries     AdCreditLedgerEntry[]
+  createdBy     User?                  @relation("AdvertiserAccountCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  approvedBy    User?                  @relation("AdvertiserAccountApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  memberships   AdvertiserMembership[]
+  campaigns     AdCampaign[]
+  wallet        AdvertiserWallet?
+  paymentOrders AdPaymentOrder[]
+  creditEntries AdCreditLedgerEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -831,6 +832,20 @@ model RefreshToken {
   @@index([userId])
 }
 
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
 model Venue {
   id                                     String    @id @default(uuid())
   name                                   String
@@ -882,23 +897,23 @@ model Venue {
 }
 
 model VenueMenu {
-  id               String          @id @default(uuid())
-  venueId          String          @unique
-  status           VenueMenuStatus @default(draft)
-  pricesVisible    Boolean         @default(true)
-  reviewedAt       DateTime?
-  reviewedByUserId String?
+  id                          String          @id @default(uuid())
+  venueId                     String          @unique
+  status                      VenueMenuStatus @default(draft)
+  pricesVisible               Boolean         @default(true)
+  reviewedAt                  DateTime?
+  reviewedByUserId            String?
   adInventoryAcceptedAt       DateTime?
   adInventoryAcceptedByUserId String?
   adInventoryPolicyVersion    String?
-  publishedAt      DateTime?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  publishedAt                 DateTime?
+  createdAt                   DateTime        @default(now())
+  updatedAt                   DateTime        @updatedAt
 
-  venue      Venue           @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  reviewedBy User?           @relation("VenueMenuReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
-  adInventoryAcceptedBy User? @relation("VenueMenuAdInventoryAcceptedBy", fields: [adInventoryAcceptedByUserId], references: [id], onDelete: SetNull)
-  items      VenueMenuItem[]
+  venue                 Venue           @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  reviewedBy            User?           @relation("VenueMenuReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  adInventoryAcceptedBy User?           @relation("VenueMenuAdInventoryAcceptedBy", fields: [adInventoryAcceptedByUserId], references: [id], onDelete: SetNull)
+  items                 VenueMenuItem[]
 
   @@index([status, updatedAt])
 }
@@ -1269,9 +1284,9 @@ model ClaimRequest {
 }
 
 model AcquisitionLead {
-  id                 String                   @id @default(uuid())
+  id                 String                     @id @default(uuid())
   venueName          String
-  city               String                   @default("São Paulo")
+  city               String                     @default("São Paulo")
   region             String?
   neighborhood       String?
   address            String?
@@ -1285,8 +1300,8 @@ model AcquisitionLead {
   contactName        String?
   contactRole        String?
   email              String?
-  status             String                   @default("mapped")
-  temperature        String                   @default("warm")
+  status             String                     @default("mapped")
+  temperature        String                     @default("warm")
   nextFollowUpAt     DateTime?
   presentationAt     DateTime?
   presentationFormat String?
@@ -1295,7 +1310,7 @@ model AcquisitionLead {
   objections         String?
   notes              String?
   createdByUserId    String?
-  createdBy          User?                    @relation("AcquisitionLeadCreatedBy", fields: [createdByUserId], references: [id])
+  createdBy          User?                      @relation("AcquisitionLeadCreatedBy", fields: [createdByUserId], references: [id])
   interactions       AcquisitionInteraction[]
   statusHistory      AcquisitionStatusHistory[]
 

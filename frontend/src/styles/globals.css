@@ -8031,6 +8031,79 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   box-shadow: none;
 }
 
+.auth-forgot-link {
+  width: fit-content;
+  margin: 1px 2px 3px;
+  color: #c8bedc;
+  font-size: 13px;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.auth-forgot-link:hover { color: #fff; }
+
+.password-recovery-screen {
+  display: flex;
+  min-height: calc(100vh - 100px);
+  flex-direction: column;
+}
+
+.password-recovery-screen .back-link {
+  width: fit-content;
+  margin-bottom: 26px;
+}
+
+.auth-eyebrow {
+  margin: 0 0 8px !important;
+  color: #f59e0b !important;
+  font-size: 11px !important;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+.password-recovery-form { margin-top: 24px; }
+
+.password-recovery-form label {
+  color: #c8bedc;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.password-recovery-form .auth-btn {
+  width: fit-content;
+  margin-top: 8px;
+}
+
+.auth-feedback {
+  margin-top: 10px;
+  border-left: 3px solid;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.auth-feedback-success {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, .09);
+  color: #c8f5d6;
+}
+
+.auth-feedback-error {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, .09);
+  color: #fecaca;
+}
+
+.password-recovery-guidance {
+  margin-top: 14px;
+  color: #c8bedc;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.password-recovery-guidance p { margin: 4px 0 0; color: #958da5; }
+
 .venue-flow-placeholder .venue-flow-cover {
   background: #18181a;
   animation: none;
