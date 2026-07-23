@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { CalendarClock, Copy, MapPin, Send, Share2, Star } from "lucide-react";
+import { CalendarClock, Copy, MapPin, Send, Share2 } from "lucide-react";
 import {
   useEventsQuery,
   useMyRadarQuery,
@@ -18,6 +18,7 @@ import { trackAnalyticsEvent } from "../services/analytics.service";
 import BackLink from "../components/common/BackLink";
 import ArtistProfileGateway from "../components/artists/ArtistProfileGateway";
 import { resolveMediaUrl } from "../services/api";
+import RadarStarIcon from "../components/events/RadarStarIcon";
 
 function formatDate(value) {
   return new Date(value).toLocaleString("pt-BR", {
@@ -264,7 +265,7 @@ export default function EventDetailPage() {
                 onClick={handleToggleRadar}
                 disabled={toggleRadar.isPending}
               >
-                <Star size={14} className={marked && !toggleRadar.isPending ? "is-lit" : undefined} />
+                <RadarStarIcon marked={marked && !toggleRadar.isPending} />
                 <span className="event-inline-action-label">{toggleRadar.isPending ? "Atualizando..." : marked ? "Marcado no seu Radar" : "Guardar no Radar"}</span>
               </button>
             ) : null}

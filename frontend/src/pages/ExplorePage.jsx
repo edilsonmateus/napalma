@@ -1,7 +1,14 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { CalendarClock, Filter, MapPin, X } from "lucide-react";
-import { useAdDeliveryQuery, useEventsQuery, useRegionsQuery, useVenuesQuery } from "../hooks/useEventsQuery";
+import {
+  useAdDeliveryQuery,
+  useEventsQuery,
+  useMyRadarQuery,
+  useRegionsQuery,
+  useToggleRadarMutation,
+  useVenuesQuery
+} from "../hooks/useEventsQuery";
 import AdSlotCard from "../components/ads/AdSlotCard";
 import VerifiedBadge from "../components/common/VerifiedBadge";
 import { buildGoogleMapsLink, buildUberLink, buildWazeLink } from "../utils/maps";
@@ -19,6 +26,7 @@ import wazeIcon from "../assets/routes/waze.svg";
 import uberIcon from "../assets/routes/uber.svg";
 import { useAuthStore } from "../store/authStore";
 import { resolveMediaUrl } from "../services/api";
+import RadarStarIcon from "../components/events/RadarStarIcon";
 
 const EXPLORE_PREFS_KEY = "napalma:explore:prefs";
 const ON_TRACK_KEY = "77gira:on-track-session";
@@ -225,6 +233,12 @@ export default function ExplorePage() {
     selectedRegion ? { region: selectedRegion } : {}
   );
   const { data: regions = [] } = useRegionsQuery();
+  const { data: radarEvents = [] } = useMyRadarQuery(Boolean(user));
+  const toggleRadar = useToggleRadarMutation();
+  const radarEventIds = useMemo(
+    () => new Set(radarEvents.map((eventItem) => eventItem.id)),
+    [radarEvents]
+  );
   const regionOptions = useMemo(
     () =>
       regions
@@ -244,6 +258,24 @@ export default function ExplorePage() {
   const lastResumeRefreshAtRef = useRef(0);
   const { data: exploreAd } = useAdDeliveryQuery("explore_feed_large", true);
   const adToRender = useMemo(() => exploreAd || null, [exploreAd]);
+
+  async function handleToggleRadar(eventItem) {
+    if (!user || toggleRadar.isPending) return;
+    const eventId = eventItem.baseEventId || eventItem.id;
+    const currentlyMarked = radarEventIds.has(eventId);
+    try {
+      await toggleRadar.mutateAsync({ eventId, currentlyMarked });
+      trackAnalyticsEvent(currentlyMarked ? "radar_remove" : "radar_save", {
+        eventId,
+        venueId: eventItem.venueId,
+        artistId: eventItem.artistId,
+        region: eventItem.region,
+        source: "explore"
+      });
+    } catch (_error) {
+      // The query keeps the previous visual state if the request fails.
+    }
+  }
 
   useEffect(() => {
     function syncClock() {
@@ -935,7 +967,12 @@ export default function ExplorePage() {
             <small className="day-group-count">{group.items.length} {group.items.length === 1 ? "samba" : "sambas"}</small>
           </h4>
           <div className="venue-list explore-venue-grid">
-            {group.items.map(({ venue, event: eventItem, isLiveNow }) => (
+            {group.items.map(({ venue, event: eventItem, isLiveNow }) => {
+              const radarEventId = eventItem.baseEventId || eventItem.id;
+              const isInRadar = radarEventIds.has(radarEventId);
+              const isUpdatingThisEvent = toggleRadar.isPending
+                && (toggleRadar.variables?.eventId === radarEventId);
+              return (
               <article
                 key={eventItem.id}
                 className={`venue-card venue-flow-card event-flow-card ${isLiveNow ? "venue-flow-live" : "venue-flow-upcoming"} ${routeModeEventId === eventItem.id ? "route-mode" : ""}`}
@@ -968,16 +1005,31 @@ export default function ExplorePage() {
                         <span>{eventItem.title}</span>
                         {eventItem.artistVerified ? <VerifiedBadge className="artist-verified-dot" title="Artista verificado" /> : null}
                       </Link>
-                      <button
-                        type="button"
-                        className="chip route-inline-trigger"
-                        onClick={() => {
-                          setRouteModeEventId(eventItem.id);
-                          trackAnalyticsEvent("route_click", { venueId: venue.id, eventId: eventItem.baseEventId || eventItem.id, region: venue.region, city: venue.city, state: venue.state, source: "explore" });
-                        }}
-                      >
-                        <MapPin size={12} /> Partiu Agora!
-                      </button>
+                      <div className="event-flow-head-actions">
+                        {user ? (
+                          <button
+                            type="button"
+                            className={`explore-radar-star-btn ${isInRadar ? "is-marked" : ""}`}
+                            onClick={() => handleToggleRadar(eventItem)}
+                            disabled={toggleRadar.isPending}
+                            aria-label={isInRadar ? `Remover ${eventItem.title} do Radar` : `Guardar ${eventItem.title} no Radar`}
+                            aria-pressed={isInRadar}
+                            title={isInRadar ? "Marcado no seu Radar" : "Guardar no Radar"}
+                          >
+                            <RadarStarIcon marked={isInRadar && !isUpdatingThisEvent} />
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="chip route-inline-trigger"
+                          onClick={() => {
+                            setRouteModeEventId(eventItem.id);
+                            trackAnalyticsEvent("route_click", { venueId: venue.id, eventId: eventItem.baseEventId || eventItem.id, region: venue.region, city: venue.city, state: venue.state, source: "explore" });
+                          }}
+                        >
+                          <MapPin size={12} /> Partiu Agora!
+                        </button>
+                      </div>
                     </div>
                     <Link to={`/venues/${venue.id}`} className="meta-line event-flow-venue artist-inline-with-badge">
                       <span>{venue.name}</span>
@@ -1009,7 +1061,8 @@ export default function ExplorePage() {
                   </div>
                 ) : null}
               </article>
-            ))}
+              );
+            })}
           </div>
         </div>
       ))}

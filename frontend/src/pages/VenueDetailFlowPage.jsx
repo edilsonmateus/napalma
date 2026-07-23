@@ -13,6 +13,7 @@ import uberIcon from "../assets/routes/uber.svg";
 import { trackAnalyticsEvent } from "../services/analytics.service";
 import BackLink from "../components/common/BackLink";
 import { resolveMediaUrl } from "../services/api";
+import RadarStarIcon from "../components/events/RadarStarIcon";
 
 function formatDate(value) {
   return new Date(value).toLocaleString("pt-BR", {
@@ -206,7 +207,7 @@ export default function VenueDetailFlowPage() {
                       aria-label={inRadar ? "No Radar" : "Salvar no Radar"}
                       title={inRadar ? "No Radar" : "Salvar no Radar"}
                     >
-                      <span className="venue-event-star-glyph">★</span>
+                      <RadarStarIcon marked={inRadar} size={20} />
                     </button>
                   ) : null}
                 </div>

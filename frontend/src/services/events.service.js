@@ -216,9 +216,27 @@ export async function unmarkEventFromRadar(eventId) {
   await api.delete(`/me/radar/${eventId}`);
 }
 
-export async function getMyHistory() {
-  const { data } = await api.get("/me/history");
+export async function getMyHistory({ eventIds = [] } = {}) {
+  const { data } = await api.get("/me/history", {
+    params: eventIds.length ? { eventIds: eventIds.join(",") } : undefined
+  });
   return data.items || [];
+}
+
+export async function getMyHistoryPage({ cursor, q = "", limit = 20, includeSummary = false } = {}) {
+  const { data } = await api.get("/me/history", {
+    params: {
+      limit,
+      ...(cursor ? { cursor } : {}),
+      ...(q ? { q } : {}),
+      ...(includeSummary ? { summary: "1" } : {})
+    }
+  });
+  return {
+    items: data.items || [],
+    pageInfo: data.pageInfo || { hasMore: false, nextCursor: null },
+    summary: data.summary
+  };
 }
 
 export async function markEventAsAttended(eventId) {

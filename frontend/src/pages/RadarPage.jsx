@@ -38,7 +38,11 @@ export default function RadarPage() {
   const [toast, setToast] = useState({ text: "", type: "info" });
   const user = useAuthStore((state) => state.user);
   const { data: radarEvents = [], isLoading, isError } = useMyRadarQuery(Boolean(user));
-  const { data: historyEvents = [] } = useMyHistoryQuery(Boolean(user));
+  const radarEventIds = useMemo(() => radarEvents.map((item) => item.id), [radarEvents]);
+  const { data: historyEvents = [] } = useMyHistoryQuery(
+    Boolean(user) && radarEventIds.length > 0,
+    radarEventIds
+  );
   const toggleHistory = useToggleHistoryMutation();
   const toggleRadar = useToggleRadarMutation();
   const { data: radarAd } = useAdDeliveryQuery("radar_header", Boolean(user));

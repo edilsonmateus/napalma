@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAdPlacements } from "../services/adPlacements.service";
 import { uploadAdCreativeAsset } from "../services/adCreativeAssets.service";
 import { decideAdReview, getAdReviewHistory, getAdReviewQueue, submitAdReview } from "../services/adReviews.service";
@@ -51,6 +51,7 @@ import {
   getEvents,
   getMyClaims,
   getMyHistory,
+  getMyHistoryPage,
   getMyRadar,
   getRegions,
   getVenues,
@@ -106,10 +107,26 @@ export function useMyRadarQuery(enabled = true) {
   });
 }
 
-export function useMyHistoryQuery(enabled = true) {
+export function useMyHistoryQuery(enabled = true, eventIds = []) {
+  const normalizedEventIds = [...eventIds].sort();
   return useQuery({
-    queryKey: ["my-history"],
-    queryFn: getMyHistory,
+    queryKey: ["my-history", "event-status", normalizedEventIds],
+    queryFn: () => getMyHistory({ eventIds: normalizedEventIds }),
+    enabled
+  });
+}
+
+export function useMyHistoryInfiniteQuery(search = "", enabled = true) {
+  return useInfiniteQuery({
+    queryKey: ["my-history", "pages", search],
+    queryFn: ({ pageParam }) => getMyHistoryPage({
+      cursor: pageParam,
+      q: search,
+      limit: 20,
+      includeSummary: !pageParam
+    }),
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => lastPage.pageInfo?.nextCursor || undefined,
     enabled
   });
 }

@@ -6,6 +6,19 @@ const eventIdSchema = z.object({
   eventId: z.string().uuid()
 });
 
+const historyQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+  cursor: z.string().trim().max(500).optional(),
+  q: z.string().trim().max(120).default(""),
+  eventIds: z.string().trim().max(4000).optional(),
+  summary: z.enum(["0", "1"]).default("0")
+});
+
+const historyCursorSchema = z.object({
+  id: z.string().uuid(),
+  createdAt: z.string().datetime()
+});
+
 function mapHistoryEntry(entry) {
   const event = entry.event;
   return {
@@ -19,10 +32,115 @@ function mapHistoryEntry(entry) {
   };
 }
 
+export function encodeHistoryCursor(entry) {
+  return Buffer.from(JSON.stringify({
+    id: entry.id,
+    createdAt: entry.createdAt.toISOString()
+  })).toString("base64url");
+}
+
+export function decodeHistoryCursor(value) {
+  if (!value) return null;
+  const decoded = JSON.parse(Buffer.from(value, "base64url").toString("utf8"));
+  const parsed = historyCursorSchema.parse(decoded);
+  return {
+    id: parsed.id,
+    createdAt: new Date(parsed.createdAt)
+  };
+}
+
+function parseEventIds(value) {
+  if (!value) return [];
+  return z.array(z.string().uuid()).max(100).parse(
+    Array.from(new Set(value.split(",").map((item) => item.trim()).filter(Boolean)))
+  );
+}
+
+function buildHistoryWhere({ userId, q, eventIds, cursor }) {
+  const filters = [];
+
+  if (q) {
+    filters.push({
+      OR: [
+        { event: { is: { title: { contains: q, mode: "insensitive" } } } },
+        { event: { is: { venue: { is: { name: { contains: q, mode: "insensitive" } } } } } }
+      ]
+    });
+  }
+
+  if (eventIds.length > 0) {
+    filters.push({ eventId: { in: eventIds } });
+  }
+
+  if (cursor) {
+    filters.push({
+      OR: [
+        { createdAt: { lt: cursor.createdAt } },
+        {
+          AND: [
+            { createdAt: cursor.createdAt },
+            { id: { lt: cursor.id } }
+          ]
+        }
+      ]
+    });
+  }
+
+  return {
+    userId,
+    ...(filters.length ? { AND: filters } : {})
+  };
+}
+
+async function getHistorySummary(userId) {
+  const [totalEvents, venues, artists] = await Promise.all([
+    prisma.userEventHistory.count({ where: { userId } }),
+    prisma.event.findMany({
+      where: { historyBy: { some: { userId } } },
+      distinct: ["venueId"],
+      select: { venueId: true }
+    }),
+    prisma.eventArtist.findMany({
+      where: { event: { is: { historyBy: { some: { userId } } } } },
+      distinct: ["artistId"],
+      select: { artistId: true }
+    })
+  ]);
+
+  return {
+    totalEvents,
+    venueCount: venues.length,
+    artistCount: artists.length
+  };
+}
+
 export async function listMyHistory(req, res, next) {
   try {
+    const query = historyQuerySchema.parse(req.query);
+    const eventIds = parseEventIds(query.eventIds);
+    let cursor = null;
+
+    try {
+      cursor = decodeHistoryCursor(query.cursor);
+    } catch (_error) {
+      return res.status(400).json({
+        error: "invalid_history_cursor",
+        message: "Nao foi possivel continuar esse historico. Recarregue a pagina."
+      });
+    }
+
+    const effectiveLimit = eventIds.length > 0
+      ? Math.min(eventIds.length, 100)
+      : query.limit;
+    const where = buildHistoryWhere({
+      userId: req.user.id,
+      q: query.q,
+      eventIds,
+      cursor
+    });
+
     const items = await prisma.userEventHistory.findMany({
-      where: { userId: req.user.id },
+      where,
       include: {
         event: {
           include: {
@@ -30,10 +148,27 @@ export async function listMyHistory(req, res, next) {
           }
         }
       },
-      orderBy: { createdAt: "desc" }
+      orderBy: [
+        { createdAt: "desc" },
+        { id: "desc" }
+      ],
+      take: effectiveLimit + 1
     });
 
-    res.json({ items: items.map(mapHistoryEntry) });
+    const hasMore = eventIds.length === 0 && items.length > effectiveLimit;
+    const pageItems = hasMore ? items.slice(0, effectiveLimit) : items;
+    const summary = query.summary === "1"
+      ? await getHistorySummary(req.user.id)
+      : undefined;
+
+    res.json({
+      items: pageItems.map(mapHistoryEntry),
+      pageInfo: {
+        hasMore,
+        nextCursor: hasMore ? encodeHistoryCursor(pageItems.at(-1)) : null
+      },
+      ...(summary ? { summary } : {})
+    });
   } catch (error) {
     next(error);
   }
