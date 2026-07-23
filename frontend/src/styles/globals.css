@@ -5335,6 +5335,18 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   margin-bottom: 10px;
 }
 
+.explore-sticky-controls {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  isolation: isolate;
+  margin-inline: -16px;
+  padding-inline: 16px;
+  background: rgba(20, 12, 29, 0.82);
+  -webkit-backdrop-filter: blur(10px) saturate(112%);
+  backdrop-filter: blur(10px) saturate(112%);
+}
+
 .explore-header-row {
   width: 100%;
   min-height: 67px;
@@ -5738,7 +5750,8 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   justify-content: flex-start;
   align-items: center;
   gap: 10px;
-  margin: 0 0 14px;
+  margin: 0;
+  padding-bottom: 10px;
 }
 
 .explore-filter-count {
@@ -5938,6 +5951,14 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   background: #111;
   border-top: 1px solid #2e2e2e;
   padding: 8px;
+}
+
+.app-shell-explore > .bottom-nav {
+  z-index: 50;
+  background: rgba(13, 13, 15, 0.74);
+  border-top-color: rgba(255, 255, 255, 0.11);
+  -webkit-backdrop-filter: blur(10px) saturate(112%);
+  backdrop-filter: blur(10px) saturate(112%);
 }
 
 .nav-item {
@@ -9105,10 +9126,20 @@ button.venue-card {
   display: flex;
   flex-wrap: nowrap;
   gap: 6px;
-  margin: 8px 0 12px;
+  margin: 3px 0 12px;
   align-items: center;
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .explore-sticky-controls {
+    background: rgba(20, 12, 29, 0.97);
+  }
+
+  .app-shell-explore > .bottom-nav {
+    background: rgba(13, 13, 15, 0.97);
+  }
 }
 
 .explore-summary-bar::-webkit-scrollbar {
@@ -10461,6 +10492,21 @@ button.venue-card {
     padding: 14px 10px 96px;
   }
 
+  .explore-sticky-controls {
+    margin-inline: -10px;
+    padding-inline: 10px;
+  }
+
+  .screen-explore .page-header.explore-logo-header {
+    min-height: 58px;
+    margin-bottom: 7px;
+  }
+
+  .screen-explore .explore-header-row {
+    min-height: 57px;
+    padding: 10px 2px 3px;
+  }
+
   .page-header h1,
   .page-header h2 {
     font-size: 27px;
@@ -10535,6 +10581,7 @@ button.venue-card {
     width: 100%;
     gap: 4px;
     justify-content: flex-start;
+    padding-bottom: 7px;
   }
 
   .explore-top-pill,

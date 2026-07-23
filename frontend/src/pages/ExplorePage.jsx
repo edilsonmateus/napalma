@@ -565,6 +565,7 @@ export default function ExplorePage() {
 
   return (
     <section className="screen screen-explore">
+      <div className="explore-sticky-controls">
       <header className="page-header explore-logo-header">
         <div className="explore-header-row">
           <Link className="explore-brand-wrap" to="/explore" aria-label="77Gira">
@@ -640,6 +641,7 @@ export default function ExplorePage() {
           <span className="on-track-dot" />
           Tô na Pista
         </button>
+      </div>
       </div>
 
       {showCitySheet ? (
