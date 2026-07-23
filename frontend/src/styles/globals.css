@@ -13868,3 +13868,141 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
 .operations-access-panel { margin-top: 16px; overflow: hidden; }.operations-access-form { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(190px, .7fr) auto; align-items: end; gap: 10px; padding: 16px 18px; border-bottom: 1px solid #e7ecf1; }.operations-access-form label { display: grid; gap: 5px; color: #5f6e82; font-size: 11px; font-weight: 750; }.operations-access-form input,.operations-access-form select { min-height: 37px; box-sizing: border-box; border: 1px solid #cfd8e3; border-radius: 6px; background: #fff; color: #2f3d50; padding: 0 9px; font: inherit; font-size: 12px; }.operations-access-panel .operations-text-button { margin: 12px 18px 16px; }
 @media (max-width: 760px) { .operations-warning { width: 100%; } }
 @media (max-width: 760px) { .operations-access-form { grid-template-columns: 1fr; align-items: stretch; }.operations-access-form .operations-approve { width: 100%; } }
+
+/* Interface pública — contrato único para ações contextuais compactas.
+ * O botão "Marcado no seu Radar" é a referência: 30 px, tipografia pública,
+ * raio integral e estado comunicado sem transformar a ação em um bloco alto.
+ * Formulários, ações destrutivas e ambientes internos permanecem isolados. */
+:root {
+  --public-context-action-height: 30px;
+  --public-context-action-padding: 12px;
+  --public-context-action-gap: 6px;
+  --public-context-action-font-size: 13px;
+}
+
+:is(
+  .pela-hora-screen .pela-hora-action-btn,
+  .pela-hora-screen .pela-hora-attended-btn,
+  .screen-radar .radar-action-chip,
+  .artist-epk-screen .artist-epk-action,
+  .artist-epk-screen .artist-claim-cta > .btn-primary
+) {
+  display: inline-flex;
+  width: auto;
+  min-width: 0;
+  height: var(--public-context-action-height);
+  min-height: var(--public-context-action-height);
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: var(--public-context-action-gap);
+  box-sizing: border-box;
+  margin-block: 0;
+  padding: 0 var(--public-context-action-padding);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--user-button-surface);
+  background-clip: padding-box;
+  box-shadow: none;
+  color: var(--user-button-text);
+  font-family: var(--font-public);
+  font-size: var(--public-context-action-font-size);
+  font-weight: var(--weight-action-secondary);
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  isolation: isolate;
+}
+
+:is(
+  .pela-hora-screen .pela-hora-action-btn,
+  .pela-hora-screen .pela-hora-attended-btn,
+  .screen-radar .radar-action-chip,
+  .artist-epk-screen .artist-epk-action,
+  .artist-epk-screen .artist-claim-cta > .btn-primary
+):hover:not(:disabled) {
+  border: 0;
+  background: var(--user-button-surface-hover);
+  color: #fff;
+  transform: none;
+}
+
+:is(
+  .pela-hora-screen .pela-hora-action-btn,
+  .pela-hora-screen .pela-hora-attended-btn,
+  .screen-radar .radar-action-chip,
+  .artist-epk-screen .artist-epk-action,
+  .artist-epk-screen .artist-claim-cta > .btn-primary
+):focus-visible {
+  outline: 2px solid var(--user-button-focus);
+  outline-offset: 3px;
+}
+
+/* Seleção e ação principal usam somente uma superfície neutra mais presente.
+ * A cor fica reservada para o significado do estado, não para o tamanho do CTA. */
+.pela-hora-screen .pela-hora-action-btn.active,
+.pela-hora-screen .pela-hora-save-btn,
+.artist-epk-screen .artist-epk-action-primary,
+.artist-epk-screen .artist-claim-cta > .btn-primary {
+  border: 0;
+  background: var(--user-button-surface-strong);
+  color: #fff;
+  box-shadow: none;
+}
+
+.pela-hora-screen .pela-hora-attended-btn.active {
+  border: 0;
+  background: rgba(24, 91, 56, .28);
+  color: #9de8b9;
+}
+
+.artist-epk-screen .artist-epk-action.active {
+  border: 0;
+  background: var(--user-button-surface-strong);
+  color: #fff;
+}
+
+.artist-epk-screen .artist-epk-action-primary {
+  max-width: 100%;
+}
+
+.artist-epk-screen .artist-claim-cta > .btn-primary {
+  align-self: center;
+}
+
+/* Os cards do Radar deixam de esticar duas ações em retângulos de largura fixa. */
+.screen-radar .radar-item-actions {
+  display: flex;
+  width: auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+  margin-left: auto;
+}
+
+.screen-radar .radar-action-chip.is-disabled {
+  background: rgba(255, 255, 255, .035);
+  color: var(--user-button-muted);
+}
+
+@media (max-width: 680px) {
+  .pela-hora-screen .pela-hora-action-btn {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .pela-hora-screen .pela-hora-save-btn {
+    width: auto;
+  }
+
+  .artist-epk-screen .artist-claim-cta > .btn-primary {
+    align-self: flex-start;
+  }
+
+  .screen-radar .radar-item-actions {
+    width: auto;
+    justify-content: flex-start;
+  }
+}
