@@ -8379,9 +8379,10 @@ button.venue-card {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-top: 3px;
-  color: var(--text-secondary);
-  font-size: 13px;
+  margin-top: 4px;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 650;
   line-height: 1.25;
 }
 
@@ -8536,6 +8537,9 @@ button.venue-card {
 .venue-flow-body .venue-neighborhood-line {
   margin-top: 0;
   margin-bottom: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 400;
 }
 
 .venue-event-item {
