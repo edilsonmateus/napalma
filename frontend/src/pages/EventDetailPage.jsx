@@ -20,7 +20,13 @@ import ArtistProfileGateway from "../components/artists/ArtistProfileGateway";
 import { resolveMediaUrl } from "../services/api";
 
 function formatDate(value) {
-  return new Date(value).toLocaleString("pt-BR");
+  return new Date(value).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
 function formatDayMonth(value) {
@@ -252,6 +258,16 @@ export default function EventDetailPage() {
             </div>
           ) : null}
           <div className="share-actions">
+            {user ? (
+              <button
+                className={`chip event-radar-action ${marked && !toggleRadar.isPending ? "is-marked" : ""}`}
+                onClick={handleToggleRadar}
+                disabled={toggleRadar.isPending}
+              >
+                <Star size={14} className={marked && !toggleRadar.isPending ? "is-lit" : undefined} />
+                <span className="event-inline-action-label">{toggleRadar.isPending ? "Atualizando..." : marked ? "Marcado no seu Radar" : "Guardar no Radar"}</span>
+              </button>
+            ) : null}
             <button
               type="button"
               className="chip"
@@ -260,7 +276,7 @@ export default function EventDetailPage() {
                 setShowRouteModal(true);
               }}
             >
-              Como chegar
+              <span className="event-inline-action-label">Como chegar</span>
             </button>
           </div>
         </div>
@@ -271,21 +287,11 @@ export default function EventDetailPage() {
             <Link to="/settings" className="inline-login-cta">Entrar agora</Link>
           </div>
         ) : null}
-        {user ? (
+        {user && showPromoteEvent ? (
           <div className="decision-actions">
-            <button
-              className={marked && !toggleRadar.isPending ? "chip decision-radar-muted" : "btn-primary"}
-              onClick={handleToggleRadar}
-              disabled={toggleRadar.isPending}
-            >
-              <Star size={14} />
-              {toggleRadar.isPending ? "Atualizando..." : marked ? "Marcado no seu Radar" : "Guardar no Radar"}
-            </button>
-            {showPromoteEvent ? (
-              <Link className="chip event-promote-chip" to={buildEventAdvertiserIntentUrl(event)}>
-                Promover evento
-              </Link>
-            ) : null}
+            <Link className="chip event-promote-chip" to={buildEventAdvertiserIntentUrl(event)}>
+              Promover evento
+            </Link>
           </div>
         ) : null}
 
@@ -327,15 +333,15 @@ export default function EventDetailPage() {
             <a href={telegramUrl} target="_blank" rel="noreferrer" className="chip share-link" onClick={() => trackAnalyticsEvent("event_share", { eventId: event.id, venueId: event.venueId, artistId: event.artistId, region: event.region, source: "event_detail", metadata: { channel: "telegram" } })}><Send size={14} /> Telegram</a>
             <a href={facebookUrl} target="_blank" rel="noreferrer" className="chip share-link" onClick={() => trackAnalyticsEvent("event_share", { eventId: event.id, venueId: event.venueId, artistId: event.artistId, region: event.region, source: "event_detail", metadata: { channel: "facebook" } })}><Share2 size={14} /> Facebook</a>
           </div>
-          <details className="share-more">
-            <summary>Mais opções</summary>
-            <div className="share-links">
-              <a href={googleCalendarUrl} target="_blank" rel="noreferrer" className="chip share-link"><CalendarClock size={14} /> Google Agenda</a>
-              <button className="chip share-action" onClick={handleDownloadIcs}>
-                <CalendarClock size={14} /> Apple/Outlook (.ics)
+          <section className="share-calendar-group" aria-label="Salvar evento na agenda">
+            <strong className="share-calendar-label">Salve na sua agenda</strong>
+            <div className="share-actions share-calendar-actions">
+              <a href={googleCalendarUrl} target="_blank" rel="noreferrer" className="chip event-calendar-action"><CalendarClock size={14} /><span className="event-inline-action-label">Google Agenda</span></a>
+              <button className="chip event-calendar-action" onClick={handleDownloadIcs}>
+                <CalendarClock size={14} /><span className="event-inline-action-label">Apple/Outlook (.ics)</span>
               </button>
             </div>
-          </details>
+          </section>
         </div>
       </div>
 

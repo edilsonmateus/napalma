@@ -5884,7 +5884,7 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(0, 0, 0, 0.65);
+  background: #171719;
   padding: 4px 8px;
   border-radius: 999px;
   font-size: 12px;
@@ -6287,7 +6287,7 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   flex: 0 0 auto;
   padding: 11px 13px;
   overflow: hidden;
-  border: 1px solid rgba(255, 145, 29, 0.52);
+  border: 0;
   border-radius: 16px;
   background:
     radial-gradient(circle at 15% 20%, rgba(164, 58, 190, 0.24), transparent 38%),
@@ -6300,7 +6300,6 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
 
 .artist-profile-gateway:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 184, 28, 0.86);
   box-shadow: 0 11px 25px rgba(0, 0, 0, 0.24);
 }
 
@@ -6374,6 +6373,10 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   display: flex;
   justify-content: flex-start;
   margin-top: 12px;
+}
+
+.event-decision .event-artist-gateway-row {
+  margin-top: 26px;
 }
 
 .event-artist-gateway-row .artist-profile-gateway {
@@ -8369,9 +8372,9 @@ button.venue-card {
   text-decoration: none;
 }
 
-.event-flow-title {
+.screen-explore .event-flow-card .event-flow-title {
   font-size: 17px;
-  font-weight: var(--weight-card-title);
+  font-weight: 300;
   line-height: 1.2;
 }
 
@@ -8438,7 +8441,7 @@ button.venue-card {
 
 .venue-flow-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
@@ -8540,6 +8543,12 @@ button.venue-card {
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 400;
+}
+
+/* Balance the compact event card without changing its footprint: the schedule
+ * status visually settles closer to the lower edge of the information area. */
+.event-flow-body > small.meta-line {
+  transform: translateY(3px);
 }
 
 .venue-event-item {
@@ -9873,8 +9882,130 @@ button.venue-card {
   margin-left: 0;
 }
 
+.event-decision .decision-meta > .share-actions {
+  margin-top: 20px;
+}
+
+.event-decision .decision-meta > .share-actions > .chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 30px;
+  height: 30px;
+  padding: 0 var(--space-3);
+  font-family: var(--font-public);
+  font-size: 13px;
+  font-weight: var(--weight-action-secondary);
+  line-height: 1;
+}
+
+.event-decision .decision-meta .event-inline-action-label {
+  display: block;
+  line-height: 1;
+}
+
+.event-decision .decision-meta .share-actions .event-radar-action {
+  gap: 6px;
+  width: auto;
+  margin: 0;
+  min-width: 0;
+  border-radius: var(--radius-pill);
+}
+
+.event-decision .decision-meta .event-radar-action svg {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.event-decision .share-calendar-group {
+  display: grid;
+  gap: 12px;
+  margin-top: 0;
+}
+
+.event-decision .share-calendar-label {
+  color: #e7def7;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: normal;
+}
+
+.event-decision .share-calendar-actions {
+  gap: 8px;
+}
+
+.event-decision .share-calendar-actions > .event-calendar-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 30px;
+  height: 30px;
+  padding: 0 var(--space-3);
+  font-family: var(--font-public);
+  font-size: 13px;
+  font-weight: var(--weight-action-secondary);
+  line-height: 1;
+  text-decoration: none;
+  gap: 6px;
+}
+
+.event-decision .share-calendar-actions > .event-calendar-action svg {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.event-decision .decision-meta .event-radar-action.is-marked .is-lit {
+  color: #ffb81c;
+  fill: currentColor;
+}
+
 .share-links-primary .share-link {
   min-width: 0;
+}
+
+/* Compartilhamentos permanecem acessíveis como ações de texto, sem containers visuais. */
+.event-decision .share-panel > .share-actions,
+.event-decision .share-panel > .share-links-primary {
+  visibility: visible;
+  opacity: 1;
+  height: auto;
+  overflow: visible;
+  pointer-events: auto;
+  gap: 12px;
+}
+
+.event-decision .share-panel > .share-links-primary {
+  margin-top: -4px;
+}
+
+.event-decision .share-panel > :is(.share-actions, .share-links-primary) :is(.share-action, .share-link) {
+  min-width: 0;
+  min-height: 28px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 3px 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.25;
+  gap: 7px;
+}
+
+.event-decision .share-panel > :is(.share-actions, .share-links-primary) :is(.share-action, .share-link):hover {
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  transform: none;
+}
+
+.event-decision .share-panel > :is(.share-actions, .share-links-primary) :is(.share-action, .share-link):focus-visible {
+  outline: 2px solid rgba(255, 184, 28, 0.72);
+  outline-offset: 3px;
 }
 
 .share-action,
