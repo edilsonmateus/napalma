@@ -32,3 +32,13 @@ export function isFourByFive(width, height, tolerance = 0.015) {
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return false;
   return Math.abs((width / height) - (4 / 5)) <= tolerance;
 }
+
+// S3-compatible metadata becomes signed request headers. Keep it technical and
+// ASCII-only: display names with accents already live safely in PostgreSQL.
+export function posterUploadMetadata(eventId, date) {
+  return {
+    source: "event-posters-inbox",
+    eventid: String(eventId),
+    date: String(date || "")
+  };
+}

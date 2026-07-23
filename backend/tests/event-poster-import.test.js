@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eventPosterKey, indexEventsForPosters, isFourByFive, readPosterMappings } from "../scripts/lib/event-poster-import.js";
+import { eventPosterKey, indexEventsForPosters, isFourByFive, posterUploadMetadata, readPosterMappings } from "../scripts/lib/event-poster-import.js";
 
 describe("event poster import", () => {
   it("reads the mapping file with the required fields", () => {
@@ -15,5 +15,13 @@ describe("event poster import", () => {
   it("accepts 4:5 art and rejects a landscape creative", () => {
     expect(isFourByFive(1080, 1350)).toBe(true);
     expect(isFourByFive(580, 350)).toBe(false);
+  });
+
+  it("keeps R2 metadata technical and independent from accented display names", () => {
+    expect(posterUploadMetadata("event-1", "2026-08-03")).toEqual({
+      source: "event-posters-inbox",
+      eventid: "event-1",
+      date: "2026-08-03"
+    });
   });
 });

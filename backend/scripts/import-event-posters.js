@@ -4,7 +4,7 @@ import path from "node:path";
 import { PrismaClient } from "@prisma/client";
 import sharp from "sharp";
 import { isR2Configured, uploadBufferToR2 } from "../src/services/r2Storage.service.js";
-import { eventPosterKey, indexEventsForPosters, isFourByFive, readPosterMappings } from "./lib/event-poster-import.js";
+import { eventPosterKey, indexEventsForPosters, isFourByFive, posterUploadMetadata, readPosterMappings } from "./lib/event-poster-import.js";
 
 const prisma = new PrismaClient();
 const applyChanges = process.argv.includes("--apply");
@@ -91,13 +91,7 @@ async function main() {
       mimeType: item.mimeType,
       extension: item.extension,
       keyPrefix: `events/posters/${item.event.id}`,
-      metadata: {
-        source: "event-posters-inbox",
-        eventid: item.event.id,
-        venue: item.mapping.venueName,
-        event: item.mapping.eventTitle,
-        date: item.mapping.date
-      }
+      metadata: posterUploadMetadata(item.event.id, item.mapping.date)
     });
     await prisma.event.update({ where: { id: item.event.id }, data: { posterImageUrl: uploaded.url } });
     console.log(`Importado: ${item.mapping.eventTitle} — ${item.mapping.venueName}`);
