@@ -98,6 +98,16 @@ export default function App() {
     || location.pathname.startsWith("/workspace/anunciante")
     || location.pathname === "/settings/ads";
   const isOperationsRoute = location.pathname === "/operacoes";
+  const usesUserGlassNav = (
+    isExploreRoute
+    || location.pathname.startsWith("/events/")
+    || location.pathname === "/pela-hora"
+    || location.pathname === "/radar"
+    || location.pathname === "/history"
+    || location.pathname === "/settings"
+    || location.pathname === "/settings/account"
+    || location.pathname === "/settings/privacy"
+  );
   const shouldForceOnboarding = !showSplash && !hasSeenOnboarding && !isOnboardingRoute;
 
   function getDefaultRoute() {
@@ -327,7 +337,7 @@ export default function App() {
   }
 
   return (
-    <div className={`app-shell ${isBackofficeMode ? "app-shell-admin" : ""} ${isExploreRoute ? "app-shell-explore" : ""} ${isAdsRoute ? "app-shell-ads" : ""} ${isOperationsRoute ? "app-shell-operations" : ""}`}>
+    <div className={`app-shell ${isBackofficeMode ? "app-shell-admin" : ""} ${isExploreRoute ? "app-shell-explore" : ""} ${usesUserGlassNav ? "app-shell-user-glass-nav" : ""} ${isAdsRoute ? "app-shell-ads" : ""} ${isOperationsRoute ? "app-shell-operations" : ""}`}>
       {isOffline ? <div className="offline-banner">Você está offline. Algumas ações podem falhar.</div> : null}
       {!isOffline && apiHealth === "unavailable" ? <div className="offline-banner api-health-banner">Estamos reconectando aos serviços. Você pode continuar navegando.</div> : null}
       <main className="app-content">

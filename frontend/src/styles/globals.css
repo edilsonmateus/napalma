@@ -6115,7 +6115,8 @@ body :where(button, input, select, textarea, .chip, .btn-primary, .btn-link, .au
   padding: 8px;
 }
 
-.app-shell-explore > .bottom-nav {
+.app-shell-explore > .bottom-nav,
+.app-shell-user-glass-nav > .bottom-nav {
   z-index: 50;
   background: rgba(13, 13, 15, 0.74);
   border-top-color: rgba(255, 255, 255, 0.11);
@@ -9329,7 +9330,8 @@ button.venue-card {
     --explore-glass-background: rgba(20, 12, 29, 0.97);
   }
 
-  .app-shell-explore > .bottom-nav {
+  .app-shell-explore > .bottom-nav,
+  .app-shell-user-glass-nav > .bottom-nav {
     background: rgba(13, 13, 15, 0.97);
   }
 }
