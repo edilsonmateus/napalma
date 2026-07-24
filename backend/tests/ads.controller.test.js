@@ -70,8 +70,8 @@ function activeCampaign(overrides = {}) {
         imageUrl: "https://cdn.example.com/ad.webp",
         destinationUrl: "https://77gira.com.br/events/example",
         altText: "Campanha Centro",
-        width: 1600,
-        height: 600,
+        width: 1080,
+        height: 1350,
         isEnabled: true
       }
     ],

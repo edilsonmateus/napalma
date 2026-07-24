@@ -6,6 +6,7 @@ import { isFeatureEnabled } from "../middlewares/featureFlags.js";
 import { AD_PLACEMENTS } from "../config/adPlacements.js";
 import { adTargetingSchema } from "../utils/adTargetingPolicy.js";
 import { safeHttpUrl } from "../utils/safeUrl.js";
+import { creativeFormatIssue } from "../utils/adCreativeFormat.js";
 
 const slotEnum = z.nativeEnum(AdSlot);
 
@@ -259,6 +260,8 @@ export async function createAdCreative(req, res, next) {
   try {
     const { campaignId } = campaignIdSchema.parse(req.params);
     const payload = createCreativeSchema.parse(req.body);
+    const formatIssue = creativeFormatIssue(payload);
+    if (formatIssue) return res.status(400).json({ error: "invalid_creative_format", message: formatIssue });
     const item = await prisma.adCreative.create({
       data: { campaignId, ...payload, reviewStatus: isFeatureEnabled("ADS_REVIEW_WORKFLOW_ENABLED") ? "draft" : undefined }
     });
@@ -273,7 +276,10 @@ export async function updateAdCreative(req, res, next) {
     const { id } = idSchema.parse(req.params);
     const payload = updateCreativeSchema.parse(req.body);
     const workflow = isFeatureEnabled("ADS_REVIEW_WORKFLOW_ENABLED");
-    const current = workflow ? await prisma.adCreative.findUnique({ where: { id } }) : null;
+    const current = await prisma.adCreative.findUnique({ where: { id } });
+    if (!current) return res.status(404).json({ error: "creative_not_found", message: "Criativo não encontrado." });
+    const formatIssue = creativeFormatIssue({ ...current, ...payload });
+    if (formatIssue) return res.status(400).json({ error: "invalid_creative_format", message: formatIssue });
     const sensitive = ["slot", "title", "imageUrl", "destinationUrl", "altText", "storageProvider", "storageKey", "checksum"].some((key) => Object.prototype.hasOwnProperty.call(payload, key));
     const reopen = workflow && current?.reviewStatus === "approved" && sensitive;
     const item = await prisma.adCreative.update({
@@ -357,7 +363,7 @@ export async function getAdDelivery(req, res, next) {
       && isCampaignContextEligible(campaign, context)
     )).flatMap((campaign) =>
       campaign.creatives
-        .filter((creative) => isReviewApproved(creative.reviewStatus))
+        .filter((creative) => isReviewApproved(creative.reviewStatus) && !creativeFormatIssue(creative))
         .map((creative) => ({ campaign, creative }))
     );
 

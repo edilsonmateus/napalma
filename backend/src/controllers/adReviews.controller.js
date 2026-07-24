@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { recordAuditEvent } from "../services/audit.service.js";
+import { creativeFormatIssue } from "../utils/adCreativeFormat.js";
 
 const paramsSchema = z.object({ entityType: z.enum(["campaign", "creative"]), id: z.string().uuid() });
 const decisionSchema = z.object({ reason: z.string().trim().min(3).max(2000).optional() });
@@ -20,6 +21,10 @@ async function transition(req, res, next, { action, expected, toStatus, requireR
       if (!current) return null;
       const currentStatus = current.reviewStatus || "draft";
       if (!expected.includes(currentStatus)) return { conflict: currentStatus };
+      if (entityType === "creative" && action === "approve") {
+        const formatIssue = creativeFormatIssue(current);
+        if (formatIssue) return { formatIssue };
+      }
       const now = new Date();
       const data = {
         reviewStatus: toStatus,
@@ -38,6 +43,7 @@ async function transition(req, res, next, { action, expected, toStatus, requireR
     });
     if (!item) return res.status(404).json({ error: "not_found", message: "Item nao encontrado." });
     if (item.conflict) return res.status(409).json({ error: "invalid_review_transition", reviewStatus: item.conflict });
+    if (item.formatIssue) return res.status(409).json({ error: "invalid_creative_format", message: item.formatIssue });
     await recordAuditEvent({ req, action: `ads.review.${action}`, subjectType: `ad_${entityType}`, subjectId: id, metadata: { toStatus } });
     return res.json({ item });
   } catch (error) { return next(error); }

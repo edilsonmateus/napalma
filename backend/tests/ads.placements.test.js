@@ -32,7 +32,7 @@ describe("Ads canonical placement catalog", () => {
   it("distinguishes upload images from the full native cards", () => {
     const explore = AD_PLACEMENTS.find((placement) => placement.key === "explore_feed_large");
     const radar = AD_PLACEMENTS.find((placement) => placement.key === "radar_header");
-    expect(explore).toMatchObject({ recommendedWidth: 580, recommendedHeight: 350, renderedCardDimensions: "580 x 455" });
+    expect(explore).toMatchObject({ recommendedWidth: 1080, recommendedHeight: 1350, renderedCardDimensions: "1080 x 1546" });
     expect(radar).toMatchObject({ recommendedWidth: 580, recommendedHeight: 258, renderedCardDimensions: "580 x 350" });
   });
 

@@ -41,7 +41,7 @@ describe("Ads creative R2 upload validation", () => {
   });
 
   it("uploads a valid image using its detected format and dimensions", async () => {
-    const buffer = await sharp({ create: { width: 580, height: 350, channels: 3, background: "#000" } }).webp().toBuffer();
+    const buffer = await sharp({ create: { width: 1080, height: 1350, channels: 3, background: "#000" } }).webp().toBuffer();
     const res = response();
     await uploadAdCreativeAsset(
       { file: { buffer }, body: { campaignId: CAMPAIGN_ID, slot: "explore_feed_large" } },
@@ -56,7 +56,7 @@ describe("Ads creative R2 upload validation", () => {
     }));
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith({
-      item: expect.objectContaining({ width: 580, height: 350, slot: "explore_feed_large" })
+      item: expect.objectContaining({ width: 1080, height: 1350, slot: "explore_feed_large" })
     });
   });
 });

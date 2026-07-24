@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { adTargetingSchema } from "../utils/adTargetingPolicy.js";
 import { safeHttpUrl } from "../utils/safeUrl.js";
+import { creativeFormatIssue } from "../utils/adCreativeFormat.js";
 
 const uuid = z.string().uuid();
 const accountParams = z.object({ accountId: uuid });
@@ -332,7 +333,10 @@ export async function createMyAdvertiserCreative(req, res, next) {
     const access = await membership(req.user.id, campaign.advertiserAccountId);
     if (!access) return deny(res);
     if (!WRITE_ROLES.includes(access.role)) return deny(res, true);
-    const item = await prisma.adCreative.create({ data: { campaignId, ...creativePayload.parse(req.body), isEnabled: false, reviewStatus: "draft" } });
+    const payload = creativePayload.parse(req.body);
+    const formatIssue = creativeFormatIssue(payload);
+    if (formatIssue) return res.status(400).json({ error: "invalid_creative_format", message: formatIssue });
+    const item = await prisma.adCreative.create({ data: { campaignId, ...payload, isEnabled: false, reviewStatus: "draft" } });
     return res.status(201).json({ item });
   } catch (error) { return next(error); }
 }
@@ -346,7 +350,10 @@ export async function updateMyAdvertiserCreative(req, res, next) {
     if (!access) return deny(res);
     if (!WRITE_ROLES.includes(access.role)) return deny(res, true);
     if (current.reviewStatus === "pending_review") return res.status(409).json({ error: "creative_under_review", message: "O criativo esta em revisao." });
-    const item = await prisma.adCreative.update({ where: { id: creativeId }, data: { ...creativePayload.partial().parse(req.body), isEnabled: false, reviewStatus: "draft", approvedAt: null, reviewedByUserId: null, requiresReviewAfterEdit: current.reviewStatus === "approved" } });
+    const payload = creativePayload.partial().parse(req.body);
+    const formatIssue = creativeFormatIssue({ ...current, ...payload });
+    if (formatIssue) return res.status(400).json({ error: "invalid_creative_format", message: formatIssue });
+    const item = await prisma.adCreative.update({ where: { id: creativeId }, data: { ...payload, isEnabled: false, reviewStatus: "draft", approvedAt: null, reviewedByUserId: null, requiresReviewAfterEdit: current.reviewStatus === "approved" } });
     if (current.reviewStatus === "approved") await prisma.adReviewLog.create({ data: { entityType: "creative", entityId: creativeId, action: "reopen_after_edit", fromStatus: "approved", toStatus: "draft", actorUserId: req.user.id } });
     return res.json({ item });
   } catch (error) { return next(error); }

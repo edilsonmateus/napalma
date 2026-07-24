@@ -4,14 +4,14 @@ export const ADS_SLOT_SPECS = {
     label: "Explorar · destaque",
     description: "Aparece no feed principal, entre casas e eventos recomendados.",
     cta: "Ver destaque",
-    ratio: "580:350",
-    aspectRatio: "58 / 35",
-    cardAspectRatio: "116 / 91",
-    imageDimensions: "580 × 350 px",
-    cardDimensions: "580 × 455 px",
+    ratio: "1080:1350",
+    aspectRatio: "4 / 5",
+    cardAspectRatio: "540 / 773",
+    imageDimensions: "1080 × 1350 px",
+    cardDimensions: "Cartaz 1080 × 1350 px + informações nativas",
     format: "feed-hero",
     imageFit: "cover",
-    placementHint: "Card largo, visual de descoberta, inspirado em anúncios nativos de feed."
+    placementHint: "Cartaz vertical no mesmo formato do feed, com informações patrocinadas nativas abaixo da arte."
   },
   venue_detail_inline: {
     surface: "Página da casa",

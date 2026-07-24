@@ -11678,7 +11678,7 @@ button.venue-card {
 .ads-slot-placeholder-line { height: 8px; width: 74%; }
 .ads-slot-device-explore_feed_large { min-height: 292px; }
 .ads-explore-preview-card { gap: 0; border-color: #cbd5e1; border-radius: 5px; }
-.ads-explore-preview-image { min-height: 0; aspect-ratio: 58 / 35; font-size: 9px; }
+.ads-explore-preview-image { min-height: 0; aspect-ratio: 4 / 5; font-size: 9px; }
 .ads-explore-preview-copy { min-height: 0; aspect-ratio: 116 / 21; align-content: center; padding: 6px 7px; }
 .ads-explore-preview-copy strong { font-size: 10px; }
 .ads-explore-preview-copy small { font-size: 7px; }
@@ -11691,7 +11691,7 @@ button.venue-card {
 .ads-slot-device-radar_header .ads-slot-radar-list i { height: 17px; }
 
 /* Published app surfaces use the same composition as the upload requirements. */
-.ad-slot-card-explore_feed_large .ad-slot-media { aspect-ratio: 58 / 35; }
+.ad-slot-card-explore_feed_large .ad-slot-media { aspect-ratio: 4 / 5; }
 .ad-slot-card-explore_feed_large .ad-slot-body { box-sizing: border-box; aspect-ratio: 116 / 21; display: grid; align-content: center; }
 .venue-inline-ad .ad-slot-card-venue_detail_inline .ad-slot-media.compact,
 .ad-slot-card-venue_detail_inline .ad-slot-media { height: auto; aspect-ratio: 29 / 12; }
@@ -11728,8 +11728,8 @@ button.venue-card {
 .ads-explore-preview-copy::after { content: "ADS"; position: absolute; right: 7px; bottom: 7px; border-radius: 3px; padding: 2px 4px; background: #292929; color: #d4d4d4; font-size: 7px; font-weight: 800; letter-spacing: .06em; }
 .ads-explore-preview-image b { display: none; }
 
-/* The mock is a scaled 580px composition: reserve 350/105 of its height and use micro type inside it. */
-.ads-explore-preview-card { aspect-ratio: 116 / 91; grid-template-rows: 350fr 105fr; }
+/* The mock mirrors the vertical 4:5 cartaz and its native copy panel below. */
+.ads-explore-preview-card { aspect-ratio: 540 / 773; grid-template-rows: 1350fr 196fr; }
 .ads-explore-preview-image { min-height: 0; height: 100%; aspect-ratio: auto; }
 .ads-explore-preview-copy {
   display: block;
@@ -11751,7 +11751,7 @@ button.venue-card {
 .ads-mobile-slot-preview .ads-mobile-content { display: grid; align-content: start; gap: 6px; min-height: 286px; padding: 8px; overflow: hidden; border-radius: 14px; background: #eef1f4; }
 .ads-admin-preview-explore-header, .ads-admin-preview-radar-header { display: flex; align-items: center; justify-content: space-between; color: #64748b; font-size: 6px; }.ads-admin-preview-explore-header strong { color: #f59e0b; font-size: 12px; }.ads-admin-preview-radar-header { display: grid; gap: 1px; justify-content: start; }.ads-admin-preview-radar-header strong { color: #475569; font-size: 13px; font-weight: 500; }.ads-admin-preview-radar-header span { font-size: 6px; }
 .ads-admin-preview-filters, .ads-admin-preview-radar-tabs { display: flex; gap: 3px; }.ads-admin-preview-filters i, .ads-admin-preview-radar-tabs i { border-radius: 99px; padding: 3px 4px; background: #d9dee5; color: #7c8795; font-size: 5px; font-style: normal; }.ads-admin-preview-section-title { margin: 0; color: #64748b; font-size: 8px; font-weight: 800; }.ads-admin-preview-section-title small { color: #94a3b8; font-size: 6px; font-weight: 400; }
-.ads-native-preview-creative { display: grid; overflow: hidden; border-radius: 5px; background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.12); }.ads-native-preview-creative-explore_feed_large { aspect-ratio: 116 / 91; grid-template-rows: 350fr 105fr; }.ads-native-preview-creative-radar_header { aspect-ratio: 58 / 35; grid-template-rows: 258fr 92fr; }.ads-native-preview-creative-venue_detail_inline { aspect-ratio: 29 / 12; }
+.ads-native-preview-creative { display: grid; overflow: hidden; border-radius: 5px; background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.12); }.ads-native-preview-creative-explore_feed_large { aspect-ratio: 540 / 773; grid-template-rows: 1350fr 196fr; }.ads-native-preview-creative-radar_header { aspect-ratio: 58 / 35; grid-template-rows: 258fr 92fr; }.ads-native-preview-creative-venue_detail_inline { aspect-ratio: 29 / 12; }
 .ads-native-preview-media { display: grid; min-height: 0; place-items: center; overflow: hidden; background: #d7e0eb; color: #64748b; font-size: 7px; font-weight: 800; }.ads-native-preview-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ads-native-preview-copy { position: relative; display: block; min-height: 0; padding: 3px 4px; overflow: hidden; box-sizing: border-box; background: #3d3d3d; color: #fff; }.ads-native-preview-copy strong { display: block; overflow: hidden; font-size: 6.5px; line-height: 1.08; white-space: nowrap; text-overflow: ellipsis; }.ads-native-preview-copy small { display: block; overflow: hidden; margin-top: 1px; color: #d5d5d5; font-size: 4.8px; line-height: 1.05; white-space: nowrap; text-overflow: ellipsis; }.ads-native-preview-copy em { display: inline-block; margin-top: 2px; border-radius: 99px; padding: 1px 3px; background: #272727; color: #f5f5f5; font-size: 4.8px; line-height: 1.1; font-style: normal; font-weight: 800; }.ads-native-preview-copy i { position: absolute; right: 4px; bottom: 3px; border-radius: 3px; padding: 1px 2px; background: #292929; color: #d4d4d4; font-size: 4.8px; font-style: normal; font-weight: 800; letter-spacing: .06em; }
 .ads-admin-preview-event { display: grid; grid-template-columns: 38px 1fr; column-gap: 5px; color: #64748b; }.ads-admin-preview-event div { grid-row: 1 / span 2; border-radius: 4px; background: linear-gradient(135deg, #d7dde4, #aab6c3); }.ads-admin-preview-event strong { font-size: 8px; }.ads-admin-preview-event small { font-size: 6px; }
@@ -11768,7 +11768,7 @@ button.venue-card {
 
 .app-shell-admin .ads-admin-console .ads-review-asset {
   display: grid;
-  aspect-ratio: var(--ads-review-aspect, 58 / 35);
+  aspect-ratio: var(--ads-review-aspect, 4 / 5);
   place-items: center;
   overflow: hidden;
   border: 1px dashed #cbd5e1;
@@ -11876,7 +11876,7 @@ button.venue-card {
   max-width: none;
   height: auto;
   max-height: 260px;
-  aspect-ratio: var(--creative-preview-ratio, 58 / 35);
+  aspect-ratio: var(--creative-preview-ratio, 4 / 5);
   object-fit: contain;
   background: #eef2f7;
 }

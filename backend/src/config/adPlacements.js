@@ -13,11 +13,11 @@ export const AD_PLACEMENTS = Object.freeze([
     page: "explore",
     surface: "feed",
     format: "display_image",
-    // A imagem é a área de foto; o copy nativo completa o card 580 x 455.
-    recommendedWidth: 580,
-    recommendedHeight: 350,
-    renderedCardDimensions: "580 x 455",
-    aspectRatio: "58:35",
+    // O cartaz usa o mesmo formato vertical do feed; o copy nativo fica abaixo da arte.
+    recommendedWidth: 1080,
+    recommendedHeight: 1350,
+    renderedCardDimensions: "1080 x 1546",
+    aspectRatio: "4:5",
     allowedMimeTypes: IMAGE_MIME_TYPES,
     maxFileSizeBytes: FIVE_MB,
     isMobileEnabled: true,

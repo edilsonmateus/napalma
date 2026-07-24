@@ -65,13 +65,13 @@ const SLOT_LABELS = {
   venue_menu_sponsor: "Cardapio da Casa"
 };
 const SLOT_RATIOS = {
-  explore_feed_large: 580 / 350,
+  explore_feed_large: 4 / 5,
   venue_detail_inline: 580 / 240,
   radar_header: 580 / 258,
   venue_menu_sponsor: 3 / 4
 };
 const SLOT_ASPECT_RATIOS = {
-  explore_feed_large: "58 / 35",
+  explore_feed_large: "4 / 5",
   venue_detail_inline: "29 / 12",
   radar_header: "290 / 129",
   venue_menu_sponsor: "3 / 4"
@@ -155,7 +155,7 @@ function ReviewPlacementPreview({ item }) {
 
   return (
     <div className="ads-review-placement-preview">
-      <div className={`ads-review-asset ${imageUrl ? "has-image" : "is-placeholder"}`} style={{ "--ads-review-aspect": SLOT_ASPECT_RATIOS[slot] || "58 / 35" }}>
+      <div className={`ads-review-asset ${imageUrl ? "has-image" : "is-placeholder"}`} style={{ "--ads-review-aspect": SLOT_ASPECT_RATIOS[slot] || "4 / 5" }}>
         {imageUrl ? <img src={imageUrl} alt={item.altText || title} /> : <span>{placeholder}</span>}
       </div>
       <div className="ads-review-mobile-preview">
@@ -1920,7 +1920,7 @@ export default function AdsAdminPage() {
             <div className="ads-campaign-creatives-modal-grid">
               {selectedCampaignCreatives.creatives.map((creative) => (
                 <article key={creative.id} className="ads-campaign-creative-detail">
-                  <div className="ads-review-asset" style={{ "--ads-review-aspect": SLOT_ASPECT_RATIOS[creative.slot] || "58 / 35" }}>
+                  <div className="ads-review-asset" style={{ "--ads-review-aspect": SLOT_ASPECT_RATIOS[creative.slot] || "4 / 5" }}>
                     {creative.imageUrl ? <img src={creative.imageUrl} alt={creative.altText || creative.title || SLOT_LABELS[creative.slot] || creative.slot} /> : <span>Arquivo indisponível</span>}
                   </div>
                   <strong>{creative.title || "Criativo sem título"}</strong>
