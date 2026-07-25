@@ -891,6 +891,7 @@ model Venue {
   claimRequests    ClaimRequest[]        @relation("ClaimVenue")
   adEvents         AdEventLog[]
   menu             VenueMenu?
+  acquisitionLead  AcquisitionLead? @relation("AcquisitionLeadConvertedVenue")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1309,8 +1310,12 @@ model AcquisitionLead {
   potential          String?
   objections         String?
   notes              String?
+  convertedVenueId   String?                    @unique
+  convertedAt        DateTime?
+  convertedByUserId  String?
   createdByUserId    String?
   createdBy          User?                      @relation("AcquisitionLeadCreatedBy", fields: [createdByUserId], references: [id])
+  convertedVenue     Venue?                     @relation("AcquisitionLeadConvertedVenue", fields: [convertedVenueId], references: [id])
   interactions       AcquisitionInteraction[]
   statusHistory      AcquisitionStatusHistory[]
 

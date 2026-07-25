@@ -66,6 +66,7 @@ import {
 import {
   createAcquisitionInteraction,
   createAcquisitionLead,
+  convertAcquisitionLeadToVenue,
   deleteAcquisitionLead,
   getAcquisitionAnalytics,
   getAcquisitionLeadTimeline,
@@ -273,6 +274,7 @@ router.get("/acquisition/analytics", ...canManageAcquisition, getAcquisitionAnal
 router.post("/acquisition/leads", ...canManageAcquisition, createAcquisitionLead);
 router.get("/acquisition/leads/:id/timeline", ...canManageAcquisition, getAcquisitionLeadTimeline);
 router.patch("/acquisition/leads/:id", ...canManageAcquisition, updateAcquisitionLead);
+router.post("/acquisition/leads/:id/convert-to-venue", ...canManageAcquisition, convertAcquisitionLeadToVenue);
 router.delete("/acquisition/leads/:id", ...canManageAcquisition, deleteAcquisitionLead);
 router.post("/acquisition/leads/:id/interactions", ...canManageAcquisition, createAcquisitionInteraction);
 router.get("/me/claims", requireAuth, listMyClaims);

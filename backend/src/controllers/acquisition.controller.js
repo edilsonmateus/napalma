@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
+import { recordAuditEvent } from "../services/audit.service.js";
 
 const STATUSES = [
   "mapped",
@@ -52,6 +53,11 @@ const interactionSchema = z.object({
 });
 
 const idSchema = z.object({ id: z.string().uuid() });
+const conversionSchema = z.object({
+  state: z.string().trim().toUpperCase().length(2),
+  description: z.string().trim().max(1200).optional().nullable(),
+  openDays: z.array(z.string().trim().min(2).max(40)).max(7).optional().default([])
+});
 const analyticsSchema = z.object({
   days: z.coerce.number().int().refine((value) => [1, 7, 30, 90, 120].includes(value)).default(30),
   status: z.enum([...STATUSES, "all"]).default("all")
@@ -137,6 +143,15 @@ function dateOrNull(value) {
   return new Date(value);
 }
 
+function slugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 function mapLead(row) {
   const latestInteraction = row.interactions?.[0] || null;
   return {
@@ -165,6 +180,8 @@ function mapLead(row) {
     potential: row.potential,
     objections: row.objections,
     notes: row.notes,
+    convertedVenueId: row.convertedVenueId,
+    convertedAt: row.convertedAt,
     latestInteraction,
     interactionsCount: row._count?.interactions ?? row.interactions?.length ?? 0,
     createdAt: row.createdAt,
@@ -344,6 +361,118 @@ export async function updateAcquisitionLead(req, res, next) {
   }
 }
 
+export async function convertAcquisitionLeadToVenue(req, res, next) {
+  try {
+    const { id } = idSchema.parse(req.params);
+    const payload = conversionSchema.parse(req.body);
+    const lead = await prisma.acquisitionLead.findUniqueOrThrow({
+      where: { id },
+      include: { convertedVenue: { select: { id: true, name: true } } }
+    });
+
+    if (lead.convertedVenueId || lead.convertedVenue) {
+      return res.status(409).json({
+        error: "lead_already_converted",
+        message: "Esta oportunidade já foi convertida em uma casa interna.",
+        venue: lead.convertedVenue
+      });
+    }
+
+    if (lead.status !== "closed") {
+      return res.status(409).json({
+        error: "lead_not_closed",
+        message: "Conclua a negociação antes de converter esta oportunidade em casa."
+      });
+    }
+
+    const missing = [
+      !lead.address && "endereço",
+      !lead.neighborhood && "bairro",
+      !lead.region && "região",
+      !lead.city && "cidade"
+    ].filter(Boolean);
+    if (missing.length) {
+      return res.status(422).json({
+        error: "catalog_data_incomplete",
+        message: `Complete ${missing.join(", ")} na oportunidade antes de criar a casa.`
+      });
+    }
+
+    const baseSlug = slugify(lead.venueName);
+    const existing = await prisma.venue.findFirst({
+      where: {
+        OR: [
+          { slug: baseSlug },
+          { name: { equals: lead.venueName, mode: "insensitive" } }
+        ]
+      },
+      select: { id: true, name: true }
+    });
+    if (existing) {
+      return res.status(409).json({
+        error: "venue_duplicate_detected",
+        message: "Já existe uma casa com esse nome. Confira o catálogo antes de vincular a oportunidade.",
+        venue: existing
+      });
+    }
+
+    const address = [lead.address, lead.addressNumber, lead.addressComplement].filter(Boolean).join(", ");
+    const venue = await prisma.$transaction(async (tx) => {
+      const created = await tx.venue.create({
+        data: {
+          name: lead.venueName,
+          slug: baseSlug,
+          description: payload.description || null,
+          contactName: lead.contactName || null,
+          contactPhone: lead.phone || null,
+          instagramUrl: lead.instagramUrl || null,
+          address,
+          latitude: lead.latitude,
+          longitude: lead.longitude,
+          neighborhood: lead.neighborhood,
+          region: lead.region,
+          city: lead.city,
+          state: payload.state,
+          openDays: payload.openDays,
+          createdByUserId: req.user.id
+        }
+      });
+      await tx.acquisitionLead.update({
+        where: { id },
+        data: {
+          convertedVenueId: created.id,
+          convertedAt: new Date(),
+          convertedByUserId: req.user.id
+        }
+      });
+      await tx.acquisitionInteraction.create({
+        data: {
+          leadId: id,
+          type: "note",
+          summary: `Casa interna criada a partir desta oportunidade: ${created.name}. A publicação pública depende de eventos e revisão do catálogo.`,
+          createdByUserId: req.user.id
+        }
+      });
+      return created;
+    });
+
+    await recordAuditEvent({
+      req,
+      action: "acquisition.lead_converted_to_venue",
+      subjectType: "acquisition_lead",
+      subjectId: id,
+      metadata: { venueId: venue.id, publication: "not_automatic" }
+    });
+
+    res.status(201).json({
+      item: { id: venue.id, name: venue.name },
+      message: "Casa interna criada. Ela ainda não aparece publicamente até receber programação e passar pela revisão de catálogo."
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function deleteAcquisitionLead(req, res, next) {
   try {
     const { id } = idSchema.parse(req.params);
@@ -393,6 +522,8 @@ export async function getAcquisitionLeadTimeline(req, res, next) {
         id: true,
         venueName: true,
         status: true,
+        convertedVenueId: true,
+        convertedAt: true,
         createdAt: true,
         createdBy: { select: { id: true, firstName: true, lastName: true } },
         interactions: {
@@ -449,7 +580,7 @@ export async function getAcquisitionLeadTimeline(req, res, next) {
       }))
     ].sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
 
-    res.json({ lead: { id: lead.id, venueName: lead.venueName, status: lead.status }, items });
+    res.json({ lead: { id: lead.id, venueName: lead.venueName, status: lead.status, convertedVenueId: lead.convertedVenueId, convertedAt: lead.convertedAt }, items });
   } catch (error) {
     next(error);
   }

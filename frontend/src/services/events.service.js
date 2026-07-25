@@ -389,6 +389,11 @@ export async function updateAcquisitionLead(id, payload) {
   return data.item;
 }
 
+export async function convertAcquisitionLeadToVenue(id, payload) {
+  const { data } = await api.post(`/acquisition/leads/${id}/convert-to-venue`, payload);
+  return data;
+}
+
 export async function deleteAcquisitionLead(id) {
   await api.delete(`/acquisition/leads/${id}`);
 }

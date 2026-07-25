@@ -22,6 +22,7 @@ import {
   createAdCreative,
   createAcquisitionInteraction,
   createAcquisitionLead,
+  convertAcquisitionLeadToVenue,
   createRegion,
   createEvent,
   createVenue,
@@ -522,6 +523,19 @@ export function useUpdateAcquisitionLeadMutation() {
       queryClient.invalidateQueries({ queryKey: ["acquisition-leads"] });
       queryClient.invalidateQueries({ queryKey: ["acquisition-analytics"] });
       queryClient.invalidateQueries({ queryKey: ["acquisition-lead-timeline"] });
+    }
+  });
+}
+
+export function useConvertAcquisitionLeadToVenueMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }) => convertAcquisitionLeadToVenue(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["acquisition-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["acquisition-analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["acquisition-lead-timeline"] });
+      queryClient.invalidateQueries({ queryKey: ["venues"] });
     }
   });
 }

@@ -29,4 +29,16 @@ describe("Acquisition intelligence foundation", () => {
     expect(controller).toContain("idleDays >= 7");
     expect(controller).toContain("statusDistribution");
   });
+
+  it("allows a closed opportunity to create only an audited internal venue", () => {
+    const schema = read("backend/prisma/schema.prisma");
+    const controller = read("backend/src/controllers/acquisition.controller.js");
+    const routes = read("backend/src/routes/index.js");
+    expect(schema).toContain('convertedVenueId   String?');
+    expect(controller).toContain('lead.status !== "closed"');
+    expect(controller).toContain("catalog_data_incomplete");
+    expect(controller).toContain('action: "acquisition.lead_converted_to_venue"');
+    expect(controller).toContain('publication: "not_automatic"');
+    expect(routes).toContain('router.post("/acquisition/leads/:id/convert-to-venue", ...canManageAcquisition, convertAcquisitionLeadToVenue)');
+  });
 });

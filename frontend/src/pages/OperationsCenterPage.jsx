@@ -3,7 +3,7 @@ import { ArrowLeft, Bell, Building2, ChevronRight, ClipboardList, FileClock, Gav
 import { Link } from "react-router-dom";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { actOnOperationsPrivacyRequest, getOperationsPrivacyRequestDetail, listAuditLogs, listOperationsPrivacyRequests } from "../services/privacy.service";
-import { decideClaim, getAcquisitionAnalytics, getAcquisitionLeads, getAcquisitionLeadTimeline, getAdminRegions, getAdCampaigns, getOperationsClaimDetail, getOperationsClaims, getOperationsVenues } from "../services/events.service";
+import { convertAcquisitionLeadToVenue, decideClaim, getAcquisitionAnalytics, getAcquisitionLeads, getAcquisitionLeadTimeline, getAdminRegions, getAdCampaigns, getOperationsClaimDetail, getOperationsClaims, getOperationsVenues } from "../services/events.service";
 import { getAdReviewQueue } from "../services/adReviews.service";
 import { getAdvertiserAccounts } from "../services/advertiserAccounts.service";
 import { confirmOperationsWebAuthn, enrollOperationsWebAuthn, getOperationsModerationQueue, getOperationsNotificationsOverview, getOperationsSettingsOverview, getOperationsWebAuthnStatus, listOperationsAccessGrants, setOperationsAccessGrant } from "../services/operations.service";
@@ -180,6 +180,8 @@ function OperationsAcquisitionPanel({ analytics, leads, loading, error, filters,
       <section className="operations-panel"><div className="operations-panel-title"><div><p>CARTEIRA ATUAL</p><h2>Distribuição por etapa</h2></div></div><div className="operations-acquisition-funnel">{distribution.length ? distribution.map((item) => <div key={item.status}><span><i style={{ width: `${Math.max(5, (item.count / maxDistribution) * 100)}%` }}/></span><strong>{ACQUISITION_STATUS_LABELS[item.status] || item.status}</strong><b>{item.count}</b></div>) : <div className="operations-empty">A distribuição aparecerá após carregar a carteira.</div>}</div></section>
       <section className="operations-panel operations-acquisition-portfolio"><div className="operations-panel-title"><div><p>OPORTUNIDADES</p><h2>Leitura operacional</h2></div><Link className="operations-text-button" to="/settings/venues?section=acquisition">Abrir carteira <ChevronRight size={15}/></Link></div><div className="operations-acquisition-leads">{leads.length ? leads.slice(0, 8).map((lead) => <button type="button" key={lead.id} onClick={() => onOpen(lead.id)}><span><strong>{lead.venueName}</strong><small>{[lead.neighborhood, lead.region].filter(Boolean).join(" · ") || lead.city}</small></span><em>{ACQUISITION_STATUS_LABELS[lead.status] || lead.status}</em><b>{lead.nextFollowUpAt ? formatDate(lead.nextFollowUpAt) : "Sem follow-up"}</b><ChevronRight size={15}/></button>) : <div className="operations-empty">Nenhuma oportunidade encontrada nesta leitura.</div>}</div></section>
     </div>
+
+    {leads.some((lead) => lead.status === "closed") ? <section className="operations-panel operations-acquisition-conversions"><div className="operations-panel-title"><div><p>CATÁLOGO INTERNO</p><h2>Fechadas prontas para virar casa</h2></div><span className="operations-queue-note">A conversão cria somente uma casa interna. Publicação e programação continuam em fluxos separados.</span></div><div className="operations-acquisition-conversion-list">{leads.filter((lead) => lead.status === "closed").slice(0, 5).map((lead) => <article key={lead.id}><div><strong>{lead.venueName}</strong><span>{lead.convertedVenueId ? "Casa interna criada e vinculada" : [lead.neighborhood, lead.region, lead.city].filter(Boolean).join(" · ") || "Localização incompleta"}</span></div>{lead.convertedVenueId ? <Link className="operations-secondary" to="/operations?section=venues">Ver catálogo <ChevronRight size={15}/></Link> : <button type="button" className="operations-approve" onClick={() => onOpen({ id: lead.id, conversion: true })}>Converter em casa interna <ChevronRight size={15}/></button>}</article>)}</div></section> : null}
   </>;
 }
 
@@ -310,6 +312,11 @@ export default function OperationsCenterPage() {
   const [acquisitionError, setAcquisitionError] = useState("");
   const [selectedAcquisition, setSelectedAcquisition] = useState(null);
   const [acquisitionDetailLoading, setAcquisitionDetailLoading] = useState(false);
+  const [conversionLead, setConversionLead] = useState(null);
+  const [conversionState, setConversionState] = useState("SP");
+  const [conversionDescription, setConversionDescription] = useState("");
+  const [conversionLoading, setConversionLoading] = useState(false);
+  const [conversionError, setConversionError] = useState("");
   const [territoryItems, setTerritoryItems] = useState([]);
   const [territoriesLoading, setTerritoriesLoading] = useState(false);
   const [territoriesError, setTerritoriesError] = useState("");
@@ -460,17 +467,51 @@ export default function OperationsCenterPage() {
     loadOperationsAcquisition(nextFilters);
   }
 
-  async function openAcquisitionDetail(id) {
+  async function openAcquisitionDetail(request) {
+    const shouldStartConversion = typeof request === "object" && request?.conversion;
+    const id = typeof request === "object" ? request.id : request;
     setAcquisitionDetailLoading(true);
     setAcquisitionError("");
     try {
       const lead = acquisitionData.leads.find((item) => item.id === id);
       const timelineResponse = await getAcquisitionLeadTimeline(id);
-      setSelectedAcquisition({ lead: { ...(lead || {}), ...(timelineResponse?.lead || {}) }, timeline: timelineResponse?.items || [] });
+      const detailedLead = { ...(lead || {}), ...(timelineResponse?.lead || {}) };
+      setSelectedAcquisition({ lead: detailedLead, timeline: timelineResponse?.items || [] });
+      if (shouldStartConversion) startLeadConversion(detailedLead);
     } catch (detailError) {
       setAcquisitionError(detailError?.response?.data?.message || "Não foi possível abrir o histórico desta oportunidade.");
     } finally {
       setAcquisitionDetailLoading(false);
+    }
+  }
+
+  function startLeadConversion(lead) {
+    setSelectedAcquisition(null);
+    setConversionLead(lead);
+    setConversionState("SP");
+    setConversionDescription("");
+    setConversionError("");
+  }
+
+  async function confirmLeadConversion(event) {
+    event.preventDefault();
+    if (!conversionLead) return;
+    setConversionLoading(true);
+    setConversionError("");
+    try {
+      await convertAcquisitionLeadToVenue(conversionLead.id, {
+        state: conversionState,
+        description: conversionDescription || null
+      });
+      setConversionLead(null);
+      setSelectedAcquisition(null);
+      await loadOperationsAcquisition();
+      setSection("venues");
+      loadOperationsVenues();
+    } catch (conversionRequestError) {
+      setConversionError(conversionRequestError?.response?.data?.message || "Não foi possível criar a casa interna a partir desta oportunidade.");
+    } finally {
+      setConversionLoading(false);
     }
   }
 
@@ -702,6 +743,8 @@ export default function OperationsCenterPage() {
         </> : section === "claims" ? <ClaimsOperationsPanel items={claimItems} loading={claimsLoading} error={claimError} onRefresh={loadClaims} onOpen={openClaimDetail}/> : section === "venues" ? <OperationsVenuesPanel items={venueItems} loading={venuesLoading} error={venuesError} onRefresh={loadOperationsVenues}/> : section === "acquisition" ? <OperationsAcquisitionPanel analytics={acquisitionData.analytics} leads={acquisitionData.leads} loading={acquisitionLoading} error={acquisitionError} filters={acquisitionFilters} onFiltersChange={changeAcquisitionFilters} onRefresh={() => loadOperationsAcquisition()} onOpen={openAcquisitionDetail}/> : section === "territories" ? <OperationsTerritoriesPanel items={territoryItems} loading={territoriesLoading} error={territoriesError} onRefresh={loadOperationsTerritories}/> : section === "audit" ? <OperationsAuditPanel items={auditItems} loading={auditLoading} error={auditError} onRefresh={loadOperationsAudit}/> : section === "notifications" ? <OperationsNotificationsPanel data={notificationsData} loading={notificationsLoading} error={notificationsError} onRefresh={loadOperationsNotifications}/> : section === "moderation" ? <OperationsModerationPanel items={moderationItems} loading={moderationLoading} error={moderationError} onRefresh={loadOperationsModeration}/> : section === "settings" ? <OperationsSettingsPanel data={settingsData} loading={settingsLoading} error={settingsError} onRefresh={loadOperationsSettings} isAdmin={isAdmin} grants={accessGrants} grantsLoading={accessGrantsLoading} grantsError={accessGrantsError} onRefreshGrants={loadOperationsAccessGrants} onSetGrant={changeOperationsAccessGrant}/> : <OperationsAdsPanel data={adsData} loading={adsLoading} error={adsError} onRefresh={loadOperationsAds}/>}
       </main>
     </div>
+
+    {conversionLead ? <div className="operations-detail-backdrop operations-conversion-backdrop" role="dialog" aria-modal="true" aria-label="Converter oportunidade em casa interna"><form className="operations-detail operations-conversion-dialog" onSubmit={confirmLeadConversion}><header><div><button type="button" className="operations-back" onClick={() => setConversionLead(null)} disabled={conversionLoading}><ArrowLeft size={16}/> Cancelar conversão</button><p>CONVERSÃO PROTEGIDA</p><h2>Criar casa interna</h2><span>{conversionLead.venueName} continuará fora do catálogo público até receber programação e revisão próprias.</span></div><ShieldCheck size={22}/></header><div className="operations-conversion-content"><div className="operations-alert operations-alert-info">Esta ação cria um registro interno, vincula a oportunidade fechada e registra a decisão na auditoria. Ela não cria usuário gestor, não publica a casa e não cria eventos.</div><dl className="operations-conversion-summary"><div><dt>Endereço</dt><dd>{conversionLead.address || "Não informado"}</dd></div><div><dt>Região</dt><dd>{[conversionLead.neighborhood, conversionLead.region, conversionLead.city].filter(Boolean).join(" · ") || "Não informada"}</dd></div></dl><label>Estado (UF)<input value={conversionState} onChange={(event) => setConversionState(event.target.value.toUpperCase().slice(0, 2))} minLength="2" maxLength="2" required/></label><label>Descrição inicial (opcional)<textarea value={conversionDescription} onChange={(event) => setConversionDescription(event.target.value)} maxLength="1200" placeholder="Contexto comercial ou observação inicial para o catálogo interno."/></label>{conversionError ? <p className="operations-inline-error">{conversionError}</p> : null}</div><footer className="operations-detail-actions"><span className="operations-irreversible-lock"><strong>Revisão humana preservada</strong><span>Confirme apenas depois de conferir nome, endereço, região, cidade e UF.</span></span><button type="submit" className="operations-approve" disabled={conversionLoading || conversionState.length !== 2}>{conversionLoading ? "Criando casa interna…" : "Confirmar conversão"}</button></footer></form></div> : null}
 
     {(acquisitionDetailLoading || selectedAcquisition) ? <div className="operations-detail-backdrop" role="dialog" aria-modal="true" aria-label="Detalhe da oportunidade de aquisição">{acquisitionDetailLoading ? <div className="operations-detail-loading"><LoaderCircle className="is-spinning"/> Abrindo histórico comercial…</div> : <article className="operations-detail operations-acquisition-detail"><header><div><button type="button" className="operations-back" onClick={() => setSelectedAcquisition(null)}><ArrowLeft size={16}/> Voltar à aquisição</button><p>OPORTUNIDADE COMERCIAL</p><h2>{selectedAcquisition.lead.venueName}</h2><span>{[selectedAcquisition.lead.neighborhood, selectedAcquisition.lead.region, selectedAcquisition.lead.city].filter(Boolean).join(" · ") || "Local ainda não informado"}</span></div><span className="operations-status operations-status-acquisition">{ACQUISITION_STATUS_LABELS[selectedAcquisition.lead.status] || selectedAcquisition.lead.status}</span></header><div className="operations-acquisition-detail-grid"><section><p className="operations-section-label">PRÓXIMA AÇÃO</p><div className="operations-acquisition-next"><div><span>Follow-up</span><strong>{selectedAcquisition.lead.nextFollowUpAt ? formatDate(selectedAcquisition.lead.nextFollowUpAt, true) : "Ainda não agendado"}</strong></div><div><span>Temperatura</span><strong>{selectedAcquisition.lead.temperature === "hot" ? "Quente" : selectedAcquisition.lead.temperature === "cold" ? "Fria" : "Morna"}</strong></div><div><span>Contato</span><strong>{selectedAcquisition.lead.contactName || "Não informado"}</strong></div></div><p className="operations-section-label">LINHA DO TEMPO</p><div className="operations-acquisition-timeline">{selectedAcquisition.timeline.length ? selectedAcquisition.timeline.map((item) => <article key={item.id}><i/><div><strong>{item.kind === "status_changed" ? `${ACQUISITION_STATUS_LABELS[item.fromStatus] || "Início"} → ${ACQUISITION_STATUS_LABELS[item.toStatus] || item.toStatus}` : item.title}</strong><span>{item.actor?.firstName ? [item.actor.firstName, item.actor.lastName].filter(Boolean).join(" ") : "Sistema"} · {formatDate(item.occurredAt, true)}</span>{item.nextAction ? <small>Próxima ação: {item.nextAction}</small> : null}</div></article>) : <div className="operations-empty">Nenhum movimento adicional foi registrado.</div>}</div></section><aside className="operations-panel operations-acquisition-detail-summary"><p>LEITURA SEGURA</p><h3>Uma fonte de verdade</h3><span>A Central apresenta cadência e histórico. Alterações de dados, contatos e etapa permanecem na carteira administrativa de aquisição.</span><dl><div><dt>Etapa atual</dt><dd>{ACQUISITION_STATUS_LABELS[selectedAcquisition.lead.status] || selectedAcquisition.lead.status}</dd></div><div><dt>Origem</dt><dd>{selectedAcquisition.lead.source || "Não informada"}</dd></div><div><dt>Potencial</dt><dd>{selectedAcquisition.lead.potential || "Não classificado"}</dd></div></dl><Link className="operations-approve" to="/settings/venues?section=acquisition">Abrir gestão completa <ChevronRight size={15}/></Link></aside></div></article>}</div> : null}
     {(detailLoading || selected) ? <div className="operations-detail-backdrop" role="dialog" aria-modal="true" aria-label="Detalhe da solicitação">{detailLoading ? <div className="operations-detail-loading"><LoaderCircle className="is-spinning"/> Abrindo dados restritos…</div> : <article className="operations-detail"><header><div><button type="button" className="operations-back" onClick={() => setSelected(null)}><ArrowLeft size={16}/> Voltar à fila</button><p>{selected.protocol}</p><h2>{selected.requesterName} — {TYPE_LABELS[selected.type]}</h2><span>Recebida em {formatDate(selected.requestedAt, true)} · prazo {dueLabel(selected.dueAt)}</span></div><RiskTag risk={selected.risk}/></header><div className="operations-progress" aria-label="Andamento da solicitação">{["Recebida", "Validação de identidade", "Vínculos e retenções", "Execução", "Concluída"].map((label, index) => <div key={label} className={index < 2 || selected.status === "in_review" && index === 2 ? "is-done" : ""}><i>{index + 1}</i><span>{label}</span></div>)}</div><div className="operations-detail-grid"><div><section className="operations-sensitive"><div><p>DADOS RESTRITOS</p><strong>Contato e motivo da solicitação</strong></div><small>A abertura desta área foi registrada na auditoria.</small><dl><div><dt>E-mail</dt><dd>{selected.requester.email}</dd></div><div><dt>Usuário</dt><dd>@{selected.requester.username || "não informado"}</dd></div><div className="operations-request-details"><dt>Motivo informado</dt><dd>{selected.details || "Nenhum detalhe adicional foi informado."}</dd></div></dl></section><section><p className="operations-section-label">PERFIS VINCULADOS</p><div className="operations-linked-list">{selected.linkedProfiles.map((item) => <span key={item.label}><UsersRound size={14}/>{item.label}{item.count > 1 ? ` (${item.count})` : ""}</span>)}</div></section><section><p className="operations-section-label">ITENS QUE PODEM EXIGIR RETENÇÃO</p><div className="operations-retention-list">{selected.retentionItems.map((item) => <article key={item.key}><ShieldCheck size={16}/><span><strong>{item.label}{item.count > 1 ? ` (${item.count})` : ""}</strong><small>{item.reason}</small></span></article>)}</div></section></div><aside><section className="operations-owner"><p>RESPONSABILIDADE</p><strong>{selected.responsible || "Ainda não assumida"}</strong><span>Status: <StatusTag status={selected.status}/></span><small>Uma pessoa responsável reduz decisões paralelas e mantém a trilha clara.</small></section><section className="operations-history"><p>HISTÓRICO</p>{selected.history.length ? selected.history.map((entry) => <div key={entry.id}><strong>{entry.actorName}</strong><span>{entry.action.replaceAll("_", " ").replaceAll(".", " · ")}</span><small>{formatDate(entry.createdAt, true)}</small></div>) : <small>Sem eventos anteriores.</small>}</section></aside></div><footer className="operations-detail-actions"><button type="button" className="operations-secondary" onClick={() => runAction("take_ownership")} disabled={Boolean(actionLoading)}>{actionLoading === "take_ownership" ? "Assumindo…" : "Assumir solicitação"}</button><div className="operations-request-info"><textarea value={requestInfoNote} onChange={(event) => setRequestInfoNote(event.target.value)} placeholder="Registre a informação adicional necessária para seguir."/><button type="button" className="operations-secondary" onClick={() => runAction("request_information")} disabled={Boolean(actionLoading) || requestInfoNote.trim().length < 5}>{actionLoading === "request_information" ? "Registrando…" : "Solicitar informação"}</button></div><PrivacyResolutionActions request={selected} note={retentionNote} protocol={retentionProtocol} loading={actionLoading === "conclude_with_retention"} onNoteChange={setRetentionNote} onProtocolChange={setRetentionProtocol} onConfirm={() => runAction("conclude_with_retention", { note: retentionNote.trim(), confirmationProtocol: retentionProtocol.trim() })}/></footer></article>}</div> : null}
