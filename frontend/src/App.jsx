@@ -49,8 +49,10 @@ const UsersAdminPage = lazy(() => import("./pages/UsersAdminPage"));
 const OperationsCenterPage = lazy(() => import("./pages/OperationsCenterPage"));
 
 const VISIT_DAY_KEY = "napalma:last-visit-day";
-const SPLASH_MS_MOBILE = 5000;
-const SPLASH_MS_DESKTOP = 2000;
+// A abertura precisa apresentar a marca sem bloquear a entrada no app.
+// Mantemos apenas o tempo mínimo para a transição visual — não um vídeo em loop.
+const SPLASH_MS = 520;
+const SPLASH_EXIT_MS = 160;
 
 function RequireRole({ user, allowedRoles, children }) {
   const sessionStatus = useAuthStore((state) => state.sessionStatus);
@@ -72,6 +74,7 @@ export default function App() {
   const location = useLocation();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [showSplash, setShowSplash] = useState(true);
+  const [isSplashExiting, setIsSplashExiting] = useState(false);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(() => {
     try {
       return localStorage.getItem(ONBOARDING_STORAGE_KEY) === "true";
@@ -119,12 +122,23 @@ export default function App() {
   }
 
   useEffect(() => {
-    const isDesktop = window.matchMedia("(min-width: 900px)").matches;
-    const timer = window.setTimeout(
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const revealTimer = window.setTimeout(() => {
+      if (reducedMotion) {
+        setShowSplash(false);
+        return;
+      }
+      setIsSplashExiting(true);
+    }, reducedMotion ? 120 : SPLASH_MS);
+    const removeTimer = window.setTimeout(
       () => setShowSplash(false),
-      isDesktop ? SPLASH_MS_DESKTOP : SPLASH_MS_MOBILE
+      reducedMotion ? 120 : SPLASH_MS + SPLASH_EXIT_MS
     );
-    return () => window.clearTimeout(timer);
+
+    return () => {
+      window.clearTimeout(revealTimer);
+      window.clearTimeout(removeTimer);
+    };
   }, []);
 
   useEffect(() => {
@@ -295,20 +309,9 @@ export default function App() {
 
   if (showSplash) {
     return (
-      <section className="splash-screen">
-        <video
-          className="splash-video"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          poster="/assets/onboarding/splash-bg.webp"
-          aria-hidden="true"
-        >
-          <source src="/assets/onboarding/videoSplash77Gira.mp4" type="video/mp4" />
-        </video>
-        <div className="splash-overlay" aria-hidden="true" />
+      <section className={`splash-screen${isSplashExiting ? " is-exiting" : ""}`}>
+        <div className="splash-glow splash-glow--one" aria-hidden="true" />
+        <div className="splash-glow splash-glow--two" aria-hidden="true" />
         <div className="splash-logo-wrap">
           <img src="/assets/brand/logoBase77Gira.svg" alt="77Gira" className="splash-logo" />
           <p>Todos os sambas aqui</p>

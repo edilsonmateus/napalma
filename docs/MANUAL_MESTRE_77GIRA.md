@@ -2,10 +2,14 @@
 
 ## Produto, agentes, jornadas, operação e publicidade
 
-**Versão do manual:** 1.0  
-**Data de referência:** 5 de julho de 2026  
+**Versão do manual:** 2.0
+
+**Data de referência:** 19 de julho de 2026
+
 **Aplicação:** 77Gira  
-**Escopo:** experiência pública, contas, artistas, casas, produtores, anunciantes, administração, suporte e infraestrutura operacional.
+**Escopo:** experiência pública, contas, privacidade, artistas, casas, produtores, cardápios, anunciantes, aquisição, Central de Operações, suporte, segurança e infraestrutura operacional.
+
+**Estado do documento:** atualizado após a consolidação do 77Gira Ads, Cardápio Essencial, Central de Operações e inteligência de aquisição. Quando houver divergência entre este manual e uma regra executada pelo backend, prevalece a autorização e a validação do backend.
 
 ---
 
@@ -47,6 +51,7 @@ As telas e funções descritas correspondem à implementação atual. Alguns rec
 19. [Checklist por agente](#19-checklist-por-agente)
 20. [Governança recomendada](#20-governança-recomendada)
 21. [Encerramento](#21-encerramento)
+22. [Histórico desta revisão](#22-histórico-desta-revisão)
 
 ---
 
@@ -64,6 +69,8 @@ O 77Gira conecta os seguintes agentes:
 | Produtor | Usuário `producer` e carteira aprovada | Operar casas, artistas, eventos e reivindicações autorizadas |
 | Anunciante | Usuário vinculado a uma conta anunciante | Criar campanhas e criativos e acompanhar revisão |
 | Administrador | Usuário `admin` | Governança completa, catálogo, usuários, claims, publicidade e aquisição |
+| Operador interno | Usuário com escopo operacional explícito | Atuar na Central de Operações somente nos módulos autorizados |
+| Aquisição | Administrador ou operação comercial autorizada | Prospectar casas, registrar interações, medir cadência e acompanhar conversão |
 | Suporte/curadoria | Operação autorizada | Analisar evidências, orientar usuários e preservar integridade do catálogo |
 | Sistema | Serviços automáticos | Autenticação, push, analytics, storage, entrega de anúncios e jobs |
 
@@ -91,7 +98,10 @@ Algumas autorizações não dependem apenas do papel global:
 - acesso a uma casa;
 - acesso a um artista;
 - membership em uma conta anunciante;
+- escopo específico da Central de Operações;
 - permissão para username oficial da marca.
+
+Ter acesso a um módulo não concede acesso automático aos demais. A Central de Operações usa escopos como privacidade, reivindicações, catálogo, notificações, auditoria e configurações; o administrador continua sendo responsável por conceder e revogar esses escopos.
 
 ### 3.3 Perfil reivindicado
 
@@ -111,7 +121,7 @@ Um conteúdo pode passar por estágios distintos:
 - rejeitado ou com alterações solicitadas;
 - ativo, pausado ou encerrado.
 
-Salvar não significa necessariamente publicar. Em publicidade, a aprovação editorial é separada da ativação da campanha.
+Salvar não significa necessariamente publicar. Em publicidade, existem portões independentes: campanha válida, criativos compatíveis, revisão editorial, Patacos vinculados, inventário disponível e ativação operacional. Aprovar conteúdo não equivale, isoladamente, a colocá-lo no ar.
 
 ---
 
@@ -126,6 +136,7 @@ Sem criar uma conta, o visitante pode:
 - filtrar por praça, região, data, horário e busca textual;
 - abrir páginas de evento;
 - abrir páginas de casas;
+- consultar o Cardápio Essencial publicado de uma casa;
 - abrir páginas públicas de artistas;
 - consultar informações de preço;
 - abrir rotas por Google Maps, Waze e Uber quando disponíveis;
@@ -193,7 +204,22 @@ Exibe:
 - próximas atrações;
 - artistas relacionados aos eventos;
 - como chegar;
+- acesso ao Cardápio Essencial, quando publicado;
 - anúncio contextual, quando houver entrega elegível.
+
+#### Cardápio Essencial — `/venues/:venueId/menu`
+
+Exibe uma seleção curta mantida pela casa:
+
+- categorias e itens ativos;
+- nome, descrição, preço e modalidade de preço;
+- apresentação ou tamanho da porção;
+- características como especialidade da casa, vegetariano, vegano, sem álcool, picante ou edição limitada;
+- destaques editoriais;
+- ações de interesse, recomendação e salvamento quando habilitadas;
+- publicidade apresentada pelo 77Gira, identificada de forma explícita, quando houver campanha elegível.
+
+O cardápio é informativo. Disponibilidade e valores podem mudar; a data da última revisão deve orientar a pessoa antes de consumir. Publicidade exibida no cardápio não significa necessariamente parceria direta entre a marca e a casa.
 
 #### Artista — `/artistas/:artistId`
 
@@ -266,11 +292,13 @@ O botão Admin não preenche uma senha visível. Ele chama um endpoint dev e cri
 
 ### 5.5 Sessões
 
-- access token tem duração curta;
-- refresh token renova a sessão;
+- o access token tem duração curta e é renovado pelo refresh token;
+- uma falha transitória ao validar a sessão não deve apagar imediatamente a identidade local nem forçar logout arbitrário;
+- o app tenta recuperar a sessão e diferencia indisponibilidade temporária de credencial realmente inválida;
 - logout revoga o refresh token utilizado;
-- troca de senha revoga todas as sessões ativas;
-- tokens não devem ser enviados a terceiros nem registrados em documentos.
+- troca de senha e a ação “encerrar sessões em todos os dispositivos” revogam sessões ativas;
+- telas protegidas exibem validação de sessão sem liberar conteúdo antes da autorização;
+- tokens não devem ser enviados a terceiros, copiados para documentos nem gravados em logs de aplicação.
 
 ---
 
@@ -301,7 +329,8 @@ Reúne:
 - e-mail somente leitura;
 - telefone;
 - Instagram;
-- troca de senha.
+- localização-base;
+- troca de senha, separada visualmente dos dados de identidade.
 
 O lápis abre a edição. Telefone e Instagram são opcionais.
 
@@ -323,7 +352,7 @@ Campos:
 - bairro;
 - CEP.
 
-Não é solicitado endereço completo. Após salvar, o botão confirma “Localização salva”.
+Não é solicitado endereço completo. A edição fica dentro de Dados pessoais. Quando Tô na Pista detectar localização incompleta, deve encaminhar a pessoa diretamente a esse fluxo de edição. Após salvar, o botão confirma “Localização salva”.
 
 #### Perfis e acessos
 
@@ -332,6 +361,8 @@ Mostra artistas reivindicados e o caminho para o Hub de Gestão.
 #### Suporte e informações
 
 - Ajuda;
+- Anunciar no 77Gira;
+- Privacidade e dados;
 - Privacidade;
 - Termos de Uso;
 - Sobre o 77Gira.
@@ -339,8 +370,22 @@ Mostra artistas reivindicados e o caminho para o Hub de Gestão.
 #### Sessão
 
 - sair da conta.
+- encerrar sessões em todos os dispositivos, mediante confirmação da senha atual.
 
-### 6.3 Seguir artistas
+### 6.3 Privacidade e dados — `/settings/privacy`
+
+A Central de Privacidade permite ao titular:
+
+- consultar o resumo das categorias de dados tratados;
+- conceder ou retirar consentimentos opcionais de personalização cultural e publicidade relevante;
+- baixar uma cópia estruturada dos próprios dados após reautenticação;
+- solicitar acesso, exportação, correção, oposição, anonimização ou exclusão;
+- acompanhar protocolo, prazo, status e resolução de cada pedido;
+- solicitar exclusão da conta com senha atual e confirmação textual.
+
+Uma solicitação de exclusão não apaga tudo imediatamente. O 77Gira primeiro avalia vínculos profissionais, campanhas, créditos, contratos, denúncias, auditoria e outras hipóteses de retenção. O resultado pode ser exclusão, anonimização ou retenção parcial justificada. Toda decisão administrativa deve indicar responsável, fundamento e trilha de auditoria.
+
+### 6.4 Seguir artistas
 
 Na página do artista:
 
@@ -350,7 +395,7 @@ Na página do artista:
 
 O contador de seguidores é atualizado pelo vínculo da conta com o artista.
 
-### 6.4 Meu Radar — `/radar`
+### 6.5 Meu Radar — `/radar`
 
 O Radar reúne eventos marcados para acompanhamento. O usuário pode:
 
@@ -362,7 +407,7 @@ O Radar reúne eventos marcados para acompanhamento. O usuário pode:
 
 O Radar é pessoal e requer login.
 
-### 6.5 Meu Histórico — `/history`
+### 6.6 Meu Histórico — `/history`
 
 Permite:
 
@@ -373,7 +418,7 @@ Permite:
 
 Contas de casa são redirecionadas ao painel operacional em vez do histórico pessoal.
 
-### 6.6 Conquistas
+### 6.7 Conquistas
 
 Conquistas são derivadas de ações e histórico. Elas podem possuir:
 
@@ -385,7 +430,7 @@ Conquistas são derivadas de ações e histórico. Elas podem possuir:
 
 O usuário não edita conquistas manualmente.
 
-### 6.7 Pela Hora — `/pela-hora`
+### 6.8 Pela Hora — `/pela-hora`
 
 O usuário organiza um plano de eventos.
 
@@ -398,7 +443,7 @@ Fluxo:
 5. salvar plano quando autenticado;
 6. consultar ou excluir planos salvos.
 
-### 6.8 Tô na Pista
+### 6.9 Tô na Pista
 
 O recurso cria uma sessão temporária de descoberta por localização.
 
@@ -497,9 +542,10 @@ No EPK não reivindicado:
 6. relação com o artista;
 7. e-mail, Instagram e site oficiais, quando houver;
 8. justificativa e evidências;
-9. enviar para análise.
+9. ler e aceitar o aviso legal de legitimidade;
+10. enviar para análise.
 
-O status fica pendente até decisão administrativa. A aprovação cria acesso e verifica o artista conforme a regra operacional atual.
+O status fica pendente até decisão administrativa. Alegar falsamente propriedade, representação ou autorização pode gerar recusa, bloqueio e preservação de evidências para auditoria. A aprovação cria acesso e pode verificar o artista conforme a regra operacional vigente; perfil público e EPK básico não dependem de o artista já ter sido reivindicado.
 
 ### 8.3 Hub de Gestão
 
@@ -602,6 +648,19 @@ O modelo suporta:
 - visualizador.
 
 O acesso também pode estar convidado, ativo, suspenso ou revogado.
+
+### 8.9 Equipe e acessos — `/workspace/artista/equipe`
+
+Um artista pode ter mais de um administrador. Proprietários e gestores autorizados podem:
+
+- consultar integrantes e convites;
+- convidar por e-mail;
+- escolher o papel compatível com a responsabilidade;
+- alterar acesso existente;
+- suspender ou revogar integrante;
+- acompanhar convites pendentes.
+
+Boas práticas: conceder o menor privilégio necessário, não compartilhar senha, revisar a equipe após mudanças de agência ou produção e manter ao menos um proprietário legítimo ativo.
 
 ---
 
@@ -706,7 +765,28 @@ O painel mostra:
 - principais campanhas relacionadas à unidade;
 - indicadores de audiência e impacto quando habilitados.
 
-### 9.8 77First
+### 9.8 Cardápio Essencial — `/settings/venues/:venueId/menu`
+
+A casa autorizada pode manter até 30 itens ativos em uma seleção pública compacta. O fluxo permite:
+
+- criar e editar item;
+- escolher categoria, modalidade de preço, apresentação e status;
+- informar descrição e preço;
+- aplicar até quatro características;
+- destacar um item;
+- reordenar a lista;
+- arquivar e restaurar itens;
+- publicar e registrar a data de revisão dos preços;
+- ocultar ou exibir preços;
+- filtrar itens ativos e arquivados;
+- importar CSV validado sem substituir silenciosamente o conteúdo existente;
+- baixar um modelo CSV e exportar o cardápio atual.
+
+Para disponibilizar inventário publicitário no cardápio, a casa registra ciência sobre as condições comerciais. O 77Gira seleciona, revisa e distribui a publicidade; a casa não escolhe o anunciante e não recebe Patacos, remuneração ou participação de receita por essa exibição. A presença de uma campanha não representa parceria direta entre a marca e a casa.
+
+Não existe bloqueio automático de marcas locais pela casa. Conflitos contratuais relevantes devem ser comunicados à equipe 77Gira para tratamento operacional e documental, sem transformar o cardápio em uma ferramenta de veto unilateral.
+
+### 9.9 77First
 
 Em eventos autorizados, o 77First prepara materiais como:
 
@@ -831,27 +911,38 @@ O acesso ao portal não depende apenas do login; exige membership ativa em conta
 
 ### 11.4 Central do Anunciante — `/workspace/anunciante`
 
+O acesso começa por uma conta comum do 77Gira. Quem ainda não possui conta anunciante envia uma solicitação comercial com marca/projeto, tipo, razão social opcional, contato, objetivo e resumo da intenção. O envio não cria publicidade nem concede acesso automaticamente.
+
+Depois da aprovação, o sistema cria ou ativa a conta anunciante e o membership correspondente. O usuário volta a entrar com o mesmo e-mail e senha da conta 77Gira; não é criada uma segunda senha exclusiva para Ads.
+
 Quando há conta disponível, o usuário pode:
 
 - selecionar conta anunciante;
-- consultar campanhas;
-- criar campanha em rascunho;
-- definir anunciante e nome;
-- definir início e fim;
-- criar criativo;
-- escolher slot;
-- informar título e destino;
-- enviar arquivo;
-- submeter campanha ou criativo para revisão;
-- acompanhar status.
+- consultar campanhas e métricas resumidas;
+- duplicar rascunhos para reaproveitar estrutura sem alterar a campanha original;
+- criar campanha por um assistente de quatro etapas;
+- adquirir e consultar Patacos na Carteira de mídia;
+- vincular saldo livre a uma campanha;
+- submeter campanha e criativos para revisão;
+- acompanhar correções solicitadas, aprovação, ativação, pausa e encerramento.
 
-Sem membership, a tela informa que nenhuma conta está disponível.
+Sem membership, a tela mostra a solicitação de acesso ou seu status. A rota `/anunciar` explica o produto para pessoas deslogadas e oferece caminhos explícitos para entrar ou criar conta antes da solicitação.
 
 ### 11.5 Slots publicitários atuais
 
 - `explore_feed_large`: card grande no Explorar;
 - `venue_detail_inline`: anúncio no detalhe da casa;
 - `radar_header`: topo do Radar.
+- `venue_menu_sponsor`: patrocínio vertical no Cardápio Essencial.
+
+Dimensões atuais da fonte de verdade:
+
+| Slot | Arquivo recomendado |
+|---|---:|
+| Explorar | 580 × 350 px |
+| Página da casa | 580 × 240 px |
+| Meu Radar | 580 × 258 px |
+| Cardápio apresentado por | 900 × 1200 px |
 
 Cada placement pode definir:
 
@@ -881,12 +972,23 @@ Campos e controles incluem:
 - conta anunciante;
 - status de revisão.
 
+O assistente do anunciante organiza a criação em:
+
+1. **Objetivo e período:** anunciante, nome, objetivo, início e fim;
+2. **Posição:** um ou mais slots e um criativo independente para cada posição escolhida;
+3. **Orçamento:** aquisição simulada e vínculo de Patacos à campanha;
+4. **Revisão:** conferência final e envio administrativo.
+
+Cada slot preserva seu próprio arquivo, título e destino. Trocar o posicionamento no formulário não deve sobrescrever o criativo dos demais slots. Imagens incompatíveis recebem alerta contextual com dimensão real, proporção exigida e orientação de correção.
+
 Status operacionais:
 
 - draft;
 - active;
 - paused;
 - ended.
+
+Status operacional e status editorial são diferentes. Uma campanha pode estar aprovada editorialmente e ainda aguardar Patacos, janela de veiculação, inventário ou ativação.
 
 ### 11.7 Criativo
 
@@ -919,6 +1021,10 @@ Quando habilitado:
 7. histórico registra ator, ação, status, motivo e snapshot;
 8. edição relevante pode exigir nova revisão.
 
+Campanhas e criativos rejeitados ou com ajuste solicitado deixam a fila de pendências e ficam disponíveis para correção, acompanhados do fundamento. Rejeitar sem justificativa não deve concluir a decisão.
+
+Na Gestão de Publicidade, a fila de revisão exibe imagem integral no formato do slot, placeholder quando não há asset e mockup coerente com a experiência apresentada ao anunciante. A aba Criativos é uma visão operacional e diagnóstica; não deve funcionar como uma segunda aprovação editorial disfarçada.
+
 Status de revisão:
 
 - draft;
@@ -939,6 +1045,8 @@ Uma campanha só deve entregar quando os critérios aplicáveis forem satisfeito
 - aprovação quando exigida;
 - targeting compatível;
 - limite de frequência respeitado.
+
+O backend gera uma entrega autorizada e registra impressão e clique por token de entrega. A ativação da campanha é o controle de veiculação; ligar um criativo individualmente é uma ação técnica excepcional, reservada a diagnóstico ou correção operacional.
 
 ### 11.10 Métricas
 
@@ -965,7 +1073,22 @@ Relatórios podem consolidar:
 - período;
 - exportação CSV.
 
-### 11.11 Cloudflare R2
+O anunciante acompanha impressões, cliques, CTR, Patacos consumidos e saldo restante. A operação acompanha também fill rate, bloqueios, saúde por slot e atividade auditável. Métricas devem ser interpretadas com período, slot e campanha claramente definidos.
+
+### 11.11 Carteira de mídia e Patacos
+
+Patacos são unidades internas de orçamento publicitário. A carteira separa:
+
+- saldo livre da conta anunciante;
+- saldo já vinculado a campanhas;
+- entradas, alocações, consumo, estorno e saldo após cada movimento;
+- pedidos de aquisição e seu estado.
+
+O gateway atualmente implementado é um simulador controlado, aberto apenas pelo fluxo de teste de aquisição. Ele reproduz ida, processamento e retorno automático, mas não realiza cobrança real nem substitui obrigações fiscais. O provedor definitivo e webhooks reais permanecem etapa futura documentada.
+
+Depois do retorno, o saldo deve aparecer na carteira. Para constar no orçamento de uma campanha, os Patacos precisam estar vinculados àquela campanha; saldo livre e orçamento reservado são números diferentes.
+
+### 11.12 Cloudflare R2
 
 O storage compartilhado pode armazenar:
 
@@ -1065,6 +1188,8 @@ Ao aprovar ownership de artista, o sistema pode criar acesso ativo e verificar o
 
 Regiões continuam úteis para catálogo e filtros, mas a localização residencial do usuário usa cidade, bairro e CEP. São conceitos diferentes.
 
+Na taxonomia operacional, **praça** significa cidade de atuação, como São Paulo; **região** significa a divisão territorial interna da praça, como Centro, Zona Norte, Zona Sul, Zona Leste ou Zona Oeste. Não trocar esses rótulos em tabelas e indicadores.
+
 O admin pode manter:
 
 - nome;
@@ -1093,6 +1218,19 @@ O módulo de aquisição acompanha leads de possíveis casas:
 - histórico de interações.
 
 Esse módulo é interno e não substitui o cadastro oficial nem a aprovação de acesso.
+
+Cada mudança de etapa e interação relevante alimenta uma linha do tempo comercial. A leitura analítica permite filtrar por período de 1, 7, 30, 90 ou 120 dias e por etapa, acompanhando:
+
+- movimentos realizados na linha do tempo;
+- distribuição por status: mapeada, contato iniciado, conversa em andamento, apresentação marcada, proposta enviada, negociação, fechada, perdida ou retomar depois;
+- funil e conversão;
+- leads sem movimentação por sete dias ou mais;
+- follow-ups vencidos;
+- intervalo médio entre movimentos;
+- cadência diária;
+- responsável, origem, potencial e temperatura.
+
+A carteira administrativa em `/settings/venues?section=acquisition` é a fonte de edição. A Central de Operações apresenta leitura, prioridade e histórico, encaminhando alterações detalhadas para essa carteira para evitar duas fontes concorrentes.
 
 ### 12.8 Impacto e audiência
 
@@ -1133,6 +1271,61 @@ Funções:
 - consultar inventário;
 - investigar atividade;
 - exportar relatórios.
+
+A função atual de cada área é:
+
+- **Painel:** instrumentos de saúde, volume, bloqueios e atalhos;
+- **Anunciantes:** aprovação comercial, contas e memberships;
+- **Revisão:** única fila editorial para campanhas e criativos;
+- **Campanhas:** ciclo operacional, período, orçamento, ativação, pausa, encerramento e duplicação;
+- **Criativos:** diagnóstico de assets, slots e estado de entrega, sem repetir a aprovação;
+- **Inventário:** disponibilidade e regras de cada placement;
+- **Saúde:** alertas de entrega, configuração e anomalias;
+- **Atividade:** trilha de alterações;
+- **Financeiro:** carteira, pedidos e movimentações;
+- **Relatórios:** impressões, cliques, CTR e exportações.
+
+### 12.10 Central de Operações — `/operacoes`
+
+É o cockpit interno independente da experiência comum. Possui fundo claro, alta densidade informacional e navegação responsiva, inclusive por gesto horizontal no mobile. O menu e o título acompanham a seção ativa.
+
+Nem toda seção substitui o painel especializado. A Central prioriza, resume, revela contexto e encaminha a decisão; cadastros extensos e operações de domínio continuam em seus painéis de origem quando isso evita duplicidade de regras.
+
+Módulos atuais:
+
+- Visão geral;
+- Privacidade e solicitações;
+- Reivindicações de artistas e casas;
+- Casas e programação;
+- Aquisição;
+- Praças e regiões;
+- 77Gira Ads;
+- Qualidade e moderação;
+- Notificações;
+- Auditoria;
+- Configurações internas.
+
+#### Acesso e escopos
+
+A rota só abre para admin ou usuário com escopo operacional concedido. Estar autenticado no PWA comum não basta quando a conta não possui autorização. O backend valida cada escopo; ocultar um item do menu não é controle de segurança.
+
+#### Privacidade
+
+A lista inicial reduz exposição: mostra protocolo, nome redigido, tipo, status, prazo, risco e responsável. E-mail, username, motivo completo, vínculos e retenções só aparecem após abertura explícita do caso, que gera evento de auditoria.
+
+Uma decisão pode solicitar informação, assumir responsabilidade, concluir com retenção, anonimizar ou avaliar exclusão definitiva. Ações irreversíveis exigem justificativa, protocolo digitado e confirmação reforçada. Quando WebAuthn estiver configurado, biometria ou senha do dispositivo confirma o desafio assinado; não substitui a análise legal.
+
+#### Reivindicações
+
+A Central exibe evidências restritas e permite aprovar ou recusar usando o mesmo motor transacional do fluxo administrativo. Recusa exige fundamento; aprovação pode criar vínculos reais de acesso.
+
+#### Aquisição
+
+Mostra KPIs, série temporal, distribuição por etapa, funil, cadência, leads parados, follow-ups vencidos e detalhe somente leitura com linha do tempo. A edição permanece na carteira completa de aquisição.
+
+#### Auditoria e responsabilidade
+
+A Central registra abertura de dados restritos, ator, ação, assunto, horário e metadados necessários. Decisões de alto risco não devem ser executadas por atalhos sem responsável ou justificativa.
 
 ---
 
@@ -1194,7 +1387,7 @@ Verificar:
 
 ### 14.1 Analytics
 
-Eventos analíticos registram interações de descoberta, artista, rota, anúncio e outros sinais. O registro deve respeitar políticas de privacidade e finalidade.
+Eventos analíticos registram interações de descoberta, artista, rota, Cardápio Essencial, anúncio e outros sinais. O registro deve respeitar políticas de privacidade e finalidade. Anunciantes recebem resultados agregados; não recebem uma lista com dados pessoais de quem viu ou clicou.
 
 ### 14.2 Push
 
@@ -1232,6 +1425,8 @@ Uploads são limitados por:
 - processamento de imagem;
 - feature flag de storage.
 
+Criativos de Ads também são validados por slot: dimensão, proporção, MIME, tamanho máximo e vínculo com a conta/campanha. Prévia no navegador não substitui validação backend.
+
 ### 14.5 Segurança de produção
 
 - login dev não funciona com `NODE_ENV=production`;
@@ -1241,8 +1436,27 @@ Uploads são limitados por:
 - senha é armazenada por hash bcrypt;
 - refresh tokens são armazenados por hash;
 - troca de senha revoga sessões;
+- rate limits protegem login, uploads, tracking, interações de cardápio, pagamentos simulados e ações sensíveis;
+- CORS aceita somente origens públicas configuradas;
+- cabeçalhos e HTTPS público são validados no boot de produção;
+- ações administrativas e de privacidade geram auditoria;
+- a Central de Operações usa autorização por escopo;
+- WebAuthn permite confirmação reforçada vinculada à origem e ao dispositivo;
+- dados sensíveis são minimizados na listagem e revelados apenas após ação explícita;
 - secrets ficam no backend/infraestrutura;
 - username oficial exige permissão explícita.
+
+Senhas não podem ser recuperadas em texto claro porque são armazenadas como hash. O banco de dados, porém, não deve ser descrito como “ilegível por definição”: campos operacionais continuam acessíveis a processos autorizados e à infraestrutura. A proteção depende de credenciais fortes, isolamento do banco, TLS em trânsito, controles de acesso, auditoria, backups e minimização. Criptografia adicional por campo deve ser aplicada somente quando o modelo de risco e a necessidade operacional justificarem.
+
+### 14.6 Resiliência de carregamento e PWA
+
+- a inicialização distingue sessão inválida de API temporariamente indisponível;
+- a tela pública não deve ficar branca por falha não tratada;
+- consultas críticas possuem estados de carregamento, erro e tentativa novamente;
+- a linha superior do Explorar funciona como indicador de carregamento sem deslocar o conteúdo;
+- eventos podem ser consultados novamente quando o backend gratuito acorda;
+- o onboarding aparece uma única vez por instalação/perfil do navegador e não deve reiniciar no último slide;
+- service worker e assets versionados exigem validação após cada deploy para evitar mistura entre bundles antigos e novos.
 
 ---
 
@@ -1260,12 +1474,19 @@ Uploads são limitados por:
 | Ver leads de contratação | Não | Não | Com acesso | Não | Com vínculo | Não | Sim |
 | Criar evento | Não | Não | Não diretamente | Com vínculo | Com vínculo | Não | Sim |
 | Editar casa | Não | Não | Não | Com vínculo | Com vínculo | Não | Sim |
+| Manter Cardápio Essencial | Não | Não | Não | Com vínculo | Com vínculo autorizado | Não | Sim |
+| Interagir com item de cardápio | Não | Sim | Sim | Sim | Sim | Sim | Sim |
 | Criar campanha própria | Não | Não | Se membro anunciante | Se membro anunciante | Se membro anunciante | Com membership | Sim |
 | Aprovar publicidade | Não | Não | Não | Não | Não | Não | Sim |
+| Solicitar direito de privacidade | Não | Sim | Sim | Sim | Sim | Sim | Sim |
+| Operar solicitação de privacidade | Não | Não | Não | Não | Não | Não | Sim/escopo explícito |
+| Consultar inteligência de aquisição | Não | Não | Não | Não | Conforme autorização | Não | Sim/escopo explícito |
 | Criar usuário comum | Não | Não | Não | Não | Não | Não | Sim |
 | Autorizar username oficial | Não | Não | Não | Não | Não | Não | Sim |
 
 “Com acesso” e “com vínculo” significam que o backend confirmou uma autorização específica; o papel isolado não basta.
+
+Operadores internos não aparecem como um papel global separado nesta tabela: sua capacidade é calculada por escopos específicos. Um operador de privacidade, por exemplo, não recebe automaticamente poder sobre Ads, catálogo ou configurações.
 
 ---
 
@@ -1283,6 +1504,7 @@ Uploads são limitados por:
 - `VITE_ADS_PLACEMENT_CATALOG_ENABLED`
 - `VITE_ADS_R2_CREATIVE_UPLOAD_ENABLED`
 - `VITE_ADS_REVIEW_WORKFLOW_ENABLED`
+- `VITE_ADS_CREDITS_PURCHASE_ENABLED`
 - `VITE_ENABLE_API_FALLBACK_MOCKS`
 - `VITE_VAPID_PUBLIC_KEY`
 - `VITE_API_URL`
@@ -1299,6 +1521,12 @@ Uploads são limitados por:
 - `ADS_PLACEMENT_CATALOG_ENABLED`
 - `ADS_R2_CREATIVE_UPLOAD_ENABLED`
 - `ADS_REVIEW_WORKFLOW_ENABLED`
+- `ADS_CREDITS_PURCHASE_ENABLED`
+- `ADS_MOCK_PAYMENT_ENABLED`
+- `ADS_PAYMENT_PROVIDER`
+- `ADS_MENU_SPONSOR_ENABLED`
+- `VENUE_MENU_ENABLED`
+- `VENUE_MENU_INTERACTIONS_ENABLED`
 - `R2_SHARED_UPLOADS_ENABLED`
 - `TO_NA_PISTA_SCHEDULER_ENABLED`
 
@@ -1313,6 +1541,7 @@ Flags equivalentes de frontend e backend devem estar coerentes. Interface visív
 - `/explore`
 - `/events/:eventId`
 - `/venues/:venueId`
+- `/venues/:venueId/menu`
 - `/artists/:artistId`
 - `/artistas/:artistId`
 - `/privacy`
@@ -1321,11 +1550,13 @@ Flags equivalentes de frontend e backend devem estar coerentes. Interface visív
 - `/about`
 - `/login`
 - `/signup`
+- `/anunciar`
 
 ### Conta
 
 - `/settings`
 - `/settings/account`
+- `/settings/privacy`
 - `/radar`
 - `/history`
 - `/pela-hora`
@@ -1336,18 +1567,25 @@ Flags equivalentes de frontend e backend devem estar coerentes. Interface visív
 - `/workspace/artista/contratacoes`
 - `/workspace/artista/midia`
 - `/workspace/artista/desempenho`
+- `/workspace/artista/equipe`
 
 ### Profissionais
 
 - `/workspace/produtor`
 - `/workspace/casa`
 - `/workspace/anunciante`
+- `/workspace/anunciante/campanhas`
+- `/workspace/anunciante/novo-anuncio`
+- `/workspace/anunciante/carteira`
+- `/workspace/anunciante/pagamento/mock/:orderId`
 
 ### Administração
 
 - `/settings/venues`
 - `/settings/ads`
 - `/settings/users`
+- `/settings/venues/:venueId/menu`
+- `/operacoes`
 
 ---
 
@@ -1417,6 +1655,56 @@ Verificar campanha, criativo, slot, período, status, aprovação, targeting, fr
 
 Confirmar formato do username e campos mínimos. Telefone e Instagram vazios são aceitos como opcionais na implementação atual.
 
+### “O app acordou, mas não trouxe os eventos”
+
+Verificar:
+
+- se o backend está acordando no Render;
+- se a consulta saiu do estado de erro e foi refeita;
+- se o indicador de atualização terminou;
+- se filtros continuam válidos;
+- se a sessão foi recuperada sem apagar o usuário;
+- se há falha de CORS, service worker antigo ou asset incompatível no console.
+
+O estado “sem eventos” só deve aparecer depois de uma resposta válida vazia. Timeout ou falha temporária deve oferecer tentativa novamente.
+
+### “Criativo não foi salvo”
+
+Verificar:
+
+- slot selecionado no card e no dropdown;
+- arquivo específico para cada posicionamento;
+- JPG, PNG ou WebP;
+- tamanho máximo de 5 MB;
+- dimensão e proporção do slot;
+- título e URL quando exigidos;
+- feedback de erro próximo aos mockups;
+- status da campanha: uma campanha em revisão não pode ser editada até voltar para correção ou ser duplicada como rascunho.
+
+### “Comprei Patacos, mas o orçamento continua zero”
+
+Confirmar se:
+
+1. o pedido simulado foi processado;
+2. o retorno automático recuperou a carteira correta;
+3. o saldo aparece como livre;
+4. o saldo foi vinculado à campanha.
+
+Comprar adiciona saldo à carteira; vincular reserva orçamento para uma campanha. São movimentos separados e auditáveis.
+
+### “Item do Cardápio não aparece”
+
+Verificar:
+
+- casa correta;
+- item ativo ou arquivado;
+- status disponível/indisponível;
+- cardápio publicado;
+- filtro da categoria;
+- limite de itens ativos;
+- feature flags do backend;
+- data de revisão e cache da página pública.
+
 ---
 
 ## 19. Checklist por agente
@@ -1429,6 +1717,7 @@ Confirmar formato do username e campos mínimos. Telefone e Instagram vazios sã
 - [ ] Consultar artista
 - [ ] Compartilhar
 - [ ] Abrir rota
+- [ ] Consultar Cardápio Essencial publicado
 - [ ] Criar conta quando desejar personalização
 
 ### Público cadastrado
@@ -1440,6 +1729,7 @@ Confirmar formato do username e campos mínimos. Telefone e Instagram vazios sã
 - [ ] Registrar histórico
 - [ ] Criar plano Pela Hora
 - [ ] Testar Tô na Pista
+- [ ] Revisar consentimentos e solicitações em Privacidade e dados
 
 ### Artista/equipe
 
@@ -1453,6 +1743,7 @@ Confirmar formato do username e campos mínimos. Telefone e Instagram vazios sã
 - [ ] Publicar mídia
 - [ ] Acompanhar oportunidades
 - [ ] Consultar desempenho
+- [ ] Revisar equipe, convites e papéis de acesso
 
 ### Casa
 
@@ -1463,6 +1754,8 @@ Confirmar formato do username e campos mínimos. Telefone e Instagram vazios sã
 - [ ] Configurar recorrência
 - [ ] Acompanhar eventos
 - [ ] Gerenciar equipe autorizada
+- [ ] Criar, publicar, exportar e revisar Cardápio Essencial
+- [ ] Registrar ciência das condições de publicidade do cardápio
 - [ ] Consultar impacto e Ads
 
 ### Produtor
@@ -1479,11 +1772,14 @@ Confirmar formato do username e campos mínimos. Telefone e Instagram vazios sã
 - [ ] Obter membership ativa
 - [ ] Selecionar conta
 - [ ] Criar campanha
-- [ ] Definir período
-- [ ] Enviar criativo correto
+- [ ] Definir objetivo e período
+- [ ] Escolher um ou mais posicionamentos
+- [ ] Enviar um criativo compatível para cada posição
+- [ ] Adquirir Patacos e vincular orçamento
 - [ ] Submeter revisão
 - [ ] Corrigir rejeições
-- [ ] Acompanhar status e métricas
+- [ ] Colocar campanha aprovada no ar
+- [ ] Acompanhar impressões, cliques, CTR e saldo
 
 ### Admin
 
@@ -1496,6 +1792,9 @@ Confirmar formato do username e campos mínimos. Telefone e Instagram vazios sã
 - [ ] Monitorar saúde e atividade
 - [ ] Gerenciar anunciantes
 - [ ] Acompanhar aquisição
+- [ ] Monitorar cadência, leads parados e follow-ups vencidos
+- [ ] Operar a Central conforme escopos e registrar decisões
+- [ ] Tratar solicitações de privacidade com retenção e auditoria
 - [ ] Exportar relatórios
 
 ---
@@ -1512,6 +1811,14 @@ Confirmar formato do username e campos mínimos. Telefone e Instagram vazios sã
 8. Tokens R2, JWT, VAPID e banco nunca devem aparecer no frontend.
 9. Migrações devem ser aplicadas antes de ativar código dependente.
 10. Produção deve acompanhar `main` e ser validada após deploy.
+11. Solicitação de exclusão nunca deve apagar dados antes da análise de vínculos e retenções.
+12. Dados restritos só devem ser abertos dentro de um caso e com evento de auditoria.
+13. Escopo da Central de Operações deve seguir menor privilégio e revisão periódica.
+14. Aprovação editorial, orçamento, inventário e ativação de Ads devem permanecer controles independentes.
+15. Saldo de Patacos deve ser conciliável pelo ledger; nunca inferido apenas pela interface.
+16. Cardápio patrocinado deve identificar publicidade e não prometer remuneração à casa.
+17. Métrica comercial precisa ter período, etapa e fonte definidos antes de orientar decisão.
+18. Toda mudança de status em aquisição deve alimentar histórico e responsável.
 
 ---
 
@@ -1525,9 +1832,38 @@ O 77Gira não é apenas uma agenda. A implementação atual combina:
 - rotas e planejamento;
 - contratação artística;
 - operação profissional;
+- Cardápio Essencial;
 - publicidade de marca;
-- aquisição e curadoria;
+- aquisição com cadência e inteligência comercial;
+- Central de Operações com privacidade, auditoria e escopos;
 - governança de acesso;
 - métricas de impacto.
 
 O princípio central para todos os agentes é simples: descoberta é aberta; personalização exige conta; gestão exige vínculo; governança exige autorização; e identidade oficial exige validação.
+
+---
+
+## 22. Histórico desta revisão
+
+### Versão 2.0 — 19 de julho de 2026
+
+Esta revisão incorporou:
+
+- Central de Privacidade, consentimentos, exportação e solicitações de direitos;
+- Central de Operações, autorização por escopo, auditoria e confirmação reforçada por WebAuthn;
+- gestão de reivindicações com aviso legal e múltiplos administradores de artista;
+- Cardápio Essencial público e administrativo, CSV, arquivamento, interações e inventário patrocinado;
+- 77Gira Ads com workspace de quatro etapas, mockups por slot, alertas de compatibilidade, carteira e Patacos;
+- gateway de pagamento simulado e separação entre saldo livre e orçamento de campanha;
+- revisão, entrega, tracking de impressão/clique, relatórios e saúde de inventário;
+- aquisição com histórico de status, interações, série temporal, funil, cadência e alertas de inatividade;
+- resiliência de carregamento, recuperação de sessão, PWA e tratamento do backend adormecido;
+- novas rotas, flags, permissões, diagnósticos e checklists.
+
+### Limites ainda assumidos
+
+- o gateway de pagamento permanece simulado, sem cobrança ou webhook financeiro real;
+- obrigações fiscais e conciliação com provedor definitivo dependem de implantação futura;
+- WebAuthn exige origem HTTPS válida e cadastro prévio do dispositivo;
+- a qualidade das métricas depende de tracking ativo, inventário real e uso suficiente;
+- feature flags e migrações precisam estar coerentes entre frontend, backend e produção.

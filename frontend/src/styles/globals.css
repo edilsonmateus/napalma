@@ -11144,32 +11144,39 @@ button.venue-card {
   place-items: center;
   position: relative;
   overflow: hidden;
-  background:
-    linear-gradient(180deg, rgba(11, 9, 16, 0.2) 0%, rgba(11, 9, 16, 0.78) 100%),
-    url("/assets/onboarding/splash-bg.webp") center / cover no-repeat;
+  isolation: isolate;
+  background: linear-gradient(145deg, #160d25 0%, #120b1d 48%, #09080d 100%);
   padding: 20px;
+  opacity: 1;
+  transition: opacity 160ms ease-out, transform 160ms ease-out;
 }
 
-.splash-video {
+.splash-screen.is-exiting {
+  opacity: 0;
+  transform: scale(1.012);
+}
+
+.splash-glow {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: min(72vw, 620px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  opacity: 0.26;
   z-index: 0;
+  pointer-events: none;
 }
 
-@media (min-width: 900px) {
-  .splash-video {
-    display: none;
-  }
+.splash-glow--one {
+  top: -28vw;
+  left: -18vw;
+  background: radial-gradient(circle, #8e3db5 0%, rgba(142, 61, 181, 0) 70%);
 }
 
-.splash-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(11, 9, 16, 0.28) 0%, rgba(11, 9, 16, 0.82) 100%);
-  z-index: 1;
+.splash-glow--two {
+  right: -22vw;
+  bottom: -32vw;
+  background: radial-gradient(circle, #f4871d 0%, rgba(244, 135, 29, 0) 70%);
+  opacity: 0.13;
 }
 
 .splash-logo-wrap {
@@ -11182,7 +11189,7 @@ button.venue-card {
 }
 
 .splash-logo {
-  width: min(28vw, 110px);
+  width: min(34vw, 128px);
   max-height: 14vh;
   height: auto;
   object-fit: contain;
@@ -11191,8 +11198,9 @@ button.venue-card {
 
 .splash-logo-wrap p {
   margin: 0;
-  color: #d5c9e7;
-  font-size: 15px;
+  color: rgba(236, 228, 247, 0.76);
+  font-size: 13px;
+  letter-spacing: 0.01em;
 }
 
 .onboarding-screen {
@@ -11272,12 +11280,14 @@ button.venue-card {
 }
 
 @media (max-width: 899px) {
-  .splash-logo-wrap {
-    display: none;
-  }
-
   .screen-ads-hard {
     padding-bottom: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-screen {
+    transition: none;
   }
 }
 
