@@ -11,8 +11,8 @@ try {
   const adminBootstrap = await ensureAdminBootstrap();
   if (adminBootstrap?.created) {
     console.log(`Admin definitivo criado: ${adminBootstrap.email}`);
-  } else if (adminBootstrap?.updated) {
-    console.log(`Admin definitivo atualizado: ${adminBootstrap.email}`);
+  } else if (adminBootstrap?.passwordReset) {
+    console.warn(`Senha do admin redefinida explicitamente por bootstrap: ${adminBootstrap.email}`);
   } else if (adminBootstrap?.skipped) {
     console.log(`Admin definitivo não aplicado: ${adminBootstrap.reason}`);
   }

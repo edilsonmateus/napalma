@@ -18,6 +18,7 @@ function normalizeUsername(value) {
 export async function ensureAdminBootstrap({ logger = console } = {}) {
   const email = clean(process.env.ADMIN_BOOTSTRAP_EMAIL).toLowerCase();
   const password = clean(process.env.ADMIN_BOOTSTRAP_PASSWORD);
+  const resetExistingPassword = process.env.ADMIN_BOOTSTRAP_RESET_PASSWORD === "true";
 
   if (!email && !password) return { skipped: true, reason: "missing_env" };
 
@@ -36,23 +37,24 @@ export async function ensureAdminBootstrap({ logger = console } = {}) {
   );
   const firstName = clean(process.env.ADMIN_BOOTSTRAP_FIRST_NAME) || "Admin";
   const lastName = clean(process.env.ADMIN_BOOTSTRAP_LAST_NAME) || "77Gira";
-  const passwordHash = await hashPassword(password);
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
+    if (!resetExistingPassword) {
+      // Bootstrap provisions the first administrator only. Normal deploys must
+      // never overwrite credentials, identity data, or roles of an existing account.
+      return { skipped: true, reason: "already_exists", email };
+    }
+
+    const passwordHash = await hashPassword(password);
     await prisma.user.update({
       where: { email },
-      data: {
-        username,
-        firstName,
-        lastName,
-        passwordHash,
-        role: UserRole.admin
-      }
+      data: { passwordHash }
     });
-    return { updated: true, email };
+    return { passwordReset: true, email };
   }
 
+  const passwordHash = await hashPassword(password);
   await prisma.user.create({
     data: {
       email,

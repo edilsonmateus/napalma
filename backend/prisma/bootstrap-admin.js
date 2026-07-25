@@ -8,8 +8,12 @@ async function main() {
     console.log(`Admin definitivo criado: ${result.email}`);
     return;
   }
-  if (result.updated) {
-    console.log(`Admin definitivo atualizado: ${result.email}`);
+  if (result.passwordReset) {
+    console.warn(`Senha do admin redefinida explicitamente por bootstrap: ${result.email}`);
+    return;
+  }
+  if (result.skipped && result.reason === "already_exists") {
+    console.log(`Admin definitivo preservado: ${result.email}`);
     return;
   }
   throw new Error(`Admin bootstrap nao executado: ${result.reason}`);
