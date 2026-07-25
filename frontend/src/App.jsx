@@ -311,8 +311,6 @@ export default function App() {
   if (showSplash) {
     return (
       <section className={`splash-screen${isSplashExiting ? " is-exiting" : ""}`}>
-        <div className="splash-glow splash-glow--one" aria-hidden="true" />
-        <div className="splash-glow splash-glow--two" aria-hidden="true" />
         <div className="splash-logo-wrap">
           <img src="/assets/brand/logoBase77Gira.svg" alt="77Gira" className="splash-logo" />
           <p>Todos os sambas aqui</p>

@@ -11145,7 +11145,11 @@ button.venue-card {
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  background: linear-gradient(145deg, #160d25 0%, #120b1d 48%, #09080d 100%);
+  background:
+    radial-gradient(105% 88% at -8% 102%, #c5b5ff 0%, rgba(181, 113, 238, 0.74) 34%, rgba(181, 113, 238, 0) 68%),
+    radial-gradient(92% 82% at 104% -8%, #ffc3b3 0%, rgba(245, 133, 143, 0.82) 37%, rgba(245, 133, 143, 0) 72%),
+    radial-gradient(82% 78% at 54% 76%, #922653 0%, rgba(146, 38, 83, 0.72) 50%, rgba(146, 38, 83, 0) 78%),
+    linear-gradient(132deg, #7434bd 0%, #b5428b 43%, #7b1747 67%, #0d123e 100%);
   padding: 20px;
   opacity: 1;
   transition: opacity 160ms ease-out, transform 160ms ease-out;
@@ -11154,29 +11158,6 @@ button.venue-card {
 .splash-screen.is-exiting {
   opacity: 0;
   transform: scale(1.012);
-}
-
-.splash-glow {
-  position: absolute;
-  width: min(72vw, 620px);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  opacity: 0.26;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.splash-glow--one {
-  top: -28vw;
-  left: -18vw;
-  background: radial-gradient(circle, #8e3db5 0%, rgba(142, 61, 181, 0) 70%);
-}
-
-.splash-glow--two {
-  right: -22vw;
-  bottom: -32vw;
-  background: radial-gradient(circle, #f4871d 0%, rgba(244, 135, 29, 0) 70%);
-  opacity: 0.13;
 }
 
 .splash-logo-wrap {
