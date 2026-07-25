@@ -51,8 +51,9 @@ const OperationsCenterPage = lazy(() => import("./pages/OperationsCenterPage"));
 const VISIT_DAY_KEY = "napalma:last-visit-day";
 // A abertura precisa apresentar a marca sem bloquear a entrada no app.
 // Mantemos apenas o tempo mínimo para a transição visual — não um vídeo em loop.
-const SPLASH_MS = 520;
-const SPLASH_EXIT_MS = 160;
+// Total de 3 segundos: tempo suficiente para assimilar a marca, sem segurar o app.
+const SPLASH_MS = 2800;
+const SPLASH_EXIT_MS = 200;
 
 function RequireRole({ user, allowedRoles, children }) {
   const sessionStatus = useAuthStore((state) => state.sessionStatus);
