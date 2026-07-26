@@ -8682,10 +8682,9 @@ button.venue-card {
 
 .route-journey {
   width: 100%;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .route-journey-point {
@@ -8698,7 +8697,7 @@ button.venue-card {
   line-height: 1.2;
 }
 
-.route-journey-origin svg { color: #d2a33b; flex: 0 0 auto; }
+.route-journey-origin svg { color: currentColor; flex: 0 0 auto; }
 
 .route-journey-arrow {
   color: #9b958f;
@@ -8707,17 +8706,17 @@ button.venue-card {
 }
 
 .route-journey-destination {
-  display: block;
+  flex: 1 1 auto;
   min-width: 0;
-  text-align: right;
+  text-align: left;
 }
 
 .route-journey-destination strong {
   max-width: 100%;
   overflow: hidden;
-  color: #f4f2f5;
-  font-size: 12px;
-  font-weight: 650;
+  color: #d8d6dc;
+  font-size: 11px;
+  font-weight: 500;
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
