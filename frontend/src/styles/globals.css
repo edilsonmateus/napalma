@@ -14264,9 +14264,9 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
 }
 
 .pela-hora-screen .pela-hora-mode-actions .pela-hora-action-btn.active {
-  border: 1px solid #e99a18;
+  border: 1px solid #ffad24 !important;
   background: var(--user-button-surface-strong);
-  box-shadow: 0 0 0 1px rgba(255, 176, 0, .16);
+  box-shadow: 0 0 0 1px rgba(255, 176, 0, .26);
 }
 
 .pela-hora-screen .pela-hora-attended-btn.active {
