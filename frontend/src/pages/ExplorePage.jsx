@@ -995,7 +995,6 @@ export default function ExplorePage() {
                       </div>
                     )}
                     <span className="event-region"><MapPin size={12} /> {venue.region}</span>
-                    {routeModeEventId === eventItem.id ? <span className="event-route-venue">{venue.name}</span> : null}
                   </div>
                 </Link>
                 {routeModeEventId !== eventItem.id && isLiveNow ? <LiveProgressBar event={eventItem} nowMs={nowMs} /> : null}
@@ -1047,6 +1046,18 @@ export default function ExplorePage() {
                 ) : null}
                 {routeModeEventId === eventItem.id ? (
                   <div className="venue-flow-body route-options-panel">
+                    <div className="route-journey" aria-label={`Rota da sua localização para ${venue.name}`}>
+                      <div className="route-journey-point route-journey-origin">
+                        <MapPin size={14} aria-hidden="true" />
+                        <span>Minha localização</span>
+                      </div>
+                      <span className="route-journey-line" aria-hidden="true" />
+                      <div className="route-journey-point route-journey-destination">
+                        <small>Destino</small>
+                        <strong title={venue.name}>{venue.name}</strong>
+                      </div>
+                    </div>
+                    <p className="route-choice-label">Escolha como chegar</p>
                     <div className="route-options-row">
                       <a href={buildGoogleMapsLink(venue)} target="_blank" rel="noreferrer" className="route-icon-btn" title="Maps" aria-label="Abrir rota no Maps" onClick={() => trackAnalyticsEvent("route_app_click", { venueId: venue.id, eventId: eventItem.baseEventId || eventItem.id, region: venue.region, city: venue.city, state: venue.state, source: "explore", metadata: { provider: "maps" } })}>
                         <img src={mapsIcon} alt="" className="route-icon-img route-icon-img-maps" />

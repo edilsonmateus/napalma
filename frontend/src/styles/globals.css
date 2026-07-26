@@ -8557,18 +8557,7 @@ button.venue-card {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.42);
-}
-
-.event-route-venue {
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 8px;
-  z-index: 2;
-  font-weight: var(--weight-card-title);
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .venue-flow-body {
@@ -8683,8 +8672,71 @@ button.venue-card {
 }
 
 .route-options-panel {
+  min-height: 132px;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
+
+.route-journey {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 26px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+}
+
+.route-journey-point {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #b9b8bf;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.route-journey-origin svg { color: #d2a33b; flex: 0 0 auto; }
+
+.route-journey-line {
+  height: 1px;
+  min-width: 0;
+  background: linear-gradient(90deg, rgba(210, 163, 59, 0.8), rgba(210, 163, 59, 0.15));
+}
+
+.route-journey-destination {
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+  text-align: right;
+}
+
+.route-journey-destination small {
+  color: #938e9a;
+  font-size: 9px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.route-journey-destination strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: #f4f2f5;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-choice-label {
+  width: 100%;
+  margin: 0;
+  color: #918b98;
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .route-options-row {
@@ -9890,7 +9942,7 @@ button.venue-card {
   color: #dbe6f1;
   font-size: 11px;
   letter-spacing: 0.02em;
-  margin-left: 20px;
+  margin-left: 10px;
 }
 
 .route-chip-close:hover {
