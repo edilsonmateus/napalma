@@ -1051,12 +1051,12 @@ export default function ExplorePage() {
                         <MapPin size={14} aria-hidden="true" />
                         <span>Minha localização</span>
                       </div>
-                      <span className="route-journey-line" aria-hidden="true" />
+                      <span className="route-journey-arrow" aria-hidden="true">→</span>
                       <div className="route-journey-point route-journey-destination">
-                        <small>Destino</small>
                         <strong title={venue.name}>{venue.name}</strong>
                       </div>
                     </div>
+                    <div className="route-options-divider" aria-hidden="true" />
                     <p className="route-choice-label">Escolha como chegar</p>
                     <div className="route-options-row">
                       <a href={buildGoogleMapsLink(venue)} target="_blank" rel="noreferrer" className="route-icon-btn" title="Maps" aria-label="Abrir rota no Maps" onClick={() => trackAnalyticsEvent("route_app_click", { venueId: venue.id, eventId: eventItem.baseEventId || eventItem.id, region: venue.region, city: venue.city, state: venue.state, source: "explore", metadata: { provider: "maps" } })}>
