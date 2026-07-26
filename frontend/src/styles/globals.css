@@ -14241,6 +14241,18 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
   box-shadow: none;
 }
 
+/* Pela Hora: etapas e histórico orientam a leitura; a escolha ativa precisa
+ * continuar inequívoca mesmo sem recorrer a uma superfície chamativa. */
+.pela-hora-screen .section-title {
+  color: #f6a821;
+}
+
+.pela-hora-screen .pela-hora-mode-actions .pela-hora-action-btn.active {
+  border: 1px solid #e99a18;
+  background: var(--user-button-surface-strong);
+  box-shadow: 0 0 0 1px rgba(255, 176, 0, .16);
+}
+
 .pela-hora-screen .pela-hora-attended-btn.active {
   border: 0;
   background: rgba(24, 91, 56, .28);
