@@ -967,7 +967,7 @@ export default function ExplorePage() {
             <small className="day-group-count">{group.items.length} {group.items.length === 1 ? "samba" : "sambas"}</small>
           </h4>
           <div className="venue-list explore-venue-grid">
-            {group.items.map(({ venue, event: eventItem, isLiveNow }) => {
+            {group.items.map(({ venue, event: eventItem, isLiveNow }, itemIndex) => {
               const radarEventId = eventItem.baseEventId || eventItem.id;
               const isInRadar = radarEventIds.has(radarEventId);
               const isUpdatingThisEvent = toggleRadar.isPending
@@ -984,8 +984,9 @@ export default function ExplorePage() {
                         src={resolveMediaUrl(eventItem.posterImageUrl)}
                         alt={`Cartaz de ${eventItem.title}`}
                         className="venue-flow-cover-img"
-                        loading="lazy"
+                        loading={groupIndex === 0 && itemIndex === 0 ? "eager" : "lazy"}
                         decoding="async"
+                        fetchPriority={groupIndex === 0 && itemIndex === 0 ? "high" : "auto"}
                       />
                     ) : (
                       <div className="event-poster-fallback" aria-hidden="true">
