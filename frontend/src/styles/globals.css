@@ -8635,8 +8635,20 @@ button.venue-card {
   line-height: 1.25;
 }
 
+.event-flow-venue .venue-profile-link-indicator {
+  flex: 0 0 auto;
+  margin-left: 4px;
+  color: var(--text-muted);
+  transition: color .16s ease, transform .16s ease;
+}
+
 .event-flow-title:hover,
 .event-flow-venue:hover { color: var(--primary-gold); }
+
+.event-flow-venue:hover .venue-profile-link-indicator {
+  color: currentColor;
+  transform: translate(1px, -1px);
+}
 
 .event-flow-card .venue-flow-head h3 { transform: none; }
 
@@ -8830,6 +8842,10 @@ button.venue-card {
 
 .venue-flow-body .meta-line + .meta-line {
   margin-top: 1px;
+}
+
+.venue-flow-body .event-starts-line > svg {
+  transform: translateY(2px);
 }
 
 .venue-flow-head {

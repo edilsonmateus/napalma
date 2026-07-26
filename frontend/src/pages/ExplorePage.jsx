@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarClock, Filter, MapPin, X } from "lucide-react";
+import { ArrowUpRight, CalendarClock, Filter, MapPin, X } from "lucide-react";
 import {
   useAdDeliveryQuery,
   useEventsQuery,
@@ -1034,10 +1034,11 @@ export default function ExplorePage() {
                     <Link to={`/venues/${venue.id}`} className="meta-line event-flow-venue artist-inline-with-badge">
                       <span>{venue.name}</span>
                       {venue.goldPartner ? <VerifiedBadge className="artist-verified-dot gold-partner-badge" title="Casa Gold Partner" iconSrc="/goldenVerificado.svg" /> : null}
+                      <ArrowUpRight className="venue-profile-link-indicator" size={15} strokeWidth={1.8} aria-hidden="true" />
                     </Link>
                     <p className="meta-line venue-neighborhood-line">{venue.neighborhood}</p>
                     {!isLiveNow ? (
-                      <small className="meta-line"><CalendarClock size={14} /> Começa às {formatHour(eventItem.startsAt)} • {formatDayMonth(eventItem.startsAt)}</small>
+                      <small className="meta-line event-starts-line"><CalendarClock size={14} /> Começa às {formatHour(eventItem.startsAt)} • {formatDayMonth(eventItem.startsAt)}</small>
                     ) : (
                       <small className="meta-line event-live-inline"><span className="live-dot" /><strong>Tá rolando</strong><span>termina às {formatHour(eventItem.endsAt)}</span></small>
                     )}
