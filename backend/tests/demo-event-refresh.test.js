@@ -25,13 +25,18 @@ describe("safe demo event refresh", () => {
   it("marks new seed fixtures and refreshes only explicitly marked events", () => {
     const schema = fs.readFileSync(path.join(backendRoot, "prisma", "schema.prisma"), "utf8");
     const seed = fs.readFileSync(path.join(backendRoot, "prisma", "seed.js"), "utf8");
-    const refresh = fs.readFileSync(path.join(backendRoot, "prisma", "refresh-demo-event-dates.js"), "utf8");
+    const refresh = fs.readFileSync(path.join(backendRoot, "src", "services", "demoEventsRefresh.service.js"), "utf8");
+    const refreshCommand = fs.readFileSync(path.join(backendRoot, "prisma", "refresh-demo-event-dates.js"), "utf8");
+    const server = fs.readFileSync(path.join(backendRoot, "src", "server.js"), "utf8");
     const legacyRefresh = fs.readFileSync(path.join(backendRoot, "prisma", "refresh-event-dates.js"), "utf8");
     const packageJson = JSON.parse(fs.readFileSync(path.join(backendRoot, "package.json"), "utf8"));
     expect(schema).toContain("isDemo               Boolean    @default(false)");
     expect(seed).toContain("isDemo: true");
     expect(refresh).toContain("where: { isDemo: true }");
     expect(refresh).not.toContain("deleteMany");
+    expect(refreshCommand).toContain("refreshDemoEventDates({ force: true })");
+    expect(server).toContain("refreshDemoEventDates({ force: true })");
+    expect(server).toContain("startDemoEventRefreshScheduler()");
     expect(legacyRefresh).toContain('import "./refresh-demo-event-dates.js"');
     expect(legacyRefresh).not.toContain("findMany({\n    orderBy");
     expect(packageJson.scripts["prisma:refresh-demo-events"]).toContain("prisma generate &&");
