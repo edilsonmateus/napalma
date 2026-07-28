@@ -33,7 +33,7 @@ import { createCommonUser, createProducerUser, listCommonUsers, listProducerUser
 import { listMyRadar, markEventInRadar, unmarkEventFromRadar } from "../controllers/radar.controller.js";
 import { listMyHistory, markEventAsAttended, unmarkEventAsAttended } from "../controllers/history.controller.js";
 import { listMyAchievements } from "../controllers/achievements.controller.js";
-import { createPelaHora, deletePelaHora, getPelaHoraById, listPelaHora, suggestPelaHora } from "../controllers/pelaHora.controller.js";
+import { createPelaHora, createPelaHoraShare, deletePelaHora, getPelaHoraById, getPublicPelaHoraShare, listPelaHora, revokePelaHoraShare, suggestPelaHora } from "../controllers/pelaHora.controller.js";
 import {
   createAdCampaign,
   createAdCreative,
@@ -308,10 +308,13 @@ router.post("/me/advertiser-accounts/:accountId/payment-orders", requireAuth, re
 router.post("/me/advertiser-accounts/:accountId/wallet/allocate", requireAuth, requireFeatureFlag("ADS_CREDITS_PURCHASE_ENABLED"), paymentLimiter, allocateMyWalletCredits);
 router.get("/me/advertiser-payment-orders/:id", requireAuth, requireFeatureFlag("ADS_CREDITS_PURCHASE_ENABLED"), getMyPaymentOrder);
 router.post("/me/advertiser-payment-orders/:id/mock-process", requireAuth, requireFeatureFlag("ADS_CREDITS_PURCHASE_ENABLED"), paymentLimiter, processMyMockPaymentOrder);
+router.get("/public/pela-hora/:token", getPublicPelaHoraShare);
 router.get("/me/pela-hora", requireAuth, listPelaHora);
 router.get("/me/pela-hora/suggest", requireAuth, suggestPelaHora);
 router.get("/me/pela-hora/:id", requireAuth, getPelaHoraById);
 router.post("/me/pela-hora", requireAuth, createPelaHora);
+router.post("/me/pela-hora/:id/share", requireAuth, createPelaHoraShare);
+router.delete("/me/pela-hora/:id/share", requireAuth, revokePelaHoraShare);
 router.delete("/me/pela-hora/:id", requireAuth, deletePelaHora);
 router.get("/users/producers", ...canManageHouseOps, listProducerUsers);
 router.post("/users/producers", ...canManageHouseOps, createProducerUser);

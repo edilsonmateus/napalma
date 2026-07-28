@@ -13910,6 +13910,98 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
   font-size: .68rem;
 }
 
+.pela-hora-screen .plan-share-btn {
+  min-height: 28px;
+  border-color: rgba(255, 170, 40, .34);
+  color: #ffd18a;
+  font-size: .68rem;
+}
+
+.pela-hora-screen .itinerary-share-revoke {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #a8a1ad;
+  font: inherit;
+  font-size: .66rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.pela-hora-screen .itinerary-share-revoke:hover { color: #f2edf5; }
+
+/* Roteiro público do Pela Hora: uma leitura de convite, sem ações privadas. */
+.public-itinerary-screen {
+  display: grid;
+  min-height: 100vh;
+  padding: 32px 16px 48px;
+  background: radial-gradient(circle at 20% -10%, rgba(111, 52, 143, .24), transparent 38%), #0d0c0f;
+  color: #f7f3f8;
+  place-items: start center;
+}
+
+.public-itinerary-card {
+  width: min(100%, 620px);
+  overflow: hidden;
+  border: 1px solid rgba(214, 205, 222, .17);
+  border-radius: 20px;
+  background: #161419;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, .24);
+}
+
+.public-itinerary-hero {
+  position: relative;
+  min-height: 236px;
+  padding: 26px;
+  overflow: hidden;
+  background: linear-gradient(138deg, #31203c, #17131b 58%, #2e2419);
+}
+
+.public-itinerary-hero > span,
+.public-itinerary-hero-copy { position: relative; z-index: 1; }
+.public-itinerary-logo { width: 92px; height: auto; filter: brightness(0) invert(1); opacity: .95; }
+.public-itinerary-hero > span { display: inline-block; margin-left: 10px; color: #cfc7d4; font-size: .8rem; vertical-align: 4px; }
+.public-itinerary-hero-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .34; }
+.public-itinerary-hero::after { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(17, 14, 20, .15), rgba(17, 14, 20, .88)); content: ""; }
+.public-itinerary-hero-copy { position: absolute; right: 26px; bottom: 24px; left: 26px; }
+.public-itinerary-hero-copy p { margin: 0 0 7px; color: #fdb34f; font-size: .66rem; font-weight: 800; letter-spacing: .11em; }
+.public-itinerary-hero-copy h1 { margin: 0; color: #fffaff; font-size: clamp(1.6rem, 7vw, 2.4rem); letter-spacing: -.035em; line-height: 1.03; }
+.public-itinerary-hero-copy strong { display: block; margin-top: 8px; color: #d9d1de; font-size: .86rem; font-weight: 500; text-transform: capitalize; }
+
+.public-itinerary-summary { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 14px 26px; border-bottom: 1px solid rgba(214, 205, 222, .12); color: #bcb4c4; font-size: .73rem; }
+.public-itinerary-summary span:not(:last-child)::after { margin-left: 16px; color: #645d6a; content: "•"; }
+.public-itinerary-list { padding: 24px 26px 12px; }
+.public-itinerary-list h2 { margin: 0 0 20px; color: #f7f3f8; font-size: 1.02rem; }
+.public-itinerary-row { display: grid; grid-template-columns: 48px 18px minmax(0, 1fr); gap: 8px; min-height: 82px; }
+.public-itinerary-row > time { padding-top: 1px; color: #f5f0f7; font-size: .82rem; font-weight: 750; font-variant-numeric: tabular-nums; }
+.public-itinerary-track { position: relative; min-height: 82px; }
+.public-itinerary-track i { position: absolute; top: 3px; left: 50%; width: 9px; height: 9px; border: 2px solid #161419; border-radius: 99px; background: #f6a531; box-shadow: 0 0 0 1px rgba(246, 165, 49, .35); transform: translateX(-50%); }
+.public-itinerary-track b { position: absolute; top: 14px; bottom: 0; left: 50%; width: 1px; background: rgba(216, 207, 224, .25); transform: translateX(-50%); }
+.public-itinerary-event { display: grid; align-content: start; gap: 3px; min-width: 0; padding-bottom: 18px; }
+.public-itinerary-event strong { overflow: hidden; color: #f8f5f9; font-size: .93rem; text-overflow: ellipsis; white-space: nowrap; }
+.public-itinerary-event span { color: #d4cbd9; font-size: .77rem; }
+.public-itinerary-event small { color: #9f97a6; font-size: .73rem; }
+.public-itinerary-event em { width: fit-content; margin-top: 8px; padding: 4px 8px; border: 1px solid rgba(214, 205, 222, .16); border-radius: 999px; color: #b6aebd; font-size: .64rem; font-style: normal; }
+.public-itinerary-footer { padding: 23px 26px 28px; border-top: 1px solid rgba(214, 205, 222, .12); background: #121114; text-align: center; }
+.public-itinerary-footer p { margin: 0 0 12px; color: #bbb3c1; font-size: .8rem; }
+.public-itinerary-open { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 17px; border-radius: 999px; background: linear-gradient(105deg, #8b3eb1, #e43d5a 58%, #ff9f22); color: white; font-size: .78rem; font-weight: 750; text-decoration: none; }
+.public-itinerary-loading, .public-itinerary-unavailable { width: min(100%, 440px); margin-top: 20vh; color: #d8d0de; text-align: center; }
+.public-itinerary-unavailable { padding: 30px; border: 1px solid rgba(214, 205, 222, .16); border-radius: 18px; background: #161419; }
+.public-itinerary-unavailable img { width: 44px; margin-bottom: 12px; }
+.public-itinerary-unavailable h1 { margin: 0; color: #f7f3f8; font-size: 1.2rem; }
+.public-itinerary-unavailable p { color: #aaa1b0; font-size: .84rem; line-height: 1.5; }
+
+@media (max-width: 520px) {
+  .public-itinerary-screen { padding: 0; place-items: stretch; }
+  .public-itinerary-card { width: 100%; border: 0; border-radius: 0; box-shadow: none; }
+  .public-itinerary-hero { min-height: 230px; padding: 22px 20px; }
+  .public-itinerary-hero-copy { right: 20px; bottom: 22px; left: 20px; }
+  .public-itinerary-summary, .public-itinerary-list, .public-itinerary-footer { padding-right: 20px; padding-left: 20px; }
+  .public-itinerary-summary span:not(:last-child)::after { margin-left: 8px; }
+  .public-itinerary-row { grid-template-columns: 44px 16px minmax(0, 1fr); }
+}
+
 @media (max-width: 680px) {
   .pela-hora-screen .schedule-card { padding: 14px; }
   .pela-hora-timeline-row,

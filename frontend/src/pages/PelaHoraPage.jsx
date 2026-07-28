@@ -2,10 +2,12 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   useCreatePelaHoraMutation,
+  useCreatePelaHoraShareMutation,
   useDeletePelaHoraMutation,
   useEventsQuery,
   useMyPelaHoraQuery,
-  usePelaHoraSuggestionQuery
+  usePelaHoraSuggestionQuery,
+  useRevokePelaHoraShareMutation
 } from "../hooks/useEventsQuery";
 import { useAuthStore } from "../store/authStore";
 import VerifiedBadge from "../components/common/VerifiedBadge";
@@ -142,6 +144,8 @@ export default function PelaHoraPage() {
   );
   const createPelaHora = useCreatePelaHoraMutation();
   const deletePelaHora = useDeletePelaHoraMutation();
+  const createPelaHoraShare = useCreatePelaHoraShareMutation();
+  const revokePelaHoraShare = useRevokePelaHoraShareMutation();
 
   const filteredByDate = useMemo(() => {
     return events.filter((event) => toDateInput(event.startsAt) === date);
@@ -206,6 +210,33 @@ export default function PelaHoraPage() {
       setToast({ text: "Plano removido com sucesso.", type: "success" });
     } catch (_error) {
       setToast({ text: "Não foi possível remover esse plano agora.", type: "error" });
+    }
+  }
+
+  async function handleSharePlan(itinerary) {
+    try {
+      const share = await createPelaHoraShare.mutateAsync(itinerary.id);
+      const url = `${window.location.origin}/roteiro/${share.token}`;
+      const count = itinerary.items.length;
+      const text = [
+        "Bora de Pela Hora?",
+        `Montei ${itinerary.title} com ${count} ${count === 1 ? "samba" : "sambas"} para ${formatDateLong(itinerary.date)}.`,
+        "",
+        "Veja o roteiro completo no 77Gira:"
+      ].join("\n");
+      window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`, "_blank", "noopener,noreferrer");
+      setToast({ text: "Link do roteiro criado. Escolha o contato no WhatsApp para enviar.", type: "success" });
+    } catch (_error) {
+      setToast({ text: "Não foi possível preparar esse compartilhamento agora.", type: "error" });
+    }
+  }
+
+  async function handleRevokeShare(itinerary) {
+    try {
+      await revokePelaHoraShare.mutateAsync(itinerary.id);
+      setToast({ text: "O link público deste roteiro foi desativado.", type: "success" });
+    } catch (_error) {
+      setToast({ text: "Não foi possível desativar esse link agora.", type: "error" });
     }
   }
 
@@ -342,6 +373,24 @@ export default function PelaHoraPage() {
                 >
                   {deletePelaHora.isPending ? "Removendo..." : "Excluir"}
                 </button>
+                <button
+                  type="button"
+                  className="chip plan-share-btn"
+                  onClick={() => handleSharePlan(itinerary)}
+                  disabled={createPelaHoraShare.isPending}
+                >
+                  {createPelaHoraShare.isPending ? "Preparando..." : "Enviar no WhatsApp"}
+                </button>
+                {itinerary.share ? (
+                  <button
+                    type="button"
+                    className="itinerary-share-revoke"
+                    onClick={() => handleRevokeShare(itinerary)}
+                    disabled={revokePelaHoraShare.isPending}
+                  >
+                    Desativar link
+                  </button>
+                ) : null}
               </div>
             </div>
             <p className="meta-line itinerary-saved-summary">

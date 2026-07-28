@@ -31,7 +31,7 @@ export const api = axios.create({
   timeout: 15000
 });
 
-const authlessApi = axios.create({
+export const publicApi = axios.create({
   baseURL: apiBaseUrl,
   timeout: 15000
 });
@@ -75,7 +75,7 @@ async function rotateRefreshToken(failedAccessToken) {
       return latest.token;
     }
 
-    const res = await authlessApi.post("/auth/refresh", { refreshToken: latest.refreshToken });
+    const res = await publicApi.post("/auth/refresh", { refreshToken: latest.refreshToken });
     useAuthStore.getState().setAuth({
       token: res.data.accessToken,
       refreshToken: res.data.refreshToken,

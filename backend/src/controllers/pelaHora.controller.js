@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { randomBytes } from "node:crypto";
 import { prisma } from "../lib/prisma.js";
 
 const createSchema = z.object({
@@ -9,6 +10,7 @@ const createSchema = z.object({
 });
 
 const idSchema = z.object({ id: z.string().uuid() });
+const shareTokenSchema = z.object({ token: z.string().min(24).max(96) });
 
 const suggestSchema = z.object({
   date: z.coerce.date(),
@@ -38,6 +40,9 @@ function mapItinerary(item) {
     status: item.status,
     totalTransitMinutes: item.totalTransitMinutes,
     riskScore: item.riskScore,
+    share: item.shareToken && !item.shareRevokedAt && (!item.shareExpiresAt || item.shareExpiresAt > new Date())
+      ? { token: item.shareToken, expiresAt: item.shareExpiresAt }
+      : null,
     items: item.items
       .sort((a, b) => a.position - b.position)
       .map((row) => ({
@@ -48,12 +53,37 @@ function mapItinerary(item) {
         artist: row.event.artists[0]?.artist.name || "",
         venue: row.event.venue.name,
         region: row.event.venue.region,
+        imageUrl: row.event.posterImageUrl || row.event.imageUrl || null,
         startsAt: row.event.startDate,
         endsAt: row.event.endDate,
         transitMinutesFromPrev: row.transitMinutesFromPrev,
         riskLevel: row.riskLevel
       }))
   };
+}
+
+function publicShareUrlData(item) {
+  const mapped = mapItinerary(item);
+  return {
+    title: mapped.title,
+    date: mapped.date,
+    totalTransitMinutes: mapped.totalTransitMinutes,
+    items: mapped.items.map(({ position, title, artist, venue, region, imageUrl, startsAt, endsAt, transitMinutesFromPrev }) => ({
+      position,
+      title,
+      artist,
+      venue,
+      region,
+      imageUrl,
+      startsAt,
+      endsAt,
+      transitMinutesFromPrev
+    }))
+  };
+}
+
+function generateShareToken() {
+  return randomBytes(24).toString("base64url");
 }
 
 async function buildItems(eventIds) {
@@ -196,6 +226,84 @@ export async function deletePelaHora(req, res, next) {
       prisma.itinerary.delete({ where: { id } })
     ]);
     res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createPelaHoraShare(req, res, next) {
+  try {
+    const { id } = idSchema.parse(req.params);
+    const item = await prisma.itinerary.findUnique({
+      where: { id },
+      select: { id: true, userId: true, shareToken: true, shareExpiresAt: true, shareRevokedAt: true }
+    });
+
+    if (!item || item.userId !== req.user.id) {
+      return res.status(404).json({ error: "itinerary_not_found", message: "Pela Hora nao encontrado." });
+    }
+
+    const stillActive = item.shareToken && !item.shareRevokedAt && (!item.shareExpiresAt || item.shareExpiresAt > new Date());
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    const updated = stillActive
+      ? item
+      : await prisma.itinerary.update({
+        where: { id },
+        data: {
+          shareToken: generateShareToken(),
+          shareEnabledAt: new Date(),
+          shareExpiresAt: expiresAt,
+          shareRevokedAt: null
+        },
+        select: { shareToken: true, shareExpiresAt: true }
+      });
+
+    res.json({ share: { token: updated.shareToken, expiresAt: updated.shareExpiresAt } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function revokePelaHoraShare(req, res, next) {
+  try {
+    const { id } = idSchema.parse(req.params);
+    const item = await prisma.itinerary.findUnique({ where: { id }, select: { id: true, userId: true } });
+    if (!item || item.userId !== req.user.id) {
+      return res.status(404).json({ error: "itinerary_not_found", message: "Pela Hora nao encontrado." });
+    }
+    await prisma.itinerary.update({ where: { id }, data: { shareRevokedAt: new Date() } });
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getPublicPelaHoraShare(req, res, next) {
+  try {
+    const { token } = shareTokenSchema.parse(req.params);
+    const item = await prisma.itinerary.findFirst({
+      where: {
+        shareToken: token,
+        shareEnabledAt: { not: null },
+        shareRevokedAt: null,
+        OR: [{ shareExpiresAt: null }, { shareExpiresAt: { gt: new Date() } }]
+      },
+      include: {
+        items: {
+          include: {
+            event: {
+              include: {
+                venue: true,
+                artists: { include: { artist: true }, orderBy: { order: "asc" } }
+              }
+            }
+          }
+        }
+      }
+    });
+    if (!item) return res.status(404).json({ error: "shared_itinerary_not_found", message: "Este roteiro nao esta mais disponivel." });
+    res.set("Cache-Control", "public, max-age=120, stale-while-revalidate=300");
+    res.json({ item: publicShareUrlData(item) });
   } catch (error) {
     next(error);
   }

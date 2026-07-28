@@ -518,6 +518,10 @@ model Itinerary {
   status              String   @default("draft") // draft | active | completed
   totalTransitMinutes Int      @default(0)
   riskScore           Int      @default(0)
+  shareToken          String?  @unique
+  shareEnabledAt      DateTime?
+  shareExpiresAt      DateTime?
+  shareRevokedAt      DateTime?
 
   user  User            @relation(fields: [userId], references: [id])
   items ItineraryItem[]

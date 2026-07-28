@@ -68,6 +68,8 @@ import {
   unfollowArtist,
   createPelaHora,
   deletePelaHora,
+  createPelaHoraShare,
+  revokePelaHoraShare,
   unmarkEventAsAttended,
   unmarkEventFromRadar,
   updateArtist,
@@ -620,6 +622,22 @@ export function useDeletePelaHoraMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-pela-hora"] });
     }
+  });
+}
+
+export function useCreatePelaHoraShareMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createPelaHoraShare,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-pela-hora"] })
+  });
+}
+
+export function useRevokePelaHoraShareMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: revokePelaHoraShare,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-pela-hora"] })
   });
 }
 

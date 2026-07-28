@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api, publicApi } from "./api";
 import {
   events as fallbackEvents,
   regions as fallbackRegions,
@@ -362,6 +362,20 @@ export async function createPelaHora(payload) {
 
 export async function deletePelaHora(id) {
   await api.delete(`/me/pela-hora/${id}`);
+}
+
+export async function createPelaHoraShare(id) {
+  const { data } = await api.post(`/me/pela-hora/${id}/share`);
+  return data.share;
+}
+
+export async function revokePelaHoraShare(id) {
+  await api.delete(`/me/pela-hora/${id}/share`);
+}
+
+export async function getPublicPelaHoraShare(token) {
+  const { data } = await publicApi.get(`/public/pela-hora/${encodeURIComponent(token)}`);
+  return data.item;
 }
 
 export async function trackAudienceVisit(payload) {

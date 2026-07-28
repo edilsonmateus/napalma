@@ -20,6 +20,7 @@ const VenueMenuManagePage = lazy(() => import("./pages/VenueMenuManagePage"));
 const ArtistProfilePage = lazy(() => import("./pages/ArtistProfilePage"));
 const RadarPage = lazy(() => import("./pages/RadarPage"));
 const PelaHoraPage = lazy(() => import("./pages/PelaHoraPage"));
+const PublicPelaHoraPage = lazy(() => import("./pages/PublicPelaHoraPage"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const AccountSettingsPage = lazy(() => import("./pages/AccountSettingsPage"));
@@ -99,6 +100,7 @@ export default function App() {
   const isBackofficeMode = isAdminRole(user?.role) || isProducerRole(user?.role) || isVenueRole(user?.role);
   const canAccessOperations = isAdminRole(user?.role) || Boolean(user?.operationScopes?.length);
   const isOnboardingRoute = location.pathname === "/onboarding";
+  const isPublicItineraryRoute = location.pathname.startsWith("/roteiro/");
   const isExploreRoute = location.pathname === "/explore";
   const isAdsRoute = location.pathname === "/anunciar"
     || location.pathname.startsWith("/workspace/anunciante")
@@ -114,7 +116,7 @@ export default function App() {
     || location.pathname === "/settings/account"
     || location.pathname === "/settings/privacy"
   );
-  const shouldForceOnboarding = !showSplash && !hasSeenOnboarding && !isOnboardingRoute;
+  const shouldForceOnboarding = !showSplash && !hasSeenOnboarding && !isOnboardingRoute && !isPublicItineraryRoute;
 
   function getDefaultRoute() {
     if (isProducerRole(user?.role)) return "/workspace/produtor";
@@ -323,11 +325,11 @@ export default function App() {
     return <Navigate to="/onboarding" replace />;
   }
 
-  if (token && (!authReady || sessionStatus === "checking")) {
+  if (token && (!authReady || sessionStatus === "checking") && !isPublicItineraryRoute) {
     return <div className="session-validation-screen"><img src="/assets/brand/icon_mono_77Gira.svg" alt="" aria-hidden="true" className="session-validation-spinner"/><strong>Validando sua sessão...</strong></div>;
   }
 
-  if (token && sessionStatus === "degraded" && !allowPublicWhileDegraded) {
+  if (token && sessionStatus === "degraded" && !allowPublicWhileDegraded && !isPublicItineraryRoute) {
     return (
       <div className="session-validation-screen session-validation-degraded">
         <strong>Sua conta continua conectada</strong>
@@ -357,6 +359,7 @@ export default function App() {
             <Route path="/venues/:venueId/menu" element={<VenueMenuPage />} />
             <Route path="/radar" element={<RadarPage />} />
             <Route path="/pela-hora" element={<PelaHoraPage />} />
+            <Route path="/roteiro/:token" element={<PublicPelaHoraPage />} />
             <Route
               path="/history"
               element={isVenueRole(user?.role) ? <Navigate to="/settings/venues?section=overview" replace /> : <HistoryPage />}
@@ -430,7 +433,7 @@ export default function App() {
           </Routes>
         </Suspense>
       </main>
-      {!isOnboardingRoute && !isOperationsRoute ? <BottomNav /> : null}
+      {!isOnboardingRoute && !isOperationsRoute && !isPublicItineraryRoute ? <BottomNav /> : null}
     </div>
   );
 }
