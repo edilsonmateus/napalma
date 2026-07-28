@@ -25,6 +25,30 @@ export async function setOperationsAccessGrant(payload) {
   return data;
 }
 
+export async function listOperationsStrategicPartners() {
+  const { data } = await api.get("/admin/operations/partners");
+  return data.items || [];
+}
+
+export async function createOperationsStrategicPartner(payload) {
+  const { data } = await api.post("/admin/operations/partners", payload);
+  return data.item;
+}
+
+export async function updateOperationsStrategicPartner(id, payload) {
+  const { data } = await api.patch(`/admin/operations/partners/${id}`, payload);
+  return data.item;
+}
+
+export async function uploadOperationsStrategicPartnerLogo(file, name) {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("folder", "partners");
+  form.append("name", name || file.name);
+  const { data } = await api.post("/admin/operations/partners/uploads/logo", form);
+  return data.item;
+}
+
 export async function getOperationsWebAuthnStatus() {
   const { data } = await api.get("/admin/operations/webauthn/status");
   return data;

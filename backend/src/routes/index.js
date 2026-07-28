@@ -76,6 +76,7 @@ import {
 import { createClaimRequest, decideClaim, getOperationsClaimDetail, listClaims, listMyClaims, listOperationsClaims } from "../controllers/claims.controller.js";
 import { getOperationsModerationQueue, getOperationsSettingsOverview, listOperationsAccessGrants, setOperationsAccessGrant } from "../controllers/operations.controller.js";
 import { getOperationsConfirmationOptions, getOperationsRegistrationOptions, getOperationsWebAuthnStatus, verifyOperationsConfirmation, verifyOperationsRegistration } from "../controllers/operationsWebauthn.controller.js";
+import { createStrategicPartner, listPublicStrategicPartners, listStrategicPartners, updateStrategicPartner } from "../controllers/strategicPartners.controller.js";
 import { uploadImage } from "../controllers/uploads.controller.js";
 import { imageUpload } from "../middlewares/upload.js";
 import { createRateLimiter } from "../middlewares/rateLimit.js";
@@ -142,6 +143,7 @@ const canUploadAdCreativeToR2 = [
 ];
 const canManageAdReviews = [...canManageAds, requireFeatureFlag("ADS_REVIEW_WORKFLOW_ENABLED")];
 const canManageAcquisition = [requireAuth, requireRole(["admin"])];
+const canManageStrategicPartners = [requireAuth, requireOperationScope("partners")];
 const canUploadImages = [requireAuth, requireRole(["admin", "producer", "venue_manager"])];
 const canManageVenueMenus = [requireAuth, requireRole(["admin", "producer", "venue_manager"]), requireFeatureFlag("VENUE_MENU_ENABLED")];
 const authLimiter = createRateLimiter({
@@ -257,6 +259,10 @@ router.get("/push/status", getPushStatus);
 router.get("/admin/operations/notifications", requireAuth, requireOperationScope("notifications"), getOperationsNotificationsOverview);
 router.get("/admin/operations/moderation", requireAuth, requireOperationScope("catalog"), getOperationsModerationQueue);
 router.get("/admin/operations/settings", requireAuth, requireOperationScope("settings"), getOperationsSettingsOverview);
+router.get("/admin/operations/partners", ...canManageStrategicPartners, listStrategicPartners);
+router.post("/admin/operations/partners", ...canManageStrategicPartners, createStrategicPartner);
+router.patch("/admin/operations/partners/:id", ...canManageStrategicPartners, updateStrategicPartner);
+router.post("/admin/operations/partners/uploads/logo", ...canManageStrategicPartners, uploadLimiter, imageUpload.single("file"), uploadImage);
 router.get("/admin/operations/access-grants", requireAuth, requireRole(["admin"]), listOperationsAccessGrants);
 router.put("/admin/operations/access-grants", requireAuth, requireRole(["admin"]), setOperationsAccessGrant);
 router.get("/admin/operations/webauthn/status", requireAuth, requireAnyOperationScope, getOperationsWebAuthnStatus);
@@ -364,6 +370,7 @@ router.post("/artist-bookings", requireFeatureFlag("ARTIST_BOOKING_REQUESTS_ENAB
 router.post("/artists/:id/follow", requireAuth, followArtist);
 router.delete("/artists/:id/follow", requireAuth, unfollowArtist);
 router.post("/uploads/image", ...canUploadImages, uploadLimiter, imageUpload.single("file"), uploadImage);
+router.get("/strategic-partners", listPublicStrategicPartners);
 router.post("/ads/uploads/creative", ...canUploadAdCreativeToR2, uploadLimiter, imageUpload.single("file"), uploadAdCreativeAsset);
 router.post("/me/advertiser-uploads/creative", requireAuth, requireFeatureFlag("ADS_R2_CREATIVE_UPLOAD_ENABLED"), uploadLimiter, imageUpload.single("file"), requireAdvertiserCampaignWrite, uploadAdCreativeAsset);
 router.post("/artists", ...canManageCatalog, createArtist);

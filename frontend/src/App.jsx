@@ -48,6 +48,8 @@ const ArtistClaimDirectoryPage = lazy(() => import("./pages/ArtistClaimDirectory
 const ArtistTeamPage = lazy(() => import("./pages/ArtistTeamPage"));
 const UsersAdminPage = lazy(() => import("./pages/UsersAdminPage"));
 const OperationsCenterPage = lazy(() => import("./pages/OperationsCenterPage"));
+const StrategicPartnersPage = lazy(() => import("./pages/StrategicPartnersPage"));
+const PartnerInstitutionalPage = lazy(() => import("./pages/PartnerInstitutionalPage"));
 
 const VISIT_DAY_KEY = "napalma:last-visit-day";
 // A abertura precisa apresentar a marca sem bloquear a entrada no app.
@@ -101,6 +103,7 @@ export default function App() {
   const canAccessOperations = isAdminRole(user?.role) || Boolean(user?.operationScopes?.length);
   const isOnboardingRoute = location.pathname === "/onboarding";
   const isPublicItineraryRoute = location.pathname.startsWith("/roteiro/");
+  const isPublicPartnersRoute = location.pathname === "/parceiros" || location.pathname === "/parcerias/77gira";
   const isExploreRoute = location.pathname === "/explore";
   const isAdsRoute = location.pathname === "/anunciar"
     || location.pathname.startsWith("/workspace/anunciante")
@@ -116,7 +119,7 @@ export default function App() {
     || location.pathname === "/settings/account"
     || location.pathname === "/settings/privacy"
   );
-  const shouldForceOnboarding = !showSplash && !hasSeenOnboarding && !isOnboardingRoute && !isPublicItineraryRoute;
+  const shouldForceOnboarding = !showSplash && !hasSeenOnboarding && !isOnboardingRoute && !isPublicItineraryRoute && !isPublicPartnersRoute;
 
   function getDefaultRoute() {
     if (isProducerRole(user?.role)) return "/workspace/produtor";
@@ -325,11 +328,11 @@ export default function App() {
     return <Navigate to="/onboarding" replace />;
   }
 
-  if (token && (!authReady || sessionStatus === "checking") && !isPublicItineraryRoute) {
+  if (token && (!authReady || sessionStatus === "checking") && !isPublicItineraryRoute && !isPublicPartnersRoute) {
     return <div className="session-validation-screen"><img src="/assets/brand/icon_mono_77Gira.svg" alt="" aria-hidden="true" className="session-validation-spinner"/><strong>Validando sua sessão...</strong></div>;
   }
 
-  if (token && sessionStatus === "degraded" && !allowPublicWhileDegraded && !isPublicItineraryRoute) {
+  if (token && sessionStatus === "degraded" && !allowPublicWhileDegraded && !isPublicItineraryRoute && !isPublicPartnersRoute) {
     return (
       <div className="session-validation-screen session-validation-degraded">
         <strong>Sua conta continua conectada</strong>
@@ -360,6 +363,8 @@ export default function App() {
             <Route path="/radar" element={<RadarPage />} />
             <Route path="/pela-hora" element={<PelaHoraPage />} />
             <Route path="/roteiro/:token" element={<PublicPelaHoraPage />} />
+            <Route path="/parceiros" element={<StrategicPartnersPage />} />
+            <Route path="/parcerias/77gira" element={<PartnerInstitutionalPage />} />
             <Route
               path="/history"
               element={isVenueRole(user?.role) ? <Navigate to="/settings/venues?section=overview" replace /> : <HistoryPage />}
@@ -433,7 +438,7 @@ export default function App() {
           </Routes>
         </Suspense>
       </main>
-      {!isOnboardingRoute && !isOperationsRoute && !isPublicItineraryRoute ? <BottomNav /> : null}
+      {!isOnboardingRoute && !isOperationsRoute && !isPublicItineraryRoute && !isPublicPartnersRoute ? <BottomNav /> : null}
     </div>
   );
 }

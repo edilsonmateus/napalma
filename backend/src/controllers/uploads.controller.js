@@ -18,6 +18,7 @@ const FOLDER_WHITELIST = new Set([
   "covers",
   "profiles",
   "banners",
+  "partners",
   "general"
 ]);
 

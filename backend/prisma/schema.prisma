@@ -29,9 +29,26 @@ enum OperationScope {
   privacy
   claims
   catalog
+  partners
   notifications
   audit
   settings
+}
+
+enum StrategicPartnerType {
+  operation
+  project
+  activation
+  institutional
+  other
+}
+
+enum StrategicPartnerStatus {
+  prospect
+  negotiating
+  active
+  paused
+  closed
 }
 
 enum AdCampaignStatus {
@@ -391,6 +408,38 @@ model AuditLog {
   @@index([actorUserId, createdAt])
   @@index([subjectType, subjectId, createdAt])
   @@index([action, createdAt])
+}
+
+// Commercial details are intentionally stored apart from public catalogue
+// concerns. Only an active, public and currently valid partner is exposed by
+// the public endpoint.
+model StrategicPartner {
+  id                      String                 @id @default(uuid())
+  name                    String
+  logoUrl                 String?
+  publicDescription       String?                @db.VarChar(600)
+  internalNotes           String?                @db.Text
+  contactName             String?
+  contactEmail            String?
+  contactPhone            String?
+  partnershipType         StrategicPartnerType   @default(other)
+  counterpartAgreements   String?                @db.Text
+  status                  StrategicPartnerStatus @default(prospect)
+  startsAt                DateTime?
+  endsAt                  DateTime?
+  isPermanent             Boolean                @default(false)
+  publicVisible           Boolean                @default(false)
+  displayOrder            Int                    @default(0)
+  initiativeName          String?
+  destinationUrl          String?
+  activationStartsAt      DateTime?
+  activationEndsAt        DateTime?
+  canAppearAsSupporter    Boolean                @default(false)
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+
+  @@index([status, publicVisible, displayOrder])
+  @@index([endsAt])
 }
 
 model Region {
