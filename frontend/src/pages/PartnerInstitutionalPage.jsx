@@ -2,21 +2,9 @@ import { ArrowRight, Building2, Handshake, Mail, MapPinned, ShieldCheck, Sparkle
 import { Link } from "react-router-dom";
 
 const possibilities = [
-  {
-    icon: MapPinned,
-    title: "Operação e mobilidade",
-    text: "Rotas, mapas e pontos de apoio que tornam a chegada ao samba mais simples e segura.",
-  },
-  {
-    icon: Sparkles,
-    title: "Projetos e ativações",
-    text: "Experiências culturais, conteúdo contextual e benefícios que respeitam o momento de quem está na cena.",
-  },
-  {
-    icon: Building2,
-    title: "Iniciativas institucionais",
-    text: "Ações de cidade, cultura e comunidade com presença útil — não uma interrupção genérica.",
-  },
+  { icon: MapPinned, title: "Roteiros e informação", text: "Roteiros de samba por bairro, dia e estilo; mapas, rotas e informações de como chegar aos eventos." },
+  { icon: Sparkles, title: "Conteúdo e experiências", text: "Conteúdos sobre casas, artistas, produtores e territórios, além de benefícios e experiências para o público." },
+  { icon: Building2, title: "Projetos e ativações", text: "Projetos culturais e ativações presenciais ligados à cena do samba." },
 ];
 
 export default function PartnerInstitutionalPage() {
@@ -24,18 +12,15 @@ export default function PartnerInstitutionalPage() {
     <article className="partner-institutional-shell">
       <header className="partner-institutional-hero">
         <span className="partner-institutional-eyebrow"><Handshake size={16} />77GIRA · PARCERIAS</span>
-        <h1>Parcerias que ajudam a cena a girar.</h1>
-        <p>O 77Gira conecta pessoas, casas, artistas e iniciativas que respeitam o samba e a vida cultural das cidades.</p>
+        <h1>Parcerias com o 77 Gira</h1>
+        <p className="partner-institutional-lead">Sua marca pode ajudar mais pessoas a encontrarem o samba da cidade.</p>
+        <p>O 77 Gira é uma plataforma que reúne eventos de samba em São Paulo. Ajudamos o público a descobrir onde ir, encontrar informações confiáveis e chegar aos eventos; e ajudamos casas, produtores e artistas a terem sua programação mais visível.</p>
+        <p>Uma parceria com o 77 Gira financia e fortalece essa experiência.</p>
       </header>
 
-      <section className="partner-institutional-intro" aria-labelledby="partner-context-title">
-        <h2 id="partner-context-title">A cena já existe. O nosso papel é aproximar.</h2>
-        <p>O 77Gira organiza a descoberta de eventos de samba a partir de quem faz a cidade girar: público, casas, artistas e produtores. Parcerias entram para ampliar acesso, informação e experiência — sempre com contexto.</p>
-      </section>
-
       <section className="partner-institutional-section" aria-labelledby="partner-possibilities-title">
-        <span className="partner-institutional-section-label">POSSIBILIDADES DE PARCERIA</span>
-        <h2 id="partner-possibilities-title">Onde uma parceria pode gerar valor.</h2>
+        <span className="partner-institutional-section-label">POSSIBILIDADES</span>
+        <h2 id="partner-possibilities-title">O que uma parceria pode viabilizar</h2>
         <div className="partner-institutional-grid">
           {possibilities.map(({ icon: Icon, title, text }) => <div className="partner-institutional-card" key={title}>
             <Icon size={19} aria-hidden="true" />
@@ -45,31 +30,39 @@ export default function PartnerInstitutionalPage() {
         </div>
       </section>
 
-      <section className="partner-institutional-section partner-institutional-deliveries" aria-labelledby="partner-deliveries-title">
-        <span className="partner-institutional-section-label">ENTREGAS POSSÍVEIS</span>
-        <h2 id="partner-deliveries-title">Presença útil, desenhada para cada contexto.</h2>
-        <ul>
-          <li>Roteiros e mapas para descobrir, planejar e chegar aos eventos.</li>
-          <li>Conteúdo e ativações ligadas a casas, artistas, territórios e datas reais.</li>
-          <li>Benefícios e experiências que façam sentido para a comunidade.</li>
-          <li>Apoio identificado de marca, sem alterar a curadoria ou a ordem da agenda.</li>
+      <section className="partner-institutional-section partner-institutional-deliveries" aria-labelledby="partner-brand-title">
+        <span className="partner-institutional-section-label">PRESENÇA DE MARCA</span>
+        <h2 id="partner-brand-title">Como a marca aparece</h2>
+        <p>A marca pode estar presente em roteiros, mapas, conteúdos ou experiências que ela ajuda a tornar possíveis.</p>
+        <p>Essa presença é sempre identificada com clareza, por exemplo: “Roteiro apoiado por [Marca]”. A marca não interfere na escolha dos eventos nem na ordem da agenda.</p>
+      </section>
+
+      <section className="partner-institutional-section" aria-labelledby="partner-return-title">
+        <span className="partner-institutional-section-label">RETORNO DA PARCERIA</span>
+        <h2 id="partner-return-title">O que o 77 Gira oferece à marca</h2>
+        <ul className="partner-institutional-list">
+          <li>Associação com a cultura do samba e a vida urbana da cidade.</li>
+          <li>Presença em uma plataforma que conecta público, casas e produtores.</li>
+          <li>Formatos de parceria adaptados ao objetivo da marca.</li>
+          <li>Possibilidade de acompanhar alcance de conteúdos, acessos a roteiros e participação em ativações.</li>
         </ul>
       </section>
 
       <section className="partner-institutional-principles" aria-labelledby="partner-principles-title">
         <ShieldCheck size={20} aria-hidden="true" />
         <div>
-          <span className="partner-institutional-section-label">PRINCÍPIOS NÃO NEGOCIÁVEIS</span>
-          <h2 id="partner-principles-title">Parceria fortalece a experiência; não compra a curadoria.</h2>
-          <p>A agenda e a descoberta de eventos permanecem independentes. O 77Gira não promove publicidade de apostas ou bets e seleciona parceiros por transparência, respeito à comunidade e contribuição real para a cultura.</p>
+          <span className="partner-institutional-section-label">NOSSOS PRINCÍPIOS</span>
+          <h2 id="partner-principles-title">A curadoria é independente.</h2>
+          <p>O 77 Gira não aceita publicidade de apostas ou bets.</p>
+          <p>Escolhemos parceiros que contribuam de forma real para a cultura, o acesso, a mobilidade, o bem-estar e o respeito à comunidade.</p>
         </div>
       </section>
 
       <section className="partner-institutional-contact" aria-labelledby="partner-contact-title">
         <div>
           <span className="partner-institutional-section-label">VAMOS CONVERSAR</span>
-          <h2 id="partner-contact-title">Uma conversa institucional começa sem burocracia.</h2>
-          <p>Você não precisa criar uma conta para apresentar uma proposta. Se houver aderência, a equipe 77Gira orientará os próximos passos e a formalização necessária.</p>
+          <h2 id="partner-contact-title">Vamos conversar</h2>
+          <p>Se sua marca quer apoiar a descoberta do samba e construir uma presença útil na cidade, fale com o 77 Gira.</p>
         </div>
         <div className="partner-institutional-actions">
           <a className="partner-institutional-primary" href="mailto:77giramundo@gmail.com?subject=Proposta%20de%20parceria%20-%2077Gira">Enviar proposta por e-mail <Mail size={16} /></a>

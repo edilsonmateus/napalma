@@ -437,6 +437,8 @@ a.strategic-partner-card:hover { border-color: #b8c7da; background: #fff; }
 .partner-institutional-hero { max-width: 680px; }
 .partner-institutional-shell h1 { max-width: 650px; margin: 16px 0 14px; font-size: clamp(34px, 6vw, 58px); line-height: 1.04; letter-spacing: -.045em; }
 .partner-institutional-hero > p, .partner-institutional-intro p, .partner-institutional-card p, .partner-institutional-principles p, .partner-institutional-contact p { margin: 0; color: #617087; line-height: 1.65; }
+.partner-institutional-hero > p + p { margin-top: 14px; }
+.partner-institutional-hero .partner-institutional-lead { margin-bottom: 24px; color: #334155; font-size: clamp(18px, 2.5vw, 21px); line-height: 1.45; }
 .partner-institutional-intro { max-width: 760px; margin-top: clamp(36px, 6vw, 58px); padding: 22px 0 0; border-top: 1px solid #e5eaf1; }
 .partner-institutional-intro h2, .partner-institutional-section h2, .partner-institutional-principles h2, .partner-institutional-contact h2 { margin: 0 0 10px; font-size: clamp(21px, 3vw, 28px); line-height: 1.18; letter-spacing: -.025em; }
 .partner-institutional-section { margin-top: clamp(38px, 6vw, 58px); }
@@ -447,9 +449,14 @@ a.strategic-partner-card:hover { border-color: #b8c7da; background: #fff; }
 .partner-institutional-card h3 { margin: 20px 0 8px; font-size: 16px; }
 .partner-institutional-card p { font-size: 14px; }
 .partner-institutional-deliveries { padding: 26px; border: 1px solid #dce3ec; border-radius: 10px; background: #fbfcfe; }
+.partner-institutional-deliveries > p { max-width: 720px; margin: 0; color: #526178; font-size: 14px; line-height: 1.65; }
+.partner-institutional-deliveries > p + p { margin-top: 12px; }
 .partner-institutional-deliveries ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 28px; padding: 0; margin: 20px 0 0; list-style: none; }
 .partner-institutional-deliveries li { position: relative; padding-left: 18px; color: #526178; font-size: 14px; line-height: 1.55; }
 .partner-institutional-deliveries li::before { content: ""; position: absolute; top: .57em; left: 0; width: 6px; height: 6px; border-radius: 50%; background: #2563eb; }
+.partner-institutional-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 28px; padding: 0; margin: 20px 0 0; list-style: none; }
+.partner-institutional-list li { position: relative; padding-left: 18px; color: #526178; font-size: 14px; line-height: 1.55; }
+.partner-institutional-list li::before { content: ""; position: absolute; top: .57em; left: 0; width: 6px; height: 6px; border-radius: 50%; background: #2563eb; }
 .partner-institutional-principles { display: flex; gap: 14px; margin-top: clamp(38px, 6vw, 58px); padding: 22px; border-left: 3px solid #f59e0b; background: #fff8eb; }
 .partner-institutional-principles > svg { flex: 0 0 auto; color: #b7791f; }
 .partner-institutional-principles .partner-institutional-section-label { color: #9a5a12; }
@@ -458,7 +465,7 @@ a.strategic-partner-card:hover { border-color: #b8c7da; background: #fff; }
 .partner-institutional-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
 .partner-institutional-primary, .partner-institutional-secondary { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 16px; border-radius: 7px; text-decoration: none; font-size: 14px; font-weight: 700; }
 .partner-institutional-primary { background: #2563eb; color: #fff; }.partner-institutional-secondary { border: 1px solid #cbd5e1; color: #334155; }
-@media (max-width: 680px) { .partner-institutional-shell { padding: 28px 22px; } .partner-institutional-grid, .partner-institutional-deliveries ul { grid-template-columns: 1fr; } .partner-institutional-card { min-height: 0; } .partner-institutional-contact { display: block; } .partner-institutional-actions { margin: 22px 0 0; } }
+@media (max-width: 680px) { .partner-institutional-shell { padding: 28px 22px; } .partner-institutional-grid, .partner-institutional-deliveries ul, .partner-institutional-list { grid-template-columns: 1fr; } .partner-institutional-card { min-height: 0; } .partner-institutional-contact { display: block; } .partner-institutional-actions { margin: 22px 0 0; } }
 
 @media (max-width: 680px) {
   .operations-kpis-compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
