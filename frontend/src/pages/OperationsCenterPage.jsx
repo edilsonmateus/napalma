@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Bell, Building2, ChevronRight, ClipboardList, FileClock, Gavel, Handshake, Landmark, LoaderCircle, MapPinned, Megaphone, RefreshCw, Search, ShieldCheck, SlidersHorizontal, TrendingUp, UserCheck, UsersRound } from "lucide-react";
+import { ArrowLeft, Bell, Building2, ChevronRight, ClipboardList, FileClock, Gavel, Handshake, Landmark, LoaderCircle, Mail, MapPinned, Megaphone, RefreshCw, Search, ShieldCheck, SlidersHorizontal, TrendingUp, UserCheck, UsersRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { actOnOperationsPrivacyRequest, getOperationsPrivacyRequestDetail, listAuditLogs, listOperationsPrivacyRequests } from "../services/privacy.service";
@@ -8,6 +8,7 @@ import { getAdReviewQueue } from "../services/adReviews.service";
 import { getAdvertiserAccounts } from "../services/advertiserAccounts.service";
 import { confirmOperationsWebAuthn, createOperationsStrategicPartner, enrollOperationsWebAuthn, getOperationsModerationQueue, getOperationsNotificationsOverview, getOperationsSettingsOverview, getOperationsWebAuthnStatus, listOperationsAccessGrants, listOperationsStrategicPartners, setOperationsAccessGrant, updateOperationsStrategicPartner, uploadOperationsStrategicPartnerLogo } from "../services/operations.service";
 import OperationsPartnersPanel from "../components/operations/OperationsPartnersPanel";
+import OperationsCommunicationsPanel from "../components/operations/OperationsCommunicationsPanel";
 import { useAuthStore } from "../store/authStore";
 import { isAdminRole } from "../utils/roles";
 
@@ -68,7 +69,8 @@ const modules = [
   { key: "moderation", label: "Qualidade e moderação", icon: Gavel, pending: true },
   { key: "notifications", label: "Notificações", icon: Bell, pending: true },
   { key: "audit", label: "Auditoria", icon: FileClock, pending: true },
-  { key: "settings", label: "Configurações internas", icon: SlidersHorizontal, pending: true }
+  { key: "settings", label: "Configurações internas", icon: SlidersHorizontal, pending: true },
+  { key: "communications", label: "Comunicações", icon: Mail },
 ];
 
 const SCOPE_BY_SECTION = {
@@ -76,6 +78,7 @@ const SCOPE_BY_SECTION = {
   claims: "claims",
   venues: "catalog",
   partners: "partners",
+  communications: "communications",
   moderation: "catalog",
   notifications: "notifications",
   audit: "audit",
@@ -238,6 +241,8 @@ function OperationsSettingsPanel({ data, loading, error, onRefresh, isAdmin, gra
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const scopes = { privacy: "Privacidade e solicitações", claims: "Reivindicações", catalog: "Casas e qualidade", partners: "Parceiros estratégicos", notifications: "Notificações", audit: "Auditoria", settings: "Configurações internas" };
+
+  scopes.communications = "Comunicações";
 
   async function submit(event) {
     event.preventDefault();
@@ -768,7 +773,7 @@ export default function OperationsCenterPage() {
           <div className="operations-kpis operations-kpis-compact"><article><span>Novas</span><strong>{summary.received}</strong></article><article><span>Em análise</span><strong>{summary.inReview}</strong></article><article className="is-attention"><span>Vencendo SLA</span><strong>{summary.highRisk}</strong></article><article><span>Concluídas</span><strong>{summary.closed}</strong></article></div>
           <section className="operations-panel operations-queue-panel"><div className="operations-filter-bar"><label><Search size={17}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nome ou protocolo" onKeyDown={(event) => event.key === "Enter" && loadQueue()}/></label><select value={status} onChange={(event) => { setStatus(event.target.value); loadQueue({ status: event.target.value }); }}><option value="all">Todos os status</option><option value="received">Novas</option><option value="in_review">Em análise</option><option value="completed">Concluídas</option><option value="rejected">Recusadas</option><option value="cancelled">Canceladas</option></select><button type="button" className="operations-secondary" onClick={() => loadQueue()}><Search size={15}/> Buscar</button></div>
             <div className="operations-table-wrap"><table className="operations-table"><thead><tr><th>Protocolo</th><th>Solicitante</th><th>Tipo</th><th>Status</th><th>Prazo</th><th>Risco</th><th>Responsável</th><th aria-label="Ações"/></tr></thead><tbody>{loading ? <tr><td colSpan="8" className="operations-table-loading">Carregando solicitações…</td></tr> : items.length ? items.map((item) => <tr key={item.id}><td><button type="button" className="operations-protocol" onClick={() => openDetail(item.id)}>{item.protocol}</button></td><td>{item.requesterName}</td><td>{TYPE_LABELS[item.type]}</td><td><StatusTag status={item.status}/></td><td>{dueLabel(item.dueAt)}</td><td><RiskTag risk={item.risk}/></td><td>{item.responsible || "Sem responsável"}</td><td><button type="button" className="operations-open" onClick={() => openDetail(item.id)}>Abrir</button></td></tr>) : <tr><td colSpan="8" className="operations-table-loading">Nenhuma solicitação corresponde aos filtros.</td></tr>}</tbody></table></div></section>
-        </> : section === "claims" ? <ClaimsOperationsPanel items={claimItems} loading={claimsLoading} error={claimError} onRefresh={loadClaims} onOpen={openClaimDetail}/> : section === "venues" ? <OperationsVenuesPanel items={venueItems} loading={venuesLoading} error={venuesError} onRefresh={loadOperationsVenues}/> : section === "acquisition" ? <OperationsAcquisitionPanel analytics={acquisitionData.analytics} leads={acquisitionData.leads} loading={acquisitionLoading} error={acquisitionError} filters={acquisitionFilters} onFiltersChange={changeAcquisitionFilters} onRefresh={() => loadOperationsAcquisition()} onOpen={openAcquisitionDetail}/> : section === "partners" ? <OperationsPartnersPanel items={partnerItems} loading={partnersLoading} error={partnersError} onRefresh={loadOperationsPartners} onSave={saveOperationsPartner} onUploadLogo={uploadOperationsStrategicPartnerLogo}/> : section === "territories" ? <OperationsTerritoriesPanel items={territoryItems} loading={territoriesLoading} error={territoriesError} onRefresh={loadOperationsTerritories}/> : section === "audit" ? <OperationsAuditPanel items={auditItems} loading={auditLoading} error={auditError} onRefresh={loadOperationsAudit}/> : section === "notifications" ? <OperationsNotificationsPanel data={notificationsData} loading={notificationsLoading} error={notificationsError} onRefresh={loadOperationsNotifications}/> : section === "moderation" ? <OperationsModerationPanel items={moderationItems} loading={moderationLoading} error={moderationError} onRefresh={loadOperationsModeration}/> : section === "settings" ? <OperationsSettingsPanel data={settingsData} loading={settingsLoading} error={settingsError} onRefresh={loadOperationsSettings} isAdmin={isAdmin} grants={accessGrants} grantsLoading={accessGrantsLoading} grantsError={accessGrantsError} onRefreshGrants={loadOperationsAccessGrants} onSetGrant={changeOperationsAccessGrant}/> : <OperationsAdsPanel data={adsData} loading={adsLoading} error={adsError} onRefresh={loadOperationsAds}/>}
+        </> : section === "claims" ? <ClaimsOperationsPanel items={claimItems} loading={claimsLoading} error={claimError} onRefresh={loadClaims} onOpen={openClaimDetail}/> : section === "venues" ? <OperationsVenuesPanel items={venueItems} loading={venuesLoading} error={venuesError} onRefresh={loadOperationsVenues}/> : section === "acquisition" ? <OperationsAcquisitionPanel analytics={acquisitionData.analytics} leads={acquisitionData.leads} loading={acquisitionLoading} error={acquisitionError} filters={acquisitionFilters} onFiltersChange={changeAcquisitionFilters} onRefresh={() => loadOperationsAcquisition()} onOpen={openAcquisitionDetail}/> : section === "partners" ? <OperationsPartnersPanel items={partnerItems} loading={partnersLoading} error={partnersError} onRefresh={loadOperationsPartners} onSave={saveOperationsPartner} onUploadLogo={uploadOperationsStrategicPartnerLogo}/> : section === "territories" ? <OperationsTerritoriesPanel items={territoryItems} loading={territoriesLoading} error={territoriesError} onRefresh={loadOperationsTerritories}/> : section === "audit" ? <OperationsAuditPanel items={auditItems} loading={auditLoading} error={auditError} onRefresh={loadOperationsAudit}/> : section === "notifications" ? <OperationsNotificationsPanel data={notificationsData} loading={notificationsLoading} error={notificationsError} onRefresh={loadOperationsNotifications}/> : section === "moderation" ? <OperationsModerationPanel items={moderationItems} loading={moderationLoading} error={moderationError} onRefresh={loadOperationsModeration}/> : section === "settings" ? <OperationsSettingsPanel data={settingsData} loading={settingsLoading} error={settingsError} onRefresh={loadOperationsSettings} isAdmin={isAdmin} grants={accessGrants} grantsLoading={accessGrantsLoading} grantsError={accessGrantsError} onRefreshGrants={loadOperationsAccessGrants} onSetGrant={changeOperationsAccessGrant}/> : section === "communications" ? <OperationsCommunicationsPanel/> : <OperationsAdsPanel data={adsData} loading={adsLoading} error={adsError} onRefresh={loadOperationsAds}/>}
       </main>
     </div>
 

@@ -47,39 +47,61 @@ function passwordResetMessage({ firstName, resetUrl, expiresInMinutes }) {
   return { subject, textContent, htmlContent };
 }
 
-export async function sendPasswordResetEmail({ email, firstName, resetUrl, expiresInMinutes }) {
+function institutionalMessage({ recipientName, subject, contentHtml, contentText, partnerLogos = [] }) {
+  const safeName = escapeHtml(recipientName || "");
+  const safeSubject = escapeHtml(subject);
+  const partnerRail = partnerLogos
+    .filter((item) => /^https?:\/\//i.test(String(item?.logoUrl || "")))
+    .map((item) => `<img src="${escapeHtml(item.logoUrl)}" alt="${escapeHtml(item.name)}" style="max-height:28px;max-width:92px;object-fit:contain;margin:0 8px 8px 0;vertical-align:middle"/>`)
+    .join("");
+  const greeting = safeName ? `<p style="font-size:15px;line-height:1.6;margin:0 0 18px">Olá, ${safeName}.</p>` : "";
+  const rail = partnerRail ? `<div style="border-top:1px solid #e5e7eb;margin-top:28px;padding-top:18px"><p style="font-size:11px;color:#667085;margin:0 0 10px">Parceiros que apoiam iniciativas institucionais do 77Gira</p>${partnerRail}</div>` : "";
+  return {
+    subject,
+    textContent: [recipientName ? `Olá, ${recipientName}.` : "", contentText, "", "Equipe 77Gira", "77gira.com.br"].filter(Boolean).join("\n"),
+    htmlContent: `<!doctype html><html lang="pt-BR"><body style="margin:0;background:#f5f6f8;color:#172033;font-family:Arial,sans-serif"><div style="max-width:620px;margin:0 auto;padding:32px 18px"><div style="background:#fff;border:1px solid #dfe3ea;border-radius:12px;padding:30px"><div style="font-size:21px;font-weight:700;color:#ff7a00;margin-bottom:24px">77Gira</div><h1 style="font-size:22px;line-height:1.25;margin:0 0 16px">${safeSubject}</h1>${greeting}<div style="font-size:15px;line-height:1.65">${contentHtml}</div>${rail}<div style="border-top:1px solid #e5e7eb;margin-top:28px;padding-top:18px;font-size:13px;line-height:1.55;color:#667085">Equipe 77Gira<br/>77gira.com.br</div></div></div></body></html>`
+  };
+}
+
+async function sendWithBrevo({ email, recipientName, message, tags, replyTo }) {
   if (!env.brevoApiKey || !env.emailFromAddress) {
     throw new Error("transactional_email_not_configured");
   }
-
-  const message = passwordResetMessage({ firstName, resetUrl, expiresInMinutes });
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), EMAIL_TIMEOUT_MS);
-
   try {
     const response = await fetch(BREVO_SEND_URL, {
       method: "POST",
       signal: controller.signal,
-      headers: {
-        accept: "application/json",
-        "api-key": env.brevoApiKey,
-        "content-type": "application/json"
-      },
+      headers: { accept: "application/json", "api-key": env.brevoApiKey, "content-type": "application/json" },
       body: JSON.stringify({
         sender: { name: env.emailFromName, email: env.emailFromAddress },
-        to: [{ email, name: firstName || undefined }],
-        replyTo: env.emailReplyTo ? { email: env.emailReplyTo } : undefined,
+        to: [{ email, name: recipientName || undefined }],
+        replyTo: replyTo ? { email: replyTo } : undefined,
         subject: message.subject,
         textContent: message.textContent,
         htmlContent: message.htmlContent,
-        tags: ["password-reset"]
+        tags
       })
     });
-
-    if (!response.ok) {
-      throw new Error(`transactional_email_provider_${response.status}`);
-    }
+    if (!response.ok) throw new Error(`transactional_email_provider_${response.status}`);
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function sendPasswordResetEmail({ email, firstName, resetUrl, expiresInMinutes }) {
+  const message = passwordResetMessage({ firstName, resetUrl, expiresInMinutes });
+  return sendWithBrevo({ email, recipientName: firstName, message, tags: ["password-reset"] });
+}
+
+export async function sendInstitutionalEmail({ email, recipientName, subject, contentHtml, contentText, partnerLogos }) {
+  const message = institutionalMessage({ recipientName, subject, contentHtml, contentText, partnerLogos });
+  return sendWithBrevo({
+    email,
+    recipientName,
+    message,
+    tags: ["operations-communication", "institutional"],
+    replyTo: env.emailReplyTo || "77giramundo@gmail.com"
+  });
 }

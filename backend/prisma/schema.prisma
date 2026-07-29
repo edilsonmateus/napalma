@@ -33,6 +33,19 @@ enum OperationScope {
   notifications
   audit
   settings
+  communications
+}
+
+enum OperationCommunicationRecipientType {
+  venue_producer
+  partner_brand
+  user
+}
+
+enum OperationCommunicationStatus {
+  draft
+  sent
+  failed
 }
 
 enum StrategicPartnerType {
@@ -306,6 +319,7 @@ model User {
   operationAccessGrantsIssued  OperationAccessGrant[]        @relation("OperationAccessGrantIssuer")
   operationWebAuthnCredentials OperationWebAuthnCredential[]
   operationWebAuthnChallenges  OperationWebAuthnChallenge[]
+  operationCommunicationMessages OperationCommunicationMessage[] @relation("OperationCommunicationAuthor")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -440,6 +454,33 @@ model StrategicPartner {
 
   @@index([status, publicVisible, displayOrder])
   @@index([endsAt])
+}
+
+// Individual institutional messages are stored as a protected operational
+// record. Recipient data is kept as a snapshot so the communication history
+// remains useful even when a public profile later changes or is removed.
+model OperationCommunicationMessage {
+  id                    String                              @id @default(uuid())
+  recipientName         String?
+  recipientEmail        String?
+  recipientType         OperationCommunicationRecipientType?
+  recipientReferenceId  String?
+  subject               String                              @default("") @db.VarChar(220)
+  contentHtml           String                              @default("") @db.Text
+  contentText           String                              @default("") @db.Text
+  templateKey           String?                             @db.VarChar(80)
+  includePartnerRail    Boolean                             @default(false)
+  status                OperationCommunicationStatus       @default(draft)
+  failureReason         String?                             @db.VarChar(500)
+  sentAt                DateTime?
+  authorUserId          String
+  author                User                                @relation("OperationCommunicationAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+  createdAt             DateTime                            @default(now())
+  updatedAt             DateTime                            @updatedAt
+
+  @@index([status, updatedAt])
+  @@index([recipientEmail, createdAt])
+  @@index([authorUserId, updatedAt])
 }
 
 model Region {

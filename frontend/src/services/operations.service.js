@@ -49,6 +49,36 @@ export async function uploadOperationsStrategicPartnerLogo(file, name) {
   return data.item;
 }
 
+export async function listOperationsCommunicationMessages(params = {}) {
+  const { data } = await api.get("/admin/operations/communications/messages", { params });
+  return data;
+}
+
+export async function listOperationsCommunicationRecipients(params = {}) {
+  const { data } = await api.get("/admin/operations/communications/recipients", { params });
+  return data;
+}
+
+export async function listOperationsCommunicationTemplates() {
+  const { data } = await api.get("/admin/operations/communications/templates");
+  return data;
+}
+
+export async function createOperationsCommunicationMessage(payload) {
+  const { data } = await api.post("/admin/operations/communications/messages", payload);
+  return data;
+}
+
+export async function updateOperationsCommunicationMessage(id, payload) {
+  const { data } = await api.patch(`/admin/operations/communications/messages/${id}`, payload);
+  return data;
+}
+
+export async function sendOperationsCommunicationMessage(id) {
+  const { data } = await api.post(`/admin/operations/communications/messages/${id}/send`);
+  return data;
+}
+
 export async function getOperationsWebAuthnStatus() {
   const { data } = await api.get("/admin/operations/webauthn/status");
   return data;

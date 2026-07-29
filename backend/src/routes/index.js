@@ -77,6 +77,7 @@ import { createClaimRequest, decideClaim, getOperationsClaimDetail, listClaims, 
 import { getOperationsModerationQueue, getOperationsSettingsOverview, listOperationsAccessGrants, setOperationsAccessGrant } from "../controllers/operations.controller.js";
 import { getOperationsConfirmationOptions, getOperationsRegistrationOptions, getOperationsWebAuthnStatus, verifyOperationsConfirmation, verifyOperationsRegistration } from "../controllers/operationsWebauthn.controller.js";
 import { createStrategicPartner, listPublicStrategicPartners, listStrategicPartners, updateStrategicPartner } from "../controllers/strategicPartners.controller.js";
+import { createOperationsCommunicationMessage, listOperationsCommunicationMessages, listOperationsCommunicationRecipients, listOperationsCommunicationTemplates, sendOperationsCommunicationMessage, updateOperationsCommunicationMessage } from "../controllers/operationsCommunications.controller.js";
 import { uploadImage } from "../controllers/uploads.controller.js";
 import { imageUpload } from "../middlewares/upload.js";
 import { createRateLimiter } from "../middlewares/rateLimit.js";
@@ -144,6 +145,7 @@ const canUploadAdCreativeToR2 = [
 const canManageAdReviews = [...canManageAds, requireFeatureFlag("ADS_REVIEW_WORKFLOW_ENABLED")];
 const canManageAcquisition = [requireAuth, requireRole(["admin"])];
 const canManageStrategicPartners = [requireAuth, requireOperationScope("partners")];
+const canManageOperationsCommunications = [requireAuth, requireOperationScope("communications")];
 const canUploadImages = [requireAuth, requireRole(["admin", "producer", "venue_manager"])];
 const canManageVenueMenus = [requireAuth, requireRole(["admin", "producer", "venue_manager"]), requireFeatureFlag("VENUE_MENU_ENABLED")];
 const authLimiter = createRateLimiter({
@@ -169,6 +171,12 @@ const adsTrackLimiter = createRateLimiter({
   windowMs: 60_000,
   max: 60,
   message: "Muitas interacoes de anuncio no momento. Aguarde alguns segundos."
+});
+const operationsCommunicationsLimiter = createRateLimiter({
+  keyPrefix: "operations-communications",
+  windowMs: 60_000,
+  max: 20,
+  message: "Muitas ações de comunicação em pouco tempo. Aguarde um instante."
 });
 const passwordRecoveryLimiter = createRateLimiter({
   keyPrefix: "password-recovery",
@@ -263,6 +271,12 @@ router.get("/admin/operations/partners", ...canManageStrategicPartners, listStra
 router.post("/admin/operations/partners", ...canManageStrategicPartners, createStrategicPartner);
 router.patch("/admin/operations/partners/:id", ...canManageStrategicPartners, updateStrategicPartner);
 router.post("/admin/operations/partners/uploads/logo", ...canManageStrategicPartners, uploadLimiter, imageUpload.single("file"), uploadImage);
+router.get("/admin/operations/communications/messages", ...canManageOperationsCommunications, listOperationsCommunicationMessages);
+router.get("/admin/operations/communications/recipients", ...canManageOperationsCommunications, listOperationsCommunicationRecipients);
+router.get("/admin/operations/communications/templates", ...canManageOperationsCommunications, listOperationsCommunicationTemplates);
+router.post("/admin/operations/communications/messages", ...canManageOperationsCommunications, operationsCommunicationsLimiter, createOperationsCommunicationMessage);
+router.patch("/admin/operations/communications/messages/:id", ...canManageOperationsCommunications, operationsCommunicationsLimiter, updateOperationsCommunicationMessage);
+router.post("/admin/operations/communications/messages/:id/send", ...canManageOperationsCommunications, operationsCommunicationsLimiter, sendOperationsCommunicationMessage);
 router.get("/admin/operations/access-grants", requireAuth, requireRole(["admin"]), listOperationsAccessGrants);
 router.put("/admin/operations/access-grants", requireAuth, requireRole(["admin"]), setOperationsAccessGrant);
 router.get("/admin/operations/webauthn/status", requireAuth, requireAnyOperationScope, getOperationsWebAuthnStatus);
