@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireRole } from "../middlewares/rbac.js";
 import { requireAnyOperationScope, requireOperationScope } from "../middlewares/operationsAccess.js";
 import { requireAuth } from "../middlewares/auth.js";
-import { createEvent, deleteEvent, getEventById, listEvents, updateEvent } from "../controllers/events.controller.js";
+import { createEvent, deleteEvent, getEventById, getOperationsAgendaExport, listEvents, updateEvent } from "../controllers/events.controller.js";
 import { request77FirstKit } from "../controllers/first77.controller.js";
 import { createRegion, deleteRegion, listRegions, listRegionsAdmin, updateRegion } from "../controllers/regions.controller.js";
 import {
@@ -342,6 +342,7 @@ router.get("/users/venue-managers", ...canManageHouseOps, listProducerUsers);
 router.post("/users/venue-managers", ...canManageHouseOps, createProducerUser);
 
 router.get("/events", listEvents);
+router.get("/admin/operations/agenda-export", requireAuth, requireOperationScope("catalog"), getOperationsAgendaExport);
 router.get("/events/:id", getEventById);
 router.post("/events", ...canManageEvents, createEvent);
 router.patch("/events/:id", ...canManageEvents, updateEvent);

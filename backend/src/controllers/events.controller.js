@@ -12,6 +12,10 @@ const querySchema = z.object({
     .transform((value) => value === true || value === "true")
 });
 
+const operationsAgendaQuerySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Informe uma data válida.")
+});
+
 const recurrenceDaySchema = z.enum(["dom", "seg", "ter", "qua", "qui", "sex", "sab"]);
 
 const eventTypeSchema = z.enum([
@@ -93,6 +97,17 @@ function dayKeyFromDate(date) {
 
 function dateKey(date) {
   return date.toISOString().slice(0, 10);
+}
+
+function saoPauloDateKey(date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date(date));
+  const value = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
 }
 
 function parseTimeOrFallback(timeValue, fallbackDate) {
@@ -334,6 +349,49 @@ export async function listEvents(req, res, next) {
       .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
 
     res.json({ items: payload });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getOperationsAgendaExport(req, res, next) {
+  try {
+    const { date } = operationsAgendaQuerySchema.parse(req.query);
+    // Midday avoids changing the selected calendar day when the server runs in UTC.
+    const selectedDay = new Date(`${date}T12:00:00.000Z`);
+    const events = await prisma.event.findMany({
+      where: { status: "confirmed" },
+      include: {
+        venue: true,
+        artists: {
+          include: { artist: true },
+          orderBy: { order: "asc" }
+        }
+      },
+      orderBy: { startDate: "asc" }
+    });
+
+    const items = events
+      .flatMap((event) => {
+        const base = mapEventPayload(event);
+        if (!event.isRecurring) {
+          return saoPauloDateKey(event.startDate) === date ? [{ ...base, startsAt: event.startDate, endsAt: event.endDate }] : [];
+        }
+        return getRecurringOccurrences(event, selectedDay, 0, 0, 20)
+          .filter((occurrence) => saoPauloDateKey(occurrence.startsAt) === date)
+          .map((occurrence) => ({ ...base, startsAt: occurrence.startsAt, endsAt: occurrence.endsAt }));
+      })
+      .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
+      .map((item) => ({
+        id: item.id,
+        startsAt: item.startsAt,
+        venue: item.venue,
+        artist: item.artist || item.title,
+        title: item.title,
+        region: item.region || ""
+      }));
+
+    res.json({ item: { date, items } });
   } catch (error) {
     next(error);
   }

@@ -161,6 +161,11 @@ export async function getOperationsVenues(params = {}) {
   return data.items || [];
 }
 
+export async function getOperationsAgendaExport(date) {
+  const { data } = await api.get("/admin/operations/agenda-export", { params: { date } });
+  return data.item || { date, items: [] };
+}
+
 export async function followArtist(id) {
   await api.post(`/artists/${id}/follow`);
 }

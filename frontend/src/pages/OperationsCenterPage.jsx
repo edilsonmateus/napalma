@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Bell, Building2, ChevronRight, ClipboardList, FileClock, Gavel, Handshake, Landmark, LoaderCircle, Mail, MapPinned, Megaphone, RefreshCw, Search, ShieldCheck, SlidersHorizontal, TrendingUp, UserCheck, UsersRound } from "lucide-react";
+import { ArrowLeft, Bell, Building2, CalendarDays, ChevronRight, ClipboardList, Copy, Download, FileClock, Gavel, Handshake, Landmark, LoaderCircle, Mail, MapPinned, Megaphone, RefreshCw, Search, ShieldCheck, SlidersHorizontal, TrendingUp, UserCheck, UsersRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { actOnOperationsPrivacyRequest, getOperationsPrivacyRequestDetail, listAuditLogs, listOperationsPrivacyRequests } from "../services/privacy.service";
-import { convertAcquisitionLeadToVenue, decideClaim, getAcquisitionAnalytics, getAcquisitionLeads, getAcquisitionLeadTimeline, getAdminRegions, getAdCampaigns, getOperationsClaimDetail, getOperationsClaims, getOperationsVenues } from "../services/events.service";
+import { convertAcquisitionLeadToVenue, decideClaim, getAcquisitionAnalytics, getAcquisitionLeads, getAcquisitionLeadTimeline, getAdminRegions, getAdCampaigns, getOperationsAgendaExport, getOperationsClaimDetail, getOperationsClaims, getOperationsVenues } from "../services/events.service";
 import { getAdReviewQueue } from "../services/adReviews.service";
 import { getAdvertiserAccounts } from "../services/advertiserAccounts.service";
 import { confirmOperationsWebAuthn, createOperationsStrategicPartner, enrollOperationsWebAuthn, getOperationsModerationQueue, getOperationsNotificationsOverview, getOperationsSettingsOverview, getOperationsWebAuthnStatus, listOperationsAccessGrants, listOperationsStrategicPartners, setOperationsAccessGrant, updateOperationsStrategicPartner, uploadOperationsStrategicPartnerLogo } from "../services/operations.service";
@@ -121,6 +121,106 @@ function ClaimsOperationsPanel({ items, loading, error, onRefresh, onOpen }) {
   </>;
 }
 
+function agendaDateToday() {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+  const value = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
+}
+
+function agendaDateLabel(date) {
+  return new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" })
+    .format(new Date(`${date}T12:00:00.000Z`))
+    .replace("-feira", "")
+    .toUpperCase();
+}
+
+function agendaHour(value) {
+  return new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Sao_Paulo" })
+    .format(new Date(value))
+    .replace(":00", "h")
+    .replace(":", "h");
+}
+
+function buildAgendaText({ date, items, opening, closing, style }) {
+  const lines = [agendaDateLabel(date), ""];
+  if (opening.trim()) lines.push(opening.trim(), "");
+  if (items.length) {
+    lines.push(...items.map((item) => style === "compact"
+      ? `${agendaHour(item.startsAt)} — ${item.venue}: ${item.artist}`
+      : `• ${agendaHour(item.startsAt)} — ${item.venue}: ${item.artist}`));
+  } else {
+    lines.push("Ainda não há eventos públicos confirmados nesta data.");
+  }
+  if (closing.trim()) lines.push("", closing.trim());
+  return lines.join("\n");
+}
+
+function OperationsAgendaExportPanel() {
+  const [date, setDate] = useState(agendaDateToday);
+  const [agenda, setAgenda] = useState({ date: agendaDateToday(), items: [] });
+  const [opening, setOpening] = useState("");
+  const [closing, setClosing] = useState("");
+  const [style, setStyle] = useState("caption");
+  const [text, setText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError("");
+    getOperationsAgendaExport(date)
+      .then((result) => {
+        if (!active) return;
+        setAgenda(result);
+        setText(buildAgendaText({ date, items: result.items || [], opening, closing, style }));
+      })
+      .catch((loadError) => active && setError(loadError?.response?.data?.message || "Não foi possível gerar a agenda deste dia."))
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, [date]);
+
+  function refreshText(next = {}) {
+    setText(buildAgendaText({ date, items: agenda.items || [], opening, closing, style, ...next }));
+  }
+
+  async function copyAgenda() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setError("Não foi possível copiar automaticamente. Selecione o texto da prévia para copiar.");
+    }
+  }
+
+  function downloadAgenda() {
+    const file = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(file);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `agenda-77gira-${date}.txt`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return <section className="operations-panel operations-agenda-export">
+    <div className="operations-panel-title"><div><p>EXPORTAR AGENDA</p><h2>Programação pronta para publicar</h2></div><span className="operations-queue-note">Somente eventos públicos confirmados, em ordem de horário.</span></div>
+    <div className="operations-agenda-body">
+      <div className="operations-agenda-controls">
+        <label><span>Data</span><div className="operations-agenda-date"><CalendarDays size={15}/><input type="date" value={date} onChange={(event) => setDate(event.target.value)}/></div></label>
+        <label><span>Formato</span><select value={style} onChange={(event) => { setStyle(event.target.value); refreshText({ style: event.target.value }); }}><option value="caption">Legenda para postagem</option><option value="compact">Lista compacta</option></select></label>
+        <div className="operations-agenda-actions"><button type="button" className="operations-secondary" onClick={copyAgenda} disabled={loading || !text}><Copy size={15}/>{copied ? "Copiado" : "Copiar texto"}</button><button type="button" className="operations-approve" onClick={downloadAgenda} disabled={loading || !text}><Download size={15}/>Baixar .txt</button></div>
+      </div>
+      <div className="operations-agenda-notes"><label><span>Abertura opcional</span><input value={opening} placeholder="Ex.: Hoje tem samba pela cidade." onChange={(event) => { setOpening(event.target.value); refreshText({ opening: event.target.value }); }}/></label><label><span>Fechamento opcional</span><input value={closing} placeholder="Ex.: Salve e compartilhe com a sua roda." onChange={(event) => { setClosing(event.target.value); refreshText({ closing: event.target.value }); }}/></label></div>
+      <label className="operations-agenda-preview"><span>Prévia editável</span><textarea value={text} onChange={(event) => setText(event.target.value)} spellCheck="true" disabled={loading}/></label>
+      <p className="operations-agenda-meta">{loading ? "Lendo programação…" : `${agenda.items?.length || 0} evento(s) público(s) nesta agenda.`}</p>
+      {error ? <p className="operations-inline-error">{error}</p> : null}
+    </div>
+  </section>;
+}
+
 function OperationsVenuesPanel({ items, loading, error, onRefresh }) {
   const attentionCount = items.filter((item) => item.attention).length;
   const menuLabel = (status) => ({ published: "Publicado", draft: "Rascunho", not_configured: "Não configurado" }[status] || status);
@@ -128,6 +228,7 @@ function OperationsVenuesPanel({ items, loading, error, onRefresh }) {
     <header className="operations-heading"><div><p>CASAS E PROGRAMAÇÃO</p><h1>Catálogo acompanhado sem transformar operação em ruído.</h1><span>Esta leitura aponta agenda futura, cardápio e presença visual. Contatos e dados privados permanecem nos ambientes apropriados.</span></div><button type="button" className="operations-secondary" onClick={onRefresh} disabled={loading}><RefreshCw size={16} className={loading ? "is-spinning" : ""}/> Atualizar</button></header>
     <div className="operations-kpis operations-kpis-compact"><article><span>Casas lidas</span><strong>{items.length}</strong></article><article><span>Com próximo evento</span><strong>{items.filter((item) => item.nextEvent).length}</strong></article><article className="is-attention"><span>Pedem atenção</span><strong>{attentionCount}</strong></article><article><span>Cardápios publicados</span><strong>{items.filter((item) => item.menuStatus === "published").length}</strong></article></div>
     <section className="operations-panel operations-queue-panel"><div className="operations-panel-title"><div><p>LEITURA OPERACIONAL</p><h2>Casas e agenda</h2></div><span className="operations-queue-note">Use a gestão de casas para editar informações. Esta tela é somente de triagem.</span></div><div className="operations-table-wrap"><table className="operations-table"><thead><tr><th>Casa</th><th>Local</th><th>Próximo evento</th><th>Cardápio</th><th>Acessos</th><th>Atualizada</th><th>Sinal</th></tr></thead><tbody>{loading ? <tr><td colSpan="7" className="operations-table-loading">Carregando casas…</td></tr> : items.length ? items.map((item) => <tr key={item.id}><td><strong>{item.name}</strong></td><td>{item.location || item.region}</td><td>{item.nextEvent ? <><strong>{item.nextEvent.title}</strong><br/><small>{formatDate(item.nextEvent.startDate, true)}</small></> : <span className="operations-queue-note">Sem agenda futura</span>}</td><td>{menuLabel(item.menuStatus)}</td><td>{item.accessCount}</td><td>{formatDate(item.updatedAt)}</td><td>{item.attention ? <RiskTag risk="medium"/> : <span className="operations-status operations-status-completed">Completa</span>}</td></tr>) : <tr><td colSpan="7" className="operations-table-loading">Nenhuma casa foi encontrada nesta leitura.</td></tr>}</tbody></table></div></section>
+    <OperationsAgendaExportPanel/>
     {error ? <p className="operations-inline-error">{error}</p> : null}
   </>;
 }
