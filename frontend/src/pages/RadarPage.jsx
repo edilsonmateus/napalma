@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAdDeliveryQuery, useMyHistoryQuery, useMyRadarQuery, useToggleHistoryMutation, useToggleRadarMutation } from "../hooks/useEventsQuery";
+import { useAdDeliveryQuery, useMyHistoryQuery, useMyRadarQuery, useRadarReminderStatusQuery, useToggleHistoryMutation, useToggleRadarMutation } from "../hooks/useEventsQuery";
 import { useAuthStore } from "../store/authStore";
 import AdSlotCard from "../components/ads/AdSlotCard";
 import VerifiedBadge from "../components/common/VerifiedBadge";
@@ -8,6 +8,8 @@ import { getAudienceBadges } from "../utils/eventAudienceBadges";
 import AppToast from "../components/common/AppToast";
 import { trackAnalyticsEvent } from "../services/analytics.service";
 import { resolveMediaUrl } from "../services/api";
+import { updateRadarReminderPreference } from "../services/events.service";
+import { ensureRadarEventReminderNotifications } from "../utils/toNaPistaNotifications";
 
 const RADAR_PREFS_KEY = "napalma:radar:prefs";
 
@@ -39,6 +41,8 @@ export default function RadarPage() {
   const user = useAuthStore((state) => state.user);
   const { data: radarEvents = [], isLoading, isError } = useMyRadarQuery(Boolean(user));
   const radarEventIds = useMemo(() => radarEvents.map((item) => item.id), [radarEvents]);
+  const remindersEnabled = import.meta.env.VITE_RADAR_EVENT_REMINDERS_ENABLED === "true";
+  const { data: reminderData, refetch: refetchReminders } = useRadarReminderStatusQuery(Boolean(user) && remindersEnabled, radarEventIds);
   const { data: historyEvents = [] } = useMyHistoryQuery(
     Boolean(user) && radarEventIds.length > 0,
     radarEventIds
@@ -64,6 +68,22 @@ export default function RadarPage() {
   }, [regionFilter]);
 
   const historyEventIds = useMemo(() => new Set(historyEvents.map((item) => item.eventId)), [historyEvents]);
+  const remindersByEventId = useMemo(() => new Map((reminderData?.items || []).map((item) => [item.eventId, item])), [reminderData]);
+
+  async function handleEnableRadarReminders() {
+    try {
+      const result = await ensureRadarEventReminderNotifications();
+      if (!result.supported || result.permission !== "granted") {
+        setToast({ text: "Ative as notifica\u00e7\u00f5es do 77Gira no navegador para receber lembretes.", type: "error" });
+        return;
+      }
+      await updateRadarReminderPreference(true);
+      await refetchReminders();
+      setToast({ text: "Lembretes do Radar ativados.", type: "success" });
+    } catch (_error) {
+      setToast({ text: "N\u00e3o foi poss\u00edvel ativar os lembretes agora.", type: "error" });
+    }
+  }
 
   function canConfirmAttendance(event) {
     if (historyEventIds.has(event.id)) return false;
@@ -168,6 +188,13 @@ export default function RadarPage() {
       ) : null}
       {user ? <AppToast toast={toast} onClose={() => setToast({ text: "", type: "info" })} /> : null}
 
+      {user && remindersEnabled && hasEvents && (!reminderData?.enabled || !reminderData?.activeSubscriptions) ? (
+        <div className="radar-reminder-banner">
+          <span>Ative os lembretes e avisaremos 3h antes dos eventos salvos.</span>
+          <button type="button" className="chip" onClick={handleEnableRadarReminders}>Ativar lembretes</button>
+        </div>
+      ) : null}
+
       <div className="radar-list">
         {filteredEvents.map((event) => (
           <article key={event.id} className="radar-item">
@@ -186,6 +213,7 @@ export default function RadarPage() {
                 <small>{event.venue} - {event.region}</small>
                 {event.priceSecondaryLabel ? <small>{event.priceSecondaryLabel}</small> : null}
                 <small className="radar-date">{formatDate(event.startsAt)}</small>
+                {remindersByEventId.get(event.id)?.status === "PENDING" ? <small className="radar-reminder-label">Lembrete programado para 3h antes</small> : null}
                 {getAudienceBadges(event).length > 0 ? (
                   <div className="event-audience-row">
                     {getAudienceBadges(event).map((badge) => (

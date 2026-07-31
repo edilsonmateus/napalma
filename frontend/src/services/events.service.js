@@ -221,6 +221,23 @@ export async function unmarkEventFromRadar(eventId) {
   await api.delete(`/me/radar/${eventId}`);
 }
 
+export async function getRadarReminderStatus(eventIds = []) {
+  const { data } = await api.get("/me/radar/reminders", {
+    params: eventIds.length ? { eventIds: eventIds.join(",") } : undefined
+  });
+  return data;
+}
+
+export async function updateRadarReminderPreference(enabled) {
+  const { data } = await api.patch("/me/radar/reminders/preferences", { enabled });
+  return data;
+}
+
+export async function trackRadarReminderClick(reminderId) {
+  if (!reminderId) return;
+  await api.post(`/me/radar/reminders/${reminderId}/click`);
+}
+
 export async function getMyHistory({ eventIds = [] } = {}) {
   const { data } = await api.get("/me/history", {
     params: eventIds.length ? { eventIds: eventIds.join(",") } : undefined

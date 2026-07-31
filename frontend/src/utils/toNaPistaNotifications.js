@@ -124,6 +124,12 @@ export async function ensureToNaPistaNotifications() {
   };
 }
 
+// O mesmo canal Web Push atende lembretes explicitamente ativados no Radar.
+// A permissao do navegador so e solicitada apos a acao consciente da pessoa.
+export async function ensureRadarEventReminderNotifications() {
+  return ensureToNaPistaNotifications();
+}
+
 export async function notifyToNaPista({ title, body, url }) {
   const result = await ensureToNaPistaNotifications();
 

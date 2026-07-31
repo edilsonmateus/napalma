@@ -12812,6 +12812,21 @@ button.venue-card {
 .account-profile-form, .account-password-form { padding-top: 16px; border-top-color: rgba(255,255,255,.14); }
 .account-password-form { border-top-width: 1px; }
 .account-session-section { gap: 14px; }
+.account-notification-toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid rgba(255,255,255,.1); cursor: pointer; }
+.account-notification-toggle span { display: grid; gap: 3px; }
+.account-notification-toggle strong { color: #f7f5fa; font-size: .9rem; font-weight: 600; }
+.account-notification-toggle small { color: #9d96b2; font-size: .72rem; }
+.account-notification-toggle input { inline-size: 38px; block-size: 21px; accent-color: #ffae00; }
+.radar-reminder-inline { display: grid; gap: 8px; margin-top: 10px; color: #9d96b2; font-size: .75rem; }
+.radar-reminder-cta { justify-self: start; padding: 0; border: 0; background: transparent; color: #ffbf36; font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.radar-reminder-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; padding: 10px 12px; border: 1px solid rgba(255,191,54,.24); border-radius: 8px; background: rgba(255,191,54,.06); color: #c6c0d1; font-size: .78rem; }
+.radar-reminder-banner .chip { flex: 0 0 auto; }
+.radar-reminder-label { color: #ffbf36; font-size: .7rem; }
+.account-notification-toggle { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; color: var(--user-text, #f8fafc); cursor: pointer; }
+.account-notification-toggle input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: #f59e0b; }
+.account-notification-toggle span { display: grid; gap: 3px; }
+.account-notification-toggle small { color: var(--user-muted, #94a3b8); font-size: 12px; line-height: 1.45; }
+@media (max-width: 560px) { .radar-reminder-banner { align-items: flex-start; flex-direction: column; } }
 .account-logout-btn { min-height: 40px; border-radius: 6px; color: var(--text-primary); border-color: rgba(255,255,255,.18); }
 .account-session-revoke { max-width: 480px; margin-top: 12px; padding-top: 24px; border-top-color: rgba(239,119,119,.45); }
 .account-session-revoke > strong { color: #ef9b9b; font-size: .86rem; font-weight: 650; letter-spacing: -.01em; }

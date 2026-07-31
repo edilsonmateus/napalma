@@ -9,6 +9,8 @@ import { revokeProfileSessions, updateProfileDetails, updateProfilePassword, upl
 import { getMyArtists } from "../services/artistWorkspace.service";
 import { useAuthStore } from "../store/authStore";
 import { isReservedUsername, isUsernameSyntaxValid, RESERVED_USERNAME_MESSAGE } from "../utils/usernamePolicy";
+import { getRadarReminderStatus, updateRadarReminderPreference } from "../services/events.service";
+import { ensureRadarEventReminderNotifications } from "../utils/toNaPistaNotifications";
 
 export default function AccountSettingsPage() {
   const navigate = useNavigate();
@@ -28,10 +30,19 @@ export default function AccountSettingsPage() {
   const [revokePassword, setRevokePassword] = useState("");
   const [revokeBusy, setRevokeBusy] = useState(false);
   const [revokeMessage, setRevokeMessage] = useState("");
+  const remindersFeatureEnabled = import.meta.env.VITE_RADAR_EVENT_REMINDERS_ENABLED === "true";
+  const [radarRemindersEnabled, setRadarRemindersEnabled] = useState(false);
+  const [radarRemindersBusy, setRadarRemindersBusy] = useState(false);
+  const [radarRemindersMessage, setRadarRemindersMessage] = useState("");
 
   useEffect(() => {
     getMyArtists().then(setArtists).catch(() => setArtists([]));
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!user || !remindersFeatureEnabled) return;
+    getRadarReminderStatus().then((data) => setRadarRemindersEnabled(Boolean(data.enabled))).catch(() => null);
+  }, [user?.id, remindersFeatureEnabled]);
 
   useEffect(() => {
     setProfileForm({
@@ -143,6 +154,27 @@ export default function AccountSettingsPage() {
     } finally { setRevokeBusy(false); }
   }
 
+  async function handleRadarReminderPreference(nextEnabled) {
+    setRadarRemindersBusy(true);
+    setRadarRemindersMessage("");
+    try {
+      if (nextEnabled) {
+        const result = await ensureRadarEventReminderNotifications();
+        if (!result.supported || result.permission !== "granted") {
+          setRadarRemindersMessage("Ative as notifica\u00e7\u00f5es do 77Gira no navegador para receber lembretes.");
+          return;
+        }
+      }
+      const data = await updateRadarReminderPreference(nextEnabled);
+      setRadarRemindersEnabled(Boolean(data.enabled));
+      setRadarRemindersMessage(nextEnabled ? "Lembretes do Radar ativados." : "Lembretes do Radar desativados.");
+    } catch (_error) {
+      setRadarRemindersMessage("N\u00e3o foi poss\u00edvel atualizar esta prefer\u00eancia agora.");
+    } finally {
+      setRadarRemindersBusy(false);
+    }
+  }
+
   if (!user) return null;
 
   return (
@@ -189,6 +221,15 @@ export default function AccountSettingsPage() {
         {artists.map((artist) => <Link className="account-access-row" to={`/artistas/${artist.slug || artist.id}`} key={artist.id}><span><strong>{artist.name}</strong><small>Perfil de artista reivindicado</small></span><ChevronRight size={16}/></Link>)}
         <Link className="settings-link-row" to="/settings">Abrir Hub de Gestão <ChevronRight size={16}/></Link>
       </section>
+
+      {remindersFeatureEnabled ? <section className="account-settings-section account-notifications-section">
+        <div className="account-settings-section-title"><div><strong>Notifica\u00e7\u00f5es</strong><small>Escolhas de lembretes para eventos salvos.</small></div></div>
+        <label className="account-notification-toggle">
+          <span><strong>Lembretes do Radar</strong><small>Avisaremos 3h antes de eventos que voc\u00ea salvou.</small></span>
+          <input type="checkbox" checked={radarRemindersEnabled} disabled={radarRemindersBusy} onChange={(event) => handleRadarReminderPreference(event.target.checked)} />
+        </label>
+        {radarRemindersMessage ? <small className="account-form-message" role="status">{radarRemindersMessage}</small> : null}
+      </section> : null}
 
       <section className="account-settings-section account-session-section">
         <h3>Sessão</h3>

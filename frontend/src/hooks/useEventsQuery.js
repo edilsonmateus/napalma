@@ -54,6 +54,7 @@ import {
   getMyHistory,
   getMyHistoryPage,
   getMyRadar,
+  getRadarReminderStatus,
   getRegions,
   getVenues,
   trackAudienceVisit,
@@ -116,6 +117,16 @@ export function useMyHistoryQuery(enabled = true, eventIds = []) {
     queryKey: ["my-history", "event-status", normalizedEventIds],
     queryFn: () => getMyHistory({ eventIds: normalizedEventIds }),
     enabled
+  });
+}
+
+export function useRadarReminderStatusQuery(enabled = true, eventIds = []) {
+  const normalizedEventIds = [...eventIds].sort();
+  return useQuery({
+    queryKey: ["my-radar", "reminders", normalizedEventIds],
+    queryFn: () => getRadarReminderStatus(normalizedEventIds),
+    enabled: enabled && normalizedEventIds.length > 0,
+    staleTime: 15_000
   });
 }
 
@@ -654,6 +665,7 @@ export function useToggleRadarMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-radar"] });
+      queryClient.invalidateQueries({ queryKey: ["my-radar", "reminders"] });
       queryClient.invalidateQueries({ queryKey: ["my-achievements"] });
     }
   });

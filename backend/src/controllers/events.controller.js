@@ -699,6 +699,10 @@ export async function updateEvent(req, res, next) {
       });
     });
 
+    import("../services/eventReminder.service.js")
+      .then(({ rescheduleEventReminders }) => rescheduleEventReminders(updated.id))
+      .catch((error) => console.warn("Nao foi possivel recalcular lembretes do evento:", error?.message || error));
+
     res.json({ item: mapEventPayload(updated) });
   } catch (error) {
     next(error);

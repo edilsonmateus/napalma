@@ -18,7 +18,10 @@
     tag: payload.tag || "77gira-to-na-pista",
     renotify: true,
     data: {
-      url: payload.url || "/explore"
+      url: payload.url || "/explore",
+      eventId: payload.eventId || null,
+      reminderId: payload.reminderId || null,
+      kind: payload.kind || null
     },
     actions: [
       {

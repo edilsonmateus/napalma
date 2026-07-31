@@ -35,7 +35,7 @@ function shouldDeactivate(error) {
   return error?.statusCode === 404 || error?.statusCode === 410;
 }
 
-export async function sendPushToSubscriptions({ where, payload, limit = 50 }) {
+export async function sendPushToSubscriptions({ where, payload, limit = 50, onDelivery = null }) {
   if (!ensurePushConfigured()) {
     return {
       configured: false,
@@ -66,6 +66,11 @@ export async function sendPushToSubscriptions({ where, payload, limit = 50 }) {
     try {
       await webpush.sendNotification(toWebPushSubscription(subscription), body);
       sent += 1;
+      try {
+        await onDelivery?.({ subscription, status: "sent" });
+      } catch (callbackError) {
+        console.warn("Nao foi possivel registrar a entrega push:", callbackError?.message || callbackError);
+      }
     } catch (error) {
       failed += 1;
 
@@ -73,8 +78,13 @@ export async function sendPushToSubscriptions({ where, payload, limit = 50 }) {
         deactivated += 1;
         await prisma.pushSubscription.update({
           where: { id: subscription.id },
-          data: { isActive: false }
+          data: { isActive: false, disabledAt: new Date() }
         });
+      }
+      try {
+        await onDelivery?.({ subscription, status: "failed", error, deactivated: shouldDeactivate(error) });
+      } catch (callbackError) {
+        console.warn("Nao foi possivel registrar a falha push:", callbackError?.message || callbackError);
       }
     }
   }

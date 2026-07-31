@@ -88,7 +88,9 @@ export async function subscribePush(req, res) {
       visitorId: payload.visitorId || null,
       platform: payload.platform || null,
       userAgent,
-      isActive: true
+      isActive: true,
+      disabledAt: null,
+      lastSeenAt: new Date()
     },
     create: {
       endpoint: payload.subscription.endpoint,
@@ -97,7 +99,8 @@ export async function subscribePush(req, res) {
       userId,
       visitorId: payload.visitorId || null,
       platform: payload.platform || null,
-      userAgent
+      userAgent,
+      deviceLabel: payload.platform || null
     }
   });
 
@@ -115,7 +118,8 @@ export async function unsubscribePush(req, res) {
       endpoint: payload.endpoint
     },
     data: {
-      isActive: false
+      isActive: false,
+      disabledAt: new Date()
     }
   });
 

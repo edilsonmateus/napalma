@@ -4,6 +4,7 @@ import { ensureAdminBootstrap } from "./lib/adminBootstrap.js";
 import { startToNaPistaScheduler } from "./services/toNaPista.service.js";
 import { startAdsHealthAlertScheduler } from "./services/adsHealthAlerts.service.js";
 import { refreshDemoEventDates, startDemoEventRefreshScheduler } from "./services/demoEventsRefresh.service.js";
+import { startRadarEventReminderScheduler } from "./services/eventReminder.service.js";
 
 assertProductionSecurityConfig();
 const app = createApp();
@@ -34,4 +35,5 @@ app.listen(env.port, () => {
   startToNaPistaScheduler();
   startAdsHealthAlertScheduler();
   startDemoEventRefreshScheduler();
+  startRadarEventReminderScheduler();
 });

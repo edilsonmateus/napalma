@@ -52,6 +52,7 @@ import {
 } from "../controllers/ads.controller.js";
 import { getAudienceSummary, trackAudienceVisit } from "../controllers/audience.controller.js";
 import { getImpactSummary, trackAnalyticsEvent } from "../controllers/analytics.controller.js";
+import { getMyRadarReminderStatus, trackRadarReminderClick, updateMyRadarReminderPreference } from "../controllers/radarReminders.controller.js";
 import {
   activateToNaPista,
   deactivateToNaPista,
@@ -304,6 +305,9 @@ router.patch("/claims/:id/decision", requireAuth, requireOperationScope("claims"
 router.get("/admin/operations/claims", requireAuth, requireOperationScope("claims"), listOperationsClaims);
 router.get("/admin/operations/claims/:id", requireAuth, requireOperationScope("claims"), getOperationsClaimDetail);
 router.get("/me/radar", requireAuth, listMyRadar);
+router.get("/me/radar/reminders", requireAuth, getMyRadarReminderStatus);
+router.patch("/me/radar/reminders/preferences", requireAuth, updateMyRadarReminderPreference);
+router.post("/me/radar/reminders/:reminderId/click", requireAuth, trackRadarReminderClick);
 router.post("/me/radar/:eventId", requireAuth, markEventInRadar);
 router.delete("/me/radar/:eventId", requireAuth, unmarkEventFromRadar);
 router.get("/me/history", requireAuth, listMyHistory);

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { CalendarClock, Copy, MapPin, Send, Share2 } from "lucide-react";
 import {
   useEventsQuery,
   useMyRadarQuery,
+  useRadarReminderStatusQuery,
   useToggleRadarMutation
 } from "../hooks/useEventsQuery";
 import { useAuthStore } from "../store/authStore";
@@ -19,6 +20,8 @@ import BackLink from "../components/common/BackLink";
 import ArtistProfileGateway from "../components/artists/ArtistProfileGateway";
 import { resolveMediaUrl } from "../services/api";
 import RadarStarIcon from "../components/events/RadarStarIcon";
+import { trackRadarReminderClick, updateRadarReminderPreference } from "../services/events.service";
+import { ensureRadarEventReminderNotifications } from "../utils/toNaPistaNotifications";
 
 function formatDate(value) {
   return new Date(value).toLocaleString("pt-BR", {
@@ -76,9 +79,12 @@ function buildEventAdvertiserIntentUrl(event) {
 export default function EventDetailPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const { data: events = [], isLoading } = useEventsQuery();
   const { data: radarEvents = [] } = useMyRadarQuery(Boolean(user));
+  const remindersEnabled = import.meta.env.VITE_RADAR_EVENT_REMINDERS_ENABLED === "true";
+  const { data: reminderData, refetch: refetchReminders } = useRadarReminderStatusQuery(Boolean(user) && remindersEnabled, eventId ? [eventId] : []);
   const toggleRadar = useToggleRadarMutation();
   const [toast, setToast] = useState({ text: "", type: "info" });
   const [shareNote, setShareNote] = useState("");
@@ -86,6 +92,7 @@ export default function EventDetailPage() {
 
   const event = useMemo(() => events.find((item) => item.id === eventId), [eventId, events]);
   const marked = useMemo(() => radarEvents.some((item) => item.id === eventId), [eventId, radarEvents]);
+  const reminder = useMemo(() => reminderData?.items?.find((item) => item.eventId === eventId) || null, [reminderData, eventId]);
 
   useEffect(() => {
     if (!event) return;
@@ -99,6 +106,13 @@ export default function EventDetailPage() {
       source: "event_detail"
     });
   }, [event]);
+
+  useEffect(() => {
+    const reminderId = new URLSearchParams(location.search).get("reminderId");
+    if (!user || !reminderId) return;
+    trackRadarReminderClick(reminderId).catch(() => null);
+    trackAnalyticsEvent("radar_reminder_click", { eventId, source: "push" });
+  }, [eventId, location.search, user]);
 
   if (isLoading) return <p className="empty">Carregando evento...</p>;
   if (!event) return <p>Evento não encontrado.</p>;
@@ -202,6 +216,7 @@ export default function EventDetailPage() {
     try {
       setToast({ text: "", type: "info" });
       const result = await toggleRadar.mutateAsync({ eventId: event.id, currentlyMarked: marked });
+      await refetchReminders();
       trackAnalyticsEvent(marked ? "radar_remove" : "radar_save", {
         eventId: event.id,
         venueId: event.venueId,
@@ -218,6 +233,25 @@ export default function EventDetailPage() {
       setToast({ text: marked ? "Evento removido do seu Radar." : "Evento salvo no seu Radar.", type: "success" });
     } catch (_error) {
       setToast({ text: "Não foi possível atualizar o Radar agora.", type: "error" });
+    }
+  }
+
+  async function handleEnableRadarReminders() {
+    try {
+      const result = await ensureRadarEventReminderNotifications();
+      if (!result.supported) {
+        setToast({ text: "Seu navegador n\u00e3o oferece lembretes push neste dispositivo.", type: "error" });
+        return;
+      }
+      if (result.permission !== "granted") {
+        setToast({ text: "Permiss\u00e3o de notifica\u00e7\u00f5es n\u00e3o concedida. Voc\u00ea pode ajustar isso nas configura\u00e7\u00f5es do navegador.", type: "error" });
+        return;
+      }
+      await updateRadarReminderPreference(true);
+      await refetchReminders();
+      setToast({ text: "Lembretes do Radar ativados. Vamos avisar 3h antes do evento.", type: "success" });
+    } catch (_error) {
+      setToast({ text: "N\u00e3o foi poss\u00edvel ativar os lembretes agora.", type: "error" });
     }
   }
 
@@ -280,6 +314,17 @@ export default function EventDetailPage() {
               <span className="event-inline-action-label">Como chegar</span>
             </button>
           </div>
+          {user && remindersEnabled && marked ? (
+            <div className="radar-reminder-inline" role="status">
+              {reminder?.status === "PENDING" ? <span>Lembrete programado para 3h antes.</span> : null}
+              {reminder?.status === "SENT" ? <span>Lembrete enviado para este evento.</span> : null}
+              {!reminderData?.enabled || !reminderData?.activeSubscriptions ? (
+                <button type="button" className="radar-reminder-cta" onClick={handleEnableRadarReminders}>
+                  Ative os lembretes e avisaremos 3h antes deste evento
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         {!user ? (

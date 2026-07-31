@@ -285,6 +285,8 @@ model User {
   itineraries                  Itinerary[]
   audienceVisits               AudienceVisitor[]
   pushSubscriptions            PushSubscription[]
+  eventReminders               EventReminder[]
+  radarEventRemindersEnabled   Boolean                    @default(false)
   toNaPistaSessions            ToNaPistaSession[]
   producerVenueAccesses        ProducerVenueAccess[]
   producerArtistAccesses       ProducerArtistAccess[]
@@ -529,10 +531,14 @@ model PushSubscription {
   platform  String?
   userAgent String?
   isActive  Boolean  @default(true)
+  deviceLabel String?
+  lastSeenAt DateTime @default(now())
+  disabledAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user User? @relation(fields: [userId], references: [id])
+  reminderDeliveries EventReminderDelivery[]
 
   @@index([userId])
   @@index([visitorId])
@@ -1115,6 +1121,7 @@ model Event {
   historyBy           UserEventHistory[]
   itineraryItems      ItineraryItem[]
   toNaPistaDeliveries ToNaPistaDelivery[]
+  reminders          EventReminder[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1304,6 +1311,59 @@ model MarkedEvent {
   createdAt DateTime @default(now())
 
   @@unique([userId, eventId])
+}
+
+enum EventReminderType {
+  EVENT_START_3H
+}
+
+enum EventReminderStatus {
+  PENDING
+  PROCESSING
+  SENT
+  CANCELLED
+  FAILED
+}
+
+model EventReminder {
+  id                 String              @id @default(uuid())
+  userId             String
+  eventId            String
+  type               EventReminderType   @default(EVENT_START_3H)
+  scheduledFor       DateTime
+  status             EventReminderStatus @default(PENDING)
+  eventStartSnapshot DateTime
+  sentAt             DateTime?
+  cancelledAt        DateTime?
+  failureReason      String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  user       User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event      Event                        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  deliveries EventReminderDelivery[]
+
+  @@unique([userId, eventId, type])
+  @@index([status, scheduledFor])
+  @@index([eventId, status])
+}
+
+model EventReminderDelivery {
+  id             String   @id @default(uuid())
+  reminderId     String
+  subscriptionId String
+  providerStatus String
+  sentAt         DateTime?
+  clickedAt      DateTime?
+  failureReason  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  reminder     EventReminder     @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  subscription PushSubscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([reminderId, subscriptionId])
+  @@index([reminderId, createdAt])
 }
 
 model UserEventHistory {

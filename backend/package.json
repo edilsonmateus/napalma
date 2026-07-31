@@ -21,6 +21,7 @@
     "events:posters:import": "node scripts/import-event-posters.js --apply",
     "events:posters:local": "node scripts/import-event-posters.js --apply --local",
     "events:posters:replace": "node scripts/import-event-posters.js --apply --force",
+    "reminders:radar:worker": "node scripts/run-radar-event-reminder-worker.js",
     "privacy:retention:preview": "node scripts/privacy-retention-preview.js",
     "admin:bootstrap": "node prisma/bootstrap-admin.js",
     "push:vapid:generate": "web-push generate-vapid-keys"
