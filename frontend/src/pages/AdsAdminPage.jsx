@@ -171,7 +171,11 @@ function hasApprovedReview(value) {
 }
 
 function hasCampaignBudget(campaign) {
-  return CREDITS_PURCHASE_ENABLED && Number(campaign.creditBalance || campaign.budgetCredits || 0) > 0;
+  const milipatacos = campaign.reservedMilipatacos;
+  const available = milipatacos !== undefined && milipatacos !== null
+    ? Number(milipatacos) / 1000
+    : Number(campaign.creditBalance || campaign.budgetCredits || 0);
+  return CREDITS_PURCHASE_ENABLED && available > 0;
 }
 
 function getCampaignReadinessBlockers(campaign) {

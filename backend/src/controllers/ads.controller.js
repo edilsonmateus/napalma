@@ -7,6 +7,7 @@ import { AD_PLACEMENTS } from "../config/adPlacements.js";
 import { adTargetingSchema } from "../utils/adTargetingPolicy.js";
 import { safeHttpUrl } from "../utils/safeUrl.js";
 import { creativeFormatIssue } from "../utils/adCreativeFormat.js";
+import { campaignImpressionCost, milipatacosToPatacos } from "../services/adPricing.service.js";
 
 const slotEnum = z.nativeEnum(AdSlot);
 
@@ -164,14 +165,14 @@ function isReviewApproved(status) {
   return !isFeatureEnabled("ADS_REVIEW_WORKFLOW_ENABLED") || !status || status === "approved";
 }
 
-function dailyPacingCap(campaign, now) {
+function dailyPacingCap(campaign, _now) {
   const targeting = campaign.targeting && typeof campaign.targeting === "object" ? campaign.targeting : {};
   const explicitCap = Number(targeting.dailyImpressionCap);
   if (Number.isInteger(explicitCap) && explicitCap > 0) return explicitCap;
-  const remaining = Math.max(0, Number(campaign.budgetCredits || 0) - Number(campaign.spentCredits || 0));
-  const end = campaign.endsAt ? new Date(campaign.endsAt) : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const days = Math.max(1, Math.ceil((end.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)));
-  return Math.max(1, Math.ceil(remaining / days));
+  const remaining = BigInt(campaign.reservedMilipatacos || 0);
+  const cheapest = ["explore_feed_large", "venue_detail_inline", "radar_header", "venue_menu_sponsor"].map((slot) => campaignImpressionCost(campaign, slot)).filter((cost) => cost > 0n).sort((a, b) => a < b ? -1 : 1)[0] || 1n;
+  // Sem prazo obrigatório: este é somente um ritmo operacional, não uma data de expiração.
+  return Math.max(1, Math.min(500, Math.ceil(Number(remaining / cheapest))));
 }
 
 function deliveryPayload(campaign, creative, slot, token = null) {
@@ -321,13 +322,12 @@ export async function getAdDelivery(req, res, next) {
       where: {
         isEnabled: true,
         status: "active",
-        budgetCredits: { gt: 0 },
+        reservedMilipatacos: { gt: 0n },
         ...(isFeatureEnabled("ADS_REVIEW_WORKFLOW_ENABLED")
           ? { OR: [{ reviewStatus: null }, { reviewStatus: "approved" }] }
           : {}),
         AND: [
-          { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
-          { OR: [{ endsAt: null }, { endsAt: { gte: now } }] }
+          { OR: [{ startsAt: null }, { startsAt: { lte: now } }] }
         ]
       },
       include: {
@@ -357,7 +357,7 @@ export async function getAdDelivery(req, res, next) {
     }
 
     const eligible = campaigns.filter((campaign) => (
-      campaign.spentCredits < campaign.budgetCredits
+      BigInt(campaign.reservedMilipatacos || 0) >= campaignImpressionCost(campaign, slot)
       && (!campaign.advertiserAccountId || campaign.advertiserAccount?.status === "active")
       && isReviewApproved(campaign.reviewStatus)
       && isCampaignContextEligible(campaign, context)
@@ -404,8 +404,10 @@ export async function getAdDelivery(req, res, next) {
     const pick = [...filtered].sort((a, b) => {
       const score = (item) => {
         const campaign = item.campaign;
-        const remainingRatio = Math.max(0, campaign.budgetCredits - campaign.spentCredits) / Math.max(1, campaign.budgetCredits);
-        const deliveryPressure = (deliveredToday.get(campaign.id) || 0) / Math.max(1, campaign.budgetCredits);
+        const reserve = BigInt(campaign.reservedMilipatacos || 0);
+        const budget = BigInt(campaign.budgetMilipatacos || 0);
+        const remainingRatio = Number(reserve) / Math.max(1, Number(budget));
+        const deliveryPressure = (deliveredToday.get(campaign.id) || 0) / Math.max(1, Number(budget / 1000n));
         return (venueCampaignPrecedence(campaign, context.venueId) * 100) + (campaign.priority * 10) + (remainingRatio * 5) - (deliveryPressure * 8) + Math.random();
       };
       return score(b) - score(a);
@@ -453,7 +455,8 @@ export async function trackDeliveredImpression(req, res, next) {
       if (delivery.sessionHash && delivery.sessionHash !== sessionHash) return { status: 409, error: "delivery_session_mismatch" };
       if (delivery.venueId && payload.venueId && delivery.venueId !== payload.venueId) return { status: 409, error: "delivery_context_mismatch" };
       if (delivery.impressionRecordedAt) return { status: 200, duplicate: true };
-      if (!delivery.campaign.isEnabled || delivery.campaign.status !== "active" || delivery.campaign.spentCredits >= delivery.campaign.budgetCredits) {
+      const unitCost = campaignImpressionCost(delivery.campaign, delivery.slot);
+      if (!delivery.campaign.isEnabled || delivery.campaign.status !== "active" || unitCost <= 0n || BigInt(delivery.campaign.reservedMilipatacos || 0) < unitCost) {
         return { status: 409, error: "campaign_not_deliverable" };
       }
       // A session can legitimately browse several cards, but a burst of valid
@@ -489,10 +492,14 @@ export async function trackDeliveredImpression(req, res, next) {
           ipHash: fingerprint(requestIp(req))
         }
       });
-      const campaign = await tx.adCampaign.update({
+      const charged = await tx.adCampaign.updateMany({
+        where: { id: delivery.campaignId, status: "active", isEnabled: true, reservedMilipatacos: { gte: unitCost } },
+        data: { reservedMilipatacos: { decrement: unitCost }, spentMilipatacos: { increment: unitCost } }
+      });
+      if (charged.count !== 1) throw new Error("campaign_budget_race");
+      const campaign = await tx.adCampaign.findUnique({
         where: { id: delivery.campaignId },
-        data: { spentCredits: { increment: 1 } },
-        select: { advertiserAccountId: true, budgetCredits: true, spentCredits: true }
+        select: { advertiserAccountId: true, reservedMilipatacos: true }
       });
       if (campaign.advertiserAccountId) {
         await tx.adCreditLedgerEntry.create({
@@ -500,19 +507,22 @@ export async function trackDeliveredImpression(req, res, next) {
             accountId: campaign.advertiserAccountId,
             campaignId: delivery.campaignId,
             type: "delivery_charge",
-            delta: -1,
-            balanceAfter: Math.max(0, campaign.budgetCredits - campaign.spentCredits),
+            delta: 0,
+            balanceAfter: Math.floor(milipatacosToPatacos(campaign.reservedMilipatacos)),
+            amountMilipatacos: -unitCost,
+            balanceAfterMilipatacos: campaign.reservedMilipatacos,
             idempotencyKey: `delivery:${delivery.id}`,
             description: "Pataco consumido por impressão válida.",
-            metadata: { deliveryToken: token, slot: delivery.slot }
+            metadata: { deliveryToken: token, slot: delivery.slot, unitCostMilipatacos: unitCost.toString() }
           }
         });
       }
-      return { status: 201, charged: 1 };
+      return { status: 201, charged: 1, chargedMilipatacos: unitCost.toString() };
     });
     if (result.error) return res.status(result.status).json(result);
-    return res.status(result.status).json({ ok: true, duplicate: Boolean(result.duplicate), charged: result.charged || 0 });
+    return res.status(result.status).json({ ok: true, duplicate: Boolean(result.duplicate), charged: result.charged || 0, chargedMilipatacos: result.chargedMilipatacos || "0" });
   } catch (error) {
+    if (error?.message === "campaign_budget_race") return res.status(409).json({ error: "campaign_not_deliverable" });
     next(error);
   }
 }
@@ -601,7 +611,7 @@ export async function getAdsHealth(req, res, next) {
       }),
       prisma.adCampaign.findMany({
         where: { status: "active", isEnabled: true },
-        select: { id: true, name: true, advertiser: true, endsAt: true, budgetCredits: true, spentCredits: true, reviewStatus: true, creatives: { select: { isEnabled: true, reviewStatus: true } } }
+        select: { id: true, name: true, advertiser: true, reservedMilipatacos: true, reviewStatus: true, creatives: { select: { isEnabled: true, reviewStatus: true } } }
       }),
       prisma.adEventLog.groupBy({ by: ["slot"], where: { type: "impression", createdAt: { gte: dayStart } }, _count: { _all: true } })
     ]);
@@ -633,8 +643,7 @@ export async function getAdsHealth(req, res, next) {
 
     const blockedCampaigns = campaigns.filter((campaign) => (
       !isReviewApproved(campaign.reviewStatus)
-      || campaign.spentCredits >= campaign.budgetCredits
-      || (campaign.endsAt && campaign.endsAt < now)
+      || BigInt(campaign.reservedMilipatacos || 0) <= 0n
       || !campaign.creatives.some((creative) => creative.isEnabled && isReviewApproved(creative.reviewStatus))
     ));
     if (blockedCampaigns.length) alerts.push({ severity: "warning", code: "campaign_delivery_blocked", count: blockedCampaigns.length, title: "Campanhas ativas bloqueadas", detail: "Há campanhas ativas sem condição completa de entrega." });
@@ -711,7 +720,7 @@ export async function getAdsReport(req, res, next) {
     ]);
 
     const campaigns = await prisma.adCampaign.findMany({
-      select: { id: true, name: true, advertiser: true, status: true, endsAt: true, budgetCredits: true, spentCredits: true, targeting: true }
+      select: { id: true, name: true, advertiser: true, status: true, endsAt: true, reservedMilipatacos: true, spentMilipatacos: true, targeting: true }
     });
     const byId = new Map(campaigns.map((item) => [item.id, item]));
     const impMap = new Map(impressionsByCampaign.map((item) => [item.campaignId, item._count._all]));
@@ -729,7 +738,8 @@ export async function getAdsReport(req, res, next) {
         clicks,
         ctr: impressions > 0 ? Number(((clicks / impressions) * 100).toFixed(2)) : 0,
         dailyPacingCap: dailyPacingCap(campaign, new Date()),
-        remainingPatacos: Math.max(0, campaign.budgetCredits - campaign.spentCredits)
+        spentPatacos: milipatacosToPatacos(campaign.spentMilipatacos),
+        remainingPatacos: milipatacosToPatacos(campaign.reservedMilipatacos)
       };
     }).sort((a, b) => b.impressions - a.impressions);
 

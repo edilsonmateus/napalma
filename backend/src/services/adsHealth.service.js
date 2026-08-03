@@ -1,6 +1,7 @@
 import { AD_PLACEMENTS } from "../config/adPlacements.js";
 import { prisma } from "../lib/prisma.js";
 import { isFeatureEnabled } from "../middlewares/featureFlags.js";
+import { campaignImpressionCost } from "./adPricing.service.js";
 
 function reviewIsApproved(status) {
   return !isFeatureEnabled("ADS_REVIEW_WORKFLOW_ENABLED") || !status || status === "approved";
@@ -27,7 +28,7 @@ export async function getAdsHealthSnapshot(hours = 24) {
     }),
     prisma.adCampaign.findMany({
       where: { status: "active", isEnabled: true },
-      select: { id: true, name: true, advertiser: true, endsAt: true, budgetCredits: true, spentCredits: true, reviewStatus: true, creatives: { select: { isEnabled: true, reviewStatus: true } } }
+      select: { id: true, name: true, advertiser: true, endsAt: true, reservedMilipatacos: true, reviewStatus: true, creatives: { select: { isEnabled: true, reviewStatus: true } } }
     }),
     prisma.adEventLog.groupBy({ by: ["slot"], where: { type: "impression", createdAt: { gte: dayStart } }, _count: { _all: true } })
   ]);
@@ -59,7 +60,7 @@ export async function getAdsHealthSnapshot(hours = 24) {
 
   const blockedCampaigns = campaigns.filter((campaign) => (
     !reviewIsApproved(campaign.reviewStatus)
-    || campaign.spentCredits >= campaign.budgetCredits
+    || BigInt(campaign.reservedMilipatacos || 0) < campaignImpressionCost(campaign)
     || (campaign.endsAt && campaign.endsAt < now)
     || !campaign.creatives.some((creative) => creative.isEnabled && reviewIsApproved(creative.reviewStatus))
   ));

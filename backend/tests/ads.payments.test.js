@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const prismaMock = vi.hoisted(() => ({
   advertiserMembership: { findFirst: vi.fn() },
-  adCampaign: { findFirst: vi.fn(), update: vi.fn() },
+  adCampaign: { findFirst: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
   adPaymentOrder: { create: vi.fn(), findUnique: vi.fn(), updateMany: vi.fn(), update: vi.fn(), findMany: vi.fn() },
   advertiserWallet: { upsert: vi.fn(), update: vi.fn(), updateMany: vi.fn(), findUnique: vi.fn() },
   adCreditLedgerEntry: { create: vi.fn(), findMany: vi.fn() },
@@ -33,6 +33,7 @@ function order(overrides = {}) {
     status: "created",
     packageCode: "test_controlled",
     creditAmount: 100,
+    creditAmountMilipatacos: 100000n,
     amountCents: 4900,
     expiresAt: new Date(Date.now() + 60_000),
     ...overrides
@@ -70,10 +71,11 @@ describe("Ads mock payments", () => {
   it("credits once and automatically allocates a directed purchase", async () => {
     prismaMock.adPaymentOrder.findUnique.mockResolvedValue(order({ status: "approved" }));
     prismaMock.adPaymentOrder.updateMany.mockResolvedValue({ count: 1 });
-    prismaMock.advertiserWallet.upsert.mockResolvedValue({ balance: 0 });
+    prismaMock.advertiserWallet.upsert.mockResolvedValue({ balance: 0, balanceMilipatacos: 0n });
     prismaMock.advertiserWallet.update
-      .mockResolvedValueOnce({ balance: 100 })
-      .mockResolvedValueOnce({ balance: 0 });
+      .mockResolvedValueOnce({ balance: 100, balanceMilipatacos: 100000n })
+      .mockResolvedValueOnce({ balance: 0, balanceMilipatacos: 0n });
+    prismaMock.adCampaign.findUnique.mockResolvedValue({ creatives: [], pricingSnapshot: null, pricingVersion: null });
     prismaMock.adCreditLedgerEntry.create.mockResolvedValue({});
     prismaMock.adCampaign.update.mockResolvedValue({ budgetCredits: 100 });
 
@@ -81,10 +83,14 @@ describe("Ads mock payments", () => {
 
     expect(result.item.status).toBe("approved");
     expect(prismaMock.adCreditLedgerEntry.create).toHaveBeenCalledTimes(2);
-    expect(prismaMock.adCampaign.update).toHaveBeenCalledWith({
+    expect(prismaMock.adCampaign.update).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: CAMPAIGN_ID },
-      data: { budgetCredits: { increment: 100 } }
-    });
+      data: expect.objectContaining({
+        budgetCredits: { increment: 100 },
+        budgetMilipatacos: { increment: 100000n },
+        reservedMilipatacos: { increment: 100000n }
+      })
+    }));
   });
 
   it("does not credit an order already claimed by another webhook", async () => {
@@ -98,21 +104,21 @@ describe("Ads mock payments", () => {
   });
 
   it("atomically moves available wallet credits into the selected campaign", async () => {
-    prismaMock.adCampaign.findFirst.mockResolvedValue({ id: CAMPAIGN_ID, advertiserAccountId: ACCOUNT_ID });
+    prismaMock.adCampaign.findFirst.mockResolvedValue({ id: CAMPAIGN_ID, advertiserAccountId: ACCOUNT_ID, creatives: [], pricingSnapshot: null, pricingVersion: null });
     prismaMock.advertiserWallet.updateMany.mockResolvedValue({ count: 1 });
-    prismaMock.advertiserWallet.findUnique.mockResolvedValue({ balance: 0 });
-    prismaMock.adCampaign.update.mockResolvedValue({ id: CAMPAIGN_ID, budgetCredits: 100 });
+    prismaMock.advertiserWallet.findUnique.mockResolvedValue({ balance: 0, balanceMilipatacos: 0n });
+    prismaMock.adCampaign.update.mockResolvedValue({ id: CAMPAIGN_ID, budgetMilipatacos: 100000n });
     prismaMock.adCreditLedgerEntry.create.mockResolvedValue({});
 
-    const result = await allocateWalletCreditsToCampaign({ accountId: ACCOUNT_ID, campaignId: CAMPAIGN_ID, amount: 100, userId: USER_ID });
+    const result = await allocateWalletCreditsToCampaign({ accountId: ACCOUNT_ID, campaignId: CAMPAIGN_ID, amountMilipatacos: 100000, userId: USER_ID });
 
-    expect(result.item.budgetCredits).toBe(100);
+    expect(result.item.budgetMilipatacos).toBe(100000n);
     expect(prismaMock.advertiserWallet.updateMany).toHaveBeenCalledWith({
-      where: { accountId: ACCOUNT_ID, balance: { gte: 100 } },
-      data: { balance: { decrement: 100 } }
+      where: { accountId: ACCOUNT_ID, balanceMilipatacos: { gte: 100000n } },
+      data: { balanceMilipatacos: { decrement: 100000n } }
     });
     expect(prismaMock.adCampaign.update).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: CAMPAIGN_ID }, data: { budgetCredits: { increment: 100 } }
+      where: { id: CAMPAIGN_ID }, data: expect.objectContaining({ budgetMilipatacos: { increment: 100000n } })
     }));
   });
 });

@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { adTargetingSchema } from "../utils/adTargetingPolicy.js";
 import { safeHttpUrl } from "../utils/safeUrl.js";
 import { creativeFormatIssue } from "../utils/adCreativeFormat.js";
+import { milipatacosToPatacos } from "../services/adPricing.service.js";
 
 const uuid = z.string().uuid();
 const accountParams = z.object({ accountId: uuid });
@@ -177,8 +178,10 @@ export async function listMyAdvertiserCampaigns(req, res, next) {
           impressions: totalImpressions,
           clicks: totalClicks,
           ctr: totalImpressions ? Number(((totalClicks / totalImpressions) * 100).toFixed(2)) : 0,
-          spentPatacos: item.spentCredits,
-          remainingPatacos: Math.max(0, item.budgetCredits - item.spentCredits)
+          spentPatacos: milipatacosToPatacos(item.spentMilipatacos),
+          remainingPatacos: milipatacosToPatacos(item.reservedMilipatacos),
+          spentMilipatacos: String(item.spentMilipatacos || 0n),
+          remainingMilipatacos: String(item.reservedMilipatacos || 0n)
         }
       };
     });
@@ -246,10 +249,37 @@ export async function endMyAdvertiserCampaign(req, res, next) {
     const access = await membership(req.user.id, current.advertiserAccountId);
     if (!access) return deny(res);
     if (!WRITE_ROLES.includes(access.role)) return deny(res, true);
-    const item = await prisma.adCampaign.update({
-      where: { id: campaignId },
-      data: { status: "ended", isEnabled: false, endsAt: current.endsAt || new Date() },
-      include: { creatives: true }
+    const item = await prisma.$transaction(async (tx) => {
+      const campaign = await tx.adCampaign.findUnique({ where: { id: campaignId } });
+      if (!campaign || campaign.status === "ended") return campaign;
+      const returned = BigInt(campaign.reservedMilipatacos || 0);
+      const updated = await tx.adCampaign.update({
+        where: { id: campaignId },
+        data: { status: "ended", isEnabled: false, endsAt: campaign.endsAt || new Date(), reservedMilipatacos: 0n },
+        include: { creatives: true }
+      });
+      if (returned > 0n) {
+        const wallet = await tx.advertiserWallet.upsert({
+          where: { accountId: campaign.advertiserAccountId },
+          create: { accountId: campaign.advertiserAccountId, balance: Math.floor(milipatacosToPatacos(returned)), balanceMilipatacos: returned },
+          update: { balance: { increment: Math.floor(milipatacosToPatacos(returned)) }, balanceMilipatacos: { increment: returned } }
+        });
+        await tx.adCreditLedgerEntry.create({
+          data: {
+            accountId: campaign.advertiserAccountId,
+            campaignId,
+            type: "campaign_refund",
+            delta: Math.floor(milipatacosToPatacos(returned)),
+            balanceAfter: wallet.balance,
+            amountMilipatacos: returned,
+            balanceAfterMilipatacos: wallet.balanceMilipatacos,
+            idempotencyKey: `campaign-end-refund:${campaignId}`,
+            description: "Saldo nao utilizado devolvido a carteira apos encerramento da campanha.",
+            createdByUserId: req.user.id
+          }
+        });
+      }
+      return updated;
     });
     return res.json({ item });
   } catch (error) { return next(error); }
@@ -317,7 +347,7 @@ export async function setMyAdvertiserCampaignLifecycle(req, res, next) {
     if (current.status === "ended") return res.status(409).json({ error: "campaign_ended", message: "Uma campanha encerrada não pode ser retomada." });
     if (status === "paused" && current.status !== "active") return res.status(409).json({ error: "invalid_campaign_lifecycle", message: "A campanha precisa estar no ar para ser pausada." });
     const hasApprovedCreative = current.creatives.some((creative) => creative.isEnabled && creative.reviewStatus === "approved");
-    if (status === "active" && (current.reviewStatus !== "approved" || current.budgetCredits <= current.spentCredits || !hasApprovedCreative)) {
+    if (status === "active" && (current.reviewStatus !== "approved" || BigInt(current.reservedMilipatacos || 0) <= 0n || !hasApprovedCreative)) {
       return res.status(409).json({ error: "campaign_not_ready", message: "A campanha precisa de revisão aprovada, criativo aprovado e patacos disponíveis para entrar no ar." });
     }
     const item = await prisma.adCampaign.update({ where: { id: campaignId }, data: { status, isEnabled: status === "active" }, include: { creatives: true } });
@@ -370,7 +400,7 @@ export async function submitMyAdvertiserReview(req, res, next) {
     const access = await membership(req.user.id, accountId);
     if (!access) return deny(res);
     if (!WRITE_ROLES.includes(access.role)) return deny(res, true);
-    if (entityType === "campaign" && current.budgetCredits <= current.spentCredits) {
+    if (entityType === "campaign" && BigInt(current.reservedMilipatacos || 0) <= 0n) {
       return res.status(409).json({ error: "campaign_budget_required", message: "Vincule patacos à campanha antes de enviar para revisão." });
     }
     const status = current.reviewStatus || "draft";

@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { prisma } from "../lib/prisma.js";
 import { isFeatureEnabled } from "../middlewares/featureFlags.js";
+import { AD_PRICING_VERSION, milipatacosToPatacos, patacosToMilipatacos, pricingSnapshotForSlots } from "./adPricing.service.js";
 
 export const AD_CREDIT_PACKAGES = Object.freeze({
-  test_controlled: { code: "test_controlled", name: "Teste controlado", credits: 100, amountCents: 4900 },
-  local_boost: { code: "local_boost", name: "Impulso local", credits: 300, amountCents: 12900 },
-  presence_campaign: { code: "presence_campaign", name: "Campanha de presenca", credits: 750, amountCents: 27900 }
+  test_controlled: { code: "test_controlled", name: "Teste controlado", patacos: 100, amountCents: 10000 },
+  local_boost: { code: "local_boost", name: "Impulso local", patacos: 300, amountCents: 30000 },
+  presence_campaign: { code: "presence_campaign", name: "Campanha de presenca", patacos: 750, amountCents: 75000 }
 });
 
 export const BILLING_ROLES = ["owner", "admin", "billing_manager"];
@@ -74,7 +75,8 @@ export async function createMockPaymentOrder({ accountId, campaignId, packageCod
       status: "created",
       packageCode: selectedPackage.code,
       amountCents: selectedPackage.amountCents,
-      creditAmount: selectedPackage.credits,
+      creditAmount: selectedPackage.patacos,
+      creditAmountMilipatacos: patacosToMilipatacos(selectedPackage.patacos),
       currency: "BRL",
       externalReference,
       providerPaymentId: `MOCK-${randomUUID()}`,
@@ -100,12 +102,12 @@ async function approveOrder(tx, order, actorUserId) {
 
   await tx.advertiserWallet.upsert({
     where: { accountId: order.accountId },
-    create: { accountId: order.accountId, balance: 0 },
+    create: { accountId: order.accountId, balance: 0, balanceMilipatacos: 0 },
     update: {}
   });
   const creditedWallet = await tx.advertiserWallet.update({
     where: { accountId: order.accountId },
-    data: { balance: { increment: order.creditAmount } }
+    data: { balance: { increment: order.creditAmount }, balanceMilipatacos: { increment: order.creditAmountMilipatacos } }
   });
   await tx.adCreditLedgerEntry.create({
     data: {
@@ -115,6 +117,8 @@ async function approveOrder(tx, order, actorUserId) {
       type: "purchase",
       delta: order.creditAmount,
       balanceAfter: creditedWallet.balance,
+      amountMilipatacos: order.creditAmountMilipatacos,
+      balanceAfterMilipatacos: creditedWallet.balanceMilipatacos,
       idempotencyKey: `payment:${order.id}:approved`,
       description: "Patacos creditados por pagamento mock aprovado.",
       createdByUserId: actorUserId,
@@ -125,11 +129,18 @@ async function approveOrder(tx, order, actorUserId) {
   if (order.campaignId) {
     const allocatedWallet = await tx.advertiserWallet.update({
       where: { accountId: order.accountId },
-      data: { balance: { decrement: order.creditAmount } }
+      data: { balance: { decrement: order.creditAmount }, balanceMilipatacos: { decrement: order.creditAmountMilipatacos } }
     });
+    const campaign = await tx.adCampaign.findUnique({ where: { id: order.campaignId }, include: { creatives: { select: { slot: true } } } });
     await tx.adCampaign.update({
       where: { id: order.campaignId },
-      data: { budgetCredits: { increment: order.creditAmount } }
+      data: {
+        budgetCredits: { increment: order.creditAmount },
+        budgetMilipatacos: { increment: order.creditAmountMilipatacos },
+        reservedMilipatacos: { increment: order.creditAmountMilipatacos },
+        pricingSnapshot: campaign?.pricingSnapshot || pricingSnapshotForSlots((campaign?.creatives || []).map((creative) => creative.slot)),
+        pricingVersion: campaign?.pricingVersion || AD_PRICING_VERSION
+      }
     });
     await tx.adCreditLedgerEntry.create({
       data: {
@@ -139,6 +150,8 @@ async function approveOrder(tx, order, actorUserId) {
         type: "campaign_allocation",
         delta: -order.creditAmount,
         balanceAfter: allocatedWallet.balance,
+        amountMilipatacos: -order.creditAmountMilipatacos,
+        balanceAfterMilipatacos: allocatedWallet.balanceMilipatacos,
         idempotencyKey: `payment:${order.id}:allocation`,
         description: "Patacos vinculados automaticamente a campanha selecionada.",
         createdByUserId: actorUserId,
@@ -183,7 +196,7 @@ export async function processMockPaymentOrder({ orderId, outcome, userId, skipAc
   return { error: "invalid_mock_outcome", status: 400, message: "Resultado de simulacao invalido." };
 }
 
-export async function allocateWalletCreditsToCampaign({ accountId, campaignId, amount, userId }) {
+export async function allocateWalletCreditsToCampaign({ accountId, campaignId, amountMilipatacos, userId }) {
   const runtime = paymentRuntime();
   if (!runtime.creditsEnabled) {
     return { error: "credits_not_available", status: 404, message: "A carteira de patacos nao esta habilitada." };
@@ -195,13 +208,14 @@ export async function allocateWalletCreditsToCampaign({ accountId, campaignId, a
   }
 
   return prisma.$transaction(async (tx) => {
-    const campaign = await tx.adCampaign.findFirst({ where: { id: campaignId, advertiserAccountId: accountId } });
+    const campaign = await tx.adCampaign.findFirst({ where: { id: campaignId, advertiserAccountId: accountId }, include: { creatives: { select: { slot: true } } } });
     if (!campaign) return { error: "campaign_not_found", status: 404, message: "Campanha nao encontrada nesta conta." };
 
     // O débito condicional evita que duas janelas gastem o mesmo saldo ao mesmo tempo.
+    const amount = BigInt(amountMilipatacos);
     const debited = await tx.advertiserWallet.updateMany({
-      where: { accountId, balance: { gte: amount } },
-      data: { balance: { decrement: amount } }
+      where: { accountId, balanceMilipatacos: { gte: amount } },
+      data: { balanceMilipatacos: { decrement: amount } }
     });
     if (debited.count !== 1) {
       return { error: "insufficient_wallet_credits", status: 409, message: "A carteira nao possui patacos suficientes para esta vinculação." };
@@ -210,7 +224,12 @@ export async function allocateWalletCreditsToCampaign({ accountId, campaignId, a
     const wallet = await tx.advertiserWallet.findUnique({ where: { accountId } });
     const item = await tx.adCampaign.update({
       where: { id: campaignId },
-      data: { budgetCredits: { increment: amount } },
+      data: {
+        budgetMilipatacos: { increment: amount },
+        reservedMilipatacos: { increment: amount },
+        pricingSnapshot: campaign.pricingSnapshot || pricingSnapshotForSlots(campaign.creatives.map((creative) => creative.slot)),
+        pricingVersion: campaign.pricingVersion || AD_PRICING_VERSION
+      },
       include: { creatives: true }
     });
     await tx.adCreditLedgerEntry.create({
@@ -218,15 +237,17 @@ export async function allocateWalletCreditsToCampaign({ accountId, campaignId, a
         accountId,
         campaignId,
         type: "campaign_allocation",
-        delta: -amount,
-        balanceAfter: wallet?.balance || 0,
+        delta: 0,
+        balanceAfter: Math.floor(milipatacosToPatacos(wallet?.balanceMilipatacos || 0n)),
+        amountMilipatacos: -amount,
+        balanceAfterMilipatacos: wallet?.balanceMilipatacos || 0n,
         idempotencyKey: `wallet-allocation:${campaignId}:${randomUUID()}`,
         description: "Patacos da carteira vinculados a campanha.",
         createdByUserId: userId,
         metadata: { source: "wallet" }
       }
     });
-    return { item, walletBalance: wallet?.balance || 0 };
+    return { item, walletBalance: milipatacosToPatacos(wallet?.balanceMilipatacos || 0n) };
   });
 }
 
@@ -236,7 +257,7 @@ export async function getWalletSnapshot(accountId) {
     prisma.adCreditLedgerEntry.findMany({ where: { accountId }, orderBy: { createdAt: "desc" }, take: 20 }),
     prisma.adPaymentOrder.findMany({ where: { accountId }, orderBy: { createdAt: "desc" }, take: 10 })
   ]);
-  return { balance: wallet?.balance || 0, entries, orders, packages: Object.values(AD_CREDIT_PACKAGES), runtime: paymentRuntime() };
+  return { balance: milipatacosToPatacos(wallet?.balanceMilipatacos || 0n), balanceMilipatacos: String(wallet?.balanceMilipatacos || 0n), entries, orders, packages: Object.values(AD_CREDIT_PACKAGES).map((item) => ({ ...item, credits: item.patacos, milipatacos: String(patacosToMilipatacos(item.patacos)) })), runtime: paymentRuntime() };
 }
 
 export async function getBillingOperationsSnapshot() {
@@ -262,8 +283,8 @@ export async function getBillingOperationsSnapshot() {
     runtime: paymentRuntime(),
     summary: {
       orders: orders.length,
-      approvedCredits: orders.filter((item) => item.status === "approved").reduce((sum, item) => sum + item.creditAmount, 0),
-      availableWalletCredits: wallets.reduce((sum, item) => sum + item.balance, 0),
+      approvedPatacos: orders.filter((item) => item.status === "approved").reduce((sum, item) => sum + milipatacosToPatacos(item.creditAmountMilipatacos), 0),
+      availableWalletPatacos: wallets.reduce((sum, item) => sum + milipatacosToPatacos(item.balanceMilipatacos), 0),
       byStatus
     },
     orders,

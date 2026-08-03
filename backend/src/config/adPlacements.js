@@ -28,7 +28,7 @@ export const AD_PLACEMENTS = Object.freeze([
     supportsTargeting: true,
     supportsFrequencyCap: true,
     inventory: { dailyImpressionCap: 1200, maxAdsPerPage: 1 },
-    commercialRules: { purchaseEnabled: false, pricingConfigured: false, billingMode: "valid_impression" }
+    commercialRules: { purchaseEnabled: true, pricingConfigured: true, billingMode: "valid_impression", modality: "rotativa", cpmPatacos: 35, impressionCostMilipatacos: 35 }
   },
   {
     key: "venue_detail_inline",
@@ -53,7 +53,7 @@ export const AD_PLACEMENTS = Object.freeze([
     supportsTargeting: true,
     supportsFrequencyCap: true,
     inventory: { dailyImpressionCap: 700, maxAdsPerPage: 1 },
-    commercialRules: { purchaseEnabled: false, pricingConfigured: false, billingMode: "valid_impression" }
+    commercialRules: { purchaseEnabled: true, pricingConfigured: true, billingMode: "valid_impression", modality: "segmentada", cpmPatacos: 55, impressionCostMilipatacos: 55 }
   },
   {
     key: "radar_header",
@@ -79,7 +79,7 @@ export const AD_PLACEMENTS = Object.freeze([
     supportsTargeting: true,
     supportsFrequencyCap: true,
     inventory: { dailyImpressionCap: 900, maxAdsPerPage: 1 },
-    commercialRules: { purchaseEnabled: false, pricingConfigured: false, billingMode: "valid_impression" }
+    commercialRules: { purchaseEnabled: true, pricingConfigured: true, billingMode: "valid_impression", modality: "segmentada", cpmPatacos: 55, impressionCostMilipatacos: 55 }
   },
   {
     key: "venue_menu_sponsor",
@@ -104,6 +104,6 @@ export const AD_PLACEMENTS = Object.freeze([
     supportsTargeting: true,
     supportsFrequencyCap: true,
     inventory: { dailyImpressionCap: 500, maxAdsPerPage: 1 },
-    commercialRules: { purchaseEnabled: false, pricingConfigured: false, billingMode: "valid_impression", venueRestrictionsRequired: true }
+    commercialRules: { purchaseEnabled: true, pricingConfigured: true, billingMode: "valid_impression", modality: "premium", cpmPatacos: 80, impressionCostMilipatacos: 80, venueRestrictionsRequired: true }
   }
 ]);

@@ -17,6 +17,7 @@ import { checkDatabaseReadiness } from "./services/health.service.js";
 
 export function createApp() {
   const app = express();
+  app.set("json replacer", (_key, value) => (typeof value === "bigint" ? value.toString() : value));
   app.disable("x-powered-by");
   // In production, Render/Vercel place the API behind a reverse proxy. This
   // makes req.ip usable by rate limits without changing local development.

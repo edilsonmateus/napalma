@@ -24,8 +24,9 @@ describe("Ads canonical placement catalog", () => {
       expect(placement.renderedCardDimensions).toMatch(/^\d+ x \d+$/);
       expect(placement.allowedMimeTypes).toEqual(["image/jpeg", "image/png", "image/webp"]);
       expect(placement.maxFileSizeBytes).toBe(5 * 1024 * 1024);
-      expect(placement.commercialRules.purchaseEnabled).toBe(false);
-      expect(placement.commercialRules.pricingConfigured).toBe(false);
+      expect(placement.commercialRules.purchaseEnabled).toBe(true);
+      expect(placement.commercialRules.pricingConfigured).toBe(true);
+      expect(placement.commercialRules.impressionCostMilipatacos).toBeGreaterThan(0);
     }
   });
 

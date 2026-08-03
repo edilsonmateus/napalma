@@ -8,6 +8,8 @@ import { startRadarEventReminderScheduler } from "./services/eventReminder.servi
 
 assertProductionSecurityConfig();
 const app = createApp();
+// Campos financeiros do Ads usam BigInt para preservar milipatacos sem arredondamento.
+// O serializador mantém as respostas HTTP compatíveis com JSON, sem perder precisão.
 
 try {
   const adminBootstrap = await ensureAdminBootstrap();

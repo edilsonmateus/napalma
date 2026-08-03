@@ -44,9 +44,9 @@ export async function createMyPaymentOrder(req, res, next) {
 export async function allocateMyWalletCredits(req, res, next) {
   try {
     const accountId = uuid.parse(req.params.accountId);
-    const payload = z.object({ campaignId: uuid, amount: z.number().int().positive().max(1000000) }).parse(req.body);
+    const payload = z.object({ campaignId: uuid, amountMilipatacos: z.number().int().positive().max(1000000000) }).parse(req.body);
     const result = await allocateWalletCreditsToCampaign({ accountId, ...payload, userId: req.user.id });
-    if (!result.error) await recordAuditEvent({ req, action: "ads.wallet_allocated", subjectType: "ad_campaign", subjectId: payload.campaignId, metadata: { accountId, amount: payload.amount } });
+    if (!result.error) await recordAuditEvent({ req, action: "ads.wallet_allocated", subjectType: "ad_campaign", subjectId: payload.campaignId, metadata: { accountId, amountMilipatacos: payload.amountMilipatacos } });
     return sendResult(res, result);
   } catch (error) { return next(error); }
 }
