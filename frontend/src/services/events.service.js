@@ -354,6 +354,11 @@ export async function processAdminMockPaymentOrder(id, outcome) {
   return data.item;
 }
 
+export async function grantAdsExperienceCredits(accountId, payload) {
+  const { data } = await api.post(`/ads/advertiser-accounts/${accountId}/experience-grants`, payload);
+  return data.item;
+}
+
 export async function getVenueAdsSummary(params = {}) {
   const { data } = await api.get("/ads/venue-summary", { params });
   return data;

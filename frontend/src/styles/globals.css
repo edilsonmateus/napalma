@@ -4365,6 +4365,46 @@ a.strategic-partner-card:hover { border-color: #b8c7da; background: #fff; }
   text-transform: uppercase;
 }
 
+.ads-experience-grant-card {
+  display: grid;
+  gap: 14px;
+}
+
+.ads-experience-grant-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) minmax(120px, 1fr) minmax(120px, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.ads-experience-grant-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--ads-text, #172033);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ads-experience-grant-form input,
+.ads-experience-grant-form select,
+.ads-experience-grant-form textarea {
+  min-height: 40px;
+  border: 1px solid var(--ads-border, #d9e0ea);
+  border-radius: 6px;
+  padding: 9px 11px;
+  background: #fff;
+  color: var(--ads-text, #172033);
+  font: inherit;
+}
+
+.ads-experience-grant-form textarea { min-height: 76px; resize: vertical; }
+.ads-experience-grant-form .wide { grid-column: 1 / -1; }
+.ads-experience-grant-form .form-actions-inline { grid-column: 1 / -1; justify-content: flex-end; }
+
+@media (max-width: 760px) {
+  .ads-experience-grant-form { grid-template-columns: 1fr; }
+}
+
 .ads-billing-table-card {
   display: grid;
   gap: 12px;

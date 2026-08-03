@@ -183,11 +183,25 @@ enum AdPaymentStatus {
 
 enum AdCreditLedgerType {
   purchase
+  experience_grant
+  experience_expired
   campaign_allocation
   delivery_charge
   campaign_refund
   payment_refund
   admin_adjustment
+}
+
+enum AdExperienceGrantStatus {
+  active
+  consumed
+  expired
+  cancelled
+}
+
+enum AdCampaignCreditSource {
+  purchased
+  experience
 }
 
 enum ClaimTargetType {
@@ -306,6 +320,7 @@ model User {
   adReviewActions              AdReviewLog[]                 @relation("AdReviewLogActor")
   adPaymentOrdersCreated       AdPaymentOrder[]              @relation("AdPaymentOrderCreatedBy")
   adCreditEntriesCreated       AdCreditLedgerEntry[]         @relation("AdCreditLedgerEntryCreatedBy")
+  adExperienceGrantsCreated    AdExperienceGrant[]           @relation("AdExperienceGrantCreatedBy")
   artistAccesses               ArtistAccess[]                @relation("ArtistAccessUser")
   artistAccessInvites          ArtistAccess[]                @relation("ArtistAccessInvitedBy")
   artistsVerified              Artist[]                      @relation("ArtistVerifiedBy")
@@ -685,6 +700,7 @@ model AdCampaign {
   deliveries        AdDelivery[]
   paymentOrders     AdPaymentOrder[]
   creditEntries     AdCreditLedgerEntry[]
+  creditAllocations AdCampaignCreditAllocation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -717,6 +733,7 @@ model AdvertiserAccount {
   wallet        AdvertiserWallet?
   paymentOrders AdPaymentOrder[]
   creditEntries AdCreditLedgerEntry[]
+  experienceGrants AdExperienceGrant[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -734,6 +751,54 @@ model AdvertiserWallet {
   updatedAt DateTime @updatedAt
 
   account AdvertiserAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+}
+
+// Bônus de experimentação não entram na carteira financeira. Cada concessão
+// preserva prazo, origem e responsável para auditoria e rebonificação.
+model AdExperienceGrant {
+  id                   String                  @id @default(uuid())
+  accountId            String
+  originalMilipatacos  BigInt
+  remainingMilipatacos BigInt                  @default(0)
+  expiredMilipatacos   BigInt                  @default(0)
+  status               AdExperienceGrantStatus @default(active)
+  reason               String                  @db.VarChar(500)
+  note                 String?                 @db.Text
+  overrideReason       String?                 @db.Text
+  expiresAt            DateTime
+  grantedByUserId      String
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+
+  account     AdvertiserAccount             @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  grantedBy   User                          @relation("AdExperienceGrantCreatedBy", fields: [grantedByUserId], references: [id], onDelete: Restrict)
+  allocations AdCampaignCreditAllocation[]
+
+  @@index([accountId, status, expiresAt])
+  @@index([createdAt])
+}
+
+// A reserva da campanha sabe de qual fonte veio. Assim, crédito promocional
+// pode expirar ou voltar ao lote sem alterar a verba adquirida.
+model AdCampaignCreditAllocation {
+  id                   String                   @id @default(uuid())
+  campaignId           String
+  experienceGrantId    String?
+  source               AdCampaignCreditSource
+  originalMilipatacos  BigInt
+  reservedMilipatacos  BigInt                   @default(0)
+  spentMilipatacos     BigInt                   @default(0)
+  expiredMilipatacos   BigInt                   @default(0)
+  expiresAt            DateTime?
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+
+  campaign        AdCampaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  experienceGrant AdExperienceGrant?  @relation(fields: [experienceGrantId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId, source])
+  @@index([experienceGrantId])
+  @@index([expiresAt])
 }
 
 model AdPaymentOrder {

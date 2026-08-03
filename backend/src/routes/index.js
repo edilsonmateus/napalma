@@ -108,7 +108,7 @@ import {
 import { approveAdReview, getAdReviewHistory, listAdReviewQueue, rejectAdReview, requestAdReviewChanges, submitAdReview } from "../controllers/adReviews.controller.js";
 import { createMyAdvertiserCampaign, createMyAdvertiserCreative, deleteMyAdvertiserCampaign, duplicateMyAdvertiserCampaign, endMyAdvertiserCampaign, listMyAdvertiserAccessRequests, listMyAdvertiserAccounts, listMyAdvertiserCampaigns, requestMyAdvertiserAccess, setMyAdvertiserCampaignLifecycle, submitMyAdvertiserReview, updateMyAdvertiserCampaign, updateMyAdvertiserCreative } from "../controllers/advertiserPortal.controller.js";
 import { decideMyArtistInvitation, inviteArtistTeamMember, listArtistTeam, listMyArtistInvitations, revokeArtistTeamMember, updateArtistTeamMember } from "../controllers/artistTeam.controller.js";
-import { allocateMyWalletCredits, createMyPaymentOrder, getAdsBillingOperations, getMyAdvertiserWallet, getMyPaymentOrder, processAdminMockPaymentOrder, processMyMockPaymentOrder } from "../controllers/adPayments.controller.js";
+import { allocateMyWalletCredits, createMyPaymentOrder, getAdsBillingOperations, getMyAdvertiserWallet, getMyPaymentOrder, grantAdminExperienceCredits, processAdminMockPaymentOrder, processMyMockPaymentOrder } from "../controllers/adPayments.controller.js";
 import { actOnOperationsPrivacyRequest, createMyDeletionRequest, createMyPrivacyRequest, exportMyPrivacyData, getMyPrivacyOverview, getOperationsPrivacyRequestDetail, getPrivacyRetentionPreviewForAdmin, getSecurityReadinessForAdmin, listAuditLogs, listOperationsPrivacyRequests, listPrivacyRequests, setMyPrivacyConsent, updatePrivacyRequest } from "../controllers/privacy.controller.js";
 import {
   addVenueMenuInteraction,
@@ -445,4 +445,5 @@ router.patch("/ads/advertiser-memberships/:id", ...canManageAdvertiserAccounts, 
 router.delete("/ads/advertiser-memberships/:id", ...canManageAdvertiserAccounts, revokeAdvertiserMembership);
 router.patch("/ads/campaigns/:id/advertiser-account", ...canManageAdvertiserAccounts, setCampaignAdvertiserAccount);
 router.get("/ads/billing", ...canManageAds, requireFeatureFlag("ADS_CREDITS_PURCHASE_ENABLED"), getAdsBillingOperations);
+router.post("/ads/advertiser-accounts/:accountId/experience-grants", ...canManageAds, requireFeatureFlag("ADS_CREDITS_PURCHASE_ENABLED"), grantAdminExperienceCredits);
 router.post("/ads/payment-orders/:id/mock-process", ...canManageAds, requireFeatureFlag("ADS_CREDITS_PURCHASE_ENABLED"), paymentLimiter, processAdminMockPaymentOrder);

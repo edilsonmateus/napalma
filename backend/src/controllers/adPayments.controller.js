@@ -5,6 +5,7 @@ import {
   getActiveAdvertiserMembership,
   getBillingOperationsSnapshot,
   getWalletSnapshot,
+  grantExperienceCredits,
   paymentRuntime,
   processMockPaymentOrder
 } from "../services/adPayments.service.js";
@@ -75,6 +76,24 @@ export async function processMyMockPaymentOrder(req, res, next) {
 export async function getAdsBillingOperations(_req, res, next) {
   try {
     return res.json({ item: await getBillingOperationsSnapshot() });
+  } catch (error) { return next(error); }
+}
+
+export async function grantAdminExperienceCredits(req, res, next) {
+  try {
+    const accountId = uuid.parse(req.params.accountId);
+    const payload = z.object({
+      amountPatacos: z.union([z.literal(250), z.literal(500), z.literal(750)]),
+      validDays: z.number().int().min(1).max(90).optional(),
+      reason: z.string().trim().min(4).max(500),
+      note: z.string().trim().max(4000).optional(),
+      overrideReason: z.string().trim().min(4).max(4000).optional()
+    }).parse(req.body);
+    const result = await grantExperienceCredits({ accountId, ...payload, userId: req.user.id });
+    if (!result.error) {
+      await recordAuditEvent({ req, action: "ads.experience_credits_granted", subjectType: "advertiser_account", subjectId: accountId, metadata: { amountPatacos: payload.amountPatacos, validDays: payload.validDays || 30, reason: payload.reason, override: Boolean(payload.overrideReason) } });
+    }
+    return sendResult(res, result, 201);
   } catch (error) { return next(error); }
 }
 

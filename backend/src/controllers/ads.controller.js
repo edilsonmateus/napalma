@@ -8,6 +8,7 @@ import { adTargetingSchema } from "../utils/adTargetingPolicy.js";
 import { safeHttpUrl } from "../utils/safeUrl.js";
 import { creativeFormatIssue } from "../utils/adCreativeFormat.js";
 import { campaignImpressionCost, milipatacosToPatacos } from "../services/adPricing.service.js";
+import { consumeCampaignCreditAllocations } from "../services/adPayments.service.js";
 
 const slotEnum = z.nativeEnum(AdSlot);
 
@@ -497,6 +498,7 @@ export async function trackDeliveredImpression(req, res, next) {
         data: { reservedMilipatacos: { decrement: unitCost }, spentMilipatacos: { increment: unitCost } }
       });
       if (charged.count !== 1) throw new Error("campaign_budget_race");
+      await consumeCampaignCreditAllocations(tx, { campaignId: delivery.campaignId, amountMilipatacos: unitCost });
       const campaign = await tx.adCampaign.findUnique({
         where: { id: delivery.campaignId },
         select: { advertiserAccountId: true, reservedMilipatacos: true }

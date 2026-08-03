@@ -5,6 +5,7 @@ import { adTargetingSchema } from "../utils/adTargetingPolicy.js";
 import { safeHttpUrl } from "../utils/safeUrl.js";
 import { creativeFormatIssue } from "../utils/adCreativeFormat.js";
 import { milipatacosToPatacos } from "../services/adPricing.service.js";
+import { reconcileExpiredExperienceCredits } from "../services/adPayments.service.js";
 
 const uuid = z.string().uuid();
 const accountParams = z.object({ accountId: uuid });
@@ -249,33 +250,56 @@ export async function endMyAdvertiserCampaign(req, res, next) {
     const access = await membership(req.user.id, current.advertiserAccountId);
     if (!access) return deny(res);
     if (!WRITE_ROLES.includes(access.role)) return deny(res, true);
+    await reconcileExpiredExperienceCredits(current.advertiserAccountId);
     const item = await prisma.$transaction(async (tx) => {
-      const campaign = await tx.adCampaign.findUnique({ where: { id: campaignId } });
+      const campaign = await tx.adCampaign.findUnique({ where: { id: campaignId }, include: { creditAllocations: { include: { experienceGrant: true } } } });
       if (!campaign || campaign.status === "ended") return campaign;
       const returned = BigInt(campaign.reservedMilipatacos || 0);
+      let paidReturned = 0n;
+      let experienceReturned = 0n;
+      const now = new Date();
+      for (const allocation of campaign.creditAllocations) {
+        const reserved = BigInt(allocation.reservedMilipatacos || 0);
+        if (reserved <= 0n) continue;
+        if (allocation.source === "experience" && allocation.experienceGrant && allocation.experienceGrant.status !== "expired" && allocation.experienceGrant.expiresAt > now) {
+          await tx.adExperienceGrant.update({
+            where: { id: allocation.experienceGrantId },
+            data: { remainingMilipatacos: { increment: reserved }, status: "active" }
+          });
+          experienceReturned += reserved;
+        } else if (allocation.source === "purchased") {
+          paidReturned += reserved;
+        }
+        await tx.adCampaignCreditAllocation.update({ where: { id: allocation.id }, data: { reservedMilipatacos: 0n } });
+      }
+      // Campanhas anteriores à divisão por fonte não possuem alocações. O saldo
+      // remanescente delas continua sendo saldo pago e precisa voltar à carteira.
+      const trackedReturned = paidReturned + experienceReturned;
+      if (returned > trackedReturned) paidReturned += returned - trackedReturned;
       const updated = await tx.adCampaign.update({
         where: { id: campaignId },
         data: { status: "ended", isEnabled: false, endsAt: campaign.endsAt || new Date(), reservedMilipatacos: 0n },
         include: { creatives: true }
       });
-      if (returned > 0n) {
+      if (paidReturned > 0n) {
         const wallet = await tx.advertiserWallet.upsert({
           where: { accountId: campaign.advertiserAccountId },
-          create: { accountId: campaign.advertiserAccountId, balance: Math.floor(milipatacosToPatacos(returned)), balanceMilipatacos: returned },
-          update: { balance: { increment: Math.floor(milipatacosToPatacos(returned)) }, balanceMilipatacos: { increment: returned } }
+          create: { accountId: campaign.advertiserAccountId, balance: Math.floor(milipatacosToPatacos(paidReturned)), balanceMilipatacos: paidReturned },
+          update: { balance: { increment: Math.floor(milipatacosToPatacos(paidReturned)) }, balanceMilipatacos: { increment: paidReturned } }
         });
         await tx.adCreditLedgerEntry.create({
           data: {
             accountId: campaign.advertiserAccountId,
             campaignId,
             type: "campaign_refund",
-            delta: Math.floor(milipatacosToPatacos(returned)),
+            delta: Math.floor(milipatacosToPatacos(paidReturned)),
             balanceAfter: wallet.balance,
-            amountMilipatacos: returned,
+            amountMilipatacos: paidReturned,
             balanceAfterMilipatacos: wallet.balanceMilipatacos,
             idempotencyKey: `campaign-end-refund:${campaignId}`,
-            description: "Saldo nao utilizado devolvido a carteira apos encerramento da campanha.",
-            createdByUserId: req.user.id
+            description: "Saldo pago nao utilizado devolvido a carteira apos encerramento da campanha.",
+            createdByUserId: req.user.id,
+            metadata: { experienceReturnedMilipatacos: experienceReturned.toString(), totalReserveAtEndMilipatacos: returned.toString() }
           }
         });
       }

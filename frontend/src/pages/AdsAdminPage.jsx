@@ -39,7 +39,7 @@ import {
 } from "../hooks/useEventsQuery";
 import { useAuthStore } from "../store/authStore";
 import AdsPlacementMockup from "../components/ads/AdsPlacementMockup";
-import { getAdsBillingOperations, processAdminMockPaymentOrder } from "../services/events.service";
+import { getAdsBillingOperations, grantAdsExperienceCredits, processAdminMockPaymentOrder } from "../services/events.service";
 
 const ADVERTISER_ACCOUNTS_ENABLED =
   String(import.meta.env.VITE_ADS_ADVERTISER_ACCOUNTS_ENABLED || "").toLowerCase() === "true";
@@ -263,6 +263,8 @@ export default function AdsAdminPage() {
   const [billing, setBilling] = useState(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingProcessingId, setBillingProcessingId] = useState("");
+  const [experienceGrantForm, setExperienceGrantForm] = useState({ accountId: "", amountPatacos: "250", validDays: "30", reason: "", note: "", overrideReason: "" });
+  const [experienceGrantBusy, setExperienceGrantBusy] = useState(false);
 
   async function handleReviewDecision(item, decision) {
     try {
@@ -441,6 +443,29 @@ export default function AdsAdminPage() {
       setMessage(error?.response?.data?.message || "Não foi possível processar esta simulação.");
     } finally {
       setBillingProcessingId("");
+    }
+  }
+
+  async function handleExperienceGrant(event) {
+    event.preventDefault();
+    if (!experienceGrantForm.accountId) return setMessage("Selecione a conta anunciante que receberá a bonificação.");
+    setExperienceGrantBusy(true);
+    try {
+      const item = await grantAdsExperienceCredits(experienceGrantForm.accountId, {
+        amountPatacos: Number(experienceGrantForm.amountPatacos),
+        validDays: Number(experienceGrantForm.validDays),
+        reason: experienceGrantForm.reason,
+        note: experienceGrantForm.note || undefined,
+        overrideReason: experienceGrantForm.overrideReason || undefined
+      });
+      setMessage(`${item.originalPatacos} Patacos de experiência concedidos até ${new Date(item.expiresAt).toLocaleDateString("pt-BR")}.`);
+      setExperienceGrantForm((current) => ({ ...current, reason: "", note: "", overrideReason: "" }));
+      await loadBilling();
+    } catch (error) {
+      const review = error?.response?.data?.review;
+      setMessage(review ? `${error?.response?.data?.message} Projeção: ${review.projectedPatacos} Patacos.` : (error?.response?.data?.message || "Não foi possível conceder os créditos de experiência."));
+    } finally {
+      setExperienceGrantBusy(false);
     }
   }
 
@@ -1381,10 +1406,27 @@ export default function AdsAdminPage() {
           </div>
           <div className="ads-hard-kpis">
             <article className="clean-card"><h4>Ordens</h4><p>{billing?.summary?.orders || 0}</p></article>
-            <article className="clean-card"><h4>Patacos aprovados</h4><p>{billing?.summary?.approvedCredits || 0}</p></article>
-            <article className="clean-card"><h4>Saldo livre</h4><p>{billing?.summary?.availableWalletCredits || 0}</p></article>
+            <article className="clean-card"><h4>Patacos adquiridos</h4><p>{billing?.summary?.approvedPatacos || 0}</p></article>
+            <article className="clean-card"><h4>Saldo pago livre</h4><p>{billing?.summary?.availableWalletPatacos || 0}</p></article>
+            <article className="clean-card"><h4>Experiência disponível</h4><p>{billing?.summary?.availableExperiencePatacos || 0}</p></article>
             <article className="clean-card"><h4>Provedor</h4><p className="ads-billing-provider">{billing?.runtime?.provider || "-"}</p></article>
           </div>
+          <article className="clean-card ads-experience-grant-card">
+            <div className="ads-section-heading"><div><span className="eyebrow">Crédito de experiência</span><h3>Bonificar uma conta anunciante</h3><p className="meta-line">Uso interno, sem valor financeiro, sem transferência e com expiração. O saldo promocional é consumido antes do saldo adquirido.</p></div></div>
+            <form className="ads-experience-grant-form" onSubmit={handleExperienceGrant}>
+              <label>Conta anunciante<select value={experienceGrantForm.accountId} onChange={(event) => setExperienceGrantForm((current) => ({ ...current, accountId: event.target.value }))}><option value="">Selecione uma conta</option>{advertiserAccounts.filter((account) => account.status === "active").map((account) => <option key={account.id} value={account.id}>{account.name} · {account.type}</option>)}</select></label>
+              <label>Lote<select value={experienceGrantForm.amountPatacos} onChange={(event) => setExperienceGrantForm((current) => ({ ...current, amountPatacos: event.target.value }))}><option value="250">250 Patacos</option><option value="500">500 Patacos</option><option value="750">750 Patacos</option></select></label>
+              <label>Validade<select value={experienceGrantForm.validDays} onChange={(event) => setExperienceGrantForm((current) => ({ ...current, validDays: event.target.value }))}><option value="30">30 dias</option><option value="15">15 dias</option><option value="60">60 dias</option><option value="90">90 dias</option></select></label>
+              <label className="wide">Motivo operacional<input value={experienceGrantForm.reason} maxLength="500" required placeholder="Ex.: primeiro teste da casa na plataforma" onChange={(event) => setExperienceGrantForm((current) => ({ ...current, reason: event.target.value }))} /></label>
+              <label className="wide">Observação interna (opcional)<input value={experienceGrantForm.note} maxLength="4000" placeholder="Contexto que não será exibido à conta anunciante" onChange={(event) => setExperienceGrantForm((current) => ({ ...current, note: event.target.value }))} /></label>
+              <label className="wide">Justificativa de exceção (necessária acima de 750 Patacos em 90 dias)<textarea value={experienceGrantForm.overrideReason} maxLength="4000" placeholder="Registre por que uma nova bonificação deve ultrapassar a faixa de revisão." onChange={(event) => setExperienceGrantForm((current) => ({ ...current, overrideReason: event.target.value }))} /></label>
+              <div className="form-actions-inline"><button className="btn-primary" type="submit" disabled={experienceGrantBusy}>{experienceGrantBusy ? "Concedendo..." : "Conceder Patacos de experiência"}</button></div>
+            </form>
+          </article>
+          <article className="clean-card ads-billing-table-card">
+            <div className="ads-section-heading"><div><h3>Bonificações recentes</h3><p className="meta-line">Registro de origem, validade, saldo disponível e responsável pela concessão.</p></div></div>
+            <div className="ads-billing-table-wrap"><table className="ads-billing-table"><thead><tr><th>Conta</th><th>Concessão</th><th>Saldo</th><th>Validade</th><th>Motivo</th><th>Status</th></tr></thead><tbody>{(billing?.experienceGrants || []).map((grant) => <tr key={grant.id}><td><strong>{grant.account?.name}</strong><small>{grant.grantedBy?.email || "Operação 77Gira"}</small></td><td>{grant.originalPatacos} Patacos</td><td>{grant.remainingPatacos} Patacos</td><td>{new Date(grant.expiresAt).toLocaleDateString("pt-BR")}</td><td>{grant.reason}</td><td><span className={`status-badge status-${grant.status}`}>{grant.status}</span></td></tr>)}{!billing?.experienceGrants?.length ? <tr><td colSpan="6"><p className="meta-line">Nenhuma bonificação registrada.</p></td></tr> : null}</tbody></table></div>
+          </article>
           <article className="clean-card ads-billing-table-card">
             <div className="ads-section-heading"><div><h3>Ordens recentes</h3><p className="meta-line">Referência, conta, campanha e resultado do processamento.</p></div></div>
             {billingLoading && !billing ? <p className="meta-line">Carregando operação...</p> : null}
