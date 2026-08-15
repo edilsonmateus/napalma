@@ -19,11 +19,13 @@ describe("artist EPK foundation", () => {
   });
 
   it("approves ownership and verification in the same transaction", () => {
-    expect(claims).toContain("await tx.artistAccess.upsert");
-    expect(claims).toContain("isVerified: true, verifiedAt: new Date(), verifiedByUserId: req.user.id");
-    expect(claims).toContain("const requestedAccessProfile = requestedChanges.requestedAccessProfile");
-    expect(claims).toContain('["producer", "venue_manager"].includes(requestedAccessProfile)');
-    expect(claims).toContain('role: "venue_manager"');
+    const claimAccess = fs.readFileSync(path.join(process.cwd(), "src/services/claimAccess.service.js"), "utf8");
+    expect(claimAccess).toContain("await tx.artistAccess.upsert");
+    expect(claimAccess).toContain("isVerified: true");
+    expect(claimAccess).toContain("verifiedByUserId: actorUserId");
+    expect(claimAccess).toContain("const accessProfile");
+    expect(claimAccess).toContain('["producer", "venue_manager"].includes(requested.requestedAccessProfile)');
+    expect(claimAccess).toContain('role: "venue_manager"');
   });
 
   it("keeps private contact fields out of the public EPK DTO", () => {

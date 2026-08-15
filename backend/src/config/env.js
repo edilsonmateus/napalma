@@ -31,7 +31,8 @@ export const env = {
   adsHealthAlertsEnabled: process.env.ADS_HEALTH_ALERTS_ENABLED === "true",
   adsHealthAlertWebhookUrl: process.env.ADS_HEALTH_ALERT_WEBHOOK_URL || "",
   adsHealthAlertIntervalMs: Number(process.env.ADS_HEALTH_ALERT_INTERVAL_MS || 900000),
-  adsHealthAlertCooldownMs: Number(process.env.ADS_HEALTH_ALERT_COOLDOWN_MS || 21600000)
+  adsHealthAlertCooldownMs: Number(process.env.ADS_HEALTH_ALERT_COOLDOWN_MS || 21600000),
+  professionalClaimLegalGateEnabled: process.env.PROFESSIONAL_CLAIM_LEGAL_GATE_ENABLED === "true"
 };
 
 const INSECURE_JWT_VALUES = new Set(["", "dev-secret-change-me", "change-me", "secret", "jwt-secret"]);

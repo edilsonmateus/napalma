@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { recordAuditEvent } from "../services/audit.service.js";
 import { sendLegalSignatureCodeEmail, sendLegalSignatureInvitationEmail } from "../services/transactionalEmail.service.js";
+import { reconcileClaimLegalEnvelope } from "../services/claimLegalWorkflow.service.js";
 
 const CODE_TTL_MS = 10 * 60 * 1000;
 const INVITATION_TTL_DAYS = 30;
@@ -72,6 +73,31 @@ async function resolveMine(req, participantId) {
   return item;
 }
 
+async function expireEnvelopeIfNeeded(req, item) {
+  if (!item?.envelope?.expiresAt || item.envelope.expiresAt > new Date()) return false;
+  if (item.status === "signed" || ["completed", "declined", "cancelled", "expired"].includes(item.envelope.status)) return false;
+
+  const now = new Date();
+  const changed = await prisma.$transaction(async (tx) => {
+    const envelope = await tx.legalSignatureEnvelope.updateMany({
+      where: { id: item.envelopeId, status: "pending_signature" },
+      data: { status: "expired" }
+    });
+    if (!envelope.count) return false;
+    await tx.legalSignatureParticipant.updateMany({
+      where: { envelopeId: item.envelopeId, status: { in: ["pending", "viewed"] } },
+      data: { status: "expired" }
+    });
+    return true;
+  });
+
+  if (changed) {
+    await event({ req, envelopeId: item.envelopeId, participantId: item.id, action: "expired", metadata: { expiredAt: now } });
+    await reconcileClaimLegalEnvelope({ envelopeId: item.envelopeId, actorUserId: req.user?.id || null });
+  }
+  return changed;
+}
+
 export async function listMyLegalSignatures(req, res, next) {
   try {
     const items = await prisma.legalSignatureParticipant.findMany({
@@ -88,11 +114,14 @@ export async function getMyLegalSignature(req, res, next) {
   try {
     const item = await resolveMine(req, req.params.participantId);
     if (!item) return res.status(404).json({ message: "Documento de assinatura não encontrado para esta conta." });
-    if (item.envelope.expiresAt && item.envelope.expiresAt <= new Date() && item.status !== "signed") return res.status(410).json({ message: "O prazo desta assinatura expirou." });
+    if (await expireEnvelopeIfNeeded(req, item)) return res.status(410).json({ message: "O prazo desta assinatura expirou." });
     if (!item.viewedAt && item.status === "pending") {
       await prisma.legalSignatureParticipant.update({ where: { id: item.id }, data: { viewedAt: new Date(), status: "viewed" } });
       await event({ req, envelopeId: item.envelopeId, participantId: item.id, action: "viewed" });
       item.viewedAt = new Date(); item.status = "viewed";
+    }
+    if (item.status === "signed" && item.envelope.status === "completed") {
+      await reconcileClaimLegalEnvelope({ envelopeId: item.envelopeId, actorUserId: req.user.id });
     }
     return res.json({ item: serializeParticipant(item, true) });
   } catch (error) { next(error); }
@@ -102,8 +131,8 @@ export async function requestMyLegalSignatureCode(req, res, next) {
   try {
     const item = await resolveMine(req, req.params.participantId);
     if (!item) return res.status(404).json({ message: "Documento de assinatura não encontrado para esta conta." });
+    if (await expireEnvelopeIfNeeded(req, item)) return res.status(410).json({ message: "O prazo desta assinatura expirou." });
     if (!["pending", "viewed"].includes(item.status) || item.envelope.status !== "pending_signature") return res.status(409).json({ message: "Esta assinatura não está disponível para confirmação." });
-    if (item.envelope.expiresAt && item.envelope.expiresAt <= new Date()) return res.status(410).json({ message: "O prazo desta assinatura expirou." });
     const code = sixDigitCode();
     const expiresAt = new Date(Date.now() + CODE_TTL_MS);
     await prisma.legalSignatureParticipant.update({ where: { id: item.id }, data: { emailCodeHash: hash(code), emailCodeExpiresAt: expiresAt, emailCodeUsedAt: null } });
@@ -118,6 +147,11 @@ export async function confirmMyLegalSignature(req, res, next) {
     const data = confirmSchema.parse(req.body);
     const item = await resolveMine(req, req.params.participantId);
     if (!item) return res.status(404).json({ message: "Documento de assinatura não encontrado para esta conta." });
+    if (await expireEnvelopeIfNeeded(req, item)) return res.status(410).json({ message: "O prazo desta assinatura expirou." });
+    if (item.status === "signed" && item.envelope.status === "completed") {
+      await reconcileClaimLegalEnvelope({ envelopeId: item.envelopeId, actorUserId: req.user.id });
+      return res.json({ signed: true, signedAt: item.signedAt, protocol: item.envelope.protocol });
+    }
     if (!["pending", "viewed"].includes(item.status) || item.envelope.status !== "pending_signature") return res.status(409).json({ message: "Esta assinatura não está disponível para confirmação." });
     const passwordValid = await bcrypt.compare(data.password, req.user.passwordHash);
     if (!passwordValid) return res.status(400).json({ message: "A senha atual não confere. A assinatura não foi registrada." });
@@ -134,6 +168,7 @@ export async function confirmMyLegalSignature(req, res, next) {
       if (remaining === 0) await tx.legalSignatureEnvelope.update({ where: { id: item.envelopeId }, data: { status: "completed", completedAt: now } });
     });
     await event({ req, envelopeId: item.envelopeId, participantId: item.id, action: "signed", metadata: { methods: ["password", "email_code"], contentSha256: item.envelope.contentSha256 } });
+    await reconcileClaimLegalEnvelope({ envelopeId: item.envelopeId, actorUserId: req.user.id });
     return res.json({ signed: true, signedAt: now, protocol: item.envelope.protocol });
   } catch (error) { next(error); }
 }
@@ -150,6 +185,7 @@ export async function declineMyLegalSignature(req, res, next) {
       prisma.legalSignatureEnvelope.update({ where: { id: item.envelopeId }, data: { status: "declined" } })
     ]);
     await event({ req, envelopeId: item.envelopeId, participantId: item.id, action: "declined", metadata: { reason: data.reason } });
+    await reconcileClaimLegalEnvelope({ envelopeId: item.envelopeId, actorUserId: req.user.id });
     return res.json({ declined: true });
   } catch (error) { next(error); }
 }
@@ -204,6 +240,7 @@ export async function cancelOperationsLegalSignature(req, res, next) {
     if (!["draft", "pending_signature"].includes(item.status)) return res.status(409).json({ message: "Este envelope não pode mais ser cancelado." });
     await prisma.legalSignatureEnvelope.update({ where: { id: item.id }, data: { status: "cancelled", cancelledAt: new Date(), cancellationReason: reason } });
     await event({ req, envelopeId: item.id, action: "cancelled", metadata: { reason } });
+    await reconcileClaimLegalEnvelope({ envelopeId: item.id, actorUserId: req.user.id });
     return res.json({ cancelled: true });
   } catch (error) { next(error); }
 }

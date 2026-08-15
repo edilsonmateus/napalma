@@ -295,8 +295,10 @@ enum ClaimTargetType {
 
 enum ClaimStatus {
   pending
+  pending_legal_acceptance
   approved
   rejected
+  cancelled
 }
 
 enum ArtistAccessRole {
@@ -700,6 +702,7 @@ model LegalSignatureEnvelope {
   createdBy             User                         @relation("LegalSignatureEnvelopeCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
   participants          LegalSignatureParticipant[]
   events                LegalSignatureEvent[]
+  claimRequest          ClaimRequest?
   createdAt             DateTime                     @default(now())
   updatedAt             DateTime                     @updatedAt
 
@@ -1769,6 +1772,8 @@ model ClaimRequest {
   reviewedById                String?
   reviewedAt                  DateTime?
   decisionNote                String?
+  legalEnvelopeId             String?         @unique
+  accessActivatedAt           DateTime?
   createdAt                   DateTime        @default(now())
   updatedAt                   DateTime        @updatedAt
 
@@ -1776,6 +1781,7 @@ model ClaimRequest {
   reviewedBy  User?   @relation("ClaimReviewedBy", fields: [reviewedById], references: [id])
   venue       Venue?  @relation("ClaimVenue", fields: [venueId], references: [id])
   artist      Artist? @relation("ClaimArtist", fields: [artistId], references: [id])
+  legalEnvelope LegalSignatureEnvelope? @relation(fields: [legalEnvelopeId], references: [id], onDelete: SetNull)
 
   @@index([requestedById, status])
   @@index([targetType, status])

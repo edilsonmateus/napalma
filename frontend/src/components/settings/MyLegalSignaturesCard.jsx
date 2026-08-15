@@ -12,7 +12,9 @@ const STATUS_LABELS = {
   pending: "Aguardando leitura",
   viewed: "Aguardando assinatura",
   signed: "Assinado",
-  declined: "Recusado"
+  declined: "Recusado",
+  expired: "Prazo expirado",
+  cancelled: "Cancelado"
 };
 
 function formatDate(value) {
@@ -93,7 +95,11 @@ export default function MyLegalSignaturesCard() {
     {!state.loading && !state.error && !state.items.length ? <div className="account-legal-documents-empty"><FileSignature size={17}/><span>Nenhuma assinatura formal pendente ou registrada para esta conta.</span></div> : null}
     {pending.length ? <div className="account-legal-signatures-required"><strong>Você tem {pending.length} assinatura{pending.length > 1 ? "s" : ""} aguardando ação</strong><span>Leia o documento integral antes de solicitar seu código de confirmação.</span></div> : null}
     {state.items.length ? <ul className="account-legal-documents-list account-legal-signatures-list">
-      {state.items.map((entry) => <li key={entry.id}><span><strong>{entry.title}</strong><small>{entry.documentTitle} · versão {entry.versionLabel}</small><small>Protocolo {entry.protocol} · prazo {formatDate(entry.expiresAt)}</small></span><div><em className={`legal-signature-status status-${entry.status}`}>{STATUS_LABELS[entry.status] || entry.status}</em><button type="button" className="chip" disabled={busy === `open-${entry.id}`} onClick={() => openSignature(entry)}>{busy === `open-${entry.id}` ? "Abrindo…" : entry.status === "signed" ? "Ver registro" : "Ler e assinar"}</button></div></li>)}
+      {state.items.map((entry) => {
+        const actionable = ["pending", "viewed"].includes(entry.status);
+        const unavailable = ["expired", "cancelled"].includes(entry.status);
+        return <li key={entry.id}><span><strong>{entry.title}</strong><small>{entry.documentTitle} · versão {entry.versionLabel}</small><small>Protocolo {entry.protocol} · prazo {formatDate(entry.expiresAt)}</small></span><div><em className={`legal-signature-status status-${entry.status}`}>{STATUS_LABELS[entry.status] || entry.status}</em><button type="button" className="chip" disabled={busy === `open-${entry.id}` || unavailable} onClick={() => openSignature(entry)}>{busy === `open-${entry.id}` ? "Abrindo…" : actionable ? "Ler e assinar" : entry.status === "signed" ? "Ver registro" : "Indisponível"}</button></div></li>;
+      })}
     </ul> : null}
     {item ? <div className="account-legal-dialog-backdrop" role="presentation" onMouseDown={() => !busy && setItem(null)}>
       <section className="account-legal-dialog account-legal-signature-dialog" role="dialog" aria-modal="true" aria-labelledby="signature-document-title" onMouseDown={(event) => event.stopPropagation()}>

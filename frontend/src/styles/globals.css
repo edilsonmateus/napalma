@@ -6974,6 +6974,17 @@ a.strategic-partner-card:hover { border-color: #b8c7da; background: #fff; }
 
 .users-admin-screen { display: grid; gap: 14px; max-width: 860px; margin: 0 auto; }
 .users-admin-form, .users-admin-list { display: grid; gap: 10px; }
+.users-admin-section-heading > div { min-width: 0; }
+.users-admin-section-heading__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.users-admin-section-heading__title > svg {
+  flex: 0 0 auto;
+  color: #ffb000;
+}
 .users-admin-form > input, .users-admin-form .account-form-pair > input, .users-admin-search > input { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid #2e2e2e; border-radius: 10px; background: #111; color: var(--text-primary); font: inherit; color-scheme: dark; }
 .users-admin-form > .chip { width: fit-content; }
 .users-reserved-warning { margin: -3px 0 2px; color: #fbbf24; font-size: 11px; }
@@ -7055,8 +7066,57 @@ a.strategic-partner-card:hover { border-color: #b8c7da; background: #fff; }
 .venue-claim-list button.artist-directory-action:disabled { border-color: rgba(255,255,255,.12); color: var(--text-muted); cursor: default; }
 .venue-claim-form { display: grid; gap: 12px; width: min(560px, calc(100vw - 28px)); }
 .venue-claim-form label { display: grid; gap: 6px; color: var(--text-secondary); font-size: 12px; }
-.venue-claim-form :is(input, select, textarea) { width: 100%; }
-.venue-claim-form textarea { min-height: 96px; resize: vertical; }
+.venue-claim-form :is(input, select, textarea) {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  border: 1px solid #302d36;
+  border-radius: 8px;
+  outline: 0;
+  background-color: #111214;
+  color: #f2eef5;
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.35;
+  color-scheme: dark;
+  transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+.venue-claim-form select { padding-right: 38px; cursor: pointer; }
+.venue-claim-form textarea { min-height: 104px; padding-block: 11px; resize: vertical; }
+.venue-claim-form :is(input, textarea)::placeholder { color: #817a8a; opacity: 1; }
+.venue-claim-form :is(input, select, textarea):focus-visible {
+  border-color: rgba(255, 184, 28, .72);
+  box-shadow: 0 0 0 2px rgba(255, 184, 28, .14);
+}
+.venue-claim-form .form-actions-inline {
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 4px;
+}
+.venue-claim-form .form-actions-inline > :is(.btn-primary, .chip) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 40px;
+  margin: 0;
+  padding: 0 18px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+.venue-claim-form .form-actions-inline > .chip {
+  border: 0;
+  background: #27252b;
+  color: #f2eef5;
+}
+.venue-claim-form .form-actions-inline > .chip:hover { background: #302d35; }
+@media (max-width: 480px) {
+  .venue-claim-form .form-actions-inline > :is(.btn-primary, .chip) { flex: 1 1 0; }
+}
 .artist-inclusion-form { display: grid; gap: 10px; }
 .artist-inclusion-form h3, .artist-inclusion-form p { margin: 0; }
 .artist-inclusion-form > p { color: var(--text-secondary); font-size: 12px; }
@@ -12956,18 +13016,19 @@ button.venue-card {
 .audit-log-list small { overflow-wrap: anywhere; }
 .audit-log-metadata { color: #667085; }
 .privacy-retention-preview > .meta-line { margin: 4px 0 12px; }
-.privacy-retention-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.privacy-retention-grid article { min-height: 94px; padding: 10px; border: 1px solid #e4e7ec; border-radius: 7px; background: #fcfcfd; }
-.privacy-retention-grid article > span { display: grid; gap: 4px; }
-.privacy-retention-grid strong { color: #344054; font-size: 1.24rem; }
-.privacy-retention-grid small { color: #667085; font-size: .72rem; text-transform: capitalize; }
+.users-admin-screen .privacy-retention-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.users-admin-screen .privacy-retention-grid article { min-height: 94px; padding: 12px; border: 1px solid rgba(207,217,228,.12); border-radius: 9px; background: rgba(255,255,255,.035); }
+.users-admin-screen .privacy-retention-grid article > span { display: grid; gap: 4px; }
+.users-admin-screen .privacy-retention-grid strong { color: #d7e0e8; font-size: 1.24rem; }
+.users-admin-screen .privacy-retention-grid small { color: #91a2b3; font-size: .72rem; text-transform: capitalize; }
 .security-readiness-list > .meta-line { margin: 4px 0 12px; }
 .security-ready { color: #067647; }
 .security-not-ready { color: #b54708; }
-.security-readiness-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.security-readiness-grid article { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 10px; border: 1px solid #e4e7ec; border-radius: 7px; background: #fcfcfd; }
-.security-readiness-grid article > span:first-child { display: grid; gap: 3px; }
-.security-readiness-grid small { color: #667085; font-size: .72rem; }
+.users-admin-screen .security-readiness-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.users-admin-screen .security-readiness-grid article { display: flex; justify-content: space-between; gap: 10px; align-items: center; min-height: 72px; padding: 12px; border: 1px solid rgba(207,217,228,.12); border-radius: 9px; background: rgba(255,255,255,.035); }
+.users-admin-screen .security-readiness-grid article > span:first-child { display: grid; gap: 3px; }
+.users-admin-screen .security-readiness-grid article strong { color: #d7e0e8; }
+.users-admin-screen .security-readiness-grid small { color: #91a2b3; font-size: .72rem; }
 
 @media (max-width: 640px) {
   .privacy-center-summary { grid-template-columns: auto minmax(0, 1fr); }
@@ -12976,8 +13037,8 @@ button.venue-card {
   .privacy-request-history article { align-items: flex-start; flex-direction: column; gap: 10px; }
   .privacy-data-categories { grid-template-columns: 1fr; }
   .privacy-admin-actions { justify-content: flex-start; }
-  .privacy-retention-grid { grid-template-columns: 1fr; }
-  .security-readiness-grid { grid-template-columns: 1fr; }
+  .users-admin-screen .privacy-retention-grid { grid-template-columns: 1fr; }
+  .users-admin-screen .security-readiness-grid { grid-template-columns: 1fr; }
 }
 
 /* Privacidade e dados: superfície escura contínua e controles de baixo ruído. */

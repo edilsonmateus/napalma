@@ -41,7 +41,11 @@ export default function LegalActionGate() {
   const selected = useMemo(() => new Set(checkedIds), [checkedIds]);
 
   function close() {
-    if (!submitting) setGate(null);
+    if (submitting) return;
+    if (gate?.context) {
+      window.dispatchEvent(new CustomEvent("77gira:legal-acceptance-cancelled", { detail: { context: gate.context } }));
+    }
+    setGate(null);
   }
 
   function toggle(id) {

@@ -33,9 +33,9 @@ export default function VenueClaimDirectoryPage() {
     return venues.filter((venue) => !term || [venue.name, venue.neighborhood, venue.region, venue.city]
       .filter(Boolean).join(" ").toLocaleLowerCase("pt-BR").includes(term));
   }, [query, venues]);
-  const pendingVenueIds = useMemo(() => new Set((claimsQuery.data || [])
-    .filter((claim) => claim.targetType === "venue" && claim.status === "pending" && claim.venue?.id)
-    .map((claim) => claim.venue.id)), [claimsQuery.data]);
+  const activeClaimsByVenue = useMemo(() => new Map((claimsQuery.data || [])
+    .filter((claim) => claim.targetType === "venue" && ["pending", "pending_legal_acceptance"].includes(claim.status) && claim.venue?.id)
+    .map((claim) => [claim.venue.id, claim])), [claimsQuery.data]);
 
   function updateField(event) {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -61,8 +61,9 @@ export default function VenueClaimDirectoryPage() {
       });
       setSelectedVenue(null);
       setForm(initialForm);
-      setMessage("Solicitação enviada. O acesso só será liberado depois da análise da equipe 77Gira.");
+      setMessage("Solicitação enviada. Se o vínculo for aprovado, você receberá o documento formal para leitura e assinatura. O acesso só será liberado depois da conclusão desse aceite.");
     } catch (error) {
+      if (error?.message === "legal_acceptance_cancelled") return;
       setMessage(error?.response?.data?.message || "Não foi possível enviar a solicitação.");
     }
   }
@@ -86,11 +87,13 @@ export default function VenueClaimDirectoryPage() {
     {!venuesQuery.isLoading && !filtered.length ? <div className="clean-card artist-directory-empty"><strong>Casa não encontrada</strong><p>Antes de pedir acesso, solicite a inclusão do estabelecimento à equipe 77Gira para evitarmos duplicidades.</p><a className="chip" href="mailto:77giramundo@gmail.com?subject=Solicitação de inclusão de casa">Solicitar inclusão</a></div> : null}
     <div className="artist-directory-list venue-claim-list">
       {filtered.map((venue) => {
-        const pending = pendingVenueIds.has(venue.id);
+        const activeClaim = activeClaimsByVenue.get(venue.id);
+        const pending = Boolean(activeClaim);
+        const pendingLabel = activeClaim?.status === "pending_legal_acceptance" ? "Aguardando assinatura" : "Em análise";
         return <article className="artist-directory-row" key={venue.id}>
           <div className="artist-directory-avatar venue-claim-avatar">{venue.imageUrl ? <img src={venue.imageUrl} alt="" loading="lazy"/> : <Building2 size={18}/>}</div>
           <div className="artist-directory-identity"><strong>{venue.name}</strong><small>{[venue.neighborhood, venue.region, venue.city].filter(Boolean).join(" · ") || "Casa cadastrada"}</small></div>
-          <button className="artist-directory-action" type="button" disabled={pending} onClick={() => { setSelectedVenue(venue); setMessage(""); }}>{pending ? "Em análise" : "Solicitar acesso"}</button>
+          <button className="artist-directory-action" type="button" disabled={pending} onClick={() => { setSelectedVenue(venue); setMessage(""); }}>{pending ? pendingLabel : "Solicitar acesso"}</button>
         </article>;
       })}
     </div>

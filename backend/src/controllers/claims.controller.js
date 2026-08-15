@@ -2,6 +2,12 @@ import { ClaimStatus, ClaimTargetType } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { recordAuditEvent } from "../services/audit.service.js";
+import { activateClaimAccess } from "../services/claimAccess.service.js";
+import {
+  claimRequiresFormalSignature,
+  deliverClaimLegalInvitation,
+  prepareClaimLegalEnvelope
+} from "../services/claimLegalWorkflow.service.js";
 
 const CLAIM_LEGAL_VERSION = "CLAIM_RESPONSIBILITY_V1";
 
@@ -64,14 +70,10 @@ const claimIdSchema = z.object({
 });
 
 const operationsClaimsListSchema = z.object({
-  status: z.enum(["all", "pending", "approved", "rejected"]).default("all"),
+  status: z.enum(["all", "pending", "pending_legal_acceptance", "approved", "rejected", "cancelled"]).default("all"),
   query: z.string().trim().max(120).optional().default(""),
   limit: z.coerce.number().int().min(1).max(100).default(50)
 });
-
-function slugify(value) {
-  return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
 
 function mapClaim(claim) {
   return {
@@ -97,6 +99,18 @@ function mapClaim(claim) {
     decisionNote: claim.decisionNote ?? "",
     createdAt: claim.createdAt,
     reviewedAt: claim.reviewedAt,
+    accessActivatedAt: claim.accessActivatedAt ?? null,
+    legalWorkflow: claim.legalEnvelope
+      ? {
+          envelopeId: claim.legalEnvelope.id,
+          protocol: claim.legalEnvelope.protocol,
+          status: claim.legalEnvelope.status,
+          expiresAt: claim.legalEnvelope.expiresAt,
+          completedAt: claim.legalEnvelope.completedAt
+        }
+      : claim.legalEnvelopeId
+        ? { envelopeId: claim.legalEnvelopeId }
+        : null,
     venue: claim.venue
       ? {
           id: claim.venue.id,
@@ -190,7 +204,7 @@ export async function createClaimRequest(req, res, next) {
         targetType: data.targetType,
         venueId: data.venueId ?? null,
         artistId: data.artistId ?? null,
-        status: ClaimStatus.pending
+        status: { in: [ClaimStatus.pending, ClaimStatus.pending_legal_acceptance] }
       },
       select: { id: true }
     });
@@ -225,7 +239,8 @@ export async function createClaimRequest(req, res, next) {
         venue: true,
         artist: true,
         requestedBy: true,
-        reviewedBy: true
+        reviewedBy: true,
+        legalEnvelope: true
       }
     });
 
@@ -245,7 +260,8 @@ export async function listMyClaims(req, res, next) {
         venue: true,
         artist: true,
         requestedBy: true,
-        reviewedBy: true
+        reviewedBy: true,
+        legalEnvelope: true
       },
       orderBy: { createdAt: "desc" }
     });
@@ -257,14 +273,15 @@ export async function listMyClaims(req, res, next) {
 
 export async function listClaims(req, res, next) {
   try {
-    const status = z.enum(["pending", "approved", "rejected"]).optional().parse(req.query.status);
+    const status = z.enum(["pending", "pending_legal_acceptance", "approved", "rejected", "cancelled"]).optional().parse(req.query.status);
     const items = await prisma.claimRequest.findMany({
       where: status ? { status } : undefined,
       include: {
         venue: true,
         artist: true,
         requestedBy: true,
-        reviewedBy: true
+        reviewedBy: true,
+        legalEnvelope: true
       },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }]
     });
@@ -312,7 +329,8 @@ export async function getOperationsClaimDetail(req, res, next) {
         venue: { select: { id: true, name: true, region: true, city: true } },
         artist: { select: { id: true, name: true, isVerified: true } },
         requestedBy: { select: { id: true, firstName: true, lastName: true, email: true, username: true, role: true } },
-        reviewedBy: { select: { id: true, firstName: true, lastName: true } }
+        reviewedBy: { select: { id: true, firstName: true, lastName: true } },
+        legalEnvelope: true
       }
     });
     if (!claim) return res.status(404).json({ error: "claim_not_found", message: "Reivindicação não encontrada." });
@@ -326,7 +344,10 @@ export async function decideClaim(req, res, next) {
     const { id } = claimIdSchema.parse(req.params);
     const data = claimDecisionSchema.parse(req.body);
 
-    const existing = await prisma.claimRequest.findUnique({ where: { id } });
+    const existing = await prisma.claimRequest.findUnique({
+      where: { id },
+      include: { requestedBy: true, legalEnvelope: true }
+    });
     if (!existing) {
       return res.status(404).json({ error: "claim_not_found", message: "Reivindicacao nao encontrada." });
     }
@@ -334,155 +355,59 @@ export async function decideClaim(req, res, next) {
       return res.status(409).json({ error: "claim_already_decided", message: "Reivindicacao ja foi decidida." });
     }
 
+    let delivery = null;
+    let auditAction = "claim.decided";
     const updated = await prisma.$transaction(async (tx) => {
-      let includedArtistId = null;
-      if (data.status === ClaimStatus.approved) {
-        if (existing.requestType === "artist_inclusion" && existing.targetType === ClaimTargetType.artist) {
-          const requested = existing.requestedChanges && typeof existing.requestedChanges === "object" ? existing.requestedChanges : {};
-          const artistName = String(requested.artistName || "").trim();
-          if (!artistName) throw new Error("artist_inclusion_name_missing");
-          const duplicate = await tx.artist.findFirst({ where: { name: { equals: artistName, mode: "insensitive" } }, select: { id: true } });
-          if (duplicate) throw Object.assign(new Error("artist_already_exists"), { status: 409 });
-          const baseSlug = slugify(artistName) || "artista";
-          const slugTaken = await tx.artist.findUnique({ where: { slug: baseSlug }, select: { id: true } });
-          const artist = await tx.artist.create({
-            data: {
-              name: artistName,
-              slug: slugTaken ? `${baseSlug}-${existing.id.slice(0, 6)}` : baseSlug,
-              genres: Array.isArray(requested.genres) ? requested.genres.map(String).map((item) => item.trim()).filter(Boolean).slice(0, 12) : ["samba"],
-              isVerified: true,
-              verifiedAt: new Date(),
-              verifiedByUserId: req.user.id,
-              professionalProfile: {
-                create: {
-                  baseCity: String(requested.baseCity || "").trim() || null,
-                  baseState: String(requested.baseState || "").trim() || null
-                }
-              }
-            }
-          });
-          includedArtistId = artist.id;
-          await tx.artistAccess.create({ data: { artistId: artist.id, userId: existing.requestedById, role: "owner", status: "active", acceptedAt: new Date(), invitedByUserId: req.user.id } });
-        }
-        if (existing.requestType === "venue_update" && existing.targetType === ClaimTargetType.venue && existing.venueId) {
-          const allowed = [
-            "name",
-            "description",
-            "contactName",
-            "contactPhone",
-            "instagramUrl",
-            "address",
-            "neighborhood",
-            "region",
-            "city",
-            "state",
-            "imageUrl",
-            "openDays"
-          ];
-          const incoming = existing.requestedChanges && typeof existing.requestedChanges === "object"
-            ? existing.requestedChanges
-            : {};
-          const safePatch = Object.fromEntries(
-            Object.entries(incoming).filter(([key]) => allowed.includes(key))
-          );
-          if (Object.keys(safePatch).length > 0) {
-            await tx.venue.update({
-              where: { id: existing.venueId },
-              data: safePatch
-            });
-          }
-        }
-        if (["ownership", "team_access"].includes(existing.requestType) && existing.targetType === ClaimTargetType.venue && existing.venueId) {
-          const requester = await tx.user.findUnique({
-            where: { id: existing.requestedById },
-            select: { role: true }
-          });
-          const requestedChanges = existing.requestedChanges && typeof existing.requestedChanges === "object"
-            ? existing.requestedChanges
-            : {};
-          const requestedAccessProfile = requestedChanges.requestedAccessProfile;
-          const accessProfile = ["producer", "venue_manager"].includes(requestedAccessProfile)
-            ? requestedAccessProfile
-            : requester?.role === "producer"
-              ? "producer"
-              : "venue_manager";
-
-          if (accessProfile === "venue_manager") {
-            await tx.venueManagerAccess.upsert({
-              where: {
-                userId_venueId: {
-                  userId: existing.requestedById,
-                  venueId: existing.venueId
-                }
-              },
-              update: {},
-              create: { userId: existing.requestedById, venueId: existing.venueId }
-            });
-            if (requester?.role === "attendee") {
-              await tx.user.update({ where: { id: existing.requestedById }, data: { role: "venue_manager" } });
-            }
-          } else {
-            await tx.producerVenueAccess.upsert({
-              where: {
-                producerId_venueId: {
-                  producerId: existing.requestedById,
-                  venueId: existing.venueId
-                }
-              },
-              update: {},
-              create: { producerId: existing.requestedById, venueId: existing.venueId }
-            });
-            if (requester?.role === "attendee") {
-              await tx.user.update({ where: { id: existing.requestedById }, data: { role: "producer" } });
-            }
-          }
-        }
-        if (existing.requestType === "ownership" && existing.targetType === ClaimTargetType.artist && existing.artistId) {
-          const requester = await tx.user.findUnique({ where: { id: existing.requestedById }, select: { role: true } });
-          await tx.artistAccess.upsert({
-            where: { artistId_userId: { artistId: existing.artistId, userId: existing.requestedById } },
-            update: { role: "owner", status: "active", acceptedAt: new Date() },
-            create: { artistId: existing.artistId, userId: existing.requestedById, role: "owner", status: "active", acceptedAt: new Date(), invitedByUserId: req.user.id }
-          });
-          if (requester?.role === "producer") {
-            await tx.producerArtistAccess.upsert({
-              where: { producerId_artistId: { producerId: existing.requestedById, artistId: existing.artistId } },
-              update: {},
-              create: { producerId: existing.requestedById, artistId: existing.artistId }
-            });
-          }
-          await tx.artist.update({ where: { id: existing.artistId }, data: { isVerified: true, verifiedAt: new Date(), verifiedByUserId: req.user.id } });
-        }
-        if (existing.requestType === "team_access" && existing.targetType === ClaimTargetType.artist && existing.artistId) {
-          await tx.artistAccess.upsert({
-            where: { artistId_userId: { artistId: existing.artistId, userId: existing.requestedById } },
-            update: { role: "manager", status: "active", acceptedAt: new Date(), invitedByUserId: req.user.id },
-            create: { artistId: existing.artistId, userId: existing.requestedById, role: "manager", status: "active", acceptedAt: new Date(), invitedByUserId: req.user.id }
-          });
-        }
+      if (data.status === ClaimStatus.rejected) {
+        return tx.claimRequest.update({
+          where: { id: existing.id },
+          data: { status: data.status, decisionNote: data.decisionNote, reviewedById: req.user.id, reviewedAt: new Date() }
+        });
       }
 
+      if (claimRequiresFormalSignature(existing)) {
+        const envelope = await prepareClaimLegalEnvelope({ tx, claim: existing, actorUserId: req.user.id });
+        auditAction = "claim.eligibility_approved";
+        return { envelope };
+      }
+
+      const activation = await activateClaimAccess({ tx, claim: existing, actorUserId: req.user.id });
       return tx.claimRequest.update({
         where: { id: existing.id },
         data: {
-          status: data.status,
-          ...(includedArtistId ? { artistId: includedArtistId } : {}),
+          status: ClaimStatus.approved,
+          ...(activation.artistId ? { artistId: activation.artistId } : {}),
+          ...(existing.requestType !== "venue_update" ? { accessActivatedAt: new Date() } : {}),
           decisionNote: data.decisionNote,
           reviewedById: req.user.id,
           reviewedAt: new Date()
-        },
-        include: {
-          venue: true,
-          artist: true,
-          requestedBy: true,
-          reviewedBy: true
         }
       });
     });
 
-    await recordAuditEvent({ req, action: "claim.decided", subjectType: "claim", subjectId: updated.id, metadata: { status: updated.status, targetType: updated.targetType, requestType: updated.requestType, venueId: updated.venueId || null, artistId: updated.artistId || null } });
+    if (updated?.envelope) delivery = await deliverClaimLegalInvitation(updated.envelope);
+    const finalClaim = await prisma.claimRequest.findUnique({
+      where: { id: existing.id },
+      include: { venue: true, artist: true, requestedBy: true, reviewedBy: true, legalEnvelope: true }
+    });
 
-    res.json({ item: mapClaim(updated) });
+    await recordAuditEvent({
+      req,
+      action: auditAction,
+      subjectType: "claim",
+      subjectId: finalClaim.id,
+      metadata: {
+        status: finalClaim.status,
+        targetType: finalClaim.targetType,
+        requestType: finalClaim.requestType,
+        venueId: finalClaim.venueId || null,
+        artistId: finalClaim.artistId || null,
+        legalEnvelopeId: finalClaim.legalEnvelopeId || null,
+        delivery
+      }
+    });
+
+    res.json({ item: mapClaim(finalClaim), legalDelivery: delivery });
   } catch (error) {
     next(error);
   }

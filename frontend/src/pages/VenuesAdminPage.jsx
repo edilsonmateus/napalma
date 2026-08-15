@@ -2345,7 +2345,7 @@ export default function VenuesAdminPage() {
                 <h3>{claim.targetType === "venue" ?"Casa" : "Artista"}: {claim.venue?.name || claim.artist?.name || claim.requestedChanges?.artistName || "Novo cadastro"}</h3>
                 <p className="meta-line">Produtor: {claim.requestedBy?.name || claim.requestedBy?.email}</p>
                 <p className="meta-line">Tipo: {claim.requestType === "venue_update" ?"Alteração de dados da casa" : claim.requestType === "artist_inclusion" ? "Inclusão e reivindicação de artista" : claim.requestType === "team_access" ? "Acesso à equipe do artista" : "Reivindicação de carteira"}</p>
-                <p className="meta-line">Status: {claim.status}</p>
+                <p className="meta-line">Status: {{ pending: "Pendente", pending_legal_acceptance: "Aguardando assinatura formal", approved: "Acesso liberado", rejected: "Rejeitada", cancelled: "Cancelada" }[claim.status] || claim.status}</p>
                 {claim.legalAcknowledgement ? <p className="meta-line"><strong>Ciência legal registrada:</strong> {new Date(claim.legalAcknowledgement.acceptedAt).toLocaleString("pt-BR")} · {claim.legalAcknowledgement.version}</p> : <p className="meta-line"><strong>Aviso:</strong> solicitação legada sem ciência legal versionada.</p>}
                 {claim.venue?.contactName ?<p className="meta-line">Responsável da casa: {claim.venue.contactName}</p> : null}
                 {claim.venue?.contactPhone ?<p className="meta-line">Telefone da casa: {claim.venue.contactPhone}</p> : null}
@@ -2371,12 +2371,12 @@ export default function VenuesAdminPage() {
               </div>
               {claim.status === "pending" ?(
                 <div className="venue-actions">
-                  <button className="chip" onClick={() => handleClaimDecision(claim.id, "approved")} disabled={decideClaimMutation.isPending}>Aprovar</button>
+                  <button className="chip" onClick={() => handleClaimDecision(claim.id, "approved")} disabled={decideClaimMutation.isPending}>Aprovar elegibilidade</button>
                   <button className="chip" onClick={() => handleClaimDecision(claim.id, "rejected")} disabled={decideClaimMutation.isPending}>Rejeitar</button>
                 </div>
               ) : (
                 <div className="venue-actions">
-                  <small className="meta-line">{claim.reviewedBy?.name || "Decidido"}</small>
+                  <small className="meta-line">{claim.status === "pending_legal_acceptance" ? "Aguardando assinatura antes de liberar acesso" : claim.reviewedBy?.name || "Decidido"}</small>
                 </div>
               )}
             </article>

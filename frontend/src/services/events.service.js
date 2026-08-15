@@ -9,6 +9,27 @@ const allowMockFallback =
   import.meta.env.VITE_ENABLE_API_FALLBACK_MOCKS === "true" ||
   !import.meta.env.PROD;
 
+function waitForLegalAcceptance(context) {
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      window.removeEventListener("77gira:legal-acceptance-complete", handleComplete);
+      window.removeEventListener("77gira:legal-acceptance-cancelled", handleCancel);
+    };
+    const handleComplete = (event) => {
+      if (event.detail?.context !== context) return;
+      cleanup();
+      resolve();
+    };
+    const handleCancel = (event) => {
+      if (event.detail?.context !== context) return;
+      cleanup();
+      reject(new Error("legal_acceptance_cancelled"));
+    };
+    window.addEventListener("77gira:legal-acceptance-complete", handleComplete);
+    window.addEventListener("77gira:legal-acceptance-cancelled", handleCancel);
+  });
+}
+
 export async function getEvents(params = {}) {
   try {
     const { data } = await api.get("/events", { params });
@@ -450,8 +471,16 @@ export async function getMyClaims() {
 }
 
 export async function createClaim(payload) {
-  const { data } = await api.post("/me/claims", payload);
-  return data.item;
+  try {
+    const { data } = await api.post("/me/claims", payload);
+    return data.item;
+  } catch (error) {
+    const response = error?.response?.data;
+    if (error?.response?.status !== 428 || response?.error !== "legal_acceptance_required") throw error;
+    await waitForLegalAcceptance(response.context);
+    const { data } = await api.post("/me/claims", payload);
+    return data.item;
+  }
 }
 
 export async function getClaims(status) {
