@@ -14874,7 +14874,10 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
 .operations-document-version-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; border-bottom: 1px solid #dbeafe; color: #1e3a5f; padding: 13px 16px; }
 
 /* Personal account: compact, read-only evidence of document acceptance. */
-.account-legal-documents-section .account-settings-section-title > svg { color: #8b6b20; flex: 0 0 auto; }
+.account-legal-documents-section .account-settings-section-title,
+.account-legal-signatures-section .account-settings-section-title { align-items: flex-start; gap: 8px; }
+.account-legal-documents-section .account-settings-section-title > svg,
+.account-legal-signatures-section .account-settings-section-title > svg { margin-top: 1px; color: #79a7ff; flex: 0 0 auto; }
 .account-legal-documents-note { margin: 9px 0 13px; color: #8390a5; font-size: 12px; line-height: 1.55; max-width: 640px; }
 .account-legal-documents-loading { color: #8f9ab0; font-size: 12px; }
 .account-legal-documents-empty { display: flex; align-items: center; gap: 9px; color: #a8b2c4; font-size: 12px; padding: 11px 0 1px; }
@@ -14906,7 +14909,6 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
 .account-legal-dialog-close { position: absolute; top: 13px; right: 13px; display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid #d9dee8; border-radius: 6px; color: #475569; background: #fff; cursor: pointer; }
 
 /* Reinforced signatures: the document stays readable, while the confirmation remains deliberately separate. */
-.account-legal-signatures-section .account-settings-section-title > svg { color: #79a7ff; flex: 0 0 auto; }
 .account-legal-signatures-required { display: grid; gap: 4px; margin: 14px 0 2px; padding: 12px; border-left: 2px solid #4d8dff; background: rgba(77, 141, 255, .09); }
 .account-legal-signatures-required strong { color: #d9e7ff; font-size: 12px; }
 .account-legal-signatures-required span { color: #a6b5cf; font-size: 11px; line-height: 1.45; }

@@ -88,7 +88,7 @@ export default function MyLegalSignaturesCard() {
 
   const pending = state.items.filter((entry) => ["pending", "viewed"].includes(entry.status));
   return <section className="account-settings-section account-legal-signatures-section">
-    <div className="account-settings-section-title"><div><strong>Assinaturas formais</strong><small>Documentos que exigem confirmação reforçada de identidade.</small></div><FileSignature size={18} aria-hidden="true" /></div>
+    <div className="account-settings-section-title"><FileSignature size={18} aria-hidden="true" /><div><strong>Assinaturas formais</strong><small>Documentos que exigem confirmação reforçada de identidade.</small></div></div>
     <p className="account-legal-documents-note">Quando houver assinatura pendente, confirme com sua senha atual e um código enviado ao seu e-mail. O documento, sua versão e a trilha de confirmação ficam registrados.</p>
     {state.loading ? <small className="account-legal-documents-loading">Carregando assinaturas…</small> : null}
     {state.error ? <div className="account-legal-documents-error"><span>{state.error}</span><button type="button" onClick={load}><RefreshCw size={14}/> Tentar novamente</button></div> : null}

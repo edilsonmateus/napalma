@@ -56,8 +56,8 @@ export default function MyLegalDocumentsCard() {
 
   return <section className="account-settings-section account-legal-documents-section">
     <div className="account-settings-section-title">
-      <div><strong>Documentos e aceites</strong><small>Consulte os documentos aceitos e seus registros de versão.</small></div>
       <ShieldCheck size={18} aria-hidden="true" />
+      <div><strong>Documentos e aceites</strong><small>Consulte os documentos aceitos e seus registros de versão.</small></div>
     </div>
     <p className="account-legal-documents-note">Preferências como lembretes e personalização continuam sendo escolhas independentes. Quando um documento necessário estiver publicado, seu aceite será pedido apenas no momento adequado.</p>
     {state.loading ? <small className="account-legal-documents-loading">Carregando registros…</small> : null}
