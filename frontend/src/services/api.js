@@ -110,6 +110,13 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     const status = error?.response?.status;
 
+    if (status === 428 && error?.response?.data?.error === "legal_acceptance_required") {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("77gira:legal-acceptance-required", { detail: error.response.data }));
+      }
+      return Promise.reject(error);
+    }
+
     if (status !== 401) {
       return Promise.reject(error);
     }

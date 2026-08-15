@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, Download, FileClock, ShieldCheck, SlidersHorizontal, Trash2 } from "lucide-react";
+import { Bell, ChevronRight, Download, FileClock, ShieldCheck, SlidersHorizontal, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import BackLink from "../components/common/BackLink";
 import { createDeletionRequest, createPrivacyRequest, downloadPrivacyExport, getMyPrivacyOverview, setPrivacyConsent } from "../services/privacy.service";
 
 const CONSENTS = [
   { purpose: "cultural_personalization", title: "Personalização cultural", detail: "Permite usar sinais gerais de uso para tornar descobertas e recomendações mais relevantes." },
-  { purpose: "ads_personalization", title: "Publicidade mais relevante", detail: "Permite usar sinais agregados e não sensíveis para reduzir anúncios irrelevantes. Anunciantes nunca recebem seus dados individuais." }
+  { purpose: "ads_personalization", title: "Publicidade por região", detail: "Permite usar sua cidade-base para exibir campanhas regionais quando esse tipo de campanha existir.", effect: "Sem essa permissão, o app continua funcionando normalmente e a publicidade não usa sua localização-base." }
 ];
 
 const REQUESTS = [
@@ -50,6 +50,7 @@ export default function PrivacyCenterPage() {
   useEffect(() => { load(); }, []);
 
   const consentMap = useMemo(() => overview?.consents || {}, [overview]);
+  const consentCatalog = useMemo(() => overview?.consentCatalog?.length ? overview.consentCatalog : CONSENTS, [overview]);
 
   async function toggleConsent(purpose, nextValue) {
     setBusyPurpose(purpose);
@@ -132,12 +133,17 @@ export default function PrivacyCenterPage() {
         <section className="clean-card privacy-center-section">
           <div className="privacy-center-heading"><SlidersHorizontal size={18}/><div><h3>Preferências opcionais</h3><p>Você pode mudar estas escolhas a qualquer momento.</p></div></div>
           <div className="privacy-consent-list">
-            {CONSENTS.map((item) => {
+            {consentCatalog.map((item) => {
               const current = consentMap[item.purpose];
               const isGranted = Boolean(current?.isGranted);
-              return <article key={item.purpose}><div><strong>{item.title}</strong><p>{item.detail}</p><small>{current ? `Última decisão: ${formatDate(current.createdAt)}` : "Ainda não definido"}</small></div><button type="button" className={`privacy-consent-toggle ${isGranted ? "is-granted" : ""}`} disabled={busyPurpose === item.purpose} onClick={() => toggleConsent(item.purpose, !isGranted)} aria-pressed={isGranted}>{busyPurpose === item.purpose ? "Salvando..." : isGranted ? "Permitido" : "Não permitir"}</button></article>;
+              return <article key={item.purpose}><div><strong>{item.title}</strong><p>{item.detail}</p>{item.effect ? <small className="privacy-consent-effect">{item.effect}</small> : null}<small>{current ? `Última decisão: ${formatDate(current.createdAt)}` : "Ainda não definido"}</small></div><button type="button" className={`privacy-consent-toggle ${isGranted ? "is-granted" : ""}`} disabled={busyPurpose === item.purpose} onClick={() => toggleConsent(item.purpose, !isGranted)} aria-pressed={isGranted}>{busyPurpose === item.purpose ? "Salvando..." : isGranted ? "Permitido" : "Permitir"}</button></article>;
             })}
           </div>
+        </section>
+
+        <section className="clean-card privacy-center-section privacy-notification-section">
+          <div className="privacy-center-heading"><Bell size={18}/><div><h3>Notificações no aparelho</h3><p>Push é uma permissão técnica do seu navegador ou celular. Ele não é um consentimento de publicidade e pode ser desativado nas configurações do aparelho.</p></div></div>
+          <p className="privacy-notification-state">{overview.notifications?.activeDeviceCount ? `${overview.notifications.activeDeviceCount} dispositivo${overview.notifications.activeDeviceCount > 1 ? "s" : ""} com push ativo.` : "Nenhum dispositivo com push ativo."}{overview.notifications?.radarRemindersEnabled ? " Lembretes do Radar estão ativados." : " Lembretes do Radar estão desativados."}</p>
         </section>
 
         <section className="clean-card privacy-center-section privacy-export-section">

@@ -21,7 +21,9 @@ describe("artist EPK foundation", () => {
   it("approves ownership and verification in the same transaction", () => {
     expect(claims).toContain("await tx.artistAccess.upsert");
     expect(claims).toContain("isVerified: true, verifiedAt: new Date(), verifiedByUserId: req.user.id");
-    expect(claims).toContain('isAttendee && data.targetType !== ClaimTargetType.artist');
+    expect(claims).toContain("const requestedAccessProfile = requestedChanges.requestedAccessProfile");
+    expect(claims).toContain('["producer", "venue_manager"].includes(requestedAccessProfile)');
+    expect(claims).toContain('role: "venue_manager"');
   });
 
   it("keeps private contact fields out of the public EPK DTO", () => {

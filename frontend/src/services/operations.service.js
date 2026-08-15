@@ -79,6 +79,56 @@ export async function sendOperationsCommunicationMessage(id) {
   return data;
 }
 
+export async function listOperationsLegalDocuments() {
+  const { data } = await api.get("/admin/operations/documents");
+  return data.items || [];
+}
+
+export async function bootstrapOperationsLegalDocuments() {
+  const { data } = await api.post("/admin/operations/documents/bootstrap");
+  return data.items || [];
+}
+
+export async function createOperationsLegalDocument(payload) {
+  const { data } = await api.post("/admin/operations/documents", payload);
+  return data.item;
+}
+
+export async function createOperationsLegalDocumentVersion(id, payload) {
+  const { data } = await api.post(`/admin/operations/documents/${id}/versions`, payload);
+  return data.item;
+}
+
+export async function transitionOperationsLegalDocumentVersion(documentId, versionId, payload) {
+  const { data } = await api.patch(`/admin/operations/documents/${documentId}/versions/${versionId}/status`, payload);
+  return data.item;
+}
+
+export async function getOperationsLegalDocumentVersionImpact(documentId, versionId) {
+  const { data } = await api.get(`/admin/operations/documents/${documentId}/versions/${versionId}/impact`);
+  return data.item;
+}
+
+export async function listOperationsLegalSignatures() {
+  const { data } = await api.get("/admin/operations/signatures");
+  return data.items || [];
+}
+
+export async function createOperationsLegalSignature(payload) {
+  const { data } = await api.post("/admin/operations/signatures", payload);
+  return data.item;
+}
+
+export async function cancelOperationsLegalSignature(id, reason) {
+  const { data } = await api.post(`/admin/operations/signatures/${id}/cancel`, { reason });
+  return data;
+}
+
+export async function resendOperationsLegalSignatureInvitation(id) {
+  const { data } = await api.post(`/admin/operations/signatures/${id}/resend`);
+  return data;
+}
+
 export async function getOperationsWebAuthnStatus() {
   const { data } = await api.get("/admin/operations/webauthn/status");
   return data;

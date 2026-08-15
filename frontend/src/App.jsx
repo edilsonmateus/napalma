@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useAuthStore } from "./store/authStore";
 import BottomNav from "./components/layout/BottomNav";
+import LegalActionGate from "./components/legal/LegalActionGate";
 import { useTrackAudienceVisitMutation } from "./hooks/useEventsQuery";
 import { me as fetchCurrentUser } from "./services/auth.service";
 import { getRoleHome, isAdminRole, isProducerRole, isVenueRole } from "./utils/roles";
@@ -45,6 +46,7 @@ const ArtistBookingsPage = lazy(() => import("./pages/ArtistBookingsPage"));
 const ArtistMediaPage = lazy(() => import("./pages/ArtistMediaPage"));
 const ArtistInsightsPage = lazy(() => import("./pages/ArtistInsightsPage"));
 const ArtistClaimDirectoryPage = lazy(() => import("./pages/ArtistClaimDirectoryPage"));
+const VenueClaimDirectoryPage = lazy(() => import("./pages/VenueClaimDirectoryPage"));
 const ArtistTeamPage = lazy(() => import("./pages/ArtistTeamPage"));
 const UsersAdminPage = lazy(() => import("./pages/UsersAdminPage"));
 const OperationsCenterPage = lazy(() => import("./pages/OperationsCenterPage"));
@@ -378,6 +380,7 @@ export default function App() {
             <Route path="/settings/account" element={<RequireAuth user={user}><AccountSettingsPage /></RequireAuth>} />
             <Route path="/settings/privacy" element={<RequireAuth user={user}><PrivacyCenterPage /></RequireAuth>} />
             <Route path="/reivindicar-artista" element={<RequireAuth user={user}><ArtistClaimDirectoryPage /></RequireAuth>} />
+            <Route path="/reivindicar-casa" element={<RequireAuth user={user}><VenueClaimDirectoryPage /></RequireAuth>} />
             <Route path="/settings/users" element={isAdminRole(user?.role) ? <UsersAdminPage /> : <Navigate to="/settings" replace />} />
             <Route path="/operacoes" element={canAccessOperations ? <OperationsCenterPage /> : <Navigate to="/settings" replace />} />
             <Route path="/workspace/anunciante" element={<RequireAuth user={user}><AdvertiserPortalPage /></RequireAuth>} />
@@ -439,6 +442,7 @@ export default function App() {
         </Suspense>
       </main>
       {!isOnboardingRoute && !isOperationsRoute && !isPublicItineraryRoute && !isPublicPartnersRoute ? <BottomNav /> : null}
+      <LegalActionGate />
     </div>
   );
 }

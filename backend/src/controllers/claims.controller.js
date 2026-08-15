@@ -168,9 +168,9 @@ export async function createClaimRequest(req, res, next) {
         message: "Perfil casa pode reivindicar somente casas."
       });
     }
-    if (isAttendee && data.targetType !== ClaimTargetType.artist) {
-      return res.status(403).json({ error: "forbidden", message: "Usuario comum pode reivindicar somente artistas." });
-    }
+    // Toda conta publica nasce como attendee. O perfil operacional somente e
+    // concedido depois da decisao administrativa; por isso a conta comum pode
+    // solicitar tanto um artista quanto uma casa, sem receber acesso imediato.
 
     if (data.targetType === ClaimTargetType.venue) {
       const venue = await prisma.venue.findUnique({ where: { id: data.venueId }, select: { id: true } });
@@ -392,13 +392,22 @@ export async function decideClaim(req, res, next) {
             });
           }
         }
-        if (existing.requestType === "ownership" && existing.targetType === ClaimTargetType.venue && existing.venueId) {
+        if (["ownership", "team_access"].includes(existing.requestType) && existing.targetType === ClaimTargetType.venue && existing.venueId) {
           const requester = await tx.user.findUnique({
             where: { id: existing.requestedById },
             select: { role: true }
           });
+          const requestedChanges = existing.requestedChanges && typeof existing.requestedChanges === "object"
+            ? existing.requestedChanges
+            : {};
+          const requestedAccessProfile = requestedChanges.requestedAccessProfile;
+          const accessProfile = ["producer", "venue_manager"].includes(requestedAccessProfile)
+            ? requestedAccessProfile
+            : requester?.role === "producer"
+              ? "producer"
+              : "venue_manager";
 
-          if (requester?.role === "venue_manager") {
+          if (accessProfile === "venue_manager") {
             await tx.venueManagerAccess.upsert({
               where: {
                 userId_venueId: {
@@ -409,6 +418,9 @@ export async function decideClaim(req, res, next) {
               update: {},
               create: { userId: existing.requestedById, venueId: existing.venueId }
             });
+            if (requester?.role === "attendee") {
+              await tx.user.update({ where: { id: existing.requestedById }, data: { role: "venue_manager" } });
+            }
           } else {
             await tx.producerVenueAccess.upsert({
               where: {
@@ -420,6 +432,9 @@ export async function decideClaim(req, res, next) {
               update: {},
               create: { producerId: existing.requestedById, venueId: existing.venueId }
             });
+            if (requester?.role === "attendee") {
+              await tx.user.update({ where: { id: existing.requestedById }, data: { role: "producer" } });
+            }
           }
         }
         if (existing.requestType === "ownership" && existing.targetType === ClaimTargetType.artist && existing.artistId) {

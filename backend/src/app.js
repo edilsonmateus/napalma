@@ -115,14 +115,14 @@ export function createApp() {
       }
       return res.status(400).json({
           error: "upload_error",
-          message: "Nao foi possivel processar o upload.",
+          message: "Não foi possível processar o upload.",
           requestId: req.requestId
       });
     }
 
     res.status(500).json({
       error: "internal_server_error",
-      message: "Nao foi possivel processar a requisicao.",
+      message: "Não foi possível processar a requisição.",
       requestId: req.requestId
     });
   });

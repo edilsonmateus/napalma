@@ -34,6 +34,90 @@ enum OperationScope {
   audit
   settings
   communications
+  documents
+}
+
+// Legal documents have their own version history. This is intentionally
+// separate from simple privacy preferences so ordinary app settings never
+// become a contractual acceptance flow.
+enum LegalDocumentCategory {
+  terms_of_use
+  privacy_cookies
+  content_moderation
+  claim_management
+  advertising_terms
+  patacos_policy
+  partnership_terms
+  internal_operations
+}
+
+enum LegalDocumentVersionStatus {
+  draft
+  in_review
+  approved
+  scheduled
+  active
+  replaced
+  archived
+}
+
+enum LegalDocumentAudience {
+  visitor
+  user
+  artist_manager
+  venue_manager
+  producer
+  advertiser
+  strategic_partner
+  internal_operator
+}
+
+enum LegalDocumentChangeType {
+  editorial
+  material
+}
+
+// A document acceptance is a separate, append-only proof event. It must not
+// be conflated with preference consent, which a person can change freely.
+enum LegalDocumentAcceptanceAction {
+  accepted
+  declined
+}
+
+enum LegalDocumentAcceptanceContext {
+  account_signup
+  account_review
+  artist_claim
+  venue_claim
+  advertiser_access
+  advertiser_campaign
+  patacos_purchase
+}
+
+// An advanced signature is deliberately distinct from a click-through
+// acceptance. It freezes the exact document text and records the independent
+// confirmations used for each signatory.
+enum LegalSignatureEnvelopeStatus {
+  draft
+  pending_signature
+  completed
+  declined
+  expired
+  cancelled
+}
+
+enum LegalSignatureParticipantStatus {
+  pending
+  viewed
+  signed
+  declined
+  expired
+}
+
+enum LegalSignatureEvidenceMethod {
+  password
+  email_code
+  webauthn
 }
 
 enum OperationCommunicationRecipientType {
@@ -337,6 +421,9 @@ model User {
   operationWebAuthnCredentials OperationWebAuthnCredential[]
   operationWebAuthnChallenges  OperationWebAuthnChallenge[]
   operationCommunicationMessages OperationCommunicationMessage[] @relation("OperationCommunicationAuthor")
+  legalDocumentAcceptances     LegalDocumentAcceptance[]
+  signatureEnvelopesCreated    LegalSignatureEnvelope[]       @relation("LegalSignatureEnvelopeCreatedBy")
+  legalSignatureParticipants   LegalSignatureParticipant[]    @relation("LegalSignatureParticipantUser")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -498,6 +585,187 @@ model OperationCommunicationMessage {
   @@index([status, updatedAt])
   @@index([recipientEmail, createdAt])
   @@index([authorUserId, updatedAt])
+}
+
+// The catalogue is an operational source of truth. A document may be public
+// eventually, but no version is exposed or used for acceptance until it is
+// explicitly made active in a later rollout.
+model LegalDocument {
+  id        String                @id @default(uuid())
+  key       String                @unique @db.VarChar(80)
+  title     String                @db.VarChar(180)
+  category  LegalDocumentCategory
+  summary   String?               @db.VarChar(500)
+  isPublic  Boolean               @default(false)
+  versions  LegalDocumentVersion[]
+  acceptances LegalDocumentAcceptance[]
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@index([category, isPublic])
+}
+
+model LegalDocumentVersion {
+  id                       String                     @id @default(uuid())
+  documentId               String
+  versionLabel             String                     @db.VarChar(32)
+  status                   LegalDocumentVersionStatus @default(draft)
+  contentText              String                     @default("") @db.Text
+  contentSha256            String                     @db.VarChar(64)
+  sourceDocumentUrl        String?                    @db.VarChar(1000)
+  sourceDocumentSha256     String?                    @db.VarChar(64)
+  changeType               LegalDocumentChangeType    @default(material)
+  changeSummary            String?                    @db.VarChar(1000)
+  requiresReacceptance     Boolean                    @default(false)
+  effectiveAt              DateTime?
+  reviewedAt               DateTime?
+  reviewedByUserId         String?
+  approvedAt               DateTime?
+  approvedByUserId         String?
+  publishedAt              DateTime?
+  publishedByUserId        String?
+  replacedAt               DateTime?
+  createdByUserId          String
+  audiences                LegalDocumentVersionAudience[]
+  acceptances              LegalDocumentAcceptance[]
+  signatureEnvelopes       LegalSignatureEnvelope[]
+  document                 LegalDocument              @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
+
+  @@unique([documentId, versionLabel])
+  @@index([documentId, status])
+  @@index([status, effectiveAt])
+}
+
+model LegalDocumentVersionAudience {
+  id        String                @id @default(uuid())
+  versionId String
+  audience  LegalDocumentAudience
+  version   LegalDocumentVersion  @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([versionId, audience])
+  @@index([audience])
+}
+
+// Immutable evidence that a specific authenticated user accepted a specific
+// content hash. New document versions create new evidence; historic records
+// are never overwritten when a policy changes.
+model LegalDocumentAcceptance {
+  id              String                         @id @default(uuid())
+  userId          String
+  documentId      String
+  versionId       String
+  audience        LegalDocumentAudience
+  context         LegalDocumentAcceptanceContext
+  action          LegalDocumentAcceptanceAction  @default(accepted)
+  versionLabel    String                         @db.VarChar(32)
+  contentSha256   String                         @db.VarChar(64)
+  source          String                         @default("in_app") @db.VarChar(60)
+  userAgent       String?                        @db.VarChar(512)
+  ipHash          String?                        @db.VarChar(64)
+  metadata        Json?
+  acceptedAt      DateTime                       @default(now())
+
+  user     User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document LegalDocument        @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  version  LegalDocumentVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+
+  @@index([userId, documentId, acceptedAt])
+  @@index([userId, versionId, context])
+  @@index([versionId, action])
+  @@index([documentId, acceptedAt])
+}
+
+// The envelope preserves a complete, immutable snapshot even if the source
+// document receives a later version. A participant can sign only their own
+// authenticated envelope; raw passwords and one-time codes are never stored.
+model LegalSignatureEnvelope {
+  id                    String                       @id @default(uuid())
+  protocol              String                       @unique @db.VarChar(40)
+  title                 String                       @db.VarChar(220)
+  documentVersionId     String
+  documentTitleSnapshot String                       @db.VarChar(220)
+  versionLabelSnapshot  String                       @db.VarChar(32)
+  contentSnapshot       String                       @db.Text
+  contentSha256         String                       @db.VarChar(64)
+  status                LegalSignatureEnvelopeStatus @default(draft)
+  expiresAt             DateTime?
+  sentAt                DateTime?
+  completedAt           DateTime?
+  cancelledAt           DateTime?
+  cancellationReason    String?                      @db.VarChar(600)
+  createdByUserId       String
+  documentVersion       LegalDocumentVersion         @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+  createdBy             User                         @relation("LegalSignatureEnvelopeCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  participants          LegalSignatureParticipant[]
+  events                LegalSignatureEvent[]
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+
+  @@index([status, expiresAt])
+  @@index([documentVersionId, createdAt])
+}
+
+model LegalSignatureParticipant {
+  id                    String                         @id @default(uuid())
+  envelopeId            String
+  userId                String?
+  nameSnapshot          String                         @db.VarChar(180)
+  emailSnapshot         String                         @db.VarChar(320)
+  roleLabel             String?                        @db.VarChar(120)
+  signingOrder          Int                            @default(1)
+  status                LegalSignatureParticipantStatus @default(pending)
+  invitationTokenHash   String                         @unique @db.VarChar(64)
+  invitationExpiresAt   DateTime
+  invitationSentAt      DateTime?
+  viewedAt              DateTime?
+  signedAt              DateTime?
+  declinedAt            DateTime?
+  declineReason         String?                        @db.VarChar(600)
+  emailCodeHash         String?                        @db.VarChar(64)
+  emailCodeExpiresAt    DateTime?
+  emailCodeUsedAt       DateTime?
+  envelope              LegalSignatureEnvelope        @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+  user                  User?                          @relation("LegalSignatureParticipantUser", fields: [userId], references: [id], onDelete: SetNull)
+  evidences             LegalSignatureEvidence[]
+  events                LegalSignatureEvent[]
+  createdAt             DateTime                       @default(now())
+  updatedAt             DateTime                       @updatedAt
+
+  @@unique([envelopeId, emailSnapshot])
+  @@index([userId, status])
+  @@index([envelopeId, status])
+}
+
+model LegalSignatureEvidence {
+  id            String                       @id @default(uuid())
+  participantId String
+  method        LegalSignatureEvidenceMethod
+  contentSha256 String                       @db.VarChar(64)
+  userAgent     String?                      @db.VarChar(512)
+  ipHash        String?                      @db.VarChar(64)
+  metadata      Json?
+  recordedAt    DateTime                     @default(now())
+  participant   LegalSignatureParticipant    @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@index([participantId, recordedAt])
+}
+
+model LegalSignatureEvent {
+  id            String                  @id @default(uuid())
+  envelopeId    String
+  participantId String?
+  actorUserId   String?
+  action        String                  @db.VarChar(80)
+  metadata      Json?
+  ipHash        String?                 @db.VarChar(64)
+  createdAt     DateTime                @default(now())
+  envelope      LegalSignatureEnvelope  @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+  participant   LegalSignatureParticipant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
+
+  @@index([envelopeId, createdAt])
+  @@index([participantId, createdAt])
 }
 
 model Region {

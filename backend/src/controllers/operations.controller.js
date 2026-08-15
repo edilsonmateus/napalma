@@ -4,7 +4,7 @@ import { z } from "zod";
 
 const operationsAccessSchema = z.object({
   email: z.string().trim().email().max(160),
-  scope: z.enum(["privacy", "claims", "catalog", "partners", "notifications", "audit", "settings", "communications"]),
+  scope: z.enum(["privacy", "claims", "catalog", "partners", "notifications", "audit", "settings", "communications", "documents"]),
   enabled: z.boolean()
 });
 

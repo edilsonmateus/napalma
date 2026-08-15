@@ -11,6 +11,8 @@ import { useAuthStore } from "../store/authStore";
 import { isReservedUsername, isUsernameSyntaxValid, RESERVED_USERNAME_MESSAGE } from "../utils/usernamePolicy";
 import { getRadarReminderStatus, updateRadarReminderPreference } from "../services/events.service";
 import { ensureRadarEventReminderNotifications } from "../utils/toNaPistaNotifications";
+import MyLegalDocumentsCard from "../components/settings/MyLegalDocumentsCard";
+import MyLegalSignaturesCard from "../components/settings/MyLegalSignaturesCard";
 
 export default function AccountSettingsPage() {
   const navigate = useNavigate();
@@ -219,6 +221,9 @@ export default function AccountSettingsPage() {
       <section className="account-settings-section">
         <div className="account-settings-section-title"><div><strong>Perfis e acessos</strong><small>Artistas, casas e ambientes vinculados à sua conta.</small></div></div>
         {artists.map((artist) => <Link className="account-access-row" to={`/artistas/${artist.slug || artist.id}`} key={artist.id}><span><strong>{artist.name}</strong><small>Perfil de artista reivindicado</small></span><ChevronRight size={16}/></Link>)}
+        <Link className="account-access-row" to="/reivindicar-casa?perfil=gestor"><span><strong>Administro uma casa</strong><small>Encontre a casa e solicite acesso à gestão.</small></span><ChevronRight size={16}/></Link>
+        <Link className="account-access-row" to="/reivindicar-artista"><span><strong>Sou artista ou representante</strong><small>Reivindique um perfil ou solicite entrada na equipe.</small></span><ChevronRight size={16}/></Link>
+        <Link className="account-access-row" to="/reivindicar-casa?perfil=produtor"><span><strong>Atuo como produtor</strong><small>Solicite vínculo de produção com uma casa.</small></span><ChevronRight size={16}/></Link>
         <Link className="settings-link-row" to="/settings">Abrir Hub de Gestão <ChevronRight size={16}/></Link>
       </section>
 
@@ -230,6 +235,9 @@ export default function AccountSettingsPage() {
         </label>
         {radarRemindersMessage ? <small className="account-form-message" role="status">{radarRemindersMessage}</small> : null}
       </section> : null}
+
+      <MyLegalDocumentsCard />
+      <MyLegalSignaturesCard />
 
       <section className="account-settings-section account-session-section">
         <h3>Sessão</h3>

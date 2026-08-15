@@ -9,6 +9,7 @@ import { safeHttpUrl } from "../utils/safeUrl.js";
 import { creativeFormatIssue } from "../utils/adCreativeFormat.js";
 import { campaignImpressionCost, milipatacosToPatacos } from "../services/adPricing.service.js";
 import { consumeCampaignCreditAllocations } from "../services/adPayments.service.js";
+import { hasActivePrivacyConsent } from "../services/privacyConsent.service.js";
 
 const slotEnum = z.nativeEnum(AdSlot);
 
@@ -153,13 +154,19 @@ function placementFor(slot) {
 function isCampaignContextEligible(campaign, context) {
   const targeting = campaign.targeting && typeof campaign.targeting === "object" ? campaign.targeting : {};
   const asList = (value) => Array.isArray(value) ? value : value ? [value] : [];
-  const matches = (values, current) => {
+  const matchesPageContext = (values, current) => {
     const allowed = asList(values).map(normalizeTarget).filter(Boolean);
     return allowed.length === 0 || !current || allowed.includes(normalizeTarget(current));
   };
-  return matches(targeting.cities || targeting.city, context.city)
-    && matches(targeting.regions || targeting.region, context.region)
-    && matches(targeting.venueIds || targeting.venueId, context.venueId);
+  // Cidade e região são segmentação de audiência: somente entram no motor
+  // quando a pessoa logada autorizou esse uso opcional de sua localização-base.
+  const matchesAudience = (values, current) => {
+    const allowed = asList(values).map(normalizeTarget).filter(Boolean);
+    return allowed.length === 0 || Boolean(current) && allowed.includes(normalizeTarget(current));
+  };
+  return matchesAudience(targeting.cities || targeting.city, context.audience?.city)
+    && matchesAudience(targeting.regions || targeting.region, context.audience?.region)
+    && matchesPageContext(targeting.venueIds || targeting.venueId, context.venueId);
 }
 
 function isReviewApproved(status) {
@@ -317,7 +324,7 @@ export async function getAdDelivery(req, res, next) {
     dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(now);
     dayEnd.setHours(23, 59, 59, 999);
-    const [usedInventory, campaigns] = await Promise.all([
+    const [usedInventory, campaigns, canUseRegionalAudience] = await Promise.all([
       prisma.adEventLog.count({ where: { slot, type: "impression", createdAt: { gte: dayStart, lte: dayEnd } } }),
       prisma.adCampaign.findMany({
       where: {
@@ -346,8 +353,14 @@ export async function getAdDelivery(req, res, next) {
         }
       },
       orderBy: [{ priority: "desc" }, { updatedAt: "desc" }]
-    })
+    }),
+      hasActivePrivacyConsent(userId, "ads_personalization")
     ]);
+
+    const deliveryContext = {
+      ...context,
+      audience: canUseRegionalAudience && req.user?.city ? { city: req.user.city, region: null } : null
+    };
 
     if (slot === "venue_menu_sponsor" && (!context.venueId || !isFeatureEnabled("ADS_MENU_SPONSOR_ENABLED"))) {
       return res.json({ item: null, blockedReason: "menu_sponsor_not_enabled" });
@@ -361,7 +374,7 @@ export async function getAdDelivery(req, res, next) {
       BigInt(campaign.reservedMilipatacos || 0) >= campaignImpressionCost(campaign, slot)
       && (!campaign.advertiserAccountId || campaign.advertiserAccount?.status === "active")
       && isReviewApproved(campaign.reviewStatus)
-      && isCampaignContextEligible(campaign, context)
+      && isCampaignContextEligible(campaign, deliveryContext)
     )).flatMap((campaign) =>
       campaign.creatives
         .filter((creative) => isReviewApproved(creative.reviewStatus) && !creativeFormatIssue(creative))
@@ -428,7 +441,12 @@ export async function getAdDelivery(req, res, next) {
         venueId: context.venueId || null,
         userId,
         sessionHash,
-        context: { city: context.city || null, region: context.region || null },
+        context: {
+          city: context.city || null,
+          region: context.region || null,
+          audienceLocationUsed: Boolean(deliveryContext.audience),
+          audienceCity: deliveryContext.audience?.city || null
+        },
         expiresAt: new Date(now.getTime() + 30 * 60 * 1000)
       }
     });

@@ -75,7 +75,8 @@ export default function PrivacyPage() {
         <h3>7. Publicidade, personalização e métricas</h3>
         <p>O 77Gira utiliza espaços publicitários identificados para financiar e ampliar a plataforma sem transformar a experiência em um mural indiscriminado. Campanhas podem considerar contexto como slot, cidade, região, período, inventário disponível e relação com casas, eventos ou artistas.</p>
         <p>Para medir e proteger a entrega, registramos impressões, cliques e identificadores técnicos de visitante ou sessão, aplicamos limites de frequência e mecanismos contra duplicidade ou tráfego inválido. Anunciantes recebem resultados agregados de campanha; não recebem nome, e-mail, telefone, localização precisa, histórico individual ou identidade dos usuários que visualizaram ou clicaram em anúncios.</p>
-        <p>Preferências opcionais de personalização cultural e publicidade mais relevante podem ser alteradas na <Link to="/settings/privacy">Central de Privacidade e Dados</Link>. Quando a personalização não estiver permitida, ainda poderão existir anúncios contextuais, institucionais ou necessários à operação comercial, sem uso da preferência opcional recusada.</p>
+        <p>Preferências opcionais de personalização cultural e publicidade por região podem ser alteradas na <Link to="/settings/privacy">Central de Privacidade e Dados</Link>. A autorização para publicidade por região permite usar apenas a cidade-base informada na conta para avaliar campanhas regionais; ela não compartilha dados individuais com anunciantes e não é necessária para receber campanhas gerais, contextuais ou institucionais aprovadas pelo 77Gira.</p>
+        <p>As permissões de notificações push pertencem ao navegador ou dispositivo e são independentes das preferências de publicidade. Você pode revogá-las nas configurações do aparelho; essa escolha não altera os consentimentos registrados na Central de Privacidade e Dados.</p>
       </article>
 
       <article className="clean-card legal-card">
@@ -141,7 +142,7 @@ export default function PrivacyPage() {
         <p>A versão, a data e as decisões de consentimento registradas permitem distinguir as regras vigentes em cada momento. A versão atual permanecerá disponível nesta página.</p>
       </article>
 
-      <p className="meta-line legal-updated">Versão 1.2 · Última atualização: 15/07/2026</p>
+      <p className="meta-line legal-updated">Versão 1.3 · Última atualização: 09/08/2026</p>
       <BackLink to="/settings">Voltar para Configurações</BackLink>
     </section>
   );

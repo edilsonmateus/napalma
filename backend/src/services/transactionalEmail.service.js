@@ -105,3 +105,27 @@ export async function sendInstitutionalEmail({ email, recipientName, subject, co
     replyTo: env.emailReplyTo || "77giramundo@gmail.com"
   });
 }
+
+export async function sendLegalSignatureCodeEmail({ email, firstName, code, envelopeTitle, expiresInMinutes }) {
+  const safeName = escapeHtml(firstName || "pessoa responsável");
+  const safeTitle = escapeHtml(envelopeTitle);
+  const message = {
+    subject: `Código de confirmação: ${safeTitle}`,
+    textContent: `Olá, ${firstName || "pessoa responsável"}.\n\nUse o código ${code} para confirmar a assinatura de “${envelopeTitle}” no 77Gira. Ele expira em ${expiresInMinutes} minutos.\n\nNão compartilhe este código. Se não reconhece esta ação, ignore esta mensagem.\n\nEquipe 77Gira`,
+    htmlContent: `<!doctype html><html lang="pt-BR"><body style="margin:0;background:#f5f6f8;color:#172033;font-family:Arial,sans-serif"><div style="max-width:560px;margin:0 auto;padding:32px 18px"><div style="background:#fff;border:1px solid #dfe3ea;border-radius:12px;padding:30px"><div style="font-size:22px;font-weight:700;color:#ff7a00;margin-bottom:24px">77Gira</div><h1 style="font-size:22px;line-height:1.25;margin:0 0 16px">Confirme sua assinatura</h1><p style="font-size:15px;line-height:1.6">Olá, ${safeName}.</p><p style="font-size:15px;line-height:1.6">Para confirmar a assinatura de <strong>${safeTitle}</strong>, informe o código abaixo no 77Gira:</p><div style="margin:22px 0;padding:16px;text-align:center;background:#f3f6fb;border-radius:10px;font-size:28px;letter-spacing:7px;font-weight:700">${escapeHtml(code)}</div><p style="font-size:13px;line-height:1.55;color:#667085">O código expira em ${expiresInMinutes} minutos e não deve ser compartilhado. Se você não reconhece esta ação, ignore este e-mail.</p></div></div></body></html>`
+  };
+  return sendWithBrevo({ email, recipientName: firstName, message, tags: ["legal-signature", "security"] });
+}
+
+export async function sendLegalSignatureInvitationEmail({ email, firstName, envelopeTitle, protocol, expiresAt }) {
+  const safeName = escapeHtml(firstName || "pessoa respons\u00e1vel");
+  const safeTitle = escapeHtml(envelopeTitle);
+  const signingUrl = `${env.publicAppUrl.replace(/\/$/, "")}/settings/account`;
+  const deadline = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" }).format(new Date(expiresAt));
+  const message = {
+    subject: `Assinatura aguardando confirma\u00e7\u00e3o: ${envelopeTitle}`,
+    textContent: `Ol\u00e1, ${firstName || "pessoa respons\u00e1vel"}.\n\nO documento \u201c${envelopeTitle}\u201d est\u00e1 aguardando sua assinatura no 77Gira. Protocolo: ${protocol}.\n\nAcesse ${signingUrl} com este mesmo e-mail, abra Configura\u00e7\u00f5es > Documentos e aceites > Assinaturas formais e confirme at\u00e9 ${deadline}.\n\nA assinatura exige sua senha atual e um c\u00f3digo enviado ao seu e-mail.\n\nEquipe 77Gira`,
+    htmlContent: `<!doctype html><html lang="pt-BR"><body style="margin:0;background:#f5f6f8;color:#172033;font-family:Arial,sans-serif"><div style="max-width:560px;margin:0 auto;padding:32px 18px"><div style="background:#fff;border:1px solid #dfe3ea;border-radius:12px;padding:30px"><div style="font-size:22px;font-weight:700;color:#ff7a00;margin-bottom:24px">77Gira</div><h1 style="font-size:22px;line-height:1.25;margin:0 0 16px">Documento aguardando assinatura</h1><p style="font-size:15px;line-height:1.6">Ol\u00e1, ${safeName}.</p><p style="font-size:15px;line-height:1.6">O documento <strong>${safeTitle}</strong> est\u00e1 aguardando sua assinatura. O protocolo deste convite \u00e9 <strong>${escapeHtml(protocol)}</strong>.</p><p style="font-size:14px;line-height:1.6;color:#475467">Acesse sua conta com este mesmo e-mail at\u00e9 ${escapeHtml(deadline)}. Para concluir, o 77Gira confirmar\u00e1 sua senha atual e um c\u00f3digo enviado ao seu e-mail.</p><a href="${escapeHtml(signingUrl)}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;padding:13px 20px;font-weight:700">Abrir documentos e aceites</a></div></div></body></html>`
+  };
+  return sendWithBrevo({ email, recipientName: firstName, message, tags: ["legal-signature", "invitation"] });
+}

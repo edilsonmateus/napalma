@@ -7,8 +7,9 @@ import { getPrivacyRetentionPreview } from "../services/privacyRetention.service
 import { buildPrivacyExport } from "../services/privacyExport.service.js";
 import { getSecurityReadiness } from "../config/env.js";
 import { env } from "../config/env.js";
+import { PRIVACY_CONSENT_CATALOG, PRIVACY_POLICY_VERSION } from "../config/privacyConsents.js";
 
-const POLICY_VERSION = "1.2";
+const POLICY_VERSION = PRIVACY_POLICY_VERSION;
 const PRIVACY_REQUEST_SLA_DAYS = Number.parseInt(process.env.PRIVACY_REQUEST_SLA_DAYS || "15", 10) || 15;
 const consentPurposeSchema = z.enum(["cultural_personalization", "ads_personalization"]);
 const consentSchema = z.object({
@@ -101,22 +102,28 @@ function latestConsents(records) {
 
 export async function getMyPrivacyOverview(req, res, next) {
   try {
-    const [user, consentRecords, requests] = await Promise.all([
+    const [user, consentRecords, requests, activePushSubscriptions] = await Promise.all([
       prisma.user.findUnique({
         where: { id: req.user.id },
-        select: { email: true, username: true, firstName: true, lastName: true, phone: true, instagramHandle: true, city: true, neighborhood: true, postalCode: true, avatarUrl: true, createdAt: true }
+        select: { email: true, username: true, firstName: true, lastName: true, phone: true, instagramHandle: true, city: true, neighborhood: true, postalCode: true, avatarUrl: true, radarEventRemindersEnabled: true, createdAt: true }
       }),
       prisma.privacyConsentRecord.findMany({
         where: { userId: req.user.id },
         orderBy: { createdAt: "desc" },
         select: { purpose: true, isGranted: true, policyVersion: true, createdAt: true }
       }),
-      prisma.privacyRequest.findMany({ where: { userId: req.user.id }, orderBy: { requestedAt: "desc" }, take: 30, select: requestSelect })
+      prisma.privacyRequest.findMany({ where: { userId: req.user.id }, orderBy: { requestedAt: "desc" }, take: 30, select: requestSelect }),
+      prisma.pushSubscription.count({ where: { userId: req.user.id, isActive: true } })
     ]);
     return res.json({
       policyVersion: POLICY_VERSION,
+      consentCatalog: PRIVACY_CONSENT_CATALOG,
       account: user,
       consents: latestConsents(consentRecords),
+      notifications: {
+        activeDeviceCount: activePushSubscriptions,
+        radarRemindersEnabled: Boolean(user?.radarEventRemindersEnabled)
+      },
       requests,
       categories: [
         { key: "account", title: "Conta e identidade", detail: "Nome, e-mail, nome de usuário e dados de contato." },
