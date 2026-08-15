@@ -6907,6 +6907,8 @@ a.strategic-partner-card:hover { border-color: #b8c7da; background: #fff; }
 
 .settings-content-stack {
   margin-left: 58px;
+  display: flex;
+  flex-direction: column;
 }
 
 .account-settings-screen { display: grid; gap: 14px; max-width: 760px; margin: 0 auto; }
@@ -10662,18 +10664,23 @@ button.venue-card {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
   margin-top: 12px;
+  order: 2;
 }
 
-.settings-share-actions .settings-install-image-btn + .auth-btn,
-.settings-share-actions .settings-install-image-btn + button.auth-btn {
-  margin-top: 35px;
+.settings-share-actions-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .settings-share-actions .auth-btn {
   width: auto;
 }
+
+.settings-content-stack > .management-hub { order: 1; }
+.settings-content-stack > .auth-actions { order: 3; }
 
 .settings-install-btn {
   display: inline-flex;
@@ -10713,6 +10720,10 @@ button.venue-card {
   object-fit: contain;
 }
 
+.settings-inline-qr {
+  display: none;
+}
+
 .settings-qr-modal {
   display: grid;
   gap: 10px;
@@ -10742,6 +10753,50 @@ button.venue-card {
 
 @media (max-width: 620px) {
   .settings-content-stack { margin-left: 0; }
+  .settings-share-actions {
+    --settings-mobile-action-height: 42px;
+    --settings-mobile-action-gap: 10px;
+    --settings-inline-qr-size: calc(var(--settings-mobile-action-height) + var(--settings-mobile-action-height) + var(--settings-mobile-action-height) + var(--settings-mobile-action-gap) + var(--settings-mobile-action-gap));
+    order: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--settings-inline-qr-size);
+    align-items: start;
+    column-gap: 14px;
+  }
+  .settings-content-stack > .management-hub { order: 2; }
+  .settings-share-actions-list {
+    width: 100%;
+    gap: var(--settings-mobile-action-gap);
+  }
+  .settings-share-actions-list .auth-btn,
+  .settings-share-actions-list .settings-install-image-btn {
+    width: 100%;
+    min-height: var(--settings-mobile-action-height);
+    height: var(--settings-mobile-action-height);
+    justify-content: flex-start;
+  }
+  .settings-install-image {
+    width: auto;
+    max-width: 100%;
+    height: var(--settings-mobile-action-height);
+  }
+  .settings-inline-qr {
+    appearance: none;
+    display: grid;
+    place-items: center;
+    width: var(--settings-inline-qr-size);
+    height: var(--settings-inline-qr-size);
+    padding: 8px;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    background: #0d0d0d;
+    cursor: pointer;
+  }
+  .settings-inline-qr canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+  }
   .management-hub-grid { grid-template-columns: 1fr; }
   .management-card { min-height: 142px; }
   .management-hub-count { display: none; }
@@ -11447,6 +11502,14 @@ button.venue-card {
   padding: 20px;
   opacity: 1;
   transition: opacity 160ms ease-out, transform 160ms ease-out;
+}
+
+@media (max-width: 360px) {
+  .settings-share-actions {
+    --settings-mobile-action-height: 38px;
+    --settings-mobile-action-gap: 8px;
+    column-gap: 10px;
+  }
 }
 
 .splash-screen.is-exiting {

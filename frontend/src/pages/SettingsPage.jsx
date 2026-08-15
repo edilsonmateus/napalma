@@ -14,6 +14,7 @@ export default function SettingsPage() {
   const canOpenVenuesPanel = Boolean(user) && (isAdminRole(user?.role) || isProducerRole(user?.role) || isVenueRole(user?.role));
   const canManageOperations = isAdminRole(user?.role) || Boolean(user?.operationScopes?.length);
   const qrCanvasRef = useRef(null);
+  const inlineQrCanvasRef = useRef(null);
   const [showInstallBtn, setShowInstallBtn] = useState(false);
   const [showShareBtn, setShowShareBtn] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
@@ -60,6 +61,24 @@ export default function SettingsPage() {
     });
   }, [appUrl, showQrModal]);
 
+  useEffect(() => {
+    if (!inlineQrCanvasRef.current) return;
+    QRCode.toCanvas(
+      inlineQrCanvasRef.current,
+      appUrl,
+      {
+        width: 220,
+        margin: 2,
+        color: {
+          dark: "#f4f6fb",
+          light: "#0d0d0d"
+        }
+      }
+    ).catch(() => {
+      // O botao de QR continua disponivel como alternativa.
+    });
+  }, [appUrl]);
+
   async function handleInstallApp() {
     if (!isMobileLike) {
       setShowQrModal(true);
@@ -70,7 +89,10 @@ export default function SettingsPage() {
   }
 
   async function handleNativeShare() {
-    if (!showShareBtn) return;
+    if (!showShareBtn) {
+      setShowQrModal(true);
+      return;
+    }
 
     try {
       await navigator.share({
@@ -107,34 +129,39 @@ export default function SettingsPage() {
 
       <div className="settings-content-stack">
         <div className="settings-share-actions clean-card">
-          {isMobileLike ? (
-            showInstallBtn ? (
-              <button type="button" className="settings-install-image-btn" onClick={handleInstallApp} aria-label="Instalar app">
-                {/* TODO: inserir SVG do botao de instalacao (/installAppBtn.svg) */}
-                <img src="/installAppBtn.svg" alt="" aria-hidden="true" className="settings-install-image" />
+          <div className="settings-share-actions-list">
+            {isMobileLike ? (
+              showInstallBtn ? (
+                <button type="button" className="settings-install-image-btn" onClick={handleInstallApp} aria-label="Instalar app">
+                  <img src="/installAppBtn.svg" alt="" aria-hidden="true" className="settings-install-image" />
+                </button>
+              ) : null
+            ) : (
+              <button type="button" className="auth-btn" onClick={handleInstallApp}>
+                Instalar no celular
               </button>
-            ) : null
-          ) : (
-            <button type="button" className="auth-btn" onClick={handleInstallApp}>
-              Instalar no celular
-            </button>
-          )}
+            )}
 
-          {showShareBtn ? (
-            <button type="button" className="auth-btn" onClick={handleNativeShare}>
-              <Share2 size={16} aria-hidden="true" />
-              Compartilhar app
-            </button>
-          ) : null}
+            {showShareBtn || isMobileLike ? (
+              <button type="button" className="auth-btn" onClick={handleNativeShare}>
+                <Share2 size={16} aria-hidden="true" />
+                Compartilhar app
+              </button>
+            ) : null}
 
-          <button type="button" className="auth-btn" onClick={() => setShowQrModal(true)}>
-            <img src="/qrCodeIco.svg" alt="" aria-hidden="true" className="settings-action-icon" />
-            QR Code Pro Amigo
+            <button type="button" className="auth-btn" onClick={() => setShowQrModal(true)}>
+              <img src="/qrCodeIco.svg" alt="" aria-hidden="true" className="settings-action-icon" />
+              QR Code Pro Amigo
+            </button>
+
+            <Link to="/anunciar" className="auth-btn">
+              Anunciar no 77Gira
+            </Link>
+          </div>
+
+          <button type="button" className="settings-inline-qr" onClick={() => setShowQrModal(true)} aria-label="Ampliar QR Code para compartilhar o 77Gira">
+            <canvas ref={inlineQrCanvasRef} />
           </button>
-
-          <Link to="/anunciar" className="auth-btn">
-            Anunciar no 77Gira
-          </Link>
         </div>
 
         <ManagementHub user={user} canManageVenues={canOpenVenuesPanel} canManageAds={isAdminRole(user?.role)} canManageUsers={isAdminRole(user?.role)} canManageOperations={canManageOperations}/>
