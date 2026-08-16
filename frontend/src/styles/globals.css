@@ -14561,7 +14561,7 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
 .operations-acquisition-detail-summary { align-self: start; padding: 16px; background: #fbfcfd; }.operations-acquisition-detail-summary h3 { margin: 0 0 6px; color: #223349; font-size: 16px; }.operations-acquisition-detail-summary > span { color: #6d7c8f; font-size: 11px; line-height: 1.5; }.operations-acquisition-detail-summary dl { margin: 15px 0; }.operations-acquisition-detail-summary dl div { display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid #e5eaf0; font-size: 11px; }.operations-acquisition-detail-summary dt { color: #718095; }.operations-acquisition-detail-summary dd { margin: 0; color: #2b3d53; font-weight: 750; text-align: right; }.operations-acquisition-detail-summary .operations-approve { display: flex; justify-content: center; text-decoration: none; }
 .operations-filter-bar { display: flex; gap: 8px; padding: 15px; border-bottom: 1px solid #e6ecf1; }.operations-filter-bar label { display: flex; align-items: center; flex: 1; gap: 7px; min-width: 150px; padding: 0 10px; border: 1px solid #cfd8e3; border-radius: 6px; color: #77869a; }.operations-filter-bar input,.operations-filter-bar select { min-height: 36px; border: 1px solid #cfd8e3; border-radius: 6px; background: #fff; color: #2f3d50; font: inherit; font-size: 12px; }.operations-filter-bar label input { min-width: 0; flex: 1; border: 0; outline: 0; }.operations-filter-bar select { min-width: 145px; padding: 0 9px; }
 .operations-table-wrap { overflow-x: auto; }.operations-table { width: 100%; min-width: 760px; border-collapse: collapse; }.operations-table th { padding: 11px 13px; color: #78869a; border-bottom: 1px solid #dde4ec; font-size: 10px; text-align: left; text-transform: uppercase; letter-spacing: .04em; }.operations-table td { padding: 11px 13px; border-bottom: 1px solid #edf1f5; color: #36465a; font-size: 12px; }.operations-table tbody tr:hover { background: #fafcff; }.operations-protocol { padding: 0; border: 0; background: transparent; color: #155eb4; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }.operations-table-loading { padding: 28px !important; color: #748398 !important; text-align: center; }
-.operations-alert { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; padding: 11px 13px; border-radius: 7px; font-size: 13px; }.operations-alert-error { border: 1px solid #f4b4b4; background: #fff7f7; color: #a12626; }.operations-alert button { border: 0; background: transparent; color: inherit; font: inherit; font-weight: 800; text-decoration: underline; cursor: pointer; }.operations-loading,.operations-empty { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 140px; color: #738197; font-size: 13px; }.is-spinning { animation: operations-spin 1s linear infinite; }@keyframes operations-spin { to { transform: rotate(360deg); } }
+.operations-alert { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; padding: 11px 13px; border-radius: 7px; font-size: 13px; }.operations-alert-error { border: 1px solid #f4b4b4; background: #fff7f7; color: #a12626; }.operations-alert-success { border: 1px solid #a8dfbd; background: #effbf3; color: #176b3a; }.operations-alert button { border: 0; background: transparent; color: inherit; font: inherit; font-weight: 800; text-decoration: underline; cursor: pointer; }.operations-loading,.operations-empty { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 140px; color: #738197; font-size: 13px; }.is-spinning { animation: operations-spin 1s linear infinite; }@keyframes operations-spin { to { transform: rotate(360deg); } }
 .operations-detail-backdrop { position: fixed; inset: 0; z-index: 80; overflow: auto; padding: 24px; background: rgba(29, 41, 57, .34); backdrop-filter: blur(4px); }.operations-detail,.operations-detail-loading { width: min(990px, 100%); margin: 32px auto; border: 1px solid #d5dee8; border-radius: 12px; background: #fff; box-shadow: 0 18px 54px rgba(19, 33, 52, .24); }.operations-detail-loading { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 190px; color: #516277; }.operations-detail > header { display: flex; justify-content: space-between; gap: 15px; padding: 25px 27px 18px; border-bottom: 1px solid #e4e9ef; }.operations-detail header p { margin: 13px 0 3px; color: #1f67ae; font-size: 11px; font-weight: 800; letter-spacing: .06em; }.operations-detail header h2 { margin: 0; color: #1b2a3d; font-size: 22px; letter-spacing: -.03em; }.operations-detail header span { display: block; margin-top: 5px; color: #718094; font-size: 12px; }
 .operations-progress { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; padding: 20px 27px; border-bottom: 1px solid #e5eaf0; }.operations-progress div { position: relative; display: grid; justify-items: center; gap: 5px; color: #8b97a6; font-size: 10px; text-align: center; }.operations-progress div:not(:last-child)::after { content: ""; position: absolute; left: calc(50% + 17px); top: 13px; width: calc(100% - 30px); height: 1px; background: #d7e0e8; }.operations-progress i { position: relative; z-index: 1; display: grid; width: 25px; height: 25px; place-items: center; border: 1px solid #cfd8e3; border-radius: 50%; background: #fff; color: #65748a; font-style: normal; }.operations-progress .is-done { color: #256f4c; font-weight: 700; }.operations-progress .is-done i { border-color: #a7dec0; background: #e8f8ee; color: #15803d; }
 .operations-detail-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(230px, .65fr); gap: 20px; padding: 24px 27px; }.operations-detail-grid > div { display: grid; gap: 19px; }.operations-sensitive { padding: 16px; border: 1px solid #e1e7ee; border-radius: 8px; background: #fbfcfd; }.operations-sensitive > div { display: flex; align-items: baseline; gap: 9px; }.operations-sensitive p,.operations-owner p,.operations-history p { margin: 0; color: #bd521a; font-size: 10px; font-weight: 800; letter-spacing: .06em; }.operations-sensitive > small { display: block; margin: 7px 0 13px; color: #7a8798; font-size: 11px; }.operations-sensitive dl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; }.operations-sensitive dl div { min-width: 0; }.operations-sensitive dt { color: #758398; font-size: 10px; }.operations-sensitive dd { overflow-wrap: anywhere; margin: 3px 0 0; color: #243347; font-size: 12px; font-weight: 650; }.operations-sensitive .operations-request-details { grid-column: 1 / -1; padding-top: 10px; border-top: 1px solid #e4eaf0; }.operations-request-details dd { white-space: pre-wrap; font-weight: 500; line-height: 1.45; }.operations-linked-list { display: flex; flex-wrap: wrap; gap: 7px; }.operations-linked-list span { display: inline-flex; align-items: center; gap: 5px; padding: 6px 8px; border: 1px solid #dce4eb; border-radius: 999px; color: #45576d; font-size: 11px; }.operations-retention-list { display: grid; gap: 7px; }.operations-retention-list article { display: flex; align-items: flex-start; gap: 8px; padding: 10px; border: 1px solid #e0e6ed; border-radius: 7px; background: #fff; }.operations-retention-list svg { color: #b7791f; flex: 0 0 auto; }.operations-retention-list strong,.operations-retention-list small { display: block; }.operations-retention-list strong { color: #334256; font-size: 12px; }.operations-retention-list small { margin-top: 2px; color: #738197; font-size: 11px; line-height: 1.35; }
@@ -14997,4 +14997,108 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
   min-height: 0;
   margin-top: 0;
   line-height: 1.2;
+}
+
+/* Decisões de reivindicação: justificativa legível e ações equivalentes. */
+.operations-claim-detail .operations-detail-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.operations-claim-detail .operations-request-info {
+  display: contents;
+}
+
+.operations-claim-detail .operations-request-info textarea {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  min-height: 124px;
+  box-sizing: border-box;
+  resize: vertical;
+  padding: 14px;
+  border: 1px solid #9bacbf;
+  border-radius: 7px;
+  background: #f8fbff;
+  color: #17263a;
+  font-size: 13px;
+  line-height: 1.5;
+  box-shadow: inset 0 1px 1px rgba(22, 38, 58, .04);
+}
+
+.operations-claim-detail .operations-request-info textarea::placeholder {
+  color: #65778d;
+  opacity: 1;
+}
+
+.operations-claim-detail .operations-request-info .operations-secondary,
+.operations-claim-detail .operations-approve {
+  min-height: 62px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 18px;
+  border-radius: 7px;
+  color: #fff;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.28;
+  white-space: normal;
+  background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.19) 0 2px, transparent 2px 11px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.2);
+  transition: filter .18s ease, transform .18s ease;
+}
+
+.operations-claim-detail .operations-request-info .operations-secondary {
+  grid-column: 1;
+  grid-row: 2;
+  border-color: #b4232c;
+  background-color: #c9333d;
+  font-size: 0;
+}
+
+.operations-claim-detail .operations-request-info .operations-secondary::after {
+  content: "Recusar com justificativa";
+  font-size: 13px;
+}
+
+.operations-claim-detail .operations-approve {
+  grid-column: 2;
+  grid-row: 2;
+  border-color: #187644;
+  background-color: #218453;
+}
+
+.operations-claim-detail .operations-request-info .operations-secondary:hover:not(:disabled),
+.operations-claim-detail .operations-approve:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.operations-claim-detail .operations-request-info .operations-secondary:disabled,
+.operations-claim-detail .operations-approve:disabled {
+  opacity: .55;
+  cursor: wait;
+  transform: none;
+}
+.operations-claim-detail .operations-request-info .operations-secondary:disabled::after {
+  content: "Recusando…";
+}
+
+.operations-claim-detail .operations-irreversible-lock {
+  grid-column: 1 / -1;
+  grid-row: 3;
+}
+
+@media (max-width: 760px) {
+  .operations-claim-detail .operations-detail-actions { grid-template-columns: 1fr; }
+  .operations-claim-detail .operations-request-info textarea,
+  .operations-claim-detail .operations-request-info .operations-secondary,
+  .operations-claim-detail .operations-approve,
+  .operations-claim-detail .operations-irreversible-lock { grid-column: 1; }
+  .operations-claim-detail .operations-request-info textarea { grid-row: 1; min-height: 132px; }
+  .operations-claim-detail .operations-request-info .operations-secondary { grid-row: 2; }
+  .operations-claim-detail .operations-approve { grid-row: 3; }
+  .operations-claim-detail .operations-irreversible-lock { grid-row: 4; }
 }

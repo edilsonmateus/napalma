@@ -11,6 +11,7 @@ import OperationsPartnersPanel from "../components/operations/OperationsPartners
 import OperationsCommunicationsPanel from "../components/operations/OperationsCommunicationsPanel";
 import OperationsDocumentsPanel from "../components/operations/OperationsDocumentsPanel";
 import OperationsSignaturesPanel from "../components/operations/OperationsSignaturesPanel";
+import AppToast from "../components/common/AppToast";
 import { useAuthStore } from "../store/authStore";
 import { isAdminRole } from "../utils/roles";
 
@@ -124,11 +125,12 @@ function claimRequestLabel(item) {
   return item.targetType === "venue" ? "Reivindicação de propriedade da casa" : "Reivindicação de artista";
 }
 
-function ClaimsOperationsPanel({ items, loading, error, onRefresh, onOpen }) {
+function ClaimsOperationsPanel({ items, loading, error, feedback, onRefresh, onOpen }) {
   return <>
     <header className="operations-heading"><div><p>REIVINDICAÇÕES E ACESSOS</p><h1>Legitimidade antes de liberar gestão.</h1><span>Verifique vínculo, evidências e o destino da solicitação. A fila não exibe documentos ou contatos sem abertura explícita do caso.</span></div><button type="button" className="operations-secondary" onClick={onRefresh} disabled={loading}><RefreshCw size={16} className={loading ? "is-spinning" : ""}/> Atualizar</button></header>
+    {feedback ? <div className={`operations-alert ${feedback.type === "error" ? "operations-alert-error" : "operations-alert-success"}`} role="status" aria-live="polite">{feedback.text}</div> : null}
     <section className="operations-panel operations-queue-panel"><div className="operations-panel-title"><div><p>FILA DE REIVINDICAÇÕES E ACESSOS</p><h2>{items.filter((item) => ["pending", "pending_legal_acceptance"].includes(item.status)).length} em andamento</h2></div><span className="operations-queue-note">A aprovação valida a elegibilidade. O acesso formal só é liberado após a assinatura exigida.</span></div><div className="operations-table-wrap"><table className="operations-table"><thead><tr><th>Protocolo</th><th>Perfil</th><th>Solicitante</th><th>Solicitação</th><th>Status</th><th>Risco</th><th>Recebida</th><th aria-label="Ações"/></tr></thead><tbody>{loading ? <tr><td colSpan="8" className="operations-table-loading">Carregando reivindicações…</td></tr> : items.length ? items.map((item) => <tr key={item.id}><td><button type="button" className="operations-protocol" onClick={() => onOpen(item.id)}>{item.protocol}</button></td><td>{item.target}</td><td>{item.requesterName}</td><td>{claimRequestLabel(item)}</td><td><ClaimStatusTag status={item.status}/></td><td><RiskTag risk={item.risk}/></td><td>{formatDate(item.createdAt)}</td><td><button type="button" className="operations-open" onClick={() => onOpen(item.id)}>Abrir</button></td></tr>) : <tr><td colSpan="8" className="operations-table-loading">Não há reivindicações nesta leitura.</td></tr>}</tbody></table></div></section>
-    {error ? <p className="operations-inline-error">{error}</p> : null}
+    {error ? <p className="operations-inline-error" role="alert">{error}</p> : null}
   </>;
 }
 
@@ -229,6 +231,7 @@ function OperationsAgendaExportPanel() {
       <p className="operations-agenda-meta">{loading ? "Lendo programação…" : `${agenda.items?.length || 0} evento(s) público(s) nesta agenda.`}</p>
       {error ? <p className="operations-inline-error">{error}</p> : null}
     </div>
+    <AppToast toast={claimFeedback || { text: "", type: "info" }} onClose={() => setClaimFeedback(null)} />
   </section>;
 }
 
@@ -421,6 +424,7 @@ export default function OperationsCenterPage() {
   const [claimDetailLoading, setClaimDetailLoading] = useState(false);
   const [claimDecisionNote, setClaimDecisionNote] = useState("");
   const [claimActionLoading, setClaimActionLoading] = useState("");
+  const [claimFeedback, setClaimFeedback] = useState(null);
   const [venueItems, setVenueItems] = useState([]);
   const [venuesLoading, setVenuesLoading] = useState(false);
   const [venuesError, setVenuesError] = useState("");
@@ -828,6 +832,7 @@ export default function OperationsCenterPage() {
   async function openClaimDetail(id) {
     setClaimDetailLoading(true);
     setClaimError("");
+    setClaimFeedback(null);
     try {
       setSelectedClaim(await getOperationsClaimDetail(id));
       setClaimDecisionNote("");
@@ -848,10 +853,18 @@ export default function OperationsCenterPage() {
     setClaimError("");
     try {
       await decideClaim(selectedClaim.id, { status, decisionNote: claimDecisionNote.trim() || undefined });
+      setClaimFeedback({
+        type: "success",
+        text: status === "rejected"
+          ? "Reivindicação recusada. O fundamento foi registrado na trilha de auditoria e será apresentado à pessoa solicitante."
+          : "Elegibilidade aprovada. A decisão foi registrada na auditoria; o acesso só será liberado após as etapas formais exigidas."
+      });
       setSelectedClaim(null);
       await loadClaims();
     } catch (decisionError) {
-      setClaimError(decisionError?.response?.data?.message || "Não foi possível registrar esta decisão.");
+      const message = decisionError?.response?.data?.message || "Não foi possível registrar esta decisão. Tente novamente.";
+      setClaimError(message);
+      setClaimFeedback({ type: "error", text: message });
     } finally {
       setClaimActionLoading("");
     }
@@ -956,7 +969,7 @@ export default function OperationsCenterPage() {
           <div className="operations-kpis operations-kpis-compact"><article><span>Novas</span><strong>{summary.received}</strong></article><article><span>Em análise</span><strong>{summary.inReview}</strong></article><article className="is-attention"><span>Vencendo SLA</span><strong>{summary.highRisk}</strong></article><article><span>Concluídas</span><strong>{summary.closed}</strong></article></div>
           <section className="operations-panel operations-queue-panel"><div className="operations-filter-bar"><label><Search size={17}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nome ou protocolo" onKeyDown={(event) => event.key === "Enter" && loadQueue()}/></label><select value={status} onChange={(event) => { setStatus(event.target.value); loadQueue({ status: event.target.value }); }}><option value="all">Todos os status</option><option value="received">Novas</option><option value="in_review">Em análise</option><option value="completed">Concluídas</option><option value="rejected">Recusadas</option><option value="cancelled">Canceladas</option></select><button type="button" className="operations-secondary" onClick={() => loadQueue()}><Search size={15}/> Buscar</button></div>
             <div className="operations-table-wrap"><table className="operations-table"><thead><tr><th>Protocolo</th><th>Solicitante</th><th>Tipo</th><th>Status</th><th>Prazo</th><th>Risco</th><th>Responsável</th><th aria-label="Ações"/></tr></thead><tbody>{loading ? <tr><td colSpan="8" className="operations-table-loading">Carregando solicitações…</td></tr> : items.length ? items.map((item) => <tr key={item.id}><td><button type="button" className="operations-protocol" onClick={() => openDetail(item.id)}>{item.protocol}</button></td><td>{item.requesterName}</td><td>{TYPE_LABELS[item.type]}</td><td><StatusTag status={item.status}/></td><td>{dueLabel(item.dueAt)}</td><td><RiskTag risk={item.risk}/></td><td>{item.responsible || "Sem responsável"}</td><td><button type="button" className="operations-open" onClick={() => openDetail(item.id)}>Abrir</button></td></tr>) : <tr><td colSpan="8" className="operations-table-loading">Nenhuma solicitação corresponde aos filtros.</td></tr>}</tbody></table></div></section>
-        </> : section === "claims" ? <ClaimsOperationsPanel items={claimItems} loading={claimsLoading} error={claimError} onRefresh={loadClaims} onOpen={openClaimDetail}/> : section === "documents" ? <><OperationsDocumentsPanel items={documentItems} loading={documentsLoading} error={documentsError} onRefresh={loadOperationsDocuments} onBootstrap={bootstrapOperationsDocuments} onCreate={saveOperationsLegalDocument} onCreateVersion={saveOperationsLegalDocumentVersion} onTransition={updateOperationsLegalDocumentVersion} onGetImpact={getOperationsLegalDocumentVersionImpact}/><OperationsSignaturesPanel items={signatureItems} documents={documentItems} loading={signaturesLoading} error={signaturesError} onRefresh={loadOperationsLegalSignatures} onCreate={saveOperationsLegalSignature} onCancel={cancelOperationsSignature} onResend={resendOperationsSignatureInvitation}/></> : section === "venues" ? <OperationsVenuesPanel items={venueItems} loading={venuesLoading} error={venuesError} onRefresh={loadOperationsVenues}/> : section === "acquisition" ? <OperationsAcquisitionPanel analytics={acquisitionData.analytics} leads={acquisitionData.leads} loading={acquisitionLoading} error={acquisitionError} filters={acquisitionFilters} onFiltersChange={changeAcquisitionFilters} onRefresh={() => loadOperationsAcquisition()} onOpen={openAcquisitionDetail}/> : section === "partners" ? <OperationsPartnersPanel items={partnerItems} loading={partnersLoading} error={partnersError} onRefresh={loadOperationsPartners} onSave={saveOperationsPartner} onUploadLogo={uploadOperationsStrategicPartnerLogo}/> : section === "territories" ? <OperationsTerritoriesPanel items={territoryItems} loading={territoriesLoading} error={territoriesError} onRefresh={loadOperationsTerritories}/> : section === "audit" ? <OperationsAuditPanel items={auditItems} loading={auditLoading} error={auditError} onRefresh={loadOperationsAudit}/> : section === "notifications" ? <OperationsNotificationsPanel data={notificationsData} loading={notificationsLoading} error={notificationsError} onRefresh={loadOperationsNotifications}/> : section === "moderation" ? <OperationsModerationPanel items={moderationItems} loading={moderationLoading} error={moderationError} onRefresh={loadOperationsModeration}/> : section === "settings" ? <OperationsSettingsPanel data={settingsData} loading={settingsLoading} error={settingsError} onRefresh={loadOperationsSettings} isAdmin={isAdmin} grants={accessGrants} grantsLoading={accessGrantsLoading} grantsError={accessGrantsError} onRefreshGrants={loadOperationsAccessGrants} onSetGrant={changeOperationsAccessGrant}/> : section === "communications" ? <OperationsCommunicationsPanel/> : <OperationsAdsPanel data={adsData} loading={adsLoading} error={adsError} onRefresh={loadOperationsAds}/>}
+        </> : section === "claims" ? <ClaimsOperationsPanel items={claimItems} loading={claimsLoading} error={claimError} feedback={claimFeedback} onRefresh={loadClaims} onOpen={openClaimDetail}/> : section === "documents" ? <><OperationsDocumentsPanel items={documentItems} loading={documentsLoading} error={documentsError} onRefresh={loadOperationsDocuments} onBootstrap={bootstrapOperationsDocuments} onCreate={saveOperationsLegalDocument} onCreateVersion={saveOperationsLegalDocumentVersion} onTransition={updateOperationsLegalDocumentVersion} onGetImpact={getOperationsLegalDocumentVersionImpact}/><OperationsSignaturesPanel items={signatureItems} documents={documentItems} loading={signaturesLoading} error={signaturesError} onRefresh={loadOperationsLegalSignatures} onCreate={saveOperationsLegalSignature} onCancel={cancelOperationsSignature} onResend={resendOperationsSignatureInvitation}/></> : section === "venues" ? <OperationsVenuesPanel items={venueItems} loading={venuesLoading} error={venuesError} onRefresh={loadOperationsVenues}/> : section === "acquisition" ? <OperationsAcquisitionPanel analytics={acquisitionData.analytics} leads={acquisitionData.leads} loading={acquisitionLoading} error={acquisitionError} filters={acquisitionFilters} onFiltersChange={changeAcquisitionFilters} onRefresh={() => loadOperationsAcquisition()} onOpen={openAcquisitionDetail}/> : section === "partners" ? <OperationsPartnersPanel items={partnerItems} loading={partnersLoading} error={partnersError} onRefresh={loadOperationsPartners} onSave={saveOperationsPartner} onUploadLogo={uploadOperationsStrategicPartnerLogo}/> : section === "territories" ? <OperationsTerritoriesPanel items={territoryItems} loading={territoriesLoading} error={territoriesError} onRefresh={loadOperationsTerritories}/> : section === "audit" ? <OperationsAuditPanel items={auditItems} loading={auditLoading} error={auditError} onRefresh={loadOperationsAudit}/> : section === "notifications" ? <OperationsNotificationsPanel data={notificationsData} loading={notificationsLoading} error={notificationsError} onRefresh={loadOperationsNotifications}/> : section === "moderation" ? <OperationsModerationPanel items={moderationItems} loading={moderationLoading} error={moderationError} onRefresh={loadOperationsModeration}/> : section === "settings" ? <OperationsSettingsPanel data={settingsData} loading={settingsLoading} error={settingsError} onRefresh={loadOperationsSettings} isAdmin={isAdmin} grants={accessGrants} grantsLoading={accessGrantsLoading} grantsError={accessGrantsError} onRefreshGrants={loadOperationsAccessGrants} onSetGrant={changeOperationsAccessGrant}/> : section === "communications" ? <OperationsCommunicationsPanel/> : <OperationsAdsPanel data={adsData} loading={adsLoading} error={adsError} onRefresh={loadOperationsAds}/>}
       </main>
     </div>
 
