@@ -3,6 +3,20 @@ import { env } from "../config/env.js";
 const BREVO_SEND_URL = "https://api.brevo.com/v3/smtp/email";
 const EMAIL_TIMEOUT_MS = 12_000;
 
+function maskEmail(email) {
+  const [localPart, domain] = String(email || "").split("@");
+  if (!localPart || !domain) return "invalid";
+  return `${localPart.slice(0, 1)}***@${domain}`;
+}
+
+function emailLog(stage, metadata = {}) {
+  console.info("[transactional-email]", stage, metadata);
+}
+
+function safeErrorMessage(error) {
+  return String(error?.message || "unknown").slice(0, 180);
+}
+
 function escapeHtml(value) {
   return String(value || "")
     .replaceAll("&", "&amp;")
@@ -64,12 +78,26 @@ function institutionalMessage({ recipientName, subject, contentHtml, contentText
 }
 
 async function sendWithBrevo({ email, recipientName, message, tags, replyTo }) {
+  const context = {
+    recipient: maskEmail(email),
+    tags: Array.isArray(tags) ? tags : [],
+    subject: String(message?.subject || "").slice(0, 120)
+  };
+  emailLog("send_requested", context);
+  emailLog("configuration_checked", {
+    ...context,
+    hasApiKey: Boolean(env.brevoApiKey),
+    hasSender: Boolean(env.emailFromAddress),
+    hasReplyTo: Boolean(replyTo)
+  });
   if (!env.brevoApiKey || !env.emailFromAddress) {
+    emailLog("configuration_missing", context);
     throw new Error("transactional_email_not_configured");
   }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), EMAIL_TIMEOUT_MS);
   try {
+    emailLog("provider_request_started", { ...context, provider: "brevo" });
     const response = await fetch(BREVO_SEND_URL, {
       method: "POST",
       signal: controller.signal,
@@ -84,7 +112,34 @@ async function sendWithBrevo({ email, recipientName, message, tags, replyTo }) {
         tags
       })
     });
-    if (!response.ok) throw new Error(`transactional_email_provider_${response.status}`);
+    let providerMessageId = null;
+    try {
+      const payload = await response.clone().json();
+      providerMessageId = payload?.messageId || null;
+    } catch {
+      // The provider response is not required for delivery and may be empty.
+    }
+    emailLog("provider_response_received", {
+      ...context,
+      provider: "brevo",
+      status: response.status,
+      accepted: response.ok,
+      providerMessageId
+    });
+    if (!response.ok) {
+      emailLog("provider_rejected_request", { ...context, provider: "brevo", status: response.status });
+      throw new Error(`transactional_email_provider_${response.status}`);
+    }
+    emailLog("provider_accepted_delivery", { ...context, provider: "brevo", providerMessageId });
+  } catch (error) {
+    const timedOut = error?.name === "AbortError";
+    emailLog(timedOut ? "provider_timeout" : "provider_request_failed", {
+      ...context,
+      provider: "brevo",
+      reason: safeErrorMessage(error)
+    });
+    if (timedOut) throw new Error("transactional_email_timeout");
+    throw error;
   } finally {
     clearTimeout(timeout);
   }

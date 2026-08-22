@@ -25,8 +25,8 @@ export async function getMyLegalSignature(participantId) {
   return data.item;
 }
 
-export async function requestMyLegalSignatureCode(participantId) {
-  const { data } = await api.post(`/me/legal-signatures/${participantId}/request-code`);
+export async function requestMyLegalSignatureCode(participantId, payload) {
+  const { data } = await api.post(`/me/legal-signatures/${participantId}/request-code`, payload);
   return data;
 }
 

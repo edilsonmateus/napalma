@@ -23,6 +23,11 @@ const confirmSchema = z.object({
   code: z.string().regex(/^\d{6}$/)
 });
 
+const requestCodeSchema = z.object({
+  password: z.string().min(1).max(200),
+  acknowledged: z.literal(true)
+});
+
 const declineSchema = z.object({ reason: z.string().trim().min(10).max(600) });
 
 function hash(value) { return createHash("sha256").update(String(value)).digest("hex"); }
@@ -128,18 +133,50 @@ export async function getMyLegalSignature(req, res, next) {
 }
 
 export async function requestMyLegalSignatureCode(req, res, next) {
+  const context = { participantId: req.params.participantId, actorUserId: req.user?.id || null };
   try {
+    console.info("[legal-signature] confirmation_code_request_received", context);
+    const data = requestCodeSchema.parse(req.body || {});
     const item = await resolveMine(req, req.params.participantId);
-    if (!item) return res.status(404).json({ message: "Documento de assinatura não encontrado para esta conta." });
-    if (await expireEnvelopeIfNeeded(req, item)) return res.status(410).json({ message: "O prazo desta assinatura expirou." });
-    if (!["pending", "viewed"].includes(item.status) || item.envelope.status !== "pending_signature") return res.status(409).json({ message: "Esta assinatura não está disponível para confirmação." });
+    if (!item) {
+      console.info("[legal-signature] confirmation_code_participant_not_found", context);
+      return res.status(404).json({ message: "Documento de assinatura não encontrado para esta conta." });
+    }
+    const resolvedContext = { ...context, envelopeId: item.envelopeId, protocol: item.envelope.protocol };
+    if (await expireEnvelopeIfNeeded(req, item)) {
+      console.info("[legal-signature] confirmation_code_envelope_expired", resolvedContext);
+      return res.status(410).json({ message: "O prazo desta assinatura expirou." });
+    }
+    if (!["pending", "viewed"].includes(item.status) || item.envelope.status !== "pending_signature") {
+      console.info("[legal-signature] confirmation_code_unavailable", { ...resolvedContext, participantStatus: item.status, envelopeStatus: item.envelope.status });
+      return res.status(409).json({ message: "Esta assinatura não está disponível para confirmação." });
+    }
+    console.info("[legal-signature] confirmation_code_password_verification_started", resolvedContext);
+    const passwordValid = await bcrypt.compare(data.password, req.user.passwordHash);
+    if (!passwordValid) {
+      console.info("[legal-signature] confirmation_code_password_verification_failed", resolvedContext);
+      return res.status(400).json({ message: "A senha atual não confere. O código não foi enviado." });
+    }
+    console.info("[legal-signature] confirmation_code_password_verification_passed", resolvedContext);
     const code = sixDigitCode();
     const expiresAt = new Date(Date.now() + CODE_TTL_MS);
+    console.info("[legal-signature] confirmation_code_generated", { ...resolvedContext, expiresAt });
     await prisma.legalSignatureParticipant.update({ where: { id: item.id }, data: { emailCodeHash: hash(code), emailCodeExpiresAt: expiresAt, emailCodeUsedAt: null } });
+    console.info("[legal-signature] confirmation_code_persisted", resolvedContext);
+    console.info("[legal-signature] confirmation_code_delivery_started", resolvedContext);
     await sendLegalSignatureCodeEmail({ email: item.emailSnapshot, firstName: item.nameSnapshot, code, envelopeTitle: item.envelope.title, expiresInMinutes: CODE_TTL_MS / 60 });
+    console.info("[legal-signature] confirmation_code_delivery_accepted", resolvedContext);
     await event({ req, envelopeId: item.envelopeId, participantId: item.id, action: "confirmation_code_sent", metadata: { expiresAt } });
+    console.info("[legal-signature] confirmation_code_audit_recorded", resolvedContext);
     return res.json({ sent: true, expiresAt });
-  } catch (error) { next(error); }
+  } catch (error) {
+    const reason = String(error?.message || "unknown").slice(0, 180);
+    console.error("[legal-signature] confirmation_code_request_failed", { ...context, reason });
+    if (String(error?.message || "").startsWith("transactional_email_")) {
+      return res.status(503).json({ message: "Não foi possível enviar o código de confirmação agora. Tente novamente em alguns minutos." });
+    }
+    next(error);
+  }
 }
 
 export async function confirmMyLegalSignature(req, res, next) {

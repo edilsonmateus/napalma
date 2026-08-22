@@ -27,6 +27,7 @@ export default function MyLegalSignaturesCard() {
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const [form, setForm] = useState({ password: "", code: "", acknowledged: false, declineReason: "", declining: false });
+  const [codeSent, setCodeSent] = useState(false);
 
   async function load() {
     setState((current) => ({ ...current, loading: true, error: "" }));
@@ -44,24 +45,26 @@ export default function MyLegalSignaturesCard() {
     try {
       setItem(await getMyLegalSignature(participant.id));
       setForm({ password: "", code: "", acknowledged: false, declineReason: "", declining: false });
+      setCodeSent(false);
     } catch (error) {
       setState((current) => ({ ...current, error: error?.response?.data?.message || "Não foi possível abrir este documento." }));
     } finally { setBusy(""); }
   }
 
   async function sendCode() {
-    if (!item) return;
+    if (!item || !form.acknowledged || !form.password) return;
     setBusy("code"); setMessage("");
     try {
-      const result = await requestMyLegalSignatureCode(item.id);
-      setMessage(`Código enviado. Ele expira em ${Math.max(1, Math.round((new Date(result.expiresAt) - Date.now()) / 60000))} minutos.`);
+      const result = await requestMyLegalSignatureCode(item.id, { password: form.password, acknowledged: form.acknowledged });
+      setCodeSent(true);
+      setMessage(`Senha confirmada. Código enviado. Ele expira em ${Math.max(1, Math.round((new Date(result.expiresAt) - Date.now()) / 60000))} minutos.`);
     } catch (error) {
       setMessage(error?.response?.data?.message || "Não foi possível enviar o código agora.");
     } finally { setBusy(""); }
   }
 
   async function sign() {
-    if (!item || !form.acknowledged || !form.password || !/^\d{6}$/.test(form.code)) return;
+    if (!item || !codeSent || !form.acknowledged || !form.password || !/^\d{6}$/.test(form.code)) return;
     setBusy("sign"); setMessage("");
     try {
       await confirmMyLegalSignature(item.id, { password: form.password, code: form.code });
@@ -108,11 +111,14 @@ export default function MyLegalSignaturesCard() {
         <article className="account-legal-signature-content"><h4>{item.documentTitle}</h4><div>{item.contentSnapshot || "Conteúdo indisponível."}</div></article>
         {item.status === "signed" ? <div className="account-legal-signature-complete"><ShieldCheck size={18}/><span>Assinado em {formatDate(item.signedAt)}. Este registro preserva a versão exata que foi confirmada.</span></div> : item.status === "declined" ? <div className="account-legal-signature-declined"><ShieldAlert size={18}/><span>Recusa registrada. A equipe poderá entrar em contato para tratar o documento.</span></div> : <>
           <div className="account-legal-signature-security"><MailCheck size={18}/><span><strong>Confirmação reforçada</strong><small>Para assinar, confirme sua senha atual e o código enviado ao e-mail desta conta.</small></span></div>
-          <button type="button" className="chip" disabled={busy === "code"} onClick={sendCode}>{busy === "code" ? "Enviando código…" : "Enviar código ao meu e-mail"}</button>
-          <label className="account-legal-signature-check"><input type="checkbox" checked={form.acknowledged} onChange={(event) => setForm((current) => ({ ...current, acknowledged: event.target.checked }))}/>Li o documento integral e confirmo que estou assinando esta versão de forma consciente.</label>
-          <label>Senha atual<input type="password" autoComplete="current-password" value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}/></label>
-          <label>Código recebido por e-mail<input inputMode="numeric" autoComplete="one-time-code" maxLength="6" value={form.code} onChange={(event) => setForm((current) => ({ ...current, code: event.target.value.replace(/\D/g, "").slice(0, 6) }))} placeholder="000000"/></label>
-          <button type="button" className="auth-btn" disabled={busy === "sign" || !form.acknowledged || !form.password || !/^\d{6}$/.test(form.code)} onClick={sign}>{busy === "sign" ? "Registrando…" : "Assinar documento"}</button>
+          <label className="account-legal-signature-check"><input type="checkbox" checked={form.acknowledged} onChange={(event) => { const acknowledged = event.target.checked; setForm((current) => ({ ...current, acknowledged, password: acknowledged ? current.password : "", code: "" })); setCodeSent(false); }}/>Li o documento integral e confirmo que estou assinando esta versão de forma consciente.</label>
+          {form.acknowledged ? <>
+            <label>Senha atual<input type="password" autoComplete="current-password" value={form.password} onChange={(event) => { setForm((current) => ({ ...current, password: event.target.value, code: "" })); setCodeSent(false); }}/></label>
+            <button type="button" className="chip account-legal-signature-code-trigger" disabled={busy === "code" || !form.password} onClick={sendCode}>{busy === "code" ? "Confirmando senha e enviando…" : codeSent ? "Reenviar código para o meu e-mail" : form.password ? "Confirmar senha e disparar código" : "Disparar código para o meu e-mail"}</button>
+            {!form.password ? <small className="account-legal-signature-code-hint">Informe sua senha atual para liberar o envio do código ao seu e-mail.</small> : null}
+          </> : null}
+          {codeSent ? <label>Código recebido por e-mail<input inputMode="numeric" autoComplete="one-time-code" maxLength="6" value={form.code} onChange={(event) => setForm((current) => ({ ...current, code: event.target.value.replace(/\D/g, "").slice(0, 6) }))} placeholder="000000"/></label> : null}
+          <button type="button" className="auth-btn" disabled={busy === "sign" || !codeSent || !form.acknowledged || !form.password || !/^\d{6}$/.test(form.code)} onClick={sign}>{busy === "sign" ? "Registrando…" : "Assinar documento"}</button>
           <button type="button" className="account-legal-signature-decline-toggle" onClick={() => setForm((current) => ({ ...current, declining: !current.declining }))}>Não concordo com este documento</button>
           {form.declining ? <div className="account-legal-signature-decline"><label>Motivo da recusa<textarea minLength="10" value={form.declineReason} onChange={(event) => setForm((current) => ({ ...current, declineReason: event.target.value }))} placeholder="Explique o motivo para que a equipe possa analisar."/></label><button type="button" className="chip" disabled={busy === "decline" || form.declineReason.trim().length < 10} onClick={decline}>{busy === "decline" ? "Registrando…" : "Registrar recusa"}</button></div> : null}
         </>}

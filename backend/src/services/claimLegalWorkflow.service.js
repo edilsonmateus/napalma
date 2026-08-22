@@ -98,8 +98,18 @@ export async function prepareClaimLegalEnvelope({ tx, claim, actorUserId }) {
 
 export async function deliverClaimLegalInvitation(envelope) {
   const participant = envelope?.participants?.[0];
-  if (!participant) return "not_applicable";
+  const context = {
+    envelopeId: envelope?.id || null,
+    claimRequestId: envelope?.claimRequestId || null,
+    participantId: participant?.id || null,
+    protocol: envelope?.protocol || null
+  };
+  if (!participant) {
+    console.info("[claim-legal] invitation_not_applicable", context);
+    return "not_applicable";
+  }
   try {
+    console.info("[claim-legal] invitation_delivery_requested", context);
     await sendLegalSignatureInvitationEmail({
       email: participant.emailSnapshot,
       firstName: participant.nameSnapshot,
@@ -107,18 +117,22 @@ export async function deliverClaimLegalInvitation(envelope) {
       protocol: envelope.protocol,
       expiresAt: envelope.expiresAt
     });
+    console.info("[claim-legal] invitation_delivery_accepted", context);
     await prisma.$transaction([
       prisma.legalSignatureParticipant.update({ where: { id: participant.id }, data: { invitationSentAt: new Date() } }),
       prisma.legalSignatureEvent.create({ data: { envelopeId: envelope.id, participantId: participant.id, action: "invitation_sent_from_claim", metadata: { claimWorkflow: true } } })
     ]);
+    console.info("[claim-legal] invitation_delivery_recorded", context);
     return "sent";
   } catch (error) {
+    const reason = String(error?.message || "unknown").slice(0, 180);
+    console.error("[claim-legal] invitation_delivery_failed", { ...context, reason });
     await prisma.legalSignatureEvent.create({
       data: {
         envelopeId: envelope.id,
         participantId: participant.id,
         action: "invitation_delivery_failed",
-        metadata: { claimWorkflow: true, reason: String(error?.message || "unknown").slice(0, 180) }
+        metadata: { claimWorkflow: true, reason }
       }
     });
     return "failed";
