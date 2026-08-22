@@ -14986,9 +14986,48 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
 }
 .account-legal-signature-code-hint { margin: -3px 0 2px; color: #64748b; font-size: 11px; line-height: 1.45; }
 .account-legal-signature-decline-toggle { width: fit-content; border: 0; padding: 2px 0; color: #9f3838; background: transparent; font: inherit; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-.account-legal-signature-decline { display: grid; gap: 9px; padding: 11px; border: 1px solid #f0d2d2; border-radius: 7px; background: #fffafa; }
-.account-legal-signature-decline label { display: grid; gap: 5px; }
-.account-legal-signature-decline textarea { min-height: 74px; resize: vertical; border: 1px solid #d7bebe; border-radius: 6px; padding: 9px; color: #172033; background: #fff; font: inherit; font-size: 12px; }
+.account-legal-signature-decline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #f0c5c5;
+  border-radius: 8px;
+  background: #fff8f8;
+}
+.account-legal-signature-decline label { display: grid; width: 100%; gap: 5px; }
+.account-legal-signature-decline textarea { box-sizing: border-box; width: 100%; min-height: 96px; resize: vertical; border: 1px solid #d7bebe; border-radius: 6px; padding: 10px 11px; color: #172033; background: #fff; font: inherit; font-size: 12px; line-height: 1.45; }
+.account-legal-signature-decline-submit {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: end;
+  width: fit-content;
+  min-width: 176px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 18px;
+  border: 1px solid #b42318;
+  border-radius: 7px;
+  color: #fff;
+  background-color: #c9333d;
+  background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.2) 0 2px, transparent 2px 11px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
+  font: 800 12px/1.15 Inter, system-ui, sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter .16s ease, transform .16s ease;
+}
+.account-legal-signature-decline-submit:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
+.account-legal-signature-decline-submit:disabled {
+  border-color: #f1c8c8;
+  color: #9f3838;
+  background: #fce9e9;
+  background-image: none;
+  box-shadow: none;
+  cursor: not-allowed;
+}
 .account-legal-signature-message { color: #315c96 !important; font-weight: 600; }
 
 /* Operations: issuance and lifecycle of formal, strengthened electronic signatures. */

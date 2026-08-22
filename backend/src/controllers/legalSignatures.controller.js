@@ -42,6 +42,19 @@ function protocol() { return `AS-${new Date().getFullYear()}-${randomBytes(3).to
 function sixDigitCode() { return String(randomInt(0, 1_000_000)).padStart(6, "0"); }
 function actorName(user) { return [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.email || "Pessoa responsável"; }
 
+async function validateCurrentUserPassword(req, password) {
+  if (!req.user?.id || !password) return false;
+
+  const account = await prisma.user.findUnique({
+    where: { id: req.user.id },
+    select: { passwordHash: true }
+  });
+
+  if (!account?.passwordHash) return false;
+
+  return bcrypt.compare(password, account.passwordHash);
+}
+
 function serializeParticipant(item, includeContent = false) {
   const envelope = item.envelope;
   return {
@@ -152,7 +165,7 @@ export async function requestMyLegalSignatureCode(req, res, next) {
       return res.status(409).json({ message: "Esta assinatura não está disponível para confirmação." });
     }
     console.info("[legal-signature] confirmation_code_password_verification_started", resolvedContext);
-    const passwordValid = await bcrypt.compare(data.password, req.user.passwordHash);
+    const passwordValid = await validateCurrentUserPassword(req, data.password);
     if (!passwordValid) {
       console.info("[legal-signature] confirmation_code_password_verification_failed", resolvedContext);
       return res.status(400).json({ message: "A senha atual não confere. O código não foi enviado." });
@@ -190,7 +203,7 @@ export async function confirmMyLegalSignature(req, res, next) {
       return res.json({ signed: true, signedAt: item.signedAt, protocol: item.envelope.protocol });
     }
     if (!["pending", "viewed"].includes(item.status) || item.envelope.status !== "pending_signature") return res.status(409).json({ message: "Esta assinatura não está disponível para confirmação." });
-    const passwordValid = await bcrypt.compare(data.password, req.user.passwordHash);
+    const passwordValid = await validateCurrentUserPassword(req, data.password);
     if (!passwordValid) return res.status(400).json({ message: "A senha atual não confere. A assinatura não foi registrada." });
     if (!item.emailCodeHash || !item.emailCodeExpiresAt || item.emailCodeExpiresAt <= new Date() || item.emailCodeUsedAt || hash(data.code) !== item.emailCodeHash) return res.status(400).json({ message: "O código de confirmação é inválido ou expirou. Solicite um novo código." });
 
