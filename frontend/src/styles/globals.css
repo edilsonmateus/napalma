@@ -14931,7 +14931,59 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
 .account-legal-signature-complete { color: #276749; background: #f0fdf4; border: 1px solid #bfe8ca; }
 .account-legal-signature-declined { color: #9b3030; background: #fff7f7; border: 1px solid #f1c8c8; }
 .account-legal-signature-check { padding-top: 3px; }
-.account-legal-signature-code-trigger { justify-self: start; }
+.account-legal-signature-dialog .account-legal-signature-code-trigger,
+.account-legal-signature-dialog .account-legal-signature-submit {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  width: fit-content;
+  min-height: 42px;
+  margin: 2px 0 0;
+  border-radius: 7px;
+  padding: 0 16px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+
+.account-legal-signature-dialog .account-legal-signature-code-trigger {
+  border: 1px solid #2563eb;
+  color: #fff;
+  background: #2563eb;
+}
+
+.account-legal-signature-dialog .account-legal-signature-code-trigger:hover:not(:disabled) {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+}
+
+.account-legal-signature-dialog .account-legal-signature-submit {
+  border: 1px solid #15803d;
+  color: #fff;
+  background: #15803d;
+}
+
+.account-legal-signature-dialog .account-legal-signature-submit:hover:not(:disabled) {
+  border-color: #166534;
+  background: #166534;
+}
+
+.account-legal-signature-dialog .account-legal-signature-code-trigger:disabled,
+.account-legal-signature-dialog .account-legal-signature-submit:disabled {
+  border-color: #d8e0ea;
+  color: #94a3b8;
+  background: #eef2f6;
+  box-shadow: none;
+  cursor: not-allowed;
+}
 .account-legal-signature-code-hint { margin: -3px 0 2px; color: #64748b; font-size: 11px; line-height: 1.45; }
 .account-legal-signature-decline-toggle { width: fit-content; border: 0; padding: 2px 0; color: #9f3838; background: transparent; font: inherit; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .account-legal-signature-decline { display: grid; gap: 9px; padding: 11px; border: 1px solid #f0d2d2; border-radius: 7px; background: #fffafa; }
