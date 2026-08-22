@@ -6538,9 +6538,28 @@ a.strategic-partner-card:hover { border-color: #b8c7da; background: #fff; }
 .artist-gallery-photos img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
 .artist-gallery-photos figcaption { position: absolute; inset: auto 0 0; padding: 18px 8px 6px; color: #fff; font-size: 11px; background: linear-gradient(transparent, rgba(0,0,0,.75)); }
 .artist-gallery-videos { display: grid; gap: 7px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
-.artist-gallery-videos a { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 9px; min-height: 64px; padding: 7px; border: 1px solid var(--border-default); border-radius: 10px; color: inherit; text-decoration: none; background: var(--bg-card); }
-.artist-gallery-videos img, .artist-gallery-play { width: 64px; height: 50px; object-fit: cover; border-radius: 7px; }
-.artist-gallery-play { display: grid; place-items: center; background: rgba(107,63,160,.2); }
+.artist-gallery-video { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 9px; width: 100%; min-height: 64px; padding: 7px; border: 1px solid var(--border-default); border-radius: 10px; color: inherit; text-align: left; text-decoration: none; font: inherit; background: var(--bg-card); cursor: pointer; }
+.artist-gallery-video:hover, .artist-gallery-video:focus-visible { border-color: rgba(255, 174, 0, .62); background: rgba(255, 255, 255, .035); }
+.artist-gallery-video-thumb { position: relative; display: grid; width: 64px; height: 50px; overflow: hidden; border-radius: 7px; background: rgba(107, 63, 160, .2); }
+.artist-gallery-video-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.artist-gallery-play, .artist-gallery-video-overlay { display: grid; place-items: center; color: #fff; }
+.artist-gallery-play { width: 100%; height: 100%; }
+.artist-gallery-video-overlay { position: absolute; inset: 0; background: rgba(8, 8, 13, .34); }
+.artist-gallery-video-copy { display: grid; min-width: 0; gap: 2px; }
+.artist-gallery-video-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.artist-gallery-video-copy small { color: var(--text-secondary); font-size: 11px; }
+.artist-video-modal-backdrop { position: fixed; z-index: 1200; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(4, 5, 8, .82); backdrop-filter: blur(10px); }
+.artist-video-modal { width: min(100%, 860px); overflow: hidden; border: 1px solid var(--border-default); border-radius: 14px; background: var(--bg-card); box-shadow: 0 20px 60px rgba(0, 0, 0, .5); }
+.artist-video-modal-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; }
+.artist-video-modal-kicker-row { display: flex; align-items: center; gap: 8px; }
+.artist-video-modal-brand { color: var(--primary-yellow); font-size: 14px; font-weight: 800; letter-spacing: -.03em; }
+.artist-video-modal-provider { color: var(--text-secondary); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.artist-video-modal-header h2 { margin: 3px 0 0; font-size: 17px; }
+.artist-video-modal-close { display: grid; flex: 0 0 auto; width: 34px; height: 34px; place-items: center; border: 1px solid var(--border-default); border-radius: 50%; color: inherit; background: transparent; cursor: pointer; }
+.artist-video-modal-player { aspect-ratio: 16 / 9; background: #000; }
+.artist-video-modal-player iframe { display: block; width: 100%; height: 100%; border: 0; }
+.artist-video-modal-external { display: inline-flex; align-items: center; gap: 6px; margin: 12px 16px 16px; color: var(--primary-yellow); font-size: 13px; }
+@media (max-width: 520px) { .artist-video-modal-backdrop { padding: 12px; } .artist-video-modal { border-radius: 12px; } }
 .artist-media-admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
 .artist-media-admin-grid article { display: grid; align-content: start; gap: 7px; }
 .artist-media-admin-grid img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; }
