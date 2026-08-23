@@ -72,8 +72,8 @@ function buildVenueAdvertiserIntentUrl(venue) {
 export default function VenueDetailFlowPage() {
   const { venueId } = useParams();
   const user = useAuthStore((state) => state.user);
-  const { data: venues = [], isLoading: venueLoading } = useVenuesQuery();
-  const { data: events = [], isLoading: eventsLoading } = useEventsQuery({ venueId });
+  const { data: venues = [], isLoading: venueLoading } = useVenuesQuery({ scope: "public" });
+  const { data: events = [], isLoading: eventsLoading } = useEventsQuery({ venueId, scope: "public" });
   const { data: radarEvents = [] } = useMyRadarQuery(Boolean(user));
   const toggleRadar = useToggleRadarMutation();
   const { data: inlineAd } = useAdDeliveryQuery("venue_detail_inline", Boolean(venueId), { venueId });

@@ -27,6 +27,7 @@ import uberIcon from "../assets/routes/uber.svg";
 import { useAuthStore } from "../store/authStore";
 import { resolveMediaUrl } from "../services/api";
 import RadarStarIcon from "../components/events/RadarStarIcon";
+import { getPendingLegalSignatures, useMyLegalSignaturesQuery } from "../hooks/useLegalSignaturesQuery";
 
 const EXPLORE_PREFS_KEY = "napalma:explore:prefs";
 const ON_TRACK_KEY = "77gira:on-track-session";
@@ -202,6 +203,8 @@ function LiveProgressBar({ event, nowMs }) {
 
 export default function ExplorePage() {
   const user = useAuthStore((state) => state.user);
+  const { data: legalSignatures = [] } = useMyLegalSignaturesQuery(Boolean(user));
+  const pendingLegalSignatures = getPendingLegalSignatures(legalSignatures);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [prefs, setPrefs] = useState(loadPrefs);
   const [showCitySheet, setShowCitySheet] = useState(false);
@@ -226,11 +229,15 @@ export default function ExplorePage() {
   const [debouncedQuery, setDebouncedQuery] = useState(prefs.query);
   const { city, region, query, limit, filterDate, filterHour, liveOnly, timeScope } = prefs;
   const selectedRegion = region === "Todas" ? undefined : region;
+  const publicCatalogFilters = useMemo(
+    () => ({ scope: "public", ...(selectedRegion ? { region: selectedRegion } : {}) }),
+    [selectedRegion]
+  );
   const { data: events = [], isLoading: eventsLoading, isFetching: eventsFetching, isError: eventsError, refetch: refetchEvents } = useEventsQuery(
-    selectedRegion ? { region: selectedRegion } : {}
+    publicCatalogFilters
   );
   const { data: venues = [], isLoading: venuesLoading, isFetching: venuesFetching, isError: venuesError, refetch: refetchVenues } = useVenuesQuery(
-    selectedRegion ? { region: selectedRegion } : {}
+    publicCatalogFilters
   );
   const { data: regions = [] } = useRegionsQuery();
   const { data: radarEvents = [] } = useMyRadarQuery(Boolean(user));
@@ -608,13 +615,14 @@ export default function ExplorePage() {
           />
           </Link>
           {user ? (
-            <Link className="explore-user-summary" to="/settings" aria-label="Abrir configurações da conta">
+            <Link className="explore-user-summary" to="/settings/account#assinaturas-formais" aria-label={pendingLegalSignatures.length ? `Abrir ${pendingLegalSignatures.length} assinatura${pendingLegalSignatures.length > 1 ? "s" : ""} pendente${pendingLegalSignatures.length > 1 ? "s" : ""}` : "Abrir configurações da conta"}>
               <span className="explore-user-copy">
-                <strong>{userDisplayName}</strong>
+                <span className="explore-user-name"><strong>{userDisplayName}</strong></span>
                 {userHandle ? <small>{userHandle}</small> : null}
               </span>
               <span className="explore-user-avatar" aria-hidden="true">
                 {user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : userInitial}
+                {pendingLegalSignatures.length ? <b className="pending-signature-badge pending-signature-badge-avatar">{pendingLegalSignatures.length > 9 ? "9+" : pendingLegalSignatures.length}</b> : null}
               </span>
             </Link>
           ) : (

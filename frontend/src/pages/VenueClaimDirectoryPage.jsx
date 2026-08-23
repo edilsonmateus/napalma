@@ -112,7 +112,7 @@ export default function VenueClaimDirectoryPage() {
         </article>;
       })}
     </div>
-    {selectedVenue ? <div className="modal-backdrop"><form className="modal-card venue-claim-form" onSubmit={submitClaim}>
+    {selectedVenue ? <div className="modal-backdrop claim-form-backdrop"><form className="modal-card claim-form venue-claim-form" onSubmit={submitClaim}>
       <h3>Solicitar acesso a {selectedVenue.name}</h3>
       <p>Informe dados verdadeiros. A equipe poderá pedir documentos antes de decidir.</p>
       <label>Tipo de vínculo<select name="requestType" value={form.requestType} onChange={updateField}><option value="ownership">Proprietário ou representante legal</option><option value="team_access">Equipe autorizada</option></select></label>

@@ -1,32 +1,50 @@
-import { Compass, Clock3, Settings, Star, CalendarRange } from "lucide-react";
-import { NavLink } from "react-router-dom";
-import { useAuthStore } from "../../store/authStore";
-import { isProducerRole, isVenueRole } from "../../utils/roles";
+import { CalendarRange, Clock3, Compass, Megaphone, Music2, Settings, Star, Store, Users } from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
 
 export default function BottomNav() {
-  const user = useAuthStore((state) => state.user);
-  const isProducer = isProducerRole(user?.role);
-  const isVenue = isVenueRole(user?.role);
+  const location = useLocation();
+  const path = location.pathname;
+  const isVenueWorkspace = path === "/workspace/casa" || path.startsWith("/settings/venues");
+  const isProducerWorkspace = path.startsWith("/workspace/produtor");
+  const isArtistWorkspace = path.startsWith("/workspace/artista");
+  const isAdvertiserWorkspace = path.startsWith("/workspace/anunciante") || path === "/settings/ads";
 
-  const items = isProducer
+  // A navegação pessoal é a base de toda conta autenticada. Menus reduzidos
+  // só aparecem enquanto a pessoa está, de fato, em um workspace profissional.
+  const items = isVenueWorkspace
     ? [
-      { to: "/workspace/produtor", label: "Painel", icon: Compass },
-      { to: "/settings/venues", label: "Gestão", icon: Star },
-      { to: "/settings", label: "Config", icon: Settings }
-    ]
-    : isVenue
-      ? [
-        { to: "/workspace/casa", label: "Painel", icon: Compass },
+      { to: "/settings/venues?section=overview", label: "Painel", icon: Compass },
       { to: "/settings/venues?section=events&layout=clean", label: "Programação", icon: Star },
-        { to: "/settings", label: "Config", icon: Settings }
+      { to: "/settings", label: "Gestão", icon: Store },
+      { to: "/explore", label: "Meu 77Gira", icon: Compass }
+    ]
+    : isProducerWorkspace
+      ? [
+        { to: "/workspace/produtor", label: "Painel", icon: Compass },
+        { to: "/settings/venues", label: "Casas", icon: Store },
+        { to: "/settings", label: "Gestão", icon: Settings },
+        { to: "/explore", label: "Meu 77Gira", icon: Compass }
       ]
-      : [
-        { to: "/explore", label: "Explorar", icon: Compass },
-        { to: "/pela-hora", label: "Pela Hora", icon: CalendarRange },
-        { to: "/radar", label: "Meu Radar", icon: Star },
-        { to: "/history", label: "Histórico", icon: Clock3 },
-        { to: "/settings", label: "Config", icon: Settings }
-      ];
+      : isArtistWorkspace
+        ? [
+          { to: "/workspace/artista", label: "Perfil", icon: Music2 },
+          { to: "/workspace/artista/equipe", label: "Equipe", icon: Users },
+          { to: "/settings", label: "Gestão", icon: Settings },
+          { to: "/explore", label: "Meu 77Gira", icon: Compass }
+        ]
+        : isAdvertiserWorkspace
+          ? [
+            { to: "/workspace/anunciante", label: "Anúncios", icon: Megaphone },
+            { to: "/settings", label: "Gestão", icon: Settings },
+            { to: "/explore", label: "Meu 77Gira", icon: Compass }
+          ]
+          : [
+            { to: "/explore", label: "Explorar", icon: Compass },
+            { to: "/pela-hora", label: "Pela Hora", icon: CalendarRange },
+            { to: "/radar", label: "Meu Radar", icon: Star },
+            { to: "/history", label: "Histórico", icon: Clock3 },
+            { to: "/settings", label: "Config", icon: Settings }
+          ];
 
   return (
     <nav className="bottom-nav">

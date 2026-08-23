@@ -136,7 +136,7 @@ export default function PelaHoraPage() {
   const [toast, setToast] = useState({ text: "", type: "info" });
   const [attendedMap, setAttendedMap] = useState({});
 
-  const { data: events = [], isLoading: eventsLoading } = useEventsQuery();
+  const { data: events = [], isLoading: eventsLoading } = useEventsQuery({ scope: "public" });
   const { data: itineraries = [], isLoading: itinerariesLoading } = useMyPelaHoraQuery(Boolean(user));
   const { data: suggestion, isLoading: suggestionLoading } = usePelaHoraSuggestionQuery(
     { date, limit: 3 },

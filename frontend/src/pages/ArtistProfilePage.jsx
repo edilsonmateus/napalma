@@ -222,18 +222,19 @@ export default function ArtistProfilePage() {
 
       <RelatedArtists items={artist.relatedArtists} />
       {showClaim ? (
-        <div className="modal-backdrop">
-          <form className="modal-card artist-claim-form" onSubmit={submitClaim}>
+        <div className="modal-backdrop claim-form-backdrop">
+          <form className="modal-card claim-form artist-claim-form" onSubmit={submitClaim}>
             <h3>{artist.isClaimed ? "Solicitar acesso a" : "Reivindicar"} {artist.name}</h3>
-            <input required placeholder="Nome do responsável" value={claim.responsibleName} onChange={(e) => setClaim({ ...claim, responsibleName: e.target.value })} />
-            <input required placeholder="Telefone" value={claim.responsiblePhone} onChange={(e) => setClaim({ ...claim, responsiblePhone: e.target.value })} />
-            <input required placeholder="CPF ou CNPJ" value={claim.claimantDocument} onChange={(e) => setClaim({ ...claim, claimantDocument: e.target.value })} />
-            <input required placeholder="Seu vínculo com o artista" value={claim.relationshipRole} onChange={(e) => setClaim({ ...claim, relationshipRole: e.target.value })} />
-            <input type="email" placeholder="E-mail oficial (opcional)" value={claim.officialEmail} onChange={(e) => setClaim({ ...claim, officialEmail: e.target.value })} />
-            <input placeholder="Instagram oficial (opcional)" value={claim.officialInstagram} onChange={(e) => setClaim({ ...claim, officialInstagram: e.target.value })} />
-            <input type="url" placeholder="Site oficial (opcional)" value={claim.officialWebsite} onChange={(e) => setClaim({ ...claim, officialWebsite: e.target.value })} />
-            <textarea required minLength={5} placeholder="Conte como podemos comprovar este vínculo" value={claim.justification} onChange={(e) => setClaim({ ...claim, justification: e.target.value })} />
-            <div className="form-actions-inline"><button className="btn-primary" disabled={createClaim.isPending}>Enviar para análise</button><button className="chip" type="button" onClick={cancelClaimFlow}>Cancelar</button></div>
+            <p>Informe dados verdadeiros. A equipe poderá pedir documentos antes de decidir.</p>
+            <label>Nome do responsável<input required placeholder="Nome completo" value={claim.responsibleName} onChange={(e) => setClaim({ ...claim, responsibleName: e.target.value })} /></label>
+            <label>Telefone ou WhatsApp<input required inputMode="tel" placeholder="(00) 00000-0000" value={claim.responsiblePhone} onChange={(e) => setClaim({ ...claim, responsiblePhone: e.target.value })} /></label>
+            <label>CPF ou CNPJ do solicitante<input required placeholder="Somente números" value={claim.claimantDocument} onChange={(e) => setClaim({ ...claim, claimantDocument: e.target.value })} /></label>
+            <label>Seu vínculo com o artista<input required placeholder="Ex.: artista, empresário ou gestor" value={claim.relationshipRole} onChange={(e) => setClaim({ ...claim, relationshipRole: e.target.value })} /></label>
+            <label>E-mail oficial <span>(opcional)</span><input type="email" placeholder="contato@exemplo.com" value={claim.officialEmail} onChange={(e) => setClaim({ ...claim, officialEmail: e.target.value })} /></label>
+            <label>Instagram oficial <span>(opcional)</span><input placeholder="@perfil" value={claim.officialInstagram} onChange={(e) => setClaim({ ...claim, officialInstagram: e.target.value })} /></label>
+            <label>Site oficial <span>(opcional)</span><input type="url" placeholder="https://" value={claim.officialWebsite} onChange={(e) => setClaim({ ...claim, officialWebsite: e.target.value })} /></label>
+            <label>Como podemos comprovar este vínculo?<textarea required minLength={5} placeholder="Explique sua relação com o artista e um meio de confirmação" value={claim.justification} onChange={(e) => setClaim({ ...claim, justification: e.target.value })} /></label>
+            <div className="form-actions-inline"><button className="btn-primary" type="submit" disabled={createClaim.isPending}>{createClaim.isPending ? "Enviando..." : "Enviar para análise"}</button><button className="chip" type="button" onClick={cancelClaimFlow}>Cancelar</button></div>
           </form>
         </div>
       ) : null}

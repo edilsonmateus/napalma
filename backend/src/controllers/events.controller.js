@@ -6,6 +6,7 @@ import { formatPriceLabel, formatPriceSecondaryLabel } from "../utils/price.js";
 const querySchema = z.object({
   region: z.string().trim().min(1).optional(),
   venueId: z.string().uuid().optional(),
+  scope: z.enum(["managed", "public"]).optional(),
   includeDrafts: z
     .union([z.boolean(), z.string()])
     .optional()
@@ -283,11 +284,15 @@ function mapEventDetailPayload(event) {
 
 export async function listEvents(req, res, next) {
   try {
-    const { region, venueId, includeDrafts } = querySchema.parse(req.query);
+    const { region, venueId, scope, includeDrafts } = querySchema.parse(req.query);
     const role = req.user?.role;
     const canIncludeDrafts = ["admin", "producer", "venue_manager"].includes(role);
-    const includeDraftsSafe = canIncludeDrafts ? includeDrafts : false;
-    const isProducer = req.user?.role === "producer";
+    const useManagedScope = scope !== "public";
+    // A agenda pública precisa ser igual para visitantes e contas
+    // profissionais. Os filtros de recursos próprios continuam restritos aos
+    // painéis, que usam o escopo gerenciado por padrão.
+    const includeDraftsSafe = canIncludeDrafts && useManagedScope ? includeDrafts : false;
+    const isProducer = req.user?.role === "producer" && useManagedScope;
     const venueScope = {};
     if (region) {
       venueScope.region = region;

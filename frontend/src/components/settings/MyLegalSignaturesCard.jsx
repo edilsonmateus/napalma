@@ -7,6 +7,7 @@ import {
   getMyLegalSignatures,
   requestMyLegalSignatureCode
 } from "../../services/legalDocuments.service";
+import { getPendingLegalSignatures } from "../../hooks/useLegalSignaturesQuery";
 
 const STATUS_LABELS = {
   pending: "Aguardando leitura",
@@ -19,6 +20,31 @@ const STATUS_LABELS = {
 
 function formatDate(value) {
   return value ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "Ainda não definido";
+}
+
+function pendingSignatureNotice(pending) {
+  const first = pending[0];
+  const targetName = first?.claimContext?.targetName;
+  const targetType = first?.claimContext?.targetType;
+  const targetLabel = targetName
+    ? `o perfil de ${targetName}`
+    : targetType === "artist"
+      ? "um perfil artístico"
+      : targetType === "venue"
+        ? "uma casa"
+        : "sua solicitação";
+
+  if (pending.length > 1) {
+    return {
+      title: `Você tem ${pending.length} reivindicações aguardando assinatura`,
+      detail: "A análise de elegibilidade foi aprovada. Leia e assine os termos abaixo para concluir cada reivindicação e liberar seus acessos de gestão."
+    };
+  }
+
+  return {
+    title: `Sua solicitação para gerenciar ${targetLabel} foi aprovada na etapa de elegibilidade.`,
+    detail: "Para concluir a reivindicação e liberar seu acesso de gestão, leia e assine o termo abaixo com sua senha e o código enviado ao seu e-mail."
+  };
 }
 
 export default function MyLegalSignaturesCard() {
@@ -68,6 +94,8 @@ export default function MyLegalSignaturesCard() {
     setBusy("sign"); setMessage("");
     try {
       await confirmMyLegalSignature(item.id, { password: form.password, code: form.code });
+      window.dispatchEvent(new CustomEvent("77gira:professional-access-updated"));
+      window.dispatchEvent(new CustomEvent("77gira:legal-signatures-updated"));
       setMessage("Assinatura registrada com sucesso.");
       await load();
       setItem((current) => current ? { ...current, status: "signed", envelopeStatus: "completed", signedAt: new Date().toISOString() } : current);
@@ -81,6 +109,7 @@ export default function MyLegalSignaturesCard() {
     setBusy("decline"); setMessage("");
     try {
       await declineMyLegalSignature(item.id, form.declineReason.trim());
+      window.dispatchEvent(new CustomEvent("77gira:legal-signatures-updated"));
       setMessage("Recusa registrada. A equipe responsável será avisada.");
       await load();
       setItem((current) => current ? { ...current, status: "declined", envelopeStatus: "declined" } : current);
@@ -89,14 +118,15 @@ export default function MyLegalSignaturesCard() {
     } finally { setBusy(""); }
   }
 
-  const pending = state.items.filter((entry) => ["pending", "viewed"].includes(entry.status));
-  return <section className="account-settings-section account-legal-signatures-section">
+  const pending = getPendingLegalSignatures(state.items);
+  const pendingNotice = pending.length ? pendingSignatureNotice(pending) : null;
+  return <section id="assinaturas-formais" className="account-settings-section account-legal-signatures-section" tabIndex="-1">
     <div className="account-settings-section-title"><FileSignature size={18} aria-hidden="true" /><div><strong>Assinaturas formais</strong><small>Documentos que exigem confirmação reforçada de identidade.</small></div></div>
     <p className="account-legal-documents-note">Quando houver assinatura pendente, confirme com sua senha atual e um código enviado ao seu e-mail. O documento, sua versão e a trilha de confirmação ficam registrados.</p>
     {state.loading ? <small className="account-legal-documents-loading">Carregando assinaturas…</small> : null}
     {state.error ? <div className="account-legal-documents-error"><span>{state.error}</span><button type="button" onClick={load}><RefreshCw size={14}/> Tentar novamente</button></div> : null}
     {!state.loading && !state.error && !state.items.length ? <div className="account-legal-documents-empty"><FileSignature size={17}/><span>Nenhuma assinatura formal pendente ou registrada para esta conta.</span></div> : null}
-    {pending.length ? <div className="account-legal-signatures-required"><strong>Você tem {pending.length} assinatura{pending.length > 1 ? "s" : ""} aguardando ação</strong><span>Leia o documento integral antes de solicitar seu código de confirmação.</span></div> : null}
+    {pendingNotice ? <div className="account-legal-signatures-required" role="status"><strong>{pendingNotice.title}</strong><span>{pendingNotice.detail}</span></div> : null}
     {state.items.length ? <ul className="account-legal-documents-list account-legal-signatures-list">
       {state.items.map((entry) => {
         const actionable = ["pending", "viewed"].includes(entry.status);

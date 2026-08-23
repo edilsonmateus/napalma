@@ -110,7 +110,7 @@ export default function LoginPage() {
     try {
       const data = await loginAsLocalAdmin();
       setAuth({ token: data.accessToken, refreshToken: data.refreshToken, user: data.user });
-      navigate("/settings/ads", { replace: true });
+      navigate(getRoleHome(data.user.role), { replace: true });
     } catch (error) {
       setMessage(error?.response?.data?.message || "Nao foi possivel iniciar a sessao Admin local.");
     } finally {

@@ -101,7 +101,9 @@ export default function App() {
   const [allowPublicWhileDegraded, setAllowPublicWhileDegraded] = useState(false);
   const [apiHealth, setApiHealth] = useState("checking");
   const { mutate: trackAudienceVisit } = useTrackAudienceVisitMutation();
-  const isBackofficeMode = isAdminRole(user?.role) || isProducerRole(user?.role) || isVenueRole(user?.role);
+  const isVenueWorkspaceRoute = location.pathname === "/workspace/casa" || location.pathname.startsWith("/settings/venues");
+  const isProducerWorkspaceRoute = location.pathname.startsWith("/workspace/produtor");
+  const isArtistWorkspaceRoute = location.pathname.startsWith("/workspace/artista");
   const canAccessOperations = isAdminRole(user?.role) || Boolean(user?.operationScopes?.length);
   const isOnboardingRoute = location.pathname === "/onboarding";
   const isPublicItineraryRoute = location.pathname.startsWith("/roteiro/");
@@ -111,6 +113,7 @@ export default function App() {
     || location.pathname.startsWith("/workspace/anunciante")
     || location.pathname === "/settings/ads";
   const isOperationsRoute = location.pathname === "/operacoes";
+  const isBackofficeMode = isVenueWorkspaceRoute || isProducerWorkspaceRoute || isArtistWorkspaceRoute || isAdsRoute || isOperationsRoute;
   const usesUserGlassNav = (
     isExploreRoute
     || location.pathname.startsWith("/events/")
@@ -124,10 +127,14 @@ export default function App() {
   const shouldForceOnboarding = !showSplash && !hasSeenOnboarding && !isOnboardingRoute && !isPublicItineraryRoute && !isPublicPartnersRoute;
 
   function getDefaultRoute() {
-    if (isProducerRole(user?.role)) return "/workspace/produtor";
-    if (isVenueRole(user?.role)) return "/settings/venues?section=overview";
-    return "/explore";
+    return getRoleHome(user?.role);
   }
+
+  useEffect(() => {
+    const refreshProfessionalAccess = () => setSessionRetryNonce((value) => value + 1);
+    window.addEventListener("77gira:professional-access-updated", refreshProfessionalAccess);
+    return () => window.removeEventListener("77gira:professional-access-updated", refreshProfessionalAccess);
+  }, []);
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -367,10 +374,7 @@ export default function App() {
             <Route path="/roteiro/:token" element={<PublicPelaHoraPage />} />
             <Route path="/parceiros" element={<StrategicPartnersPage />} />
             <Route path="/parcerias/77gira" element={<PartnerInstitutionalPage />} />
-            <Route
-              path="/history"
-              element={isVenueRole(user?.role) ? <Navigate to="/settings/venues?section=overview" replace /> : <HistoryPage />}
-            />
+            <Route path="/history" element={<HistoryPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />

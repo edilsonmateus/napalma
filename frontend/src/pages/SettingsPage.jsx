@@ -7,9 +7,12 @@ import { isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
 import { promptInstallApp, subscribeInstallPrompt } from "../utils/installPrompt";
 import ManagementHub from "../components/settings/ManagementHub";
 import InstitutionalFooter from "../components/layout/InstitutionalFooter";
+import { getPendingLegalSignatures, useMyLegalSignaturesQuery } from "../hooks/useLegalSignaturesQuery";
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
+  const { data: legalSignatures = [] } = useMyLegalSignaturesQuery(Boolean(user));
+  const pendingLegalSignatures = getPendingLegalSignatures(legalSignatures);
 
   const canOpenVenuesPanel = Boolean(user) && (isAdminRole(user?.role) || isProducerRole(user?.role) || isVenueRole(user?.role));
   const canManageOperations = isAdminRole(user?.role) || Boolean(user?.operationScopes?.length);
@@ -111,11 +114,14 @@ export default function SettingsPage() {
         <h2>Configurações</h2>
       </header>
       <div className="settings-profile clean-card">
-        <div className="settings-avatar" aria-hidden="true">
-          {user?.avatarUrl ? <img src={user.avatarUrl} alt="" /> : user ? user?.firstName?.[0] || user?.email?.[0]?.toUpperCase() : <UserRound size={21} strokeWidth={1.8} />}
+        <div className="settings-avatar-control">
+          <div className="settings-avatar" aria-hidden="true">
+            {user?.avatarUrl ? <img src={user.avatarUrl} alt="" /> : user ? user?.firstName?.[0] || user?.email?.[0]?.toUpperCase() : <UserRound size={21} strokeWidth={1.8} />}
+          </div>
+          {pendingLegalSignatures.length ? <Link className="pending-signature-badge pending-signature-badge-avatar" to="/settings/account#assinaturas-formais" aria-label={`${pendingLegalSignatures.length} assinatura${pendingLegalSignatures.length > 1 ? "s" : ""} pendente${pendingLegalSignatures.length > 1 ? "s" : ""}`}>{pendingLegalSignatures.length > 9 ? "9+" : pendingLegalSignatures.length}</Link> : null}
         </div>
-        <div>
-          <strong>{user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : "Sua conta"}</strong>
+        <div className="settings-profile-copy">
+          <div className="settings-profile-name"><strong>{user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : "Sua conta"}</strong></div>
           {user ? <p>{user.email}</p> : null}
           {!user ? (
             <div className="settings-inline-note" role="note" aria-live="polite">

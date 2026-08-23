@@ -81,7 +81,7 @@ export default function EventDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
-  const { data: events = [], isLoading } = useEventsQuery();
+  const { data: events = [], isLoading } = useEventsQuery({ scope: "public" });
   const { data: radarEvents = [] } = useMyRadarQuery(Boolean(user));
   const remindersEnabled = import.meta.env.VITE_RADAR_EVENT_REMINDERS_ENABLED === "true";
   const { data: reminderData, refetch: refetchReminders } = useRadarReminderStatusQuery(Boolean(user) && remindersEnabled, eventId ? [eventId] : []);

@@ -57,6 +57,7 @@ async function validateCurrentUserPassword(req, password) {
 
 function serializeParticipant(item, includeContent = false) {
   const envelope = item.envelope;
+  const claim = envelope.claimRequest;
   return {
     id: item.id,
     status: item.status,
@@ -73,9 +74,31 @@ function serializeParticipant(item, includeContent = false) {
     contentSha256: envelope.contentSha256,
     envelopeStatus: envelope.status,
     expiresAt: envelope.expiresAt,
+    claimContext: claim ? {
+      targetType: claim.targetType,
+      targetName: claim.artist?.name || claim.venue?.name || null,
+      requestType: claim.requestType,
+      status: claim.status
+    } : null,
     contentSnapshot: includeContent ? envelope.contentSnapshot : undefined
   };
 }
+
+const participantEnvelopeInclude = {
+  envelope: {
+    include: {
+      claimRequest: {
+        select: {
+          targetType: true,
+          requestType: true,
+          status: true,
+          artist: { select: { name: true } },
+          venue: { select: { name: true } }
+        }
+      }
+    }
+  }
+};
 
 async function event({ req, envelopeId, participantId = null, action, metadata = null }) {
   await prisma.legalSignatureEvent.create({ data: { envelopeId, participantId, actorUserId: req.user?.id || null, action, metadata, ipHash: requestIpHash(req) } });
@@ -85,7 +108,7 @@ async function event({ req, envelopeId, participantId = null, action, metadata =
 async function resolveMine(req, participantId) {
   const item = await prisma.legalSignatureParticipant.findUnique({
     where: { id: participantId },
-    include: { envelope: true }
+    include: participantEnvelopeInclude
   });
   if (!item || (item.userId && item.userId !== req.user.id) || (!item.userId && item.emailSnapshot.toLowerCase() !== req.user.email.toLowerCase())) return null;
   return item;
@@ -120,7 +143,7 @@ export async function listMyLegalSignatures(req, res, next) {
   try {
     const items = await prisma.legalSignatureParticipant.findMany({
       where: { OR: [{ userId: req.user.id }, { userId: null, emailSnapshot: { equals: req.user.email, mode: "insensitive" } }] },
-      include: { envelope: true },
+      include: participantEnvelopeInclude,
       orderBy: { updatedAt: "desc" },
       take: 100
     });

@@ -11,8 +11,7 @@ export function isAdminRole(role) {
 }
 
 export function getRoleHome(role) {
-  if (isAdminRole(role)) return "/settings/venues";
-  if (isProducerRole(role)) return "/workspace/produtor";
-  if (isVenueRole(role)) return "/settings/venues?section=overview";
+  // Explorar é o ponto de partida de toda conta. As áreas profissionais,
+  // inclusive as administrativas, continuam acessíveis pela navegação.
   return "/explore";
 }
