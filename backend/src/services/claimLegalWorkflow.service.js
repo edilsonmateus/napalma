@@ -6,6 +6,21 @@ import { sendLegalSignatureInvitationEmail } from "./transactionalEmail.service.
 
 const FORMAL_ACCESS_REQUESTS = new Set(["ownership", "team_access", "artist_inclusion"]);
 const SIGNATURE_TTL_DAYS = 30;
+const ACTIVE_LEGAL_ENVELOPE_STATUSES = new Set(["draft", "pending_signature"]);
+const SETTLED_LEGAL_ENVELOPE_STATUSES = new Set([
+  "completed",
+  "declined",
+  "expired",
+  "cancelled"
+]);
+
+export function claimIsActive(claim) {
+  if (claim?.status === "pending") return true;
+  if (claim?.status !== "pending_legal_acceptance") return false;
+
+  const envelopeStatus = claim.legalEnvelope?.status ?? claim.legalWorkflow?.status ?? null;
+  return !envelopeStatus || ACTIVE_LEGAL_ENVELOPE_STATUSES.has(envelopeStatus);
+}
 
 function hash(value) {
   return createHash("sha256").update(String(value)).digest("hex");
@@ -181,4 +196,37 @@ export async function reconcileClaimLegalEnvelope({ envelopeId, actorUserId }) {
     }
     return claim;
   });
+}
+
+export async function reconcileSettledClaimLegalStates(where = {}) {
+  const candidates = await prisma.claimRequest.findMany({
+    where: {
+      ...where,
+      status: "pending_legal_acceptance"
+    },
+    select: {
+      legalEnvelopeId: true,
+      legalEnvelope: {
+        select: { status: true }
+      }
+    }
+  });
+
+  const envelopeIds = [
+    ...new Set(
+      candidates
+        .filter(
+          (claim) =>
+            claim.legalEnvelopeId &&
+            SETTLED_LEGAL_ENVELOPE_STATUSES.has(claim.legalEnvelope?.status)
+        )
+        .map((claim) => claim.legalEnvelopeId)
+    )
+  ];
+
+  for (const envelopeId of envelopeIds) {
+    await reconcileClaimLegalEnvelope({ envelopeId, actorUserId: null });
+  }
+
+  return envelopeIds.length;
 }

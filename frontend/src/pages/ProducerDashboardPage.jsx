@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useAuthStore } from "../store/authStore";
 import VerifiedBadge from "../components/common/VerifiedBadge";
 import useClaimLegalAcknowledgement from "../hooks/useClaimLegalAcknowledgement";
+import { claimIsActive } from "../utils/claimStatus";
 import {
   useArtistsQuery,
   useAudienceSummaryQuery,
@@ -309,7 +310,7 @@ export default function ProducerDashboardPage() {
                 <article className="clean-card">
                   <h4>Minhas reivindicacoes</h4>
                   <p>{myClaims.length} total</p>
-                  <small>{myClaims.filter((c) => c.status === "pending").length} pendentes</small>
+                  <small>{myClaims.filter(claimIsActive).length} pendentes</small>
                 </article>
                 <article className="clean-card">
                   <h4>Fila de aprovacao</h4>

@@ -4,9 +4,11 @@ import { prisma } from "../lib/prisma.js";
 import { recordAuditEvent } from "../services/audit.service.js";
 import { activateClaimAccess } from "../services/claimAccess.service.js";
 import {
+  claimIsActive,
   claimRequiresFormalSignature,
   deliverClaimLegalInvitation,
-  prepareClaimLegalEnvelope
+  prepareClaimLegalEnvelope,
+  reconcileSettledClaimLegalStates
 } from "../services/claimLegalWorkflow.service.js";
 
 const CLAIM_LEGAL_VERSION = "CLAIM_RESPONSIBILITY_V1";
@@ -198,16 +200,24 @@ export async function createClaimRequest(req, res, next) {
       if (data.requestType === "team_access" && !claimed) return res.status(409).json({ error: "artist_without_owner", message: "Este perfil ainda não possui equipe. Faça uma reivindicação de propriedade." });
     }
 
-    const existingPending = await prisma.claimRequest.findFirst({
+    const claimIdentity = {
+      requestedById: req.user.id,
+      targetType: data.targetType,
+      venueId: data.venueId ?? null,
+      artistId: data.artistId ?? null
+    };
+
+    await reconcileSettledClaimLegalStates(claimIdentity);
+
+    const pendingCandidates = await prisma.claimRequest.findMany({
       where: {
-        requestedById: req.user.id,
-        targetType: data.targetType,
-        venueId: data.venueId ?? null,
-        artistId: data.artistId ?? null,
+        ...claimIdentity,
         status: { in: [ClaimStatus.pending, ClaimStatus.pending_legal_acceptance] }
       },
-      select: { id: true }
+      include: { legalEnvelope: true },
+      orderBy: { createdAt: "desc" }
     });
+    const existingPending = pendingCandidates.find(claimIsActive);
 
     if (existingPending) {
       return res.status(409).json({
@@ -254,6 +264,8 @@ export async function createClaimRequest(req, res, next) {
 
 export async function listMyClaims(req, res, next) {
   try {
+    await reconcileSettledClaimLegalStates({ requestedById: req.user.id });
+
     const items = await prisma.claimRequest.findMany({
       where: { requestedById: req.user.id },
       include: {
@@ -274,6 +286,8 @@ export async function listMyClaims(req, res, next) {
 export async function listClaims(req, res, next) {
   try {
     const status = z.enum(["pending", "pending_legal_acceptance", "approved", "rejected", "cancelled"]).optional().parse(req.query.status);
+    await reconcileSettledClaimLegalStates();
+
     const items = await prisma.claimRequest.findMany({
       where: status ? { status } : undefined,
       include: {

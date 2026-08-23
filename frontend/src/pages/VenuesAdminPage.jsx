@@ -5,6 +5,7 @@ import ImpactSummaryPanel from "../components/admin/ImpactSummaryPanel";
 import AcquisitionAdminPanel from "./admin/AcquisitionAdminPanel";
 import BackLink from "../components/common/BackLink";
 import useClaimLegalAcknowledgement from "../hooks/useClaimLegalAcknowledgement";
+import { claimIsActive } from "../utils/claimStatus";
 import {
   useAddVenueManagerMutation,
   useArtistsQuery,
@@ -748,7 +749,7 @@ export default function VenuesAdminPage() {
     return houseEvents.filter((event) => new Date(event.startsAt).getTime() >= now).slice(0, 6);
   }, [houseEvents]);
   const pendingMyHouseClaims = useMemo(
-    () => myClaims.filter((claim) => claim.targetType === "venue" && claim.status === "pending").length,
+    () => myClaims.filter((claim) => claim.targetType === "venue" && claimIsActive(claim)).length,
     [myClaims]
   );
   const previewVenue = venues.find((venue) => venue.id === eventForm.venueId) || houseActiveVenue || null;
@@ -1947,7 +1948,7 @@ export default function VenuesAdminPage() {
               {showEvents && !isHouseProgramaçãoClean ?<article className="clean-card"><h4>Eventos</h4><p>{filteredEvents.length}</p></article> : null}
               {showHouseProfile ?<article className="clean-card"><h4>Dados da Casa</h4><p>{houseDisplayName || "Sem unidade ativa"}</p></article> : null}
               {showManagers ?<article className="clean-card"><h4>Produtores</h4><p>{totalManagers}</p></article> : null}
-              {showHouseClaims ?<article className="clean-card"><h4>Solicitacoes</h4><p>{myClaims.filter((c) => c.status === "pending").length} pendentes</p></article> : null}
+              {showHouseClaims ?<article className="clean-card"><h4>Solicitacoes</h4><p>{myClaims.filter(claimIsActive).length} pendentes</p></article> : null}
             </div> : null}
             {showOverview && !houseActiveVenue ?<p className="empty">Sem filial aprovada. Abra "Solicitar Acesso" no menu lateral para liberar a operação.</p> : null}
             {showOverview && houseActiveVenue ?<>

@@ -4,6 +4,7 @@ import { Building2, Search } from "lucide-react";
 import BackLink from "../components/common/BackLink";
 import { useCreateClaimMutation, useMyClaimsQuery, useVenuesQuery } from "../hooks/useEventsQuery";
 import useClaimLegalAcknowledgement from "../hooks/useClaimLegalAcknowledgement";
+import { claimIsActive } from "../utils/claimStatus";
 
 const initialForm = {
   requestType: "ownership",
@@ -33,9 +34,23 @@ export default function VenueClaimDirectoryPage() {
     return venues.filter((venue) => !term || [venue.name, venue.neighborhood, venue.region, venue.city]
       .filter(Boolean).join(" ").toLocaleLowerCase("pt-BR").includes(term));
   }, [query, venues]);
-  const activeClaimsByVenue = useMemo(() => new Map((claimsQuery.data || [])
-    .filter((claim) => claim.targetType === "venue" && ["pending", "pending_legal_acceptance"].includes(claim.status) && claim.venue?.id)
-    .map((claim) => [claim.venue.id, claim])), [claimsQuery.data]);
+  const activeClaimsByVenue = useMemo(() => {
+    const claimsByVenue = new Map();
+
+    for (const claim of claimsQuery.data || []) {
+      if (claim.targetType !== "venue" || !claim.venue?.id || !claimIsActive(claim)) continue;
+
+      const currentClaim = claimsByVenue.get(claim.venue.id);
+      const claimCreatedAt = new Date(claim.createdAt || 0).getTime();
+      const currentCreatedAt = new Date(currentClaim?.createdAt || 0).getTime();
+
+      if (!currentClaim || claimCreatedAt > currentCreatedAt) {
+        claimsByVenue.set(claim.venue.id, claim);
+      }
+    }
+
+    return claimsByVenue;
+  }, [claimsQuery.data]);
 
   function updateField(event) {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
