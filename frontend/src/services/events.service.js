@@ -112,6 +112,30 @@ export async function getVenueById(id) {
   return data.item;
 }
 
+export async function getAdminVenueOverview(id) {
+  const { data } = await api.get(`/admin/venues/${id}/overview`);
+  return data.item;
+}
+
+export async function getAdminVenueVisibilityImpact(id) {
+  const { data } = await api.get(`/admin/venues/${id}/visibility-impact`);
+  return data.item;
+}
+
+export async function updateAdminVenueVisibility(id, payload) {
+  const { data } = await api.patch(`/admin/venues/${id}/visibility`, payload);
+  return data.item;
+}
+
+export async function getAdminVenueDeletionImpact(id) {
+  const { data } = await api.get(`/admin/venues/${id}/deletion-impact`);
+  return data.item;
+}
+
+export async function deleteAdminVenue(id, payload) {
+  await api.delete(`/admin/venues/${id}`, { data: payload });
+}
+
 export async function getVenueManagers(venueId) {
   const { data } = await api.get(`/venues/${venueId}/managers`);
   return data.items || [];

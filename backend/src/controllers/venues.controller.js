@@ -1,6 +1,13 @@
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { canManageVenue } from "../lib/access.control.js";
+import {
+  canTransitionVenueVisibility,
+  initialVenueVisibilityFor,
+  isVenuePubliclyEligible,
+  publicVenueWhere,
+  VENUE_CREATION_ORIGIN
+} from "../services/venueVisibility.service.js";
 
 const querySchema = z.object({
   region: z.string().trim().min(1).optional(),
@@ -66,6 +73,28 @@ const updateVenueSchema = createVenueSchema.partial();
 
 const idSchema = z.object({
   id: z.string().uuid()
+});
+
+const visibilityStatusSchema = z.enum(["draft", "published", "paused"]);
+const visibilityReasonCodeSchema = z.enum([
+  "venue_request",
+  "temporary_closure",
+  "catalog_review",
+  "schedule_issue",
+  "operational_other"
+]);
+const visibilityUpdateSchema = z.object({
+  status: z.enum(["published", "paused"]),
+  reasonCode: visibilityReasonCodeSchema.optional(),
+  expectedStatus: visibilityStatusSchema
+}).superRefine((value, context) => {
+  if (value.status === "paused" && !value.reasonCode) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["reasonCode"], message: "Informe o motivo da pausa." });
+  }
+});
+
+const venueDeletionSchema = z.object({
+  confirmationName: z.string().trim().min(3).max(160)
 });
 
 const producerLinkSchema = z.object({
@@ -205,9 +234,307 @@ function mapVenuePayload(venue) {
     state: venue.state,
     imageUrl: venue.imageUrl,
     openDays: venue.openDays ?? [],
+    visibilityStatus: venue.visibilityStatus,
     eventsCount: venue._count?.events ?? 0,
     hasPublishedMenu: venue.menu?.status === "published"
   };
+}
+
+function mapPublicVenuePayload(venue) {
+  const {
+    analyticsTier,
+    analyticsAccessSource,
+    analyticsAccessUntil,
+    contactName,
+    contactPhone,
+    visibilityStatus,
+    ...publicPayload
+  } = mapVenuePayload(venue);
+  return publicPayload;
+}
+
+function canReadManagedVenue(user, venue) {
+  return ["admin", "producer", "venue_manager"].includes(user?.role) && canManageVenue(user, venue);
+}
+
+function mapVenueVisibility(venue) {
+  return {
+    status: venue.visibilityStatus,
+    changedAt: venue.visibilityChangedAt || null
+  };
+}
+
+function compactPerson(person) {
+  if (!person) return null;
+  return {
+    id: person.id,
+    name: [person.firstName, person.lastName].filter(Boolean).join(" ") || null,
+    email: person.email || null
+  };
+}
+
+async function getVenueVisibilityImpact(client, venueId, now = new Date()) {
+  const [eventsNow, futureConfirmed, futureDraft, recurring, pendingReminders, radarMarks, menu, pendingDeliveries] = await Promise.all([
+    client.event.count({ where: { venueId, startDate: { lte: now }, endDate: { gte: now } } }),
+    client.event.count({ where: { venueId, status: "confirmed", startDate: { gt: now } } }),
+    client.event.count({ where: { venueId, status: "draft", startDate: { gt: now } } }),
+    client.event.count({ where: { venueId, isRecurring: true } }),
+    client.eventReminder.count({
+      where: {
+        status: { in: ["PENDING", "PROCESSING"] },
+        event: { venueId, startDate: { gt: now } }
+      }
+    }),
+    client.markedEvent.count({ where: { event: { venueId, startDate: { gt: now } } } }),
+    client.venueMenu.findUnique({ where: { venueId }, select: { status: true } }),
+    client.adDelivery.count({ where: { venueId, expiresAt: { gt: now }, impressionRecordedAt: null } })
+  ]);
+
+  return {
+    eventsNow,
+    futureConfirmed,
+    futureDraft,
+    recurring,
+    pendingReminders,
+    activeRadarMarks: radarMarks,
+    menuStatus: menu?.status || "not_configured",
+    pendingAdDeliveries: pendingDeliveries
+  };
+}
+
+function mapAdminVenueOverview(venue, impact, lastVisibilityChange) {
+  const nextEvent = venue.events[0] || null;
+  const statusCounts = Object.fromEntries((venue.eventStatusCounts || []).map((entry) => [entry.status, entry._count._all]));
+  const activeManagers = venue.managerAccesses.map((entry) => compactPerson(entry.user)).filter(Boolean);
+  const activeProducers = venue.producerAccesses.map((entry) => compactPerson(entry.producer)).filter(Boolean);
+  return {
+    id: venue.id,
+    name: venue.name,
+    slug: venue.slug,
+    visibility: mapVenueVisibility(venue),
+    presentation: {
+      nickname: venue.nickname || "",
+      description: venue.description || "",
+      imageUrl: venue.imageUrl || "",
+      address: venue.address,
+      latitude: venue.latitude,
+      longitude: venue.longitude,
+      neighborhood: venue.neighborhood,
+      region: venue.region,
+      city: venue.city,
+      state: venue.state,
+      openDays: venue.openDays || [],
+      instagramUrl: venue.instagramUrl || "",
+      grammarArticle: venue.grammarArticle || "",
+      grammarPreposition: venue.grammarPreposition || "em",
+      displayNameWithArticle: venue.displayNameWithArticle || venue.name,
+      displayNameWithPreposition: venue.displayNameWithPreposition || `em ${venue.name}`
+    },
+    operation: {
+      contactName: venue.contactName || "",
+      contactPhone: venue.contactPhone || "",
+      createdBy: compactPerson(venue.createdBy),
+      managers: activeManagers,
+      producers: activeProducers,
+      accessCount: activeManagers.length + activeProducers.length,
+      acquisitionLeadId: venue.acquisitionLead?.id || null,
+      claims: venue.claimRequests.map((claim) => ({ id: claim.id, status: claim.status, createdAt: claim.createdAt }))
+    },
+    programming: {
+      totalEvents: venue._count.events,
+      futureEvents: impact.futureConfirmed + impact.futureDraft,
+      confirmedEvents: statusCounts.confirmed || 0,
+      draftEvents: statusCounts.draft || 0,
+      nextEvent,
+      upcomingEvents: venue.events
+    },
+    menu: venue.menu ? {
+      status: venue.menu.status,
+      reviewedAt: venue.menu.reviewedAt || null,
+      publishedAt: venue.menu.publishedAt || null,
+      updatedAt: venue.menu.updatedAt
+    } : null,
+    analytics: {
+      tier: venue.analyticsTier || "basic",
+      accessSource: venue.analyticsAccessSource || null,
+      accessUntil: venue.analyticsAccessUntil || null
+    },
+    impact,
+    lastVisibilityChange: lastVisibilityChange ? {
+      changedAt: lastVisibilityChange.createdAt,
+      actor: compactPerson(lastVisibilityChange.actor),
+      reasonCode: lastVisibilityChange.metadata?.reasonCode || null,
+      fromStatus: lastVisibilityChange.metadata?.fromStatus || null,
+      toStatus: lastVisibilityChange.metadata?.toStatus || null
+    } : null
+  };
+}
+
+function mapVenueDeletionImpact(venue) {
+  const dependencies = {
+    events: venue._count.events,
+    producerAccesses: venue._count.producerAccesses,
+    managerAccesses: venue._count.managerAccesses,
+    claimRequests: venue._count.claimRequests,
+    adEvents: venue._count.adEvents,
+    menu: venue.menu ? 1 : 0,
+    acquisitionLead: venue.acquisitionLead ? 1 : 0
+  };
+  const totalDependencies = Object.values(dependencies).reduce((total, count) => total + count, 0);
+  return {
+    venue: { id: venue.id, name: venue.name },
+    dependencies,
+    totalDependencies,
+    canDelete: totalDependencies === 0
+  };
+}
+
+const venueDeletionImpactSelect = {
+  id: true,
+  name: true,
+  menu: { select: { id: true } },
+  acquisitionLead: { select: { id: true } },
+  _count: {
+    select: {
+      events: true,
+      producerAccesses: true,
+      managerAccesses: true,
+      claimRequests: true,
+      adEvents: true
+    }
+  }
+};
+
+export async function getAdminVenueOverview(req, res, next) {
+  try {
+    const { id } = idSchema.parse(req.params);
+    const now = new Date();
+    const venue = await prisma.venue.findUnique({
+      where: { id },
+      include: {
+        createdBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+        managerAccesses: { select: { user: { select: { id: true, firstName: true, lastName: true, email: true } } } },
+        producerAccesses: { select: { producer: { select: { id: true, firstName: true, lastName: true, email: true } } } },
+        claimRequests: { select: { id: true, status: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: 5 },
+        acquisitionLead: { select: { id: true } },
+        menu: { select: { status: true, reviewedAt: true, publishedAt: true, updatedAt: true } },
+        events: {
+          where: { startDate: { gte: now } },
+          select: { id: true, title: true, startDate: true, endDate: true, status: true, isRecurring: true },
+          orderBy: { startDate: "asc" },
+          take: 6
+        },
+        _count: { select: { events: true } }
+      }
+    });
+    if (!venue) return res.status(404).json({ error: "venue_not_found", message: "Casa de samba nao encontrada." });
+    const [eventStatusCounts, impact, lastVisibilityChange] = await Promise.all([
+      prisma.event.groupBy({ by: ["status"], where: { venueId: id }, _count: { _all: true } }),
+      getVenueVisibilityImpact(prisma, id, now),
+      prisma.auditLog.findFirst({
+        where: { subjectType: "venue", subjectId: id, action: "venue.visibility_changed" },
+        select: {
+          createdAt: true,
+          metadata: true,
+          actor: { select: { id: true, firstName: true, lastName: true, email: true } }
+        },
+        orderBy: { createdAt: "desc" }
+      })
+    ]);
+    return res.json({ item: mapAdminVenueOverview({ ...venue, eventStatusCounts }, impact, lastVisibilityChange) });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAdminVenueVisibilityImpact(req, res, next) {
+  try {
+    const { id } = idSchema.parse(req.params);
+    const venue = await prisma.venue.findUnique({ where: { id }, select: { id: true, name: true, visibilityStatus: true } });
+    if (!venue) return res.status(404).json({ error: "venue_not_found", message: "Casa de samba nao encontrada." });
+    return res.json({ item: { venue: { id: venue.id, name: venue.name, status: venue.visibilityStatus }, impact: await getVenueVisibilityImpact(prisma, id) } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAdminVenueDeletionImpact(req, res, next) {
+  try {
+    const { id } = idSchema.parse(req.params);
+    const venue = await prisma.venue.findUnique({ where: { id }, select: venueDeletionImpactSelect });
+    if (!venue) return res.status(404).json({ error: "venue_not_found", message: "Casa de samba nao encontrada." });
+    return res.json({ item: mapVenueDeletionImpact(venue) });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateAdminVenueVisibility(req, res, next) {
+  try {
+    const { id } = idSchema.parse(req.params);
+    const payload = visibilityUpdateSchema.parse(req.body);
+    const now = new Date();
+    const result = await prisma.$transaction(async (tx) => {
+      const venue = await tx.venue.findUnique({ where: { id }, select: { id: true, name: true, visibilityStatus: true, visibilityChangedAt: true } });
+      if (!venue) return { status: 404, error: "venue_not_found" };
+      if (venue.visibilityStatus !== payload.expectedStatus) {
+        return { status: 409, error: "visibility_state_changed", currentStatus: venue.visibilityStatus };
+      }
+      if (venue.visibilityStatus === payload.status) {
+        return { status: 200, item: { id: venue.id, name: venue.name, visibility: { status: venue.visibilityStatus, changedAt: null }, changed: false, cancelledReminders: 0 } };
+      }
+      if (!canTransitionVenueVisibility(venue.visibilityStatus, payload.status)) {
+        return { status: 409, error: "invalid_visibility_transition", currentStatus: venue.visibilityStatus };
+      }
+
+      const impact = await getVenueVisibilityImpact(tx, id, now);
+      const updated = await tx.venue.update({
+        where: { id },
+        data: { visibilityStatus: payload.status, visibilityChangedAt: now },
+        select: { id: true, name: true, visibilityStatus: true, visibilityChangedAt: true }
+      });
+      const cancelled = payload.status === "paused"
+        ? await tx.eventReminder.updateMany({
+          where: {
+            status: { in: ["PENDING", "PROCESSING"] },
+            event: { venueId: id, startDate: { gt: now } }
+          },
+          data: { status: "CANCELLED", cancelledAt: now, failureReason: "venue_visibility_paused" }
+        })
+        : { count: 0 };
+      await tx.auditLog.create({
+        data: {
+          actorUserId: req.user.id,
+          action: "venue.visibility_changed",
+          subjectType: "venue",
+          subjectId: id,
+          metadata: {
+            fromStatus: venue.visibilityStatus,
+            toStatus: payload.status,
+            reasonCode: payload.reasonCode || null,
+            cancelledReminders: cancelled.count
+          }
+        }
+      });
+      return {
+        status: 200,
+        item: {
+          id: updated.id,
+          name: updated.name,
+          visibility: mapVenueVisibility(updated),
+          changed: true,
+          cancelledReminders: cancelled.count,
+          impact
+        }
+      };
+    });
+
+    if (result.status === 404) return res.status(404).json({ error: result.error, message: "Casa de samba nao encontrada." });
+    if (result.status === 409) return res.status(409).json({ error: result.error, currentStatus: result.currentStatus });
+    return res.json({ item: result.item });
+  } catch (error) {
+    next(error);
+  }
 }
 
 export async function getVenueById(req, res, next) {
@@ -236,14 +563,22 @@ export async function getVenueById(req, res, next) {
       });
     }
 
-    if ((req.user?.role === "producer" || req.user?.role === "venue_manager") && !canManageVenue(req.user, venue)) {
+    const canReadManaged = canReadManagedVenue(req.user, venue);
+    if ((req.user?.role === "producer" || req.user?.role === "venue_manager") && !canReadManaged) {
       return res.status(403).json({
         error: "forbidden",
         message: "Voce nao pode acessar esta casa."
       });
     }
 
-    res.json({ item: mapVenuePayload(venue) });
+    if (!canReadManaged && !isVenuePubliclyEligible(venue)) {
+      return res.status(404).json({
+        error: "venue_not_found",
+        message: "Casa de samba nao encontrada."
+      });
+    }
+
+    res.json({ item: canReadManaged ? mapVenuePayload(venue) : mapPublicVenuePayload(venue) });
   } catch (error) {
     next(error);
   }
@@ -255,7 +590,8 @@ export async function listVenues(req, res, next) {
     const isVenueManager = req.user?.role === "venue_manager";
     const isProducer = req.user?.role === "producer";
     const filters = [];
-    const useManagedScope = scope !== "public";
+    const canUseManagedScope = ["admin", "producer", "venue_manager"].includes(req.user?.role);
+    const useManagedScope = canUseManagedScope && scope !== "public";
 
     if (isProducer && useManagedScope) {
       filters.push({
@@ -289,6 +625,10 @@ export async function listVenues(req, res, next) {
       });
     }
 
+    if (!useManagedScope) {
+      filters.push(publicVenueWhere());
+    }
+
     const items = await prisma.venue.findMany({
       where: filters.length ? { AND: filters } : undefined,
       include: {
@@ -300,7 +640,7 @@ export async function listVenues(req, res, next) {
       orderBy: [{ region: "asc" }, { name: "asc" }]
     });
 
-    res.json({ items: items.map(mapVenuePayload) });
+    res.json({ items: items.map(useManagedScope ? mapVenuePayload : mapPublicVenuePayload) });
   } catch (error) {
     next(error);
   }
@@ -397,6 +737,7 @@ export async function createVenue(req, res, next) {
         ...buildVenueGrammarData(data),
         ...buildVenueAnalyticsData(data),
         slug: baseSlug,
+        visibilityStatus: initialVenueVisibilityFor(VENUE_CREATION_ORIGIN.ADMIN_MANUAL),
         createdByUserId: req.user.id
       },
       include: {
@@ -531,6 +872,12 @@ export async function deleteVenue(req, res, next) {
         message: "Voce nao pode excluir esta casa."
       });
     }
+    if (req.user?.role === "admin") {
+      return res.status(403).json({
+        error: "admin_deletion_confirmation_required",
+        message: "Use a confirmacao reforcada na ficha administrativa para excluir uma casa."
+      });
+    }
     if (req.user?.role === "producer") {
       await prisma.producerVenueAccess.deleteMany({
         where: {
@@ -557,6 +904,50 @@ export async function deleteVenue(req, res, next) {
     await prisma.venue.delete({ where: { id } });
     res.status(204).send();
   } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteAdminVenue(req, res, next) {
+  try {
+    const { id } = idSchema.parse(req.params);
+    const { confirmationName } = venueDeletionSchema.parse(req.body);
+    const result = await prisma.$transaction(async (tx) => {
+      const venue = await tx.venue.findUnique({ where: { id }, select: venueDeletionImpactSelect });
+      if (!venue) return { status: 404, error: "venue_not_found" };
+      if (confirmationName !== venue.name) return { status: 400, error: "venue_name_confirmation_mismatch" };
+
+      const impact = mapVenueDeletionImpact(venue);
+      if (!impact.canDelete) return { status: 409, error: "venue_has_dependencies", impact };
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: req.user.id,
+          action: "venue.deleted",
+          subjectType: "venue",
+          subjectId: venue.id,
+          metadata: { confirmation: "exact_name", totalDependencies: 0 }
+        }
+      });
+      await tx.venue.delete({ where: { id: venue.id } });
+      return { status: 204 };
+    });
+
+    if (result.status === 404) return res.status(404).json({ error: result.error, message: "Casa de samba nao encontrada." });
+    if (result.status === 400) return res.status(400).json({ error: result.error, message: "Digite exatamente o nome da casa para confirmar." });
+    if (result.status === 409) return res.status(409).json({
+      error: result.error,
+      message: "A casa possui vínculos e não pode ser excluída.",
+      item: result.impact
+    });
+    return res.status(204).send();
+  } catch (error) {
+    if (error?.code === "P2003") {
+      return res.status(409).json({
+        error: "venue_has_dependencies",
+        message: "Um vínculo foi criado enquanto a exclusão era confirmada. Revise a ficha antes de tentar novamente."
+      });
+    }
     next(error);
   }
 }

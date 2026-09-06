@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { randomBytes } from "node:crypto";
 import { prisma } from "../lib/prisma.js";
+import { isVenuePubliclyEligible, publicVenueRelationWhere } from "../services/venueVisibility.service.js";
 
 const createSchema = z.object({
   title: z.string().min(3).max(80),
@@ -88,7 +89,7 @@ function generateShareToken() {
 
 async function buildItems(eventIds) {
   const events = await prisma.event.findMany({
-    where: { id: { in: eventIds }, status: "confirmed" },
+    where: { id: { in: eventIds }, status: "confirmed", venue: publicVenueRelationWhere() },
     include: {
       venue: true,
       artists: { include: { artist: true }, orderBy: { order: "asc" } }
@@ -302,6 +303,9 @@ export async function getPublicPelaHoraShare(req, res, next) {
       }
     });
     if (!item) return res.status(404).json({ error: "shared_itinerary_not_found", message: "Este roteiro nao esta mais disponivel." });
+    if (item.items.some((row) => !isVenuePubliclyEligible(row.event?.venue))) {
+      return res.status(404).json({ error: "shared_itinerary_not_found", message: "Este roteiro nao esta mais disponivel." });
+    }
     res.set("Cache-Control", "public, max-age=120, stale-while-revalidate=300");
     res.json({ item: publicShareUrlData(item) });
   } catch (error) {
@@ -321,7 +325,7 @@ export async function suggestPelaHora(req, res, next) {
       where: {
         status: "confirmed",
         startDate: { gte: start, lte: end },
-        ...(region ? { venue: { region } } : {})
+        venue: { ...(region ? { region } : {}), visibilityStatus: "published" }
       },
       include: {
         venue: true,

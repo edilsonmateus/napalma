@@ -26,12 +26,16 @@ import {
   createRegion,
   createEvent,
   createVenue,
+  deleteAdminVenue,
   deleteAcquisitionLead,
   deleteArtist,
   deleteEvent,
   deleteVenue,
   deleteRegion,
   getVenueManagers,
+  getAdminVenueOverview,
+  getAdminVenueDeletionImpact,
+  getAdminVenueVisibilityImpact,
   getVenueManagerUsers,
   getArtists,
   getArtistProfile,
@@ -80,6 +84,7 @@ import {
   updateAcquisitionLead,
   updateEvent,
   updateVenue,
+  updateAdminVenueVisibility,
   updateRegion,
   uploadImageFile
 } from "../services/events.service";
@@ -164,6 +169,62 @@ export function useMyPelaHoraQuery(enabled = true) {
 
 export function useVenuesQuery(filters = {}) {
   return useQuery({ queryKey: ["venues", filters], queryFn: () => getVenues(filters), ...publicCatalogQueryOptions });
+}
+
+export function useAdminVenueOverviewQuery(venueId, enabled = true) {
+  return useQuery({
+    queryKey: ["admin-venue-overview", venueId],
+    queryFn: () => getAdminVenueOverview(venueId),
+    enabled: enabled && Boolean(venueId),
+    staleTime: 0
+  });
+}
+
+export function useAdminVenueVisibilityImpactQuery(venueId, enabled = true) {
+  return useQuery({
+    queryKey: ["admin-venue-visibility-impact", venueId],
+    queryFn: () => getAdminVenueVisibilityImpact(venueId),
+    enabled: enabled && Boolean(venueId),
+    staleTime: 0
+  });
+}
+
+export function useAdminVenueDeletionImpactQuery(venueId, enabled = true) {
+  return useQuery({
+    queryKey: ["admin-venue-deletion-impact", venueId],
+    queryFn: () => getAdminVenueDeletionImpact(venueId),
+    enabled: enabled && Boolean(venueId),
+    staleTime: 0
+  });
+}
+
+export function useAdminVenueVisibilityMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ venueId, ...payload }) => updateAdminVenueVisibility(venueId, payload),
+    onSuccess: (_item, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-venue-overview", variables.venueId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-venue-visibility-impact", variables.venueId] });
+      queryClient.invalidateQueries({ queryKey: ["venues"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["my-radar"] });
+      queryClient.invalidateQueries({ queryKey: ["my-pela-hora"] });
+    }
+  });
+}
+
+export function useAdminVenueDeletionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ venueId, ...payload }) => deleteAdminVenue(venueId, payload),
+    onSuccess: (_result, variables) => {
+      queryClient.removeQueries({ queryKey: ["admin-venue-overview", variables.venueId] });
+      queryClient.removeQueries({ queryKey: ["admin-venue-visibility-impact", variables.venueId] });
+      queryClient.removeQueries({ queryKey: ["admin-venue-deletion-impact", variables.venueId] });
+      queryClient.invalidateQueries({ queryKey: ["venues"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    }
+  });
 }
 
 export function useArtistsQuery(filters = {}) {

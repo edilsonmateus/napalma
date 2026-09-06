@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useRef } from "react";
 import VerifiedBadge from "../components/common/VerifiedBadge";
 import ImpactSummaryPanel from "../components/admin/ImpactSummaryPanel";
 import AcquisitionAdminPanel from "./admin/AcquisitionAdminPanel";
@@ -508,6 +509,7 @@ export default function VenuesAdminPage() {
   const [artistErrors, setArtistErrors] = useState({});
   const [eventErrors, setEventErrors] = useState({});
   const [venueSearch, setVenueSearch] = useState(prefs.venueSearch || "");
+  const [venueVisibilityFilter, setVenueVisibilityFilter] = useState("all");
   const [artistSearch, setArtistSearch] = useState(prefs.artistSearch || "");
   const [eventSearch, setEventSearch] = useState(prefs.eventSearch || "");
   const [venueSort, setVenueSort] = useState(prefs.venueSort || "recent");
@@ -528,6 +530,7 @@ export default function VenuesAdminPage() {
   const [publishChecks, setPublishChecks] = useState(() =>
     Object.fromEntries(publishChecklistModel.map((item) => [item.key, false]))
   );
+  const processedVenueEditRef = useRef("");
 
   function showToast(text, forcedType) {
     if (!text) {
@@ -606,9 +609,12 @@ export default function VenuesAdminPage() {
   const houseMenuActiveCount = (houseMenuData?.item?.items || []).filter((item) => item.status !== "archived").length;
   const filteredVenues = useMemo(() => {
     const q = venueSearch.trim().toLowerCase();
-    if (!q) return venues;
-    return venues.filter((item) => `${item.name} ${item.neighborhood} ${item.region}`.toLowerCase().includes(q));
-  }, [venues, venueSearch]);
+    const visibilityScoped = isAdmin && venueVisibilityFilter !== "all"
+      ?venues.filter((item) => item.visibilityStatus === venueVisibilityFilter)
+      : venues;
+    if (!q) return visibilityScoped;
+    return visibilityScoped.filter((item) => `${item.name} ${item.neighborhood} ${item.region}`.toLowerCase().includes(q));
+  }, [venues, venueSearch, venueVisibilityFilter, isAdmin]);
   const filteredArtists = useMemo(() => {
     const q = artistSearch.trim().toLowerCase();
     if (!q) return artists;
@@ -786,7 +792,7 @@ export default function VenuesAdminPage() {
 
   useEffect(() => {
     setVenuePage(1);
-  }, [venueSearch, regionFilter, venueSort]);
+  }, [venueSearch, venueVisibilityFilter, regionFilter, venueSort]);
   useEffect(() => {
     setArtistPage(1);
   }, [artistSearch, artistSort]);
@@ -804,6 +810,24 @@ export default function VenuesAdminPage() {
       setSearchParams({ section: prefs.section === "all" ?"overview" : prefs.section });
     }
   }, [searchParams, setSearchParams, prefs.section, isHouseRole]);
+  useEffect(() => {
+    const requestedVenueId = searchParams.get("edit");
+    if (!requestedVenueId) {
+      processedVenueEditRef.current = "";
+      return;
+    }
+    if (!isAdmin || effectiveSection !== "venues" || processedVenueEditRef.current === requestedVenueId) return;
+    const venue = venues.find((item) => item.id === requestedVenueId);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("edit");
+    if (!venue) {
+      showToast("A casa solicitada para edição não foi encontrada.", "error");
+      setSearchParams(nextParams, { replace: true });
+      return;
+    }
+    processedVenueEditRef.current = requestedVenueId;
+    handleVenueEdit(venue).finally(() => setSearchParams(nextParams, { replace: true }));
+  }, [searchParams, setSearchParams, isAdmin, effectiveSection, venues]);
   useEffect(() => {
     try {
       localStorage.setItem(
@@ -937,7 +961,11 @@ export default function VenuesAdminPage() {
     }
   }
   function exportVenuesCsv() {
-    downloadCsv("casas.csv", ["Nome", "Bairro", "Região", "Eventos"], filteredVenues.map((v) => [v.name, v.neighborhood, v.region, v.eventsCount]));
+    const headers = isAdmin ?["Nome", "Bairro", "Região", "Eventos", "Visibilidade"] : ["Nome", "Bairro", "Região", "Eventos"];
+    const rows = filteredVenues.map((venue) => isAdmin
+      ?[venue.name, venue.neighborhood, venue.region, venue.eventsCount, venue.visibilityStatus || "published"]
+      : [venue.name, venue.neighborhood, venue.region, venue.eventsCount]);
+    downloadCsv("casas.csv", headers, rows);
     showToast("CSV de casas exportado.");
   }
   function exportArtistsCsv() {
@@ -963,6 +991,7 @@ export default function VenuesAdminPage() {
   function clearAdminFilters() {
     setRegionFilter("");
     setVenueSearch("");
+    setVenueVisibilityFilter("all");
     setArtistSearch("");
     setEventSearch("");
     setVenueSort("recent");
@@ -1046,6 +1075,11 @@ export default function VenuesAdminPage() {
     setVenueForm(initialVenueForm);
     setVenueEditJustification("");
     setVenueErrors({});
+    if (searchParams.has("edit")) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("edit");
+      setSearchParams(nextParams, { replace: true });
+    }
   }
 
   function resetArtistForm() {
@@ -2166,6 +2200,12 @@ export default function VenuesAdminPage() {
           <option value="recent">Mais recentes</option>
           <option value="az">A-Z</option>
         </select>
+        {isAdmin ?<select value={venueVisibilityFilter} onChange={(e) => setVenueVisibilityFilter(e.target.value)} aria-label="Filtrar casas por visibilidade">
+          <option value="all">Todos os estados</option>
+          <option value="published">Publicadas</option>
+          <option value="draft">Rascunhos</option>
+          <option value="paused">Pausadas</option>
+        </select> : null}
         <input
           className="search-input"
           placeholder="Buscar casa por nome, bairro ou região..."
@@ -2181,6 +2221,7 @@ export default function VenuesAdminPage() {
           <article key={venue.id} className="venue-card">
             <div>
               <h3>{venue.name}</h3>
+              {isAdmin ?<span className={`venues-admin-visibility-badge venues-admin-visibility-badge--${venue.visibilityStatus || "published"}`}>{venue.visibilityStatus === "paused" ?"Pausada" : venue.visibilityStatus === "draft" ?"Rascunho" : "Publicada"}</span> : null}
               <p className="meta-line">{venue.neighborhood} - {venue.region}</p>
               <p className="meta-line">Eventos vinculados: {venue.eventsCount}</p>
               {venue.contactName ?<p className="meta-line">Responsável: {venue.contactName}</p> : null}
@@ -2190,11 +2231,10 @@ export default function VenuesAdminPage() {
               ) : null}
             </div>
             <div className="venue-actions">
+              {isAdmin ?<Link className="chip" to={`/settings/venues/${venue.id}`}>Ver casa</Link> : null}
               <Link className="chip" to={`/settings/venues/${venue.id}/menu`}>Cardápio</Link>
               <button className="chip" onClick={() => handleVenueEdit(venue)}>Editar</button>
-              <button className="chip" onClick={() => handleVenueDelete(venue.id)} disabled={deleteVenueMutation.isPending}>
-                {isProducer ?"Remover da carteira" : "Excluir"}
-              </button>
+              {isProducer ?<button className="chip" onClick={() => handleVenueDelete(venue.id)} disabled={deleteVenueMutation.isPending}>Remover da carteira</button> : null}
             </div>
           </article>
         ))}

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { canManageEvent } from "../lib/access.control.js";
 import { formatPriceLabel, formatPriceSecondaryLabel } from "../utils/price.js";
+import { isVenuePubliclyEligible } from "../services/venueVisibility.service.js";
 
 const querySchema = z.object({
   region: z.string().trim().min(1).optional(),
@@ -287,7 +288,7 @@ export async function listEvents(req, res, next) {
     const { region, venueId, scope, includeDrafts } = querySchema.parse(req.query);
     const role = req.user?.role;
     const canIncludeDrafts = ["admin", "producer", "venue_manager"].includes(role);
-    const useManagedScope = scope !== "public";
+    const useManagedScope = ["admin", "producer", "venue_manager"].includes(role) && scope !== "public";
     // A agenda pública precisa ser igual para visitantes e contas
     // profissionais. Os filtros de recursos próprios continuam restritos aos
     // painéis, que usam o escopo gerenciado por padrão.
@@ -303,6 +304,9 @@ export async function listEvents(req, res, next) {
         { createdByUserId: req.user.id },
         { producerAccesses: { some: { producerId: req.user.id } } }
       ];
+    }
+    if (!useManagedScope) {
+      venueScope.visibilityStatus = "published";
     }
     const items = await prisma.event.findMany({
       where: {
@@ -515,9 +519,18 @@ export async function getEventById(req, res, next) {
     const event = await prisma.event.findUnique({
       where: { id },
       include: {
-        venue: true,
+        venue: {
+          include: {
+            managerAccesses: { select: { userId: true } },
+            producerAccesses: { select: { producerId: true } }
+          }
+        },
         artists: {
-          include: { artist: true },
+          include: {
+            artist: {
+              include: { producerAccesses: { select: { producerId: true } } }
+            }
+          },
           orderBy: { order: "asc" }
         }
       }
@@ -531,8 +544,15 @@ export async function getEventById(req, res, next) {
     }
 
     const role = req.user?.role;
-    const canReadDraft = ["admin", "producer", "venue_manager"].includes(role) && canManageEvent(req.user, event);
-    if (event.status === "draft" && !canReadDraft) {
+    const canReadManaged = ["admin", "producer", "venue_manager"].includes(role) && canManageEvent(req.user, event);
+    if (event.status === "draft" && !canReadManaged) {
+      return res.status(404).json({
+        error: "event_not_found",
+        message: "Evento nao encontrado."
+      });
+    }
+
+    if (!canReadManaged && !isVenuePubliclyEligible(event.venue)) {
       return res.status(404).json({
         error: "event_not_found",
         message: "Evento nao encontrado."

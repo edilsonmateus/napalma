@@ -918,6 +918,21 @@ a.strategic-partner-card:hover { border-color: #b8c7da; background: #fff; }
   font-size: 14px;
 }
 
+.app-shell-admin .venues-admin-visibility-badge {
+  display: inline-flex;
+  width: fit-content;
+  margin: 0 0 5px;
+  border-radius: 999px;
+  padding: 3px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.app-shell-admin .venues-admin-visibility-badge--published { background: #dff4e8; color: #156343; }
+.app-shell-admin .venues-admin-visibility-badge--draft { background: #fff1c8; color: #765410; }
+.app-shell-admin .venues-admin-visibility-badge--paused { background: #fbe2dd; color: #963d2f; }
+
 .app-shell-admin .venue-actions {
   gap: 6px;
 }

@@ -3,6 +3,7 @@ import path from "node:path";
 import bcrypt from "bcryptjs";
 import { PrismaClient, UserRole } from "@prisma/client";
 import { assertDestructiveSeedAllowed } from "./lib/seed-safety.js";
+import { initialVenueVisibilityFor, VENUE_CREATION_ORIGIN } from "../src/services/venueVisibility.service.js";
 
 const prisma = new PrismaClient();
 
@@ -296,6 +297,7 @@ async function main() {
         state: "SP",
         imageUrl: safeText(row.imgCasa) || undefined,
         openDays: parseOpenDays(row.diasFunciona),
+        visibilityStatus: initialVenueVisibilityFor(VENUE_CREATION_ORIGIN.SEED),
         createdByUserId: producer.id
       }
     });

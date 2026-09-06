@@ -190,6 +190,12 @@ enum VenueMenuStatus {
   archived
 }
 
+enum VenueVisibilityStatus {
+  draft
+  published
+  paused
+}
+
 enum VenueMenuItemStatus {
   draft
   published
@@ -1450,6 +1456,8 @@ model Venue {
   state                                  String
   imageUrl                               String?
   openDays                               String[]
+  visibilityStatus                       VenueVisibilityStatus @default(published)
+  visibilityChangedAt                    DateTime?
   createdByUserId                        String?
   managerUserId                          String?
 
@@ -1465,6 +1473,8 @@ model Venue {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([visibilityStatus, region, name])
 }
 
 model VenueMenu {

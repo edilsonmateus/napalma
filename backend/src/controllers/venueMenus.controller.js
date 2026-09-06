@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { canManageVenue } from "../lib/access.control.js";
+import { publicVenueRelationWhere } from "../services/venueVisibility.service.js";
 
 export const MENU_CATEGORIES = Object.freeze([
   "petiscos", "porcoes", "pratos", "lanches", "sobremesas",
@@ -111,7 +112,11 @@ export async function getPublicVenueMenu(req, res, next) {
   try {
     const { id } = venueParams.parse(req.params);
     const menu = await prisma.venueMenu.findFirst({
-      where: { venueId: id, status: "published", adInventoryAcceptedAt: { not: null } },
+      where: {
+        venueId: id,
+        status: "published", adInventoryAcceptedAt: { not: null },
+        venue: publicVenueRelationWhere()
+      },
       include: {
         venue: { select: { id: true, name: true, slug: true, neighborhood: true, region: true, imageUrl: true } },
         items: {
@@ -354,7 +359,15 @@ export async function reorderVenueMenuItems(req, res, next) {
 export async function addVenueMenuInteraction(req, res, next) {
   try {
     const { id, itemId, type } = interactionParams.parse(req.params);
-    const item = await prisma.venueMenuItem.findFirst({ where: { id: itemId, menu: { venueId: id, status: "published" }, status: { in: ["published", "unavailable"] }, archivedAt: null }, select: { id: true } });
+    const item = await prisma.venueMenuItem.findFirst({
+      where: {
+        id: itemId,
+        menu: { venueId: id, status: "published", venue: publicVenueRelationWhere() },
+        status: { in: ["published", "unavailable"] },
+        archivedAt: null
+      },
+      select: { id: true }
+    });
     if (!item) return res.status(404).json({ error: "menu_item_not_found", message: "Item indisponivel." });
     await prisma.venueMenuInteraction.upsert({
       where: { userId_itemId_type: { userId: req.user.id, itemId, type } },

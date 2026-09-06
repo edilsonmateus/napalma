@@ -19,6 +19,7 @@ const EventDetailPage = lazy(() => import("./pages/EventDetailPage"));
 const VenueDetailFlowPage = lazy(() => import("./pages/VenueDetailFlowPage"));
 const VenueMenuPage = lazy(() => import("./pages/VenueMenuPage"));
 const VenueMenuManagePage = lazy(() => import("./pages/VenueMenuManagePage"));
+const VenueAdminDetailPage = lazy(() => import("./pages/VenueAdminDetailPage"));
 const ArtistProfilePage = lazy(() => import("./pages/ArtistProfilePage"));
 const RadarPage = lazy(() => import("./pages/RadarPage"));
 const PelaHoraPage = lazy(() => import("./pages/PelaHoraPage"));
@@ -452,6 +453,14 @@ export default function App() {
               element={(
                 <RequireRole user={user} allowedRoles={["admin", "produtor", "casa", "producer", "venue_manager"]}>
                   <VenuesAdminPage />
+                </RequireRole>
+              )}
+            />
+            <Route
+              path="/settings/venues/:venueId"
+              element={(
+                <RequireRole user={user} allowedRoles={["admin"]}>
+                  <VenueAdminDetailPage />
                 </RequireRole>
               )}
             />

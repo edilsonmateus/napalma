@@ -14,7 +14,7 @@ const venueDetail = read("frontend/src/pages/VenueDetailFlowPage.jsx");
 describe("public catalog scope", () => {
   it("keeps the public event catalog unrestricted for professional accounts", () => {
     expect(eventsController).toContain('scope: z.enum(["managed", "public"]).optional()');
-    expect(eventsController).toContain('const useManagedScope = scope !== "public";');
+    expect(eventsController).toContain('const useManagedScope = ["admin", "producer", "venue_manager"].includes(role) && scope !== "public";');
     expect(eventsController).toContain('const isProducer = req.user?.role === "producer" && useManagedScope;');
     expect(eventsController).toContain('const includeDraftsSafe = canIncludeDrafts && useManagedScope ? includeDrafts : false;');
   });

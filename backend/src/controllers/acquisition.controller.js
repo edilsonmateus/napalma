@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { recordAuditEvent } from "../services/audit.service.js";
+import { initialVenueVisibilityFor, VENUE_CREATION_ORIGIN } from "../services/venueVisibility.service.js";
 
 const STATUSES = [
   "mapped",
@@ -434,6 +435,7 @@ export async function convertAcquisitionLeadToVenue(req, res, next) {
           city: lead.city,
           state: payload.state,
           openDays: payload.openDays,
+          visibilityStatus: initialVenueVisibilityFor(VENUE_CREATION_ORIGIN.ACQUISITION),
           createdByUserId: req.user.id
         }
       });

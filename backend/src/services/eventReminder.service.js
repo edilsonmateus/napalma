@@ -2,6 +2,7 @@ import { EventReminderStatus, EventReminderType } from "@prisma/client";
 import { env } from "../config/env.js";
 import { prisma } from "../lib/prisma.js";
 import { hasPushConfig, sendPushToSubscriptions } from "./push.service.js";
+import { isVenuePubliclyEligible } from "./venueVisibility.service.js";
 
 const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
 const CANCELLED_EVENT_STATUSES = new Set(["cancelled", "canceled"]);
@@ -14,7 +15,10 @@ export function getRadarReminderSchedule(startAt, now = new Date()) {
 }
 
 function isEligibleEvent(event, now = new Date()) {
-  return event && !CANCELLED_EVENT_STATUSES.has(String(event.status || "").toLowerCase()) && new Date(event.startDate) > now;
+  return event
+    && !CANCELLED_EVENT_STATUSES.has(String(event.status || "").toLowerCase())
+    && (!event.venue || isVenuePubliclyEligible(event.venue))
+    && new Date(event.startDate) > now;
 }
 
 function eventReminderPayload(event, reminder) {
@@ -36,7 +40,7 @@ export async function scheduleRadarEventReminder({ userId, eventId, now = new Da
 
   const [user, event] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { radarEventRemindersEnabled: true } }),
-    prisma.event.findUnique({ where: { id: eventId }, include: { venue: { select: { name: true } } } })
+    prisma.event.findUnique({ where: { id: eventId }, include: { venue: { select: { name: true, visibilityStatus: true } } } })
   ]);
   if (!user?.radarEventRemindersEnabled) return { enabled: false, reminder: null, reason: "preference_disabled" };
   if (!isEligibleEvent(event, now)) return { enabled: true, reminder: null, reason: "event_not_eligible" };
@@ -117,7 +121,7 @@ export async function processDueRadarEventReminders({ now = new Date(), limit = 
     processed += 1;
     try {
       const reminder = await prisma.eventReminder.findUnique({
-        where: { id: candidate.id }, include: { event: { include: { venue: { select: { name: true } } } }, user: { select: { radarEventRemindersEnabled: true } } }
+        where: { id: candidate.id }, include: { event: { include: { venue: { select: { name: true, visibilityStatus: true } } } }, user: { select: { radarEventRemindersEnabled: true } } }
       });
       if (!reminder || !reminder.user.radarEventRemindersEnabled || !isEligibleEvent(reminder.event, now)) {
         await prisma.eventReminder.update({ where: { id: candidate.id }, data: { status: EventReminderStatus.CANCELLED, cancelledAt: now, failureReason: "event_or_preference_not_eligible" } });

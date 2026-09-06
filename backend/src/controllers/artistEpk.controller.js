@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { canManageArtist } from "../lib/access.control.js";
+import { publicVenueRelationWhere } from "../services/venueVisibility.service.js";
 
 const refSchema = z.object({ ref: z.string().trim().min(1).max(180) });
 const idSchema = z.object({ id: z.string().uuid() });
@@ -125,7 +126,7 @@ export async function getArtistEpk(req, res, next) {
     if (!artist) return res.status(404).json({ error: "artist_not_found", message: "Artista nao encontrado." });
     const now = new Date();
     const [upcoming, history, follow, pendingClaim, relatedArtists] = await Promise.all([
-      prisma.event.findMany({ where: { status: "confirmed", startDate: { gte: now }, artists: { some: { artistId: artist.id } } }, include: { venue: true }, orderBy: { startDate: "asc" }, take: 30 }),
+      prisma.event.findMany({ where: { status: "confirmed", startDate: { gte: now }, artists: { some: { artistId: artist.id } }, venue: publicVenueRelationWhere() }, include: { venue: true }, orderBy: { startDate: "asc" }, take: 30 }),
       prisma.event.findMany({ where: { status: "confirmed", endDate: { lt: now }, artists: { some: { artistId: artist.id } } }, include: { venue: true }, orderBy: { startDate: "desc" }, take: 12 }),
       req.user ? prisma.artistFollow.findUnique({ where: { userId_artistId: { userId: req.user.id, artistId: artist.id } }, select: { id: true } }) : null,
       req.user ? prisma.claimRequest.findFirst({ where: { requestedById: req.user.id, artistId: artist.id, targetType: "artist", status: "pending" }, select: { id: true, createdAt: true } }) : null,

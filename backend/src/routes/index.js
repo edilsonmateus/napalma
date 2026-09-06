@@ -8,7 +8,11 @@ import { createRegion, deleteRegion, listRegions, listRegionsAdmin, updateRegion
 import {
   addVenueProducer,
   createVenue,
+  deleteAdminVenue,
   deleteVenue,
+  getAdminVenueDeletionImpact,
+  getAdminVenueOverview,
+  getAdminVenueVisibilityImpact,
   getVenueById,
   listOperationsVenues,
   listVenueProducers,
@@ -16,6 +20,7 @@ import {
   removeVenueManager,
   removeVenueProducer,
   revokeMyVenueAccess,
+  updateAdminVenueVisibility,
   updateVenue
 } from "../controllers/venues.controller.js";
 import {
@@ -401,6 +406,11 @@ router.patch("/admin/regions/:id", ...canReviewClaims, updateRegion);
 router.delete("/admin/regions/:id", ...canReviewClaims, deleteRegion);
 router.get("/venues", listVenues);
 router.get("/admin/operations/venues", requireAuth, requireOperationScope("catalog"), listOperationsVenues);
+router.get("/admin/venues/:id/overview", requireAuth, requireRole(["admin"]), getAdminVenueOverview);
+router.get("/admin/venues/:id/visibility-impact", requireAuth, requireRole(["admin"]), getAdminVenueVisibilityImpact);
+router.patch("/admin/venues/:id/visibility", requireAuth, requireRole(["admin"]), updateAdminVenueVisibility);
+router.get("/admin/venues/:id/deletion-impact", requireAuth, requireRole(["admin"]), getAdminVenueDeletionImpact);
+router.delete("/admin/venues/:id", requireAuth, requireRole(["admin"]), deleteAdminVenue);
 router.get("/venues/:id", getVenueById);
 router.get("/venues/:id/menu", requireFeatureFlag("VENUE_MENU_ENABLED"), getPublicVenueMenu);
 router.get("/venues/:id/menu/manage", ...canManageVenueMenus, getManagedVenueMenu);

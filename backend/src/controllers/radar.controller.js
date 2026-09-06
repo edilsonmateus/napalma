@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma.js";
 import { refreshUserAchievements } from "../utils/achievements.js";
 import { formatPriceLabel, formatPriceSecondaryLabel } from "../utils/price.js";
 import { cancelRadarEventReminders, scheduleRadarEventReminder } from "../services/eventReminder.service.js";
+import { publicVenueRelationWhere } from "../services/venueVisibility.service.js";
 
 const eventIdSchema = z.object({
   eventId: z.string().uuid()
@@ -56,8 +57,8 @@ export async function markEventInRadar(req, res, next) {
   try {
     const { eventId } = eventIdSchema.parse(req.params);
 
-    const eventExists = await prisma.event.findUnique({
-      where: { id: eventId },
+    const eventExists = await prisma.event.findFirst({
+      where: { id: eventId, status: "confirmed", venue: publicVenueRelationWhere() },
       select: { id: true }
     });
 

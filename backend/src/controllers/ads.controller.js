@@ -10,6 +10,7 @@ import { creativeFormatIssue } from "../utils/adCreativeFormat.js";
 import { campaignImpressionCost, milipatacosToPatacos } from "../services/adPricing.service.js";
 import { consumeCampaignCreditAllocations } from "../services/adPayments.service.js";
 import { hasActivePrivacyConsent } from "../services/privacyConsent.service.js";
+import { isVenuePubliclyEligible } from "../services/venueVisibility.service.js";
 
 const slotEnum = z.nativeEnum(AdSlot);
 
@@ -201,6 +202,15 @@ function deliveryPayload(campaign, creative, slot, token = null) {
   };
 }
 
+async function isPublicDeliveryVenue(venueId, client = prisma) {
+  if (!venueId) return true;
+  const venue = await client.venue.findUnique({
+    where: { id: venueId },
+    select: { visibilityStatus: true }
+  });
+  return isVenuePubliclyEligible(venue);
+}
+
 function candidateScore(item, deliveredToday, context) {
   const campaign = item.campaign;
   const reserve = BigInt(campaign.reservedMilipatacos || 0);
@@ -343,6 +353,9 @@ export async function getAdDelivery(req, res, next) {
   try {
     const slot = slotEnum.parse(req.params.slot);
     const context = deliveryQuerySchema.parse(req.query || {});
+    if (!(await isPublicDeliveryVenue(context.venueId))) {
+      return res.json({ item: null, blockedReason: "venue_not_public" });
+    }
     if (!isFeatureEnabled("ADS_CREDITS_PURCHASE_ENABLED")) {
       return res.json({
         item: null,
@@ -502,6 +515,9 @@ export async function getAdCarouselDelivery(req, res, next) {
   try {
     const slot = "explore_between_days_carousel";
     const context = deliveryQuerySchema.parse(req.query || {});
+    if (!(await isPublicDeliveryVenue(context.venueId))) {
+      return res.json({ item: null, blockedReason: "venue_not_public" });
+    }
     if (!isFeatureEnabled("ADS_CREDITS_PURCHASE_ENABLED")) return res.json({ item: null, blockedReason: "credits_not_enabled" });
     const placement = placementFor(slot);
     if (!placement?.isActive || (placement.featureFlag && !isFeatureEnabled(placement.featureFlag))) return res.json({ item: null, blockedReason: "slot_not_enabled" });
@@ -640,6 +656,7 @@ export async function trackDeliveredImpression(req, res, next) {
       if (delivery.sessionHash && delivery.sessionHash !== sessionHash) return { status: 409, error: "delivery_session_mismatch" };
       if (delivery.venueId && payload.venueId && delivery.venueId !== payload.venueId) return { status: 409, error: "delivery_context_mismatch" };
       if (delivery.impressionRecordedAt) return { status: 200, duplicate: true };
+      if (!(await isPublicDeliveryVenue(delivery.venueId, tx))) return { status: 409, error: "venue_not_public" };
       const unitCost = campaignImpressionCost(delivery.campaign, delivery.slot);
       if (!delivery.campaign.isEnabled || delivery.campaign.status !== "active" || unitCost <= 0n || BigInt(delivery.campaign.reservedMilipatacos || 0) < unitCost) {
         return { status: 409, error: "campaign_not_deliverable" };
