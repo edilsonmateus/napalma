@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import BackLink from "../components/common/BackLink";
 
 export default function HelpPage() {
@@ -16,9 +15,9 @@ export default function HelpPage() {
 
       <article className="clean-card legal-card"><h3>Reivindicações e responsabilidade</h3><ul className="legal-list"><li>Solicite um perfil somente se você for proprietário, integrante, representante legal ou profissional expressamente autorizado.</li><li>Leia integralmente a declaração apresentada antes do envio e confirme sua ciência apenas se as informações forem verdadeiras.</li><li>O aceite não garante aprovação: a equipe poderá solicitar documentos, confirmar informações e rejeitar inconsistências.</li><li>Não tente assumir um perfil, alterar dados ou obter contatos comerciais em nome de terceiros sem autorização.</li></ul></article>
 
-      <article className="clean-card legal-card"><h3>Casas e produtores</h3><ul className="legal-list"><li>Casas e produtores veem somente os cadastros autorizados por seu papel e vínculos aprovados.</li><li>Mantenha endereço, região, imagem, contatos, programação, preços e horários corretos.</li><li>Revise eventos antes de publicar; informações encerradas deixam de aparecer na agenda pública.</li><li>Convites e acessos devem ser concedidos apenas a pessoas da operação.</li></ul></article>
+      <article className="clean-card legal-card"><h3>Casas e produtores no piloto</h3><ul className="legal-list"><li>A participação inicial é gratuita e destina-se à organização do perfil da casa e de sua programação.</li><li>Para administrar uma casa, envie uma reivindicação, leia o Termo de Reivindicação e Gestão de Perfil no Piloto e aguarde a análise.</li><li>Mantenha endereço, região, imagem, contatos, programação, preços e horários corretos. Essas informações podem aparecer publicamente.</li><li>Revise eventos antes de publicar; informações encerradas deixam de aparecer na agenda pública.</li><li>Convites e acessos devem ser concedidos apenas a pessoas da operação. Se houver dúvida sobre um acesso, não o aprove e procure o suporte.</li></ul></article>
 
-      <article className="clean-card legal-card"><h3>Anunciantes e campanhas</h3><ul className="legal-list"><li>Marcas, casas, produtores e artistas podem conhecer a entrada comercial em <Link to="/anunciar">Anunciar no 77Gira</Link>.</li><li>A Central do Anunciante aparece quando existe uma conta anunciante vinculada e ativa.</li><li>Campanhas e criativos começam como rascunho e podem exigir envio para revisão.</li><li>Utilize imagens nos formatos e proporções indicados e destinos HTTPS confiáveis.</li><li>Aprovação, rejeição ou pedido de ajustes ficam registrados no fluxo de revisão.</li><li>Solicitar acesso comercial não compra mídia e não publica anúncios automaticamente.</li></ul></article>
+      <article className="clean-card legal-card"><h3>O que não faz parte deste piloto</h3><ul className="legal-list"><li>A 77Gira Ads, anúncios pagos, patrocínios, carteira de mídia e pagamentos não estão ativos nesta etapa.</li><li>A participação no piloto não cria promessa de receita, exclusividade, contratação comercial ou obrigação de compra futura.</li><li>Se esses serviços forem lançados, serão apresentados em fluxo e termos próprios.</li></ul></article>
 
       <article className="clean-card legal-card"><h3>Conta, foto e acesso</h3><ul className="legal-list"><li>Em Configurações, toque no avatar para enviar ou substituir sua foto de perfil.</li><li>Se a sessão expirar, entre novamente; suas informações sincronizadas permanecem associadas à conta.</li><li>Não compartilhe senha ou tokens. Em caso de suspeita de acesso indevido, encerre a sessão e procure o suporte.</li><li>Alguns recursos podem estar desativados durante implantação gradual ou manutenção.</li></ul></article>
 
@@ -26,7 +25,7 @@ export default function HelpPage() {
 
       <article className="clean-card legal-card"><h3>Fale com o suporte</h3><p>Envie sua solicitação para <a href="mailto:77giramundo@gmail.com">77giramundo@gmail.com</a>. Pedidos sobre dados pessoais também podem ser encaminhados por esse canal.</p></article>
 
-      <p className="meta-line legal-updated">Última atualização: 06/07/2026</p>
+      <p className="meta-line legal-updated">Etapa piloto · Última atualização: 06/09/2026</p>
       <BackLink to="/settings">Voltar para Configurações</BackLink>
     </section>
   );

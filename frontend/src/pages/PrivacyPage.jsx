@@ -6,7 +6,7 @@ export default function PrivacyPage() {
     <section className="screen legal-screen">
       <header className="page-header">
         <h2>Política de Privacidade</h2>
-        <p>Transparência, escolha e segurança no tratamento de dados de público, artistas, casas, produtores, equipes e anunciantes do 77Gira.</p>
+        <p>Transparência e segurança no tratamento de dados de público, artistas, casas, produtores e equipes na etapa piloto do 77Gira.</p>
       </header>
 
       <article className="clean-card legal-card">
@@ -26,7 +26,6 @@ export default function PrivacyPage() {
           <li><strong>Perfis e operação profissional:</strong> vínculos com artistas, casas, produtores, equipes e anunciantes; papéis e permissões; agendas; EPKs; mídias; contatos profissionais; convites; solicitações e atividades nos workspaces.</li>
           <li><strong>Reivindicações e legitimidade:</strong> declarações aceitas, versão do aviso legal, data e hora da ciência, justificativas, documentos ou evidências enviados, análise, decisão e registros de auditoria relacionados ao vínculo solicitado.</li>
           <li><strong>Contratações:</strong> nome ou empresa, e-mail, telefone, cidade, bairro ou região, data desejada, tipo de evento, público estimado, orçamento e mensagem enviados à equipe autorizada do artista.</li>
-          <li><strong>Publicidade e carteira de mídia:</strong> conta anunciante, responsáveis e membros, campanhas, segmentação contextual, criativos, destinos, revisões, inventário, patacos, movimentações de carteira, ordens e estados de processamento.</li>
           <li><strong>Métricas e entrega:</strong> impressões, cliques, slot, campanha, criativo, data e hora, identificadores técnicos de visitante ou sessão, limites de frequência, integridade da entrega e indicadores agregados de desempenho.</li>
           <li><strong>Conteúdo e arquivos:</strong> fotos, capas, banners, criativos e outros arquivos enviados, com metadados técnicos necessários para validação, armazenamento, transformação e entrega.</li>
           <li><strong>Dados técnicos e de segurança:</strong> endereço IP, navegador, sistema, dispositivo, data e horário, identificadores de sessão, registros de autenticação, falhas, limites de requisição, eventos de auditoria e sinais de fraude ou abuso.</li>
@@ -49,7 +48,6 @@ export default function PrivacyPage() {
           <li>Operar equipes com múltiplos administradores, papéis, permissões e workspaces profissionais.</li>
           <li>Analisar reivindicações, comprovar legitimidade, prevenir apropriação indevida de perfis e manter rastreabilidade das decisões.</li>
           <li>Encaminhar oportunidades de contratação às pessoas autorizadas a administrar o artista.</li>
-          <li>Operar contas anunciantes, campanhas, criativos, revisões, inventário, carteira de mídia e controles de veiculação.</li>
           <li>Entregar publicidade, controlar frequência, contabilizar impressões e cliques, detectar tráfego inválido e produzir relatórios agregados.</li>
           <li>Ativar recomendações de proximidade e notificações quando solicitadas pelo usuário.</li>
           <li>Atender solicitações de privacidade, exportar dados, registrar consentimentos e manter evidências de atendimento.</li>
@@ -72,25 +70,21 @@ export default function PrivacyPage() {
       </article>
 
       <article className="clean-card legal-card">
-        <h3>7. Publicidade, personalização e métricas</h3>
-        <p>O 77Gira utiliza espaços publicitários identificados para financiar e ampliar a plataforma sem transformar a experiência em um mural indiscriminado. Campanhas podem considerar contexto como slot, cidade, região, período, inventário disponível e relação com casas, eventos ou artistas.</p>
-        <p>Para medir e proteger a entrega, registramos impressões, cliques e identificadores técnicos de visitante ou sessão, aplicamos limites de frequência e mecanismos contra duplicidade ou tráfego inválido. Anunciantes recebem resultados agregados de campanha; não recebem nome, e-mail, telefone, localização precisa, histórico individual ou identidade dos usuários que visualizaram ou clicaram em anúncios.</p>
-        <p>Preferências opcionais de personalização cultural e publicidade por região podem ser alteradas na <Link to="/settings/privacy">Central de Privacidade e Dados</Link>. A autorização para publicidade por região permite usar apenas a cidade-base informada na conta para avaliar campanhas regionais; ela não compartilha dados individuais com anunciantes e não é necessária para receber campanhas gerais, contextuais ou institucionais aprovadas pelo 77Gira.</p>
-        <p>As permissões de notificações push pertencem ao navegador ou dispositivo e são independentes das preferências de publicidade. Você pode revogá-las nas configurações do aparelho; essa escolha não altera os consentimentos registrados na Central de Privacidade e Dados.</p>
+        <h3>7. Publicidade e recursos fora do piloto</h3>
+        <p>A 77Gira Ads não está em operação nesta etapa. Não há publicidade regional, segmentação publicitária, carteira de mídia, cobrança ou compartilhamento de dados individuais de usuários com anunciantes.</p>
+        <p>As permissões de localização e notificações pertencem ao navegador ou dispositivo e continuam independentes da participação de uma casa no piloto. Você pode revogá-las nas configurações correspondentes.</p>
       </article>
 
       <article className="clean-card legal-card">
-        <h3>7.1. Cardápios, interações e patrocínios</h3>
+        <h3>7.1. Cardápios e interações</h3>
         <p>Casas podem publicar um Cardápio Essencial com itens, descrições, preços, disponibilidade, porções e características. As informações são fornecidas e revisadas pela equipe autorizada da casa; valores e disponibilidade podem mudar e devem ser confirmados no local.</p>
         <p>Usuários autenticados podem indicar que desejam provar, recomendam ou querem salvar um item. Essas escolhas ficam vinculadas à conta para sincronização e prevenção de abuso. A casa visualiza apenas sinais agregados quando houver volume mínimo suficiente; não recebe a identidade individual de quem interagiu.</p>
-        <p>Cardápios podem conter publicidade identificada pelas expressões “PUBLICIDADE” e “Cardápio apresentado por”. O inventário é administrado exclusivamente pelo 77Gira; a elegibilidade e a entrega podem considerar política comercial, período, orçamento, ritmo, frequência, localização, contexto editorial e disponibilidade, sem permitir que a casa selecione, aprove, rejeite ou bloqueie anunciantes.</p>
-        <p>A publicidade não altera preços, não representa recomendação individual do usuário nem cria necessariamente parceria entre a marca e a casa. As exibições não geram cashback, Patacos, remuneração ou participação automática em receita para a casa.</p>
+        <p>O Cardápio Essencial é um recurso informativo da casa. Nesta etapa, não contém publicidade, patrocínio ou compartilhamento de receita.</p>
       </article>
 
       <article className="clean-card legal-card">
-        <h3>8. Patacos e processamento de pagamentos</h3>
-        <p>Patacos são unidades de mídia usadas para organizar orçamento e veiculação de campanhas. Durante a fase de desenvolvimento, o gateway disponível é uma simulação controlada: ele registra ordens, estados de teste e movimentações de carteira, mas não realiza cobrança real nem solicita dados bancários ou de cartão.</p>
-        <p>Antes da ativação de um meio de pagamento real, esta política e os fluxos de transparência serão atualizados para informar o provedor, os dados tratados, as responsabilidades, as finalidades e as regras aplicáveis à transação. Dados financeiros processados diretamente por um futuro provedor estarão também sujeitos aos termos e à política desse prestador.</p>
+        <h3>8. Pagamentos</h3>
+        <p>O piloto não processa pagamentos, não solicita dados bancários ou de cartão e não oferece contratação de mídia. Antes de qualquer ativação de pagamento, esta política e os fluxos de transparência serão atualizados para informar o provedor, os dados tratados, as responsabilidades e as regras aplicáveis.</p>
       </article>
 
       <article className="clean-card legal-card">
@@ -115,7 +109,7 @@ export default function PrivacyPage() {
       <article className="clean-card legal-card">
         <h3>12. Retenção e eliminação</h3>
         <p>Conservamos dados pelo tempo necessário para entregar a funcionalidade, cumprir a finalidade informada, manter integridade de contas e campanhas, atender obrigações legais, resolver disputas, prevenir fraude e exercer direitos. Os prazos variam segundo a categoria, o vínculo, o estado da conta e o risco envolvido.</p>
-        <p>Após o término do tratamento, os dados serão eliminados ou anonimizados, salvo quando sua conservação for permitida ou exigida. Registros de auditoria, segurança, consentimento, reivindicação, revisão publicitária, carteira e atendimento de direitos podem ser mantidos por período compatível com prestação de contas, defesa e obrigações aplicáveis. Cópias de segurança podem persistir por ciclo limitado até sua sobrescrita segura.</p>
+        <p>Após o término do tratamento, os dados serão eliminados ou anonimizados, salvo quando sua conservação for permitida ou exigida. Registros de auditoria, segurança, consentimento, reivindicação e atendimento de direitos podem ser mantidos por período compatível com prestação de contas, defesa e obrigações aplicáveis. Cópias de segurança podem persistir por ciclo limitado até sua sobrescrita segura.</p>
       </article>
 
       <article className="clean-card legal-card">
@@ -142,7 +136,7 @@ export default function PrivacyPage() {
         <p>A versão, a data e as decisões de consentimento registradas permitem distinguir as regras vigentes em cada momento. A versão atual permanecerá disponível nesta página.</p>
       </article>
 
-      <p className="meta-line legal-updated">Versão 1.3 · Última atualização: 09/08/2026</p>
+      <p className="meta-line legal-updated">Versão piloto 1.5 · Última atualização: 06/09/2026</p>
       <BackLink to="/settings">Voltar para Configurações</BackLink>
     </section>
   );

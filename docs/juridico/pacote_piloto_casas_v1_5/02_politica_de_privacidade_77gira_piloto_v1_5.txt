@@ -1,0 +1,33 @@
+Política de Privacidade 77Gira Piloto
+Versão 1.5 | Transparência sobre dados pessoais na etapa inicial com casas e programação
+
+1. Controlador e alcance
+77Gira é uma iniciativa digital operada por Edilson Mateus de Oliveira, com canal de contato em 77giramundo@gmail.com e endereço para correspondência na Rua Antonio Martins Costa, 407, Jardim Boa Vista, Butantã, São Paulo, SP, CEP 05584-000.
+Nesta etapa, Edilson Mateus de Oliveira atua como controlador dos dados pessoais tratados pelo 77Gira e define as finalidades essenciais do tratamento. Esta política se aplica às páginas públicas, contas, reivindicações, perfis de casas, programação, suporte e áreas de gestão.
+
+2. Dados tratados no piloto
+- Dados de conta e contato: nome, e-mail, telefone, nome de usuário, senha protegida por hash e dados necessários à autenticação.
+- Dados profissionais e de representação: vínculo declarado, função, evidências de legitimidade, decisões de reivindicação, permissões, assinatura e registros de auditoria.
+- Dados de casas e programação: nome, endereço comercial, contatos divulgados, imagens, agenda, preços, horários e demais informações publicadas por pessoas autorizadas.
+- Dados técnicos e de segurança: registros de acesso, sessão, navegador, identificadores técnicos, sinais de fraude e logs necessários para proteger a plataforma.
+- Pedidos de suporte e de privacidade: conteúdo da solicitação, confirmação de identidade, protocolo e histórico de atendimento.
+
+3. Finalidades e bases legais
+Usamos os dados para criar e proteger contas, analisar reivindicações, liberar acessos compatíveis, exibir programação pública, atender suporte, prevenir fraude, manter auditoria e cumprir obrigações legais. Conforme o caso, o tratamento pode se apoiar em procedimentos preliminares e execução da relação solicitada pelo titular, cumprimento de obrigação legal, exercício regular de direitos, legítimo interesse com salvaguardas adequadas ou consentimento quando este for a base apropriada.
+Quem fornece dados de outra pessoa deve ter autorização ou outra base legítima aplicável e limitar o envio ao necessário.
+
+4. Dados públicos e compartilhamento
+Dados publicados em página de casa ou evento podem ser acessados por pessoas sem conta. A pessoa autorizada deve decidir cuidadosamente o que será tornado público e manter essas informações atualizadas.
+O 77Gira pode utilizar operadores de hospedagem, banco de dados, armazenamento, segurança, comunicação e suporte estritamente para operar a plataforma. O acesso é limitado ao necessário e sujeito às obrigações aplicáveis. Não vendemos dados pessoais.
+
+5. O que não faz parte deste piloto
+A 77Gira Ads não está em operação nesta etapa. Não há publicidade regional, segmentação publicitária, carteira de mídia, cobrança, patrocínio pago nem compartilhamento de dados individuais de usuários com anunciantes.
+Recursos opcionais que dependam de localização atual ou notificações permanecem sujeitos às permissões específicas do navegador ou dispositivo.
+
+6. Segurança, retenção e direitos
+O 77Gira adota medidas proporcionais de segurança, incluindo proteção de credenciais, controles de acesso, validação de dados, limitação de requisições e trilhas de auditoria. Nenhum sistema é invulnerável; por isso, não compartilhe senha ou códigos de confirmação.
+Conservamos os dados pelo tempo necessário para a finalidade, segurança, auditoria, defesa de direitos e obrigações aplicáveis. O titular pode solicitar confirmação de tratamento, acesso, correção, informações sobre compartilhamento, eliminação ou revogação de consentimento quando cabível, além de outros direitos previstos na LGPD.
+Solicitações podem ser feitas pela Central de Privacidade e Dados, quando disponível na conta, ou por 77giramundo@gmail.com. Poderemos confirmar a identidade antes de atender o pedido.
+
+7. Atualizações
+Esta política poderá ser atualizada conforme a evolução do piloto, a entrada de novos recursos ou mudanças legais. Mudanças materiais serão apresentadas por meio adequado e, quando exigirem consentimento, dependerão de nova escolha do titular.

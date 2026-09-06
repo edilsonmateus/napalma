@@ -4,7 +4,7 @@ import { acceptMyLegalDocuments } from "../../services/legalDocuments.service";
 
 const COPY = {
   artist_claim: ["Antes de enviar a reivindicação", "O termo de gestão de perfil registra a responsabilidade sobre as informações enviadas."],
-  venue_claim: ["Antes de reivindicar a casa", "O termo registra a responsabilidade sobre a gestão pública da casa e de sua programação."],
+  venue_claim: ["Antes de reivindicar a casa", "No piloto gratuito, o termo registra a responsabilidade pela gestão pública da casa e de sua programação. Não cria publicidade, cobrança ou compromisso comercial."],
   advertiser_access: ["Antes de solicitar uma conta anunciante", "Os termos de publicidade definem a revisão comercial e as regras de veiculação do 77Gira."],
   advertiser_campaign: ["Antes de continuar com a campanha", "Os termos de publicidade definem responsabilidades sobre criativos, destino e entrega."],
   patacos_purchase: ["Antes de continuar com créditos", "O regulamento explica o uso de Patacos e Milipatacos, saldo e regras de consumo de mídia."],
