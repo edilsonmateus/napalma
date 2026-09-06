@@ -154,6 +154,28 @@ export async function deliverClaimLegalInvitation(envelope) {
   }
 }
 
+// A decisão administrativa não depende da disponibilidade do provedor de e-mail.
+// O convite é processado depois da resposta HTTP; cada resultado continua registrado
+// nos eventos do envelope para permitir reenvio e auditoria.
+export function scheduleClaimLegalInvitation(envelope) {
+  const context = {
+    envelopeId: envelope?.id || null,
+    claimRequestId: envelope?.claimRequestId || null,
+    protocol: envelope?.protocol || null
+  };
+
+  setImmediate(() => {
+    void deliverClaimLegalInvitation(envelope)
+      .then((delivery) => console.info("[claim-legal] invitation_delivery_finished", { ...context, delivery }))
+      .catch((error) => console.error("[claim-legal] invitation_delivery_unexpected_error", {
+        ...context,
+        reason: String(error?.message || "unknown").slice(0, 180)
+      }));
+  });
+
+  return "queued";
+}
+
 export async function reconcileClaimLegalEnvelope({ envelopeId, actorUserId }) {
   return prisma.$transaction(async (tx) => {
     const claim = await tx.claimRequest.findFirst({

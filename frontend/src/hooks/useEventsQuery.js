@@ -44,6 +44,7 @@ import {
   getVenueAdsSummary,
   getAudienceSummary,
   getClaims,
+  getAdCarouselDelivery,
   getAdDelivery,
   getAdsHealth,
   getAdsReport,
@@ -315,6 +316,14 @@ export function useAdDeliveryQuery(slot, enabled = true, context = {}) {
     queryKey: ["ad-delivery", slot, context.venueId || null, context.preview ? "preview" : "live"],
     queryFn: () => getAdDelivery(slot, context),
     enabled: Boolean(slot) && enabled
+  });
+}
+
+export function useAdCarouselDeliveryQuery(enabled = true, context = {}) {
+  return useQuery({
+    queryKey: ["ad-carousel-delivery", "explore-between-days", context.preview ? "preview" : "live"],
+    queryFn: () => getAdCarouselDelivery(context),
+    enabled
   });
 }
 

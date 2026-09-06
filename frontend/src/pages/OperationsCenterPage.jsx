@@ -3,7 +3,7 @@ import { ArrowLeft, Bell, Building2, CalendarDays, ChevronRight, ClipboardList, 
 import { Link } from "react-router-dom";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { actOnOperationsPrivacyRequest, getOperationsPrivacyRequestDetail, listAuditLogs, listOperationsPrivacyRequests } from "../services/privacy.service";
-import { convertAcquisitionLeadToVenue, decideClaim, getAcquisitionAnalytics, getAcquisitionLeads, getAcquisitionLeadTimeline, getAdminRegions, getAdCampaigns, getOperationsAgendaExport, getOperationsClaimDetail, getOperationsClaims, getOperationsVenues } from "../services/events.service";
+import { convertAcquisitionLeadToVenue, decideClaimWithOutcome, getAcquisitionAnalytics, getAcquisitionLeads, getAcquisitionLeadTimeline, getAdminRegions, getAdCampaigns, getOperationsAgendaExport, getOperationsClaimDetail, getOperationsClaims, getOperationsVenues } from "../services/events.service";
 import { getAdReviewQueue } from "../services/adReviews.service";
 import { getAdvertiserAccounts } from "../services/advertiserAccounts.service";
 import { bootstrapOperationsLegalDocuments, cancelOperationsLegalSignature, confirmOperationsWebAuthn, createOperationsLegalDocument, createOperationsLegalDocumentVersion, createOperationsLegalSignature, createOperationsStrategicPartner, enrollOperationsWebAuthn, getOperationsLegalDocumentVersionImpact, getOperationsModerationQueue, getOperationsNotificationsOverview, getOperationsSettingsOverview, getOperationsWebAuthnStatus, listOperationsAccessGrants, listOperationsLegalDocuments, listOperationsLegalSignatures, listOperationsStrategicPartners, resendOperationsLegalSignatureInvitation, setOperationsAccessGrant, transitionOperationsLegalDocumentVersion, updateOperationsStrategicPartner, uploadOperationsStrategicPartnerLogo } from "../services/operations.service";
@@ -70,10 +70,10 @@ const modules = [
   { key: "partners", label: "Parceiros estratégicos", icon: Handshake },
   { key: "territories", label: "Praças e regiões", icon: MapPinned, adminOnly: true },
   { key: "ads", label: "77Gira Ads", icon: Megaphone, adminOnly: true },
-  { key: "moderation", label: "Qualidade e moderação", icon: Gavel, pending: true },
-  { key: "notifications", label: "Notificações", icon: Bell, pending: true },
-  { key: "audit", label: "Auditoria", icon: FileClock, pending: true },
-  { key: "settings", label: "Configurações internas", icon: SlidersHorizontal, pending: true },
+  { key: "moderation", label: "Qualidade e moderação", icon: Gavel },
+  { key: "notifications", label: "Notificações", icon: Bell },
+  { key: "audit", label: "Auditoria", icon: FileClock },
+  { key: "settings", label: "Configurações internas", icon: SlidersHorizontal },
   { key: "communications", label: "Comunicações", icon: Mail },
   { key: "documents", label: "Documentos e aceites", icon: FileText },
 ];
@@ -117,6 +117,31 @@ function StatusTag({ status }) {
 function ClaimStatusTag({ status }) {
   const labels = { pending: "Pendente", pending_legal_acceptance: "Aguardando assinatura", approved: "Acesso liberado", rejected: "Recusada", cancelled: "Cancelada" };
   return <span className={`operations-status operations-status-claim-${status}`}>{labels[status] || status}</span>;
+}
+
+function ClaimDecisionCompletionDialog({ outcome, onClose, onViewSignatures }) {
+  const awaitingSignature = outcome.status === "pending_legal_acceptance";
+  const rejected = outcome.status === "rejected";
+  return <div className="operations-detail-backdrop operations-claim-completion-backdrop" role="dialog" aria-modal="true" aria-labelledby="claim-decision-completion-title">
+    <article className="operations-detail operations-claim-completion">
+      <header>
+        <div>
+          <p>DECISÃO REGISTRADA</p>
+          <h2 id="claim-decision-completion-title">{rejected ? "Reivindicação recusada" : "Elegibilidade aprovada"}</h2>
+          <span>{rejected ? "O fundamento da decisão foi registrado e ficará disponível para a pessoa solicitante." : awaitingSignature ? "A pessoa solicitante precisa assinar o termo antes que qualquer acesso de gestão seja liberado." : "O acesso de gestão foi liberado conforme as regras desta solicitação."}</span>
+        </div>
+        <button type="button" className="operations-secondary" onClick={onClose}>Fechar</button>
+      </header>
+      <div className="operations-claim-completion-content">
+        {awaitingSignature ? <div className="operations-alert operations-alert-info"><strong>Convite em preparação</strong><span>O convite de assinatura está sendo enviado sem bloquear esta decisão. Se houver falha de entrega, o histórico do documento permitirá o reenvio.</span>{outcome.protocol ? <small>Protocolo do termo: {outcome.protocol}</small> : null}</div> : null}
+        <div className="operations-irreversible-lock"><strong>Trilha de auditoria atualizada</strong><span>A decisão foi registrada antes do processamento do convite e permanece disponível na fila e nos documentos formais.</span></div>
+      </div>
+      <footer className="operations-detail-actions operations-claim-completion-actions">
+        <button type="button" className="operations-secondary" onClick={onClose}>Voltar à fila</button>
+        {awaitingSignature ? <button type="button" className="operations-approve" onClick={onViewSignatures}>Ver assinaturas formais</button> : null}
+      </footer>
+    </article>
+  </div>;
 }
 
 function claimRequestLabel(item) {
@@ -232,7 +257,6 @@ function OperationsAgendaExportPanel() {
       <p className="operations-agenda-meta">{loading ? "Lendo programação…" : `${agenda.items?.length || 0} evento(s) público(s) nesta agenda.`}</p>
       {error ? <p className="operations-inline-error">{error}</p> : null}
     </div>
-    <AppToast toast={claimFeedback || { text: "", type: "info" }} onClose={() => setClaimFeedback(null)} />
   </section>;
 }
 
@@ -426,6 +450,7 @@ export default function OperationsCenterPage() {
   const [claimDecisionNote, setClaimDecisionNote] = useState("");
   const [claimActionLoading, setClaimActionLoading] = useState("");
   const [claimFeedback, setClaimFeedback] = useState(null);
+  const [claimDecisionOutcome, setClaimDecisionOutcome] = useState(null);
   const [venueItems, setVenueItems] = useState([]);
   const [venuesLoading, setVenuesLoading] = useState(false);
   const [venuesError, setVenuesError] = useState("");
@@ -834,6 +859,8 @@ export default function OperationsCenterPage() {
     setClaimDetailLoading(true);
     setClaimError("");
     setClaimFeedback(null);
+    setClaimActionLoading("");
+    setClaimDecisionOutcome(null);
     try {
       setSelectedClaim(await getOperationsClaimDetail(id));
       setClaimDecisionNote("");
@@ -853,15 +880,21 @@ export default function OperationsCenterPage() {
     setClaimActionLoading(status);
     setClaimError("");
     try {
-      await decideClaim(selectedClaim.id, { status, decisionNote: claimDecisionNote.trim() || undefined });
+      const decision = await decideClaimWithOutcome(selectedClaim.id, { status, decisionNote: claimDecisionNote.trim() || undefined });
       setClaimFeedback({
         type: "success",
         text: status === "rejected"
           ? "Reivindicação recusada. O fundamento foi registrado na trilha de auditoria e será apresentado à pessoa solicitante."
           : "Elegibilidade aprovada. A decisão foi registrada na auditoria; o acesso só será liberado após as etapas formais exigidas."
       });
+      setClaimDecisionOutcome({
+        status: decision.item.status,
+        legalDelivery: decision.legalDelivery || null,
+        protocol: decision.item.legalWorkflow?.protocol || null
+      });
       setSelectedClaim(null);
-      await loadClaims();
+      setClaimDecisionNote("");
+      void loadClaims();
     } catch (decisionError) {
       const message = decisionError?.response?.data?.message || "Não foi possível registrar esta decisão. Tente novamente.";
       setClaimError(message);
@@ -869,6 +902,12 @@ export default function OperationsCenterPage() {
     } finally {
       setClaimActionLoading("");
     }
+  }
+
+  function viewClaimFormalSignatures() {
+    setClaimDecisionOutcome(null);
+    setSection("documents");
+    void loadOperationsLegalSignatures();
   }
 
   const summary = useMemo(() => ({
@@ -954,7 +993,7 @@ export default function OperationsCenterPage() {
       <aside className="operations-sidebar" aria-label="Módulos da Central de Operações">
         <div className="operations-brand"><Landmark size={20}/><strong>Central de Operações</strong><small>77Gira</small></div>
         <nav ref={menuNavRef}>
-          {visibleModules.map(({ key, label, icon: Icon }) => <button key={key} data-operations-section={key} type="button" className={section === key ? "is-active" : ""} onClick={() => setSection(key)}><Icon size={17}/><span>{label}</span></button>)}
+          {visibleModules.map(({ key, label, icon: Icon, pending }) => <button key={key} data-operations-section={key} type="button" disabled={pending} aria-disabled={pending || undefined} title={pending ? "A gestão de casas e programação acontece em Gestão de casas." : undefined} className={`${section === key ? "is-active" : ""}${pending ? " is-pending" : ""}`} onClick={() => !pending && setSection(key)}><Icon size={17}/><span>{label}</span>{pending ? <em>Disponível em Gestão de casas</em> : null}</button>)}
         </nav>
         <div className="operations-sidebar-note"><ShieldCheck size={17}/><span><strong>Trilha protegida</strong><small>Aberturas e decisões são registradas.</small></span></div>
       </aside>
@@ -973,6 +1012,8 @@ export default function OperationsCenterPage() {
         </> : section === "claims" ? <ClaimsOperationsPanel items={claimItems} loading={claimsLoading} error={claimError} feedback={claimFeedback} onRefresh={loadClaims} onOpen={openClaimDetail}/> : section === "documents" ? <><OperationsDocumentsPanel items={documentItems} loading={documentsLoading} error={documentsError} onRefresh={loadOperationsDocuments} onBootstrap={bootstrapOperationsDocuments} onCreate={saveOperationsLegalDocument} onCreateVersion={saveOperationsLegalDocumentVersion} onTransition={updateOperationsLegalDocumentVersion} onGetImpact={getOperationsLegalDocumentVersionImpact}/><OperationsSignaturesPanel items={signatureItems} documents={documentItems} loading={signaturesLoading} error={signaturesError} onRefresh={loadOperationsLegalSignatures} onCreate={saveOperationsLegalSignature} onCancel={cancelOperationsSignature} onResend={resendOperationsSignatureInvitation}/></> : section === "venues" ? <OperationsVenuesPanel items={venueItems} loading={venuesLoading} error={venuesError} onRefresh={loadOperationsVenues}/> : section === "acquisition" ? <OperationsAcquisitionPanel analytics={acquisitionData.analytics} leads={acquisitionData.leads} loading={acquisitionLoading} error={acquisitionError} filters={acquisitionFilters} onFiltersChange={changeAcquisitionFilters} onRefresh={() => loadOperationsAcquisition()} onOpen={openAcquisitionDetail}/> : section === "partners" ? <OperationsPartnersPanel items={partnerItems} loading={partnersLoading} error={partnersError} onRefresh={loadOperationsPartners} onSave={saveOperationsPartner} onUploadLogo={uploadOperationsStrategicPartnerLogo}/> : section === "territories" ? <OperationsTerritoriesPanel items={territoryItems} loading={territoriesLoading} error={territoriesError} onRefresh={loadOperationsTerritories}/> : section === "audit" ? <OperationsAuditPanel items={auditItems} loading={auditLoading} error={auditError} onRefresh={loadOperationsAudit}/> : section === "notifications" ? <OperationsNotificationsPanel data={notificationsData} loading={notificationsLoading} error={notificationsError} onRefresh={loadOperationsNotifications}/> : section === "moderation" ? <OperationsModerationPanel items={moderationItems} loading={moderationLoading} error={moderationError} onRefresh={loadOperationsModeration}/> : section === "settings" ? <OperationsSettingsPanel data={settingsData} loading={settingsLoading} error={settingsError} onRefresh={loadOperationsSettings} isAdmin={isAdmin} grants={accessGrants} grantsLoading={accessGrantsLoading} grantsError={accessGrantsError} onRefreshGrants={loadOperationsAccessGrants} onSetGrant={changeOperationsAccessGrant}/> : section === "communications" ? <OperationsCommunicationsPanel/> : <OperationsAdsPanel data={adsData} loading={adsLoading} error={adsError} onRefresh={loadOperationsAds}/>}
       </main>
     </div>
+
+    {claimDecisionOutcome ? <ClaimDecisionCompletionDialog outcome={claimDecisionOutcome} onClose={() => setClaimDecisionOutcome(null)} onViewSignatures={viewClaimFormalSignatures}/> : null}
 
     {conversionLead ? <div className="operations-detail-backdrop operations-conversion-backdrop" role="dialog" aria-modal="true" aria-label="Converter oportunidade em casa interna"><form className="operations-detail operations-conversion-dialog" onSubmit={confirmLeadConversion}><header><div><button type="button" className="operations-back" onClick={() => setConversionLead(null)} disabled={conversionLoading}><ArrowLeft size={16}/> Cancelar conversão</button><p>CONVERSÃO PROTEGIDA</p><h2>Criar casa interna</h2><span>{conversionLead.venueName} continuará fora do catálogo público até receber programação e revisão próprias.</span></div><ShieldCheck size={22}/></header><div className="operations-conversion-content"><div className="operations-alert operations-alert-info">Esta ação cria um registro interno, vincula a oportunidade fechada e registra a decisão na auditoria. Ela não cria usuário gestor, não publica a casa e não cria eventos.</div><dl className="operations-conversion-summary"><div><dt>Endereço</dt><dd>{conversionLead.address || "Não informado"}</dd></div><div><dt>Região</dt><dd>{[conversionLead.neighborhood, conversionLead.region, conversionLead.city].filter(Boolean).join(" · ") || "Não informada"}</dd></div></dl><label>Estado (UF)<input value={conversionState} onChange={(event) => setConversionState(event.target.value.toUpperCase().slice(0, 2))} minLength="2" maxLength="2" required/></label><label>Descrição inicial (opcional)<textarea value={conversionDescription} onChange={(event) => setConversionDescription(event.target.value)} maxLength="1200" placeholder="Contexto comercial ou observação inicial para o catálogo interno."/></label>{conversionError ? <p className="operations-inline-error">{conversionError}</p> : null}</div><footer className="operations-detail-actions"><span className="operations-irreversible-lock"><strong>Revisão humana preservada</strong><span>Confirme apenas depois de conferir nome, endereço, região, cidade e UF.</span></span><button type="submit" className="operations-approve" disabled={conversionLoading || conversionState.length !== 2}>{conversionLoading ? "Criando casa interna…" : "Confirmar conversão"}</button></footer></form></div> : null}
 

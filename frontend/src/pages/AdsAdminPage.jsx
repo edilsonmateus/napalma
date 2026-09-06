@@ -40,6 +40,7 @@ import {
 import { useAuthStore } from "../store/authStore";
 import AdsPlacementMockup from "../components/ads/AdsPlacementMockup";
 import { getAdsBillingOperations, grantAdsExperienceCredits, processAdminMockPaymentOrder } from "../services/events.service";
+import { cancelCommercialAgreement, createCommercialAgreement, getCommercialAgreements, issueCommercialAgreement } from "../services/advertiserAccounts.service";
 
 const ADVERTISER_ACCOUNTS_ENABLED =
   String(import.meta.env.VITE_ADS_ADVERTISER_ACCOUNTS_ENABLED || "").toLowerCase() === "true";
@@ -51,6 +52,7 @@ const REVIEW_WORKFLOW_ENABLED =
   String(import.meta.env.VITE_ADS_REVIEW_WORKFLOW_ENABLED || "").toLowerCase() === "true";
 const CREDITS_PURCHASE_ENABLED =
   String(import.meta.env.VITE_ADS_CREDITS_PURCHASE_ENABLED || "").toLowerCase() === "true";
+const CONTRACTUAL_ADVERTISING_ENABLED = String(import.meta.env.VITE_CONTRACTUAL_SIGNATURES_ENABLED || "").toLowerCase() === "true";
 
 const SLOT_OPTIONS = [
   "explore_feed_large",
@@ -148,19 +150,29 @@ function getReviewContextText(item) {
 
 function ReviewPlacementPreview({ item }) {
   const isCreative = item.entityType === "creative";
-  const slot = isCreative ? item.slot : "explore_feed_large";
-  const imageUrl = isCreative ? item.imageUrl : "";
-  const title = isCreative ? (item.title || item.campaign?.name || item.label) : item.label;
-  const placeholder = isCreative ? "Arquivo do criativo indisponível" : "Campanha sem imagem própria";
+  const creatives = isCreative ? [item] : (item.creatives || []);
+  const [selectedCreativeId, setSelectedCreativeId] = useState(null);
+
+  useEffect(() => { setSelectedCreativeId(null); }, [item.id]);
+
+  const selectedCreative = creatives.find((creative) => creative.id === selectedCreativeId) || creatives[0] || null;
+  const slot = selectedCreative?.slot || "explore_feed_large";
+  const imageUrl = selectedCreative?.imageUrl || "";
+  const title = selectedCreative?.title || item.campaign?.name || item.label;
+  const placeholder = selectedCreative ? "Arquivo do criativo indisponível" : "Campanha sem criativos vinculados";
+  const slotLabel = SLOT_LABELS[slot] || slot;
 
   return (
     <div className="ads-review-placement-preview">
+      {!isCreative && creatives.length > 1 ? <div className="ads-review-creative-selector" role="group" aria-label="Selecionar criativo para prévia">
+        {creatives.map((creative) => <button type="button" key={creative.id} className={creative.id === selectedCreative?.id ? "active" : ""} onClick={() => setSelectedCreativeId(creative.id)} aria-pressed={creative.id === selectedCreative?.id}>{SLOT_LABELS[creative.slot] || creative.slot}</button>)}
+      </div> : null}
       <div className={`ads-review-asset ${imageUrl ? "has-image" : "is-placeholder"}`} style={{ "--ads-review-aspect": SLOT_ASPECT_RATIOS[slot] || "4 / 5" }}>
-        {imageUrl ? <img src={imageUrl} alt={item.altText || title} /> : <span>{placeholder}</span>}
+        {imageUrl ? <img src={imageUrl} alt={selectedCreative?.altText || title} /> : <span>{placeholder}</span>}
       </div>
       <div className="ads-review-mobile-preview">
         <AdsPlacementMockup slot={slot} imageUrl={imageUrl} title={title} className="ads-review-placement-device" />
-        <small>{isCreative ? "Prévia de veiculação no touchpoint selecionado." : "A prévia será preenchida quando um criativo for enviado."}</small>
+        <small>{selectedCreative ? `Prévia de veiculação: ${slotLabel}.` : "Envie ao menos um criativo para visualizar a veiculação."}</small>
       </div>
     </div>
   );
@@ -265,6 +277,53 @@ export default function AdsAdminPage() {
   const [billingProcessingId, setBillingProcessingId] = useState("");
   const [experienceGrantForm, setExperienceGrantForm] = useState({ accountId: "", amountPatacos: "250", validDays: "30", reason: "", note: "", overrideReason: "" });
   const [experienceGrantBusy, setExperienceGrantBusy] = useState(false);
+  const [commercialAgreements, setCommercialAgreements] = useState([]);
+  const [commercialAgreementsAvailable, setCommercialAgreementsAvailable] = useState(true);
+  const [commercialAgreementForm, setCommercialAgreementForm] = useState({ title: "", type: "negotiated_campaign", counterpartUserId: "", campaignIds: [], placements: [], startsAt: "", endsAt: "" });
+  const [commercialAgreementBusy, setCommercialAgreementBusy] = useState(false);
+
+  async function loadCommercialAgreements(accountId = selectedAdvertiserId) {
+    if (!accountId || !CONTRACTUAL_ADVERTISING_ENABLED) return;
+    try { setCommercialAgreements(await getCommercialAgreements(accountId)); setCommercialAgreementsAvailable(true); }
+    catch (error) {
+      if (error?.response?.status === 404) { setCommercialAgreementsAvailable(false); return; }
+      setMessage(error?.response?.data?.message || "Não foi possível carregar os acordos comerciais.");
+    }
+  }
+  useEffect(() => { void loadCommercialAgreements(selectedAdvertiserId); }, [selectedAdvertiserId]);
+
+  async function handleCreateCommercialAgreement(event) {
+    event.preventDefault();
+    if (!selectedAdvertiserId) return;
+    setCommercialAgreementBusy(true); setMessage("");
+    try {
+      const item = await createCommercialAgreement(selectedAdvertiserId, {
+        ...commercialAgreementForm,
+        startsAt: commercialAgreementForm.startsAt ? new Date(commercialAgreementForm.startsAt).toISOString() : null,
+        endsAt: commercialAgreementForm.endsAt ? new Date(commercialAgreementForm.endsAt).toISOString() : null
+      });
+      setCommercialAgreements((items) => [item, ...items]);
+      setCommercialAgreementForm({ title: "", type: "negotiated_campaign", counterpartUserId: "", campaignIds: [], placements: [], startsAt: "", endsAt: "" });
+      setMessage("Acordo comercial criado como rascunho. Emita somente depois de revisar os vínculos.");
+    } catch (error) { setMessage(error?.response?.data?.message || "Não foi possível criar o acordo comercial."); }
+    finally { setCommercialAgreementBusy(false); }
+  }
+  async function handleIssueCommercialAgreement(item) {
+    setCommercialAgreementBusy(true); setMessage("");
+    try {
+      await issueCommercialAgreement(item.id); await loadCommercialAgreements();
+      setMessage("Acordo emitido. A contraparte foi chamada para preencher os dados que entrarão na minuta.");
+    } catch (error) { setMessage(error?.response?.data?.message || "Não foi possível emitir o acordo."); }
+    finally { setCommercialAgreementBusy(false); }
+  }
+  async function handleCancelCommercialAgreement(item) {
+    const reason = window.prompt("Informe o fundamento do cancelamento (mínimo de 10 caracteres):", "");
+    if (!reason) return;
+    setCommercialAgreementBusy(true); setMessage("");
+    try { await cancelCommercialAgreement(item.id, reason); await loadCommercialAgreements(); setMessage("Acordo comercial cancelado."); }
+    catch (error) { setMessage(error?.response?.data?.message || "Não foi possível cancelar o acordo."); }
+    finally { setCommercialAgreementBusy(false); }
+  }
 
   async function handleReviewDecision(item, decision) {
     try {
@@ -1322,6 +1381,44 @@ export default function AdsAdminPage() {
                 {selectedAdvertiser.campaigns?.length === 0 ? (
                   <p className="meta-line">Nenhuma campanha vinculada.</p>
                 ) : null}
+                {CONTRACTUAL_ADVERTISING_ENABLED ? <>
+                  <div className="admin-content-divider" />
+                  <h4>Acordos comerciais</h4>
+                  {!commercialAgreementsAvailable ? <p className="meta-line">O módulo contratual ainda está desativado no servidor.</p> : <>
+                    <p className="meta-line">Use apenas para condições negociadas. Este fluxo não concede patacos nem aprova campanhas.</p>
+                    <form className="venue-form advertiser-membership-form" onSubmit={handleCreateCommercialAgreement}>
+                      <input required placeholder="Título interno do acordo" value={commercialAgreementForm.title} onChange={(event) => setCommercialAgreementForm((current) => ({ ...current, title: event.target.value }))} />
+                      <select value={commercialAgreementForm.type} onChange={(event) => setCommercialAgreementForm((current) => ({ ...current, type: event.target.value, placements: [] }))}>
+                        <option value="negotiated_campaign">Campanha negociada</option>
+                        <option value="sponsorship">Patrocínio</option>
+                        <option value="reserved_placement">Posição reservada</option>
+                        <option value="exclusive_placement">Posição exclusiva</option>
+                      </select>
+                      <select required value={commercialAgreementForm.counterpartUserId} onChange={(event) => setCommercialAgreementForm((current) => ({ ...current, counterpartUserId: event.target.value }))}>
+                        <option value="">Escolher titular/administrador</option>
+                        {(selectedAdvertiser.memberships || []).filter((entry) => entry.status === "active" && ["owner", "admin"].includes(entry.role)).map((entry) => <option key={entry.userId} value={entry.userId}>{entry.user?.email || entry.userId} · {entry.role}</option>)}
+                      </select>
+                      <select multiple aria-label="Campanhas vinculadas" value={commercialAgreementForm.campaignIds} onChange={(event) => setCommercialAgreementForm((current) => ({ ...current, campaignIds: [...event.target.selectedOptions].map((option) => option.value) }))}>
+                        {(selectedAdvertiser.campaigns || []).map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
+                      </select>
+                      <select value={commercialAgreementForm.placements[0]?.slot || ""} onChange={(event) => setCommercialAgreementForm((current) => ({ ...current, placements: event.target.value ? [{ slot: event.target.value, mode: current.type === "exclusive_placement" ? "exclusive" : "standard" }] : [] }))}>
+                        <option value="">Sem posição reservada</option>
+                        <option value="explore_feed_large">Explorar — destaque superior</option>
+                        <option value="explore_between_days">Explorar — entre dias</option>
+                        <option value="explore_between_days_carousel" disabled={commercialAgreementForm.type === "exclusive_placement"}>Explorar — carrossel entre dias</option>
+                        <option value="venue_detail_inline">Detalhe da casa</option>
+                        <option value="radar_header">Meu Radar</option>
+                        <option value="venue_menu_sponsor">Cardápio</option>
+                      </select>
+                      <input required={commercialAgreementForm.type === "exclusive_placement"} type="datetime-local" aria-label="Início da vigência" value={commercialAgreementForm.startsAt} onChange={(event) => setCommercialAgreementForm((current) => ({ ...current, startsAt: event.target.value }))} />
+                      <input required={commercialAgreementForm.type === "exclusive_placement"} type="datetime-local" aria-label="Fim da vigência" value={commercialAgreementForm.endsAt} onChange={(event) => setCommercialAgreementForm((current) => ({ ...current, endsAt: event.target.value }))} />
+                      <button type="submit" className="chip" disabled={commercialAgreementBusy}>Criar rascunho</button>
+                    </form>
+                    {commercialAgreementForm.type === "exclusive_placement" ? <p className="meta-line">Exclusividade exige campanha, posição e vigência; o slot fica reservado somente após a assinatura concluída.</p> : null}
+                    {commercialAgreements.map((item) => <div key={item.id} className="advertiser-campaign-row"><span className="meta-line"><strong>{item.title}</strong> · {item.status} · {item.placements?.map((placement) => placement.slot).join(", ") || "sem posição"}</span>{item.status === "draft" ? <button type="button" className="chip" disabled={commercialAgreementBusy} onClick={() => handleIssueCommercialAgreement(item)}>Emitir para preenchimento</button> : null}{!["completed", "cancelled", "declined", "expired"].includes(item.status) ? <button type="button" className="chip" disabled={commercialAgreementBusy} onClick={() => handleCancelCommercialAgreement(item)}>Cancelar</button> : null}</div>)}
+                    {!commercialAgreements.length ? <p className="meta-line">Nenhum acordo criado.</p> : null}
+                  </>}
+                </> : null}
                 <h4>Membros ({selectedAdvertiser.memberships?.length || 0})</h4>
                 <form className="venue-form advertiser-membership-form" onSubmit={handleAddMembership}>
                   <input

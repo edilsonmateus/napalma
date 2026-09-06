@@ -184,3 +184,16 @@ export async function sendLegalSignatureInvitationEmail({ email, firstName, enve
   };
   return sendWithBrevo({ email, recipientName: firstName, message, tags: ["legal-signature", "invitation"] });
 }
+
+export async function sendCommercialAgreementDetailsInvitationEmail({ email, firstName, agreementTitle, protocol, expiresAt }) {
+  const safeName = escapeHtml(firstName || "pessoa responsável");
+  const safeTitle = escapeHtml(agreementTitle);
+  const workspaceUrl = `${env.publicAppUrl.replace(/\/$/, "")}/workspace/anunciante/acordos`;
+  const deadline = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" }).format(new Date(expiresAt));
+  const message = {
+    subject: `Dados para a minuta: ${agreementTitle}`,
+    textContent: `Olá, ${firstName || "pessoa responsável"}.\n\nA 77Gira preparou o acordo comercial “${agreementTitle}” (protocolo ${protocol}). Entre na sua conta e abra Workspace do anunciante > Acordos até ${deadline} para informar os dados cadastrais que entrarão na minuta.\n\nA assinatura só ficará disponível depois que você conferir esses dados e a versão final do documento.\n\nEquipe 77Gira`,
+    htmlContent: `<!doctype html><html lang="pt-BR"><body style="margin:0;background:#f5f6f8;color:#172033;font-family:Arial,sans-serif"><div style="max-width:560px;margin:0 auto;padding:32px 18px"><div style="background:#fff;border:1px solid #dfe3ea;border-radius:12px;padding:30px"><div style="font-size:22px;font-weight:700;color:#ff7a00;margin-bottom:24px">77Gira</div><h1 style="font-size:22px;line-height:1.25;margin:0 0 16px">Complete os dados da minuta</h1><p style="font-size:15px;line-height:1.6">Olá, ${safeName}.</p><p style="font-size:15px;line-height:1.6">O acordo comercial <strong>${safeTitle}</strong> está pronto para receber os dados cadastrais da contraparte. Protocolo: <strong>${escapeHtml(protocol)}</strong>.</p><p style="font-size:14px;line-height:1.6;color:#475467">Acesse sua conta até ${escapeHtml(deadline)}. A assinatura só será liberada depois que você conferir os dados e a versão final do documento.</p><a href="${escapeHtml(workspaceUrl)}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;padding:13px 20px;font-weight:700">Abrir acordos</a></div></div></body></html>`
+  };
+  return sendWithBrevo({ email, recipientName: firstName, message, tags: ["commercial-agreement", "counterpart-details"] });
+}

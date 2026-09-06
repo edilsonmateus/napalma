@@ -1,0 +1,14 @@
+area;arquivo_ou_area;uso_na_descoberta;classificacao_da_fonte
+Visão geral;README.md;Escopo geral e módulos declarados;Documentação
+Manual do produto;docs/MANUAL_MESTRE_77GIRA.md;Agentes, fluxos, flags, riscos e limitações;Documentação
+Modelo de dados;backend/prisma/schema.prisma;Entidades, status, relações, trilha de auditoria e dados tratados;Sistema
+Rotas;backend/src/routes/index.js;Superfícies de API, autorização e operações;Sistema
+Aplicação;frontend/src/App.jsx;Rotas públicas e protegidas;Sistema
+Gestão de artista;frontend/src/pages/ManagementHub.jsx;Fluxos de perfil, EPK, mídia e contratações;Sistema
+Privacidade;docs/governanca/04_RETENCAO_E_CICLO_DE_VIDA.md;Retenção e exclusão;Documentação
+Fornecedores;docs/governanca/09_REGISTRO_DE_OPERADORES_E_FORNECEDORES.md;Cadastro e avaliação de operadores;Documentação
+Sessões;docs/governanca/11_SESSOES_E_TRANSPORTE_DE_AUTENTICACAO.md;Autenticação, revogação e limitação conhecida;Documentação
+LGPD;https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709compilado.htm;Referência legal oficial;Fonte externa oficial
+Marco Civil;https://planalto.gov.br/ccivil_03/_ato2011-2014/2014/lei/l12965.htm;Referência legal oficial;Fonte externa oficial
+CDC;https://www.planalto.gov.br/ccivil_03/leis/l8078compilado.htm;Referência legal oficial;Fonte externa oficial
+Publicidade;https://www.conar.org.br/codigo/codigo.php;Referência de autorregulação publicitária;Fonte externa oficial

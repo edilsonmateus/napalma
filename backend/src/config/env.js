@@ -32,7 +32,13 @@ export const env = {
   adsHealthAlertWebhookUrl: process.env.ADS_HEALTH_ALERT_WEBHOOK_URL || "",
   adsHealthAlertIntervalMs: Number(process.env.ADS_HEALTH_ALERT_INTERVAL_MS || 900000),
   adsHealthAlertCooldownMs: Number(process.env.ADS_HEALTH_ALERT_COOLDOWN_MS || 21600000),
-  professionalClaimLegalGateEnabled: process.env.PROFESSIONAL_CLAIM_LEGAL_GATE_ENABLED === "true"
+  professionalClaimLegalGateEnabled: process.env.PROFESSIONAL_CLAIM_LEGAL_GATE_ENABLED === "true",
+  // Contractual envelopes are intentionally independent from claim signatures.
+  // Keep both paths dark until their legal model and operational controls have
+  // been approved in homologation.
+  contractualSignaturesEnabled: process.env.CONTRACTUAL_SIGNATURES_ENABLED === "true",
+  contractualAdvertisingSignaturesEnabled: process.env.CONTRACTUAL_ADVERTISING_SIGNATURES_ENABLED === "true",
+  contractualPartnershipSignaturesEnabled: process.env.CONTRACTUAL_PARTNERSHIP_SIGNATURES_ENABLED === "true"
 };
 
 const INSECURE_JWT_VALUES = new Set(["", "dev-secret-change-me", "change-me", "secret", "jwt-secret"]);

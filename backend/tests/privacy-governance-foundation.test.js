@@ -189,12 +189,12 @@ describe("privacy governance foundation", () => {
     expect(termsPage).toContain('<Link to="/privacy">');
   });
 
-  it("keeps policy version 1.2 aligned between legal copy and consent records", () => {
+  it("keeps policy version 1.3 aligned between legal copy and consent records", () => {
     const privacyPage = read("frontend/src/pages/PrivacyPage.jsx");
-    const privacyService = read("frontend/src/services/privacy.service.js");
+    const privacyConfig = read("backend/src/config/privacyConsents.js");
     const privacyController = read("backend/src/controllers/privacy.controller.js");
-    expect(privacyPage).toContain("Versão 1.2");
-    expect(privacyService).toContain('policyVersion: "1.2"');
-    expect(privacyController).toContain('const POLICY_VERSION = "1.2"');
+    expect(privacyPage).toContain("Versão 1.3");
+    expect(privacyConfig).toContain('PRIVACY_POLICY_VERSION = "1.3"');
+    expect(privacyController).toContain("PRIVACY_POLICY_VERSION");
   });
 });

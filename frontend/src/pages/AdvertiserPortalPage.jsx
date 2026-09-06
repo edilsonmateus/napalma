@@ -17,15 +17,19 @@ import {
   submitMyAdvertiserReview,
   setMyAdvertiserCampaignLifecycle,
   updateMyAdvertiserCampaign,
-  uploadMyAdvertiserCreative
+  uploadMyAdvertiserCreative,
+  getMyCommercialAgreements,
+  submitMyCommercialAgreementDetails
 } from "../services/advertiserPortal.service";
 import { useAuthStore } from "../store/authStore";
 import AdsPlacementMockup from "../components/ads/AdsPlacementMockup";
+import { getMyLegalRequirements, requestLegalAcceptance } from "../services/legalDocuments.service";
 
 const WRITERS = ["owner", "admin", "campaign_manager"];
 const BILLING_ROLES = ["owner", "admin", "billing_manager"];
 const CREDITS_PURCHASE_ENABLED = String(import.meta.env.VITE_ADS_CREDITS_PURCHASE_ENABLED || "").toLowerCase() === "true";
-const REQUEST_DRAFT_KEY = "77gira.ads.advertiserRequestDraft";
+const LEGACY_REQUEST_DRAFT_KEY = "77gira.ads.advertiserRequestDraft";
+const REQUEST_DRAFT_KEY_PREFIX = "77gira.ads.advertiserRequestDraft:v2:";
 
 const ACCOUNT_TYPES = [["brand", "Marca"], ["venue", "Casa"], ["producer", "Produtor"], ["artist", "Artista"], ["agency", "Agência"], ["group", "Grupo"], ["unclassified", "Outro"]];
 const OBJECTIVES = [["brand_campaign", "Campanha de marca"], ["boost_event", "Impulsionar evento"], ["boost_venue", "Impulsionar casa"], ["agency", "Gerenciar campanhas de clientes"], ["other", "Outro objetivo"]];
@@ -33,6 +37,10 @@ const INITIAL_REQUEST = { name: "", type: "brand", legalName: "", contactEmail: 
 const INITIAL_CAMPAIGN = { advertiser: "", name: "", startsAt: "", endsAt: "", objective: "brand_campaign", targetCity: "", targetRegion: "", dailyPacingCap: "" };
 const INITIAL_CREATIVE = { slot: "explore_feed_large", title: "", destinationUrl: "", altText: "", asset: null };
 const ACCEPTED_CREATIVE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const EXPLORE_CAROUSEL_SLOT = "explore_between_days_carousel";
+const AGREEMENT_STATUS = { draft: "Em preparação", pending_counterpart_details: "Dados cadastrais pendentes", pending_signature: "Aguardando assinatura", pending_ratification: "Em ratificação", completed: "Concluído", declined: "Recusado", expired: "Expirado", cancelled: "Cancelado" };
+const AGREEMENT_TYPE = { sponsorship: "Patrocínio", exclusive_placement: "Posição exclusiva", reserved_placement: "Posição reservada", negotiated_campaign: "Campanha negociada" };
+const EMPTY_COUNTERPART_DETAILS = { legalName: "", taxId: "", registeredAddress: "", representativeName: "", representativeCapacity: "", signatoryEmail: "", declarationAccepted: false };
 
 const SLOT_CATALOG = [
   {
@@ -47,7 +55,39 @@ const SLOT_CATALOG = [
     dimensions: "Arquivo do criativo: 1080 × 1350 px",
     maxMb: 5,
     description: "Destaque visual entre casas e eventos que o público está descobrindo.",
-    cta: "Ver destaque"
+    cta: "Ver destaque",
+    cpm: 35
+  },
+  {
+    id: "explore_between_days",
+    name: "Explorar · entre dias",
+    area: "Explorar",
+    touchpoint: "Card nativo entre grupos da agenda",
+    ratio: "4 / 5",
+    aspectRatio: "4:5",
+    width: 1080,
+    height: 1350,
+    dimensions: "Arquivo do criativo: 1080 × 1350 px",
+    maxMb: 5,
+    description: "Entra entre Hoje e Amanhã, sem interromper os eventos de um mesmo dia.",
+    cta: "Ver destaque",
+    cpm: 25
+  },
+  {
+    id: "explore_between_days_carousel",
+    name: "Explorar · carrossel entre dias",
+    area: "Explorar",
+    touchpoint: "Carrossel horizontal compartilhado",
+    ratio: "4 / 3",
+    aspectRatio: "4:3",
+    width: 1080,
+    height: 810,
+    dimensions: "Arquivo do criativo: 1080 × 810 px",
+    maxMb: 5,
+    description: "Sua série aparece junto de outras marcas aprovadas. Você pode enviar até três peças.",
+    cta: "Conhecer",
+    cpm: 20,
+    shared: true
   },
   {
     id: "venue_detail_inline",
@@ -150,13 +190,36 @@ function formatDate(value) {
   if (!value) return "Sem data definida";
   return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
 }
-function readRequestDraft(email = "") {
-  try { return { ...INITIAL_REQUEST, ...(JSON.parse(localStorage.getItem(REQUEST_DRAFT_KEY) || "{}")), contactEmail: JSON.parse(localStorage.getItem(REQUEST_DRAFT_KEY) || "{}").contactEmail || email }; }
-  catch { return { ...INITIAL_REQUEST, contactEmail: email }; }
+function initialAccessRequest(user) {
+  return { ...INITIAL_REQUEST, contactEmail: user?.email || "" };
+}
+function requestDraftKey(userId) {
+  return userId ? `${REQUEST_DRAFT_KEY_PREFIX}${userId}` : null;
+}
+function readRequestDraft(user) {
+  const initial = initialAccessRequest(user);
+  const key = requestDraftKey(user?.id);
+  if (!key) return initial;
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(key) || "null");
+    if (!stored?.form || stored.ownerUserId !== user.id) return initial;
+    return { ...initial, ...stored.form, contactEmail: stored.form.contactEmail || initial.contactEmail };
+  } catch { return initial; }
+}
+function saveRequestDraft(user, form) {
+  const key = requestDraftKey(user?.id);
+  if (!key) return;
+  try { sessionStorage.setItem(key, JSON.stringify({ ownerUserId: user.id, form })); } catch { /* no-op */ }
+}
+function removeRequestDraft(userId) {
+  const key = requestDraftKey(userId);
+  if (!key) return;
+  try { sessionStorage.removeItem(key); } catch { /* no-op */ }
 }
 function workspaceArea(pathname) {
   if (pathname.endsWith("/novo-anuncio")) return "new";
   if (pathname.endsWith("/carteira")) return "wallet";
+  if (pathname.endsWith("/acordos")) return "agreements";
   return "campaigns";
 }
 function campaignState(campaign) {
@@ -190,7 +253,7 @@ function SlotSurface({ slot, selected, disabled, creative, onSelect }) {
     <button type="button" className={`ads-slot-surface ${selected ? "selected" : ""} ${disabled ? "disabled" : ""}`} onClick={() => !disabled && onSelect(slot.id)} disabled={disabled}>
       <div className="ads-slot-surface-meta"><span>{slot.area}</span><b className={selected ? "" : "idle"}>{selected ? "Selecionado" : "Selecione"}</b></div>
       <AdsPlacementMockup slot={slot.id} imageUrl={image} title={title} />
-      <div className="ads-slot-surface-copy"><strong>{slot.name}</strong><small>{slot.touchpoint} · {slot.dimensions}</small></div>
+      <div className="ads-slot-surface-copy"><strong>{slot.name}</strong><small>{slot.touchpoint} · {slot.dimensions} · {slot.cpm} patacos/CPM</small></div>
     </button>
   );
 }
@@ -206,7 +269,12 @@ export default function AdvertiserPortalPage() {
   const [accountId, setAccountId] = useState("");
   const [data, setData] = useState({ items: [], membership: null });
   const [wallet, setWallet] = useState({ balance: 0, entries: [], orders: [], packages: [], runtime: null });
-  const [requestForm, setRequestForm] = useState(() => readRequestDraft(user?.email));
+  const [agreements, setAgreements] = useState([]);
+  const [agreementFeatureAvailable, setAgreementFeatureAvailable] = useState(true);
+  const [counterpartAgreementId, setCounterpartAgreementId] = useState("");
+  const [counterpartDetails, setCounterpartDetails] = useState(EMPTY_COUNTERPART_DETAILS);
+  const [requestForm, setRequestForm] = useState(() => readRequestDraft(user));
+  const [requestDraftOwnerId, setRequestDraftOwnerId] = useState(() => user?.id || "");
   const [campaignForm, setCampaignForm] = useState(INITIAL_CAMPAIGN);
   const [creative, setCreative] = useState(INITIAL_CREATIVE);
   const [creativeDrafts, setCreativeDrafts] = useState({});
@@ -220,6 +288,7 @@ export default function AdvertiserPortalPage() {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("info");
   const [busy, setBusy] = useState(false);
+  const [accessLegalRequirements, setAccessLegalRequirements] = useState([]);
   const creativeDraftsRef = useRef({});
   const activeCreativeSlotRef = useRef(INITIAL_CREATIVE.slot);
 
@@ -229,6 +298,7 @@ export default function AdvertiserPortalPage() {
   const canBill = BILLING_ROLES.includes(data.membership?.role);
   const savedWizardCampaign = campaigns.find((item) => item.id === wizardCampaignId);
   const selectedSlotItems = SLOT_CATALOG.filter((item) => selectedSlots.includes(item.id));
+  const carouselCreativeCount = (savedWizardCampaign?.creatives || []).filter((item) => item.slot === EXPLORE_CAROUSEL_SLOT).length;
   const activeCreativeSlot = slotById(creative.slot) || SLOT_CATALOG[0];
   const creativePreviewUrl = creativePreviewUrls[creative.slot] || "";
   const localCreativePreviews = Object.entries(creativeDrafts)
@@ -265,7 +335,7 @@ export default function AdvertiserPortalPage() {
         : {})
     };
   }
-  function openArea(next) { navigate(`/workspace/anunciante/${next === "new" ? "novo-anuncio" : next === "wallet" ? "carteira" : "campanhas"}`); }
+  function openArea(next) { navigate(`/workspace/anunciante/${next === "new" ? "novo-anuncio" : next === "wallet" ? "carteira" : next === "agreements" ? "acordos" : "campanhas"}`); }
   function goWizardStep(step, campaignId = wizardCampaignId) {
     const currentCampaign = campaigns.find((item) => item.id === campaignId);
     if (step === "review" && campaignRemainingPatacos(currentCampaign) <= 0) {
@@ -311,9 +381,46 @@ export default function AdvertiserPortalPage() {
     }
     catch (error) { showMessage(error?.response?.data?.message || "Não foi possível carregar a carteira.", "error"); }
   }
+  async function loadAgreements(id = accountId) {
+    if (!id) return;
+    try {
+      const items = await getMyCommercialAgreements(id);
+      setAgreements(items); setAgreementFeatureAvailable(true);
+    } catch (error) {
+      if (error?.response?.status === 404 && error?.response?.data?.error === "feature_not_available") {
+        setAgreementFeatureAvailable(false); setAgreements([]); return;
+      }
+      showMessage(error?.response?.data?.message || "Não foi possível carregar os acordos comerciais.", "error");
+    }
+  }
+  async function submitCounterpartDetails(event) {
+    event.preventDefault();
+    if (!counterpartAgreementId) return;
+    setBusy(true);
+    try {
+      const updated = await submitMyCommercialAgreementDetails(counterpartAgreementId, counterpartDetails);
+      setAgreements((items) => items.map((item) => item.id === updated.id ? updated : item));
+      setCounterpartAgreementId(""); setCounterpartDetails(EMPTY_COUNTERPART_DETAILS);
+      showMessage("Dados incorporados à minuta. Agora abra Documentos e aceites para revisar e assinar.", "success");
+    } catch (error) {
+      showMessage(error?.response?.data?.message || "Não foi possível salvar os dados no acordo.", "error");
+    } finally { setBusy(false); }
+  }
+  async function loadAccessLegalRequirements() {
+    try {
+      const response = await getMyLegalRequirements("advertiser_access");
+      setAccessLegalRequirements(response.items || []);
+      return response.items || [];
+    } catch {
+      // The server remains the source of truth and will present the gate if a
+      // requirement changes between this preview and the protected action.
+      return [];
+    }
+  }
 
   useEffect(() => { loadAccounts(); }, []);
-  useEffect(() => { loadCampaigns(accountId); loadWallet(accountId); }, [accountId]);
+  useEffect(() => { void loadAccessLegalRequirements(); }, [user?.id]);
+  useEffect(() => { loadCampaigns(accountId); loadWallet(accountId); loadAgreements(accountId); }, [accountId]);
   useEffect(() => { creativeDraftsRef.current = creativeDrafts; }, [creativeDrafts]);
   useEffect(() => {
     const urls = Object.fromEntries(Object.entries(creativeDrafts)
@@ -353,8 +460,19 @@ export default function AdvertiserPortalPage() {
     return () => { cancelled = true; };
   }, [creative.asset, creative.slot, selectedSlots, activeCreativeSlot]);
   useEffect(() => {
-    try { localStorage.setItem(REQUEST_DRAFT_KEY, JSON.stringify(requestForm)); } catch { /* no-op */ }
-  }, [requestForm]);
+    // Rascunhos antigos eram compartilhados entre logins no mesmo navegador.
+    // Eles não são migrados justamente para evitar reutilizar dados de outra conta.
+    try { localStorage.removeItem(LEGACY_REQUEST_DRAFT_KEY); } catch { /* no-op */ }
+  }, []);
+  useEffect(() => {
+    if (!user?.id || requestDraftOwnerId === user.id) return;
+    setRequestForm(readRequestDraft(user));
+    setRequestDraftOwnerId(user.id);
+  }, [user?.id, requestDraftOwnerId]);
+  useEffect(() => {
+    if (!user?.id || requestDraftOwnerId !== user.id) return;
+    saveRequestDraft(user, requestForm);
+  }, [requestForm, requestDraftOwnerId, user?.id]);
   useEffect(() => {
     const returnedCampaign = searchParams.get("campaignId");
     const status = searchParams.get("payment");
@@ -408,11 +526,21 @@ export default function AdvertiserPortalPage() {
   async function submitAccess(event) {
     event.preventDefault(); setBusy(true);
     try {
+      if (accessLegalRequirements.length) {
+        await requestLegalAcceptance({ context: "advertiser_access", requirements: accessLegalRequirements });
+        await loadAccessLegalRequirements();
+      }
       await requestMyAdvertiserAccess(requestForm);
       showMessage("Solicitação enviada. A equipe 77Gira analisará o acesso comercial.", "success");
-      try { localStorage.removeItem(REQUEST_DRAFT_KEY); } catch { /* no-op */ }
+      removeRequestDraft(user?.id);
       await loadAccounts();
-    } catch (error) { showMessage(error?.response?.data?.message || "Não foi possível enviar a solicitação.", "error"); }
+    } catch (error) {
+      if (error?.message === "legal_acceptance_cancelled") {
+        showMessage("A solicitação ainda não foi enviada. Leia e aceite os Termos de Publicidade quando estiver pronto.", "warning");
+        return;
+      }
+      showMessage(error?.response?.data?.message || "Não foi possível enviar a solicitação.", "error");
+    }
     finally { setBusy(false); }
   }
 
@@ -470,6 +598,9 @@ export default function AdvertiserPortalPage() {
     event.preventDefault();
     if (!wizardCampaignId || !selectedSlots.length) return showMessage("Escolha pelo menos um posicionamento antes de salvar os criativos.", "warning");
     const drafts = { ...creativeDrafts, [creative.slot]: creative };
+    if (creative.slot === EXPLORE_CAROUSEL_SLOT && carouselCreativeCount >= 3) {
+      return showMessage("Esta campanha já possui as três peças permitidas para o carrossel entre dias.", "warning");
+    }
     const savedSlots = new Set((savedWizardCampaign?.creatives || []).map((item) => item.slot));
     const draftsToUpload = selectedSlots
       .map((slotId) => ({ slotId, draft: drafts[slotId] }))
@@ -508,9 +639,13 @@ export default function AdvertiserPortalPage() {
       setCreativeFeedback(null);
       const refreshedCampaign = refreshed.items?.find((item) => item.id === wizardCampaignId);
       const completedAllSlots = selectedSlots.length && selectedSlots.every((slot) => refreshedCampaign?.creatives?.some((creativeItem) => creativeItem.slot === slot));
-      if (completedAllSlots) {
+      const refreshedCarouselCount = (refreshedCampaign?.creatives || []).filter((item) => item.slot === EXPLORE_CAROUSEL_SLOT).length;
+      const canAddCarouselPiece = selectedSlots.includes(EXPLORE_CAROUSEL_SLOT) && refreshedCarouselCount < 3;
+      if (completedAllSlots && !canAddCarouselPiece) {
         showMessage("Criativos salvos. Você avançou para o orçamento da campanha.", "success");
         goWizardStep("budget", wizardCampaignId);
+      } else if (completedAllSlots && canAddCarouselPiece) {
+        showMessage(`Criativo salvo. Esta série tem ${refreshedCarouselCount}/3 peças; você pode adicionar outra ou continuar para o orçamento.`, "success");
       } else {
         showMessage(`${draftsToUpload.length} criativo${draftsToUpload.length > 1 ? "s" : ""} salvo${draftsToUpload.length > 1 ? "s" : ""}. Envie os arquivos restantes para continuar.`, "success");
       }
@@ -614,7 +749,7 @@ export default function AdvertiserPortalPage() {
     <section className="ads-workspace-v2">
       <header className="ads-workspace-v2-header">
         <div><img src="/logoads77gira.svg" alt="77Gira Ads" /><h1>Workspace do anunciante</h1><p>Planeje, publique e acompanhe campanhas em uma operação controlada.</p></div>
-        <Link to="/anunciar" className="chip">Como funciona</Link>
+        <Link to="/anunciar" className="chip ads-workspace-help-link">Como funciona</Link>
       </header>
       {message ? <div className={`ads-workspace-message ${messageType}`} role={messageType === "error" ? "alert" : "status"}>{messageType === "error" ? <><strong>Ação não concluída</strong><span>{message}</span></> : message}</div> : null}
 
@@ -624,11 +759,28 @@ export default function AdvertiserPortalPage() {
           <form className="ads-access-form" onSubmit={submitAccess}>
             <span>NOVA SOLICITAÇÃO</span><h2>{requests.length ? "Solicitação em análise" : "Acesso de anunciante"}</h2>
             {requests.length ? <p>Seu pedido para <b>{requests[0].name}</b> está em {STATUS_LABELS[requests[0].status] || requests[0].status}. Você continuará usando este mesmo login.</p> : <>
-              <label>Nome público<input required value={requestForm.name} onChange={(event) => setRequestForm({ ...requestForm, name: event.target.value })} placeholder="Marca, casa ou projeto" /></label>
-              <label>Tipo de anunciante<select value={requestForm.type} onChange={(event) => setRequestForm({ ...requestForm, type: event.target.value })}>{ACCOUNT_TYPES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
-              <label>Categoria comercial<input value={requestForm.commercialCategory} onChange={(event) => setRequestForm({ ...requestForm, commercialCategory: event.target.value })} placeholder="Ex.: cerveja, banco, mobilidade" /></label>
-              <label>Objetivo<select value={requestForm.objective} onChange={(event) => setRequestForm({ ...requestForm, objective: event.target.value })}>{OBJECTIVES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
-              <label>Resumo da intenção<textarea required minLength={10} rows="5" value={requestForm.message} onChange={(event) => setRequestForm({ ...requestForm, message: event.target.value })} placeholder="O que você pretende anunciar e qual resultado espera?" /></label>
+              <div className="ads-access-form-guidance"><strong>Preencha pensando na organização que vai anunciar.</strong><span>Seu login continua como proprietário da conta. Os dados abaixo identificam a marca, casa, artista ou projeto que será analisado pela equipe 77Gira.</span></div>
+              <label>Nome da marca, empresa ou projeto<small>É como o anunciante será identificado no Workspace e na revisão. Ex.: Tarana.</small><input required value={requestForm.name} onChange={(event) => setRequestForm({ ...requestForm, name: event.target.value })} placeholder="Ex.: Tarana" /></label>
+              <label>Tipo de anunciante<small>Escolha a relação principal dessa organização com a publicidade. Isso orienta a análise, mas não publica nenhuma campanha.</small><select value={requestForm.type} onChange={(event) => setRequestForm({ ...requestForm, type: event.target.value })}>{ACCOUNT_TYPES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+              <label>Razão social <em>(opcional)</em><small>Informe somente se a organização já tiver uma razão social definida. Ela pode ser completada depois.</small><input value={requestForm.legalName} onChange={(event) => setRequestForm({ ...requestForm, legalName: event.target.value })} placeholder="Ex.: Tarana Produções Ltda." /></label>
+              <label>E-mail de contato comercial<small>Usaremos para assuntos comerciais desta organização. O seu e-mail de login continua sendo o proprietário do acesso. Só altere se outra pessoa ou caixa institucional for receber esses contatos.</small><input required type="email" autoComplete="email" value={requestForm.contactEmail} onChange={(event) => setRequestForm({ ...requestForm, contactEmail: event.target.value })} placeholder="nome@empresa.com" /></label>
+              <label>Telefone de contato <em>(opcional)</em><small>Informe um telefone de quem pode tratar assuntos comerciais desta organização.</small><input value={requestForm.contactPhone} onChange={(event) => setRequestForm({ ...requestForm, contactPhone: event.target.value })} placeholder="Ex.: (11) 99999-9999" /></label>
+              <label>Categoria comercial <em>(opcional)</em><small>Descreva o setor ou segmento para contextualizar a revisão. Ex.: bebidas, mobilidade, cultura.</small><input value={requestForm.commercialCategory} onChange={(event) => setRequestForm({ ...requestForm, commercialCategory: event.target.value })} placeholder="Ex.: cultura e entretenimento" /></label>
+              <label>Objetivo da publicidade<small>Conte o resultado principal esperado. A solicitação será revisada antes de qualquer campanha ir ao ar.</small><select value={requestForm.objective} onChange={(event) => setRequestForm({ ...requestForm, objective: event.target.value })}>{OBJECTIVES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+              <label>Resumo da intenção<small>Explique, em poucas frases, o que será anunciado e para qual público. Ex.: “Divulgar a programação de setembro para pessoas que acompanham samba em São Paulo”.</small><textarea required minLength={10} rows="5" value={requestForm.message} onChange={(event) => setRequestForm({ ...requestForm, message: event.target.value })} placeholder="Ex.: Divulgar a programação de setembro para pessoas que acompanham samba em São Paulo." /></label>
+              <aside className="ads-access-terms-notice">
+                <strong>Condições para anunciar</strong>
+                <p>Antes de enviar o pedido, você conhecerá os Termos de Publicidade: revisão comercial, conteúdo proibido ou restrito, responsabilidade por ofertas, criativos e páginas de destino.</p>
+                {accessLegalRequirements.length ? <button type="button" className="chip" disabled={busy} onClick={async () => {
+                  try {
+                    await requestLegalAcceptance({ context: "advertiser_access", requirements: accessLegalRequirements });
+                    await loadAccessLegalRequirements();
+                    showMessage("Termos de Publicidade aceitos. Agora você pode enviar a solicitação.", "success");
+                  } catch (error) {
+                    if (error?.message === "legal_acceptance_cancelled") showMessage("O aceite não foi registrado. Sua solicitação continua como rascunho.", "warning");
+                  }
+                }}>Ler e aceitar Termos de Publicidade</button> : <small>O aceite será solicitado somente quando houver uma versão jurídica vigente.</small>}
+              </aside>
               <button className="btn-primary" disabled={busy}>{busy ? "Enviando..." : "Enviar solicitação"}</button>
             </>}
           </form>
@@ -642,6 +794,7 @@ export default function AdvertiserPortalPage() {
           <button type="button" className={area === "campaigns" ? "active" : ""} onClick={() => openArea("campaigns")}><span>01</span>Campanhas</button>
           <button type="button" className={area === "new" ? "active" : ""} onClick={() => beginWizard()}><span>02</span>Novo anúncio</button>
           <button type="button" className={area === "wallet" ? "active" : ""} onClick={() => openArea("wallet")}><span>03</span>Carteira de mídia</button>
+          <button type="button" className={area === "agreements" ? "active" : ""} onClick={() => openArea("agreements")}><span>04</span>Acordos</button>
         </nav>
 
         {area === "campaigns" ? <section className="ads-campaigns-area">
@@ -660,13 +813,14 @@ export default function AdvertiserPortalPage() {
           <div className="ads-wizard-panel">
             {wizardStep === "placement" && creativeFeedback ? <div className={`ads-creative-feedback ${creativeFeedback.tone}`} role={creativeFeedback.tone === "error" ? "alert" : "status"}><strong>{creativeFeedback.title}</strong><span>{creativeFeedback.message}</span></div> : null}
             {wizardStep === "objective" ? <form className="ads-wizard-form" onSubmit={saveObjective}><div><span>ETAPA 1</span><h3>Objetivo e período</h3><p>Comece pelo contexto. Nada será publicado neste momento.</p></div><label>Anunciante<input required value={campaignForm.advertiser} onChange={(event) => setCampaignForm({ ...campaignForm, advertiser: event.target.value })} placeholder="Nome exibido no anúncio" /></label><label>Nome da campanha<input required value={campaignForm.name} onChange={(event) => setCampaignForm({ ...campaignForm, name: event.target.value })} placeholder="Ex.: Noite especial de samba" /></label><label>Objetivo<select value={campaignForm.objective} onChange={(event) => setCampaignForm({ ...campaignForm, objective: event.target.value })}>{OBJECTIVES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label><div className="ads-two-fields"><label>Início<input type="datetime-local" value={campaignForm.startsAt} onChange={(event) => setCampaignForm({ ...campaignForm, startsAt: event.target.value })} /></label><label>Fim<input type="datetime-local" value={campaignForm.endsAt} onChange={(event) => setCampaignForm({ ...campaignForm, endsAt: event.target.value })} /></label></div><button className="btn-primary" disabled={busy}>{busy ? "Salvando..." : "Salvar e escolher posição"}</button></form> : null}
-            {wizardStep === "placement" ? <div className="ads-placement-step"><div><span>ETAPA 2</span><h3>Onde este anúncio aparece?</h3><p>Escolha os posicionamentos antes do upload. Cada espaço usa sua proporção real de exibição.</p></div><div className="ads-slot-carousel">{SLOT_CATALOG.map((slot) => <SlotSurface key={slot.id} slot={slot} selected={selectedSlots.includes(slot.id)} creative={wizardCampaign?.creatives?.find((item) => item.slot === slot.id)} onSelect={toggleSlot} />)}</div><div className="ads-slot-dots">{SLOT_CATALOG.map((slot) => <i key={slot.id} className={selectedSlots.includes(slot.id) ? "active" : ""} />)}</div>{selectedSlotItems.length ? <form className="ads-upload-form" onSubmit={uploadCreative}><div><span>CRIATIVO PARA {labelFor(SLOT_CATALOG.map((item) => [item.id, item.name]), creative.slot)}</span><p>Recomendado: {SLOT_CATALOG.find((item) => item.id === creative.slot)?.dimensions} · máximo 5 MB.</p></div><label>Posicionamento<select value={creative.slot} onChange={(event) => setCreative({ ...creative, slot: event.target.value })}>{selectedSlotItems.map((slot) => <option value={slot.id} key={slot.id}>{slot.name}</option>)}</select></label><label>Arquivo<input required type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setCreative({ ...creative, asset: event.target.files?.[0] || null })} /></label><label>Título do anúncio<input value={creative.title} onChange={(event) => setCreative({ ...creative, title: event.target.value })} placeholder="Título visível ou interno" /></label><label>Destino<input type="url" value={creative.destinationUrl} onChange={(event) => setCreative({ ...creative, destinationUrl: event.target.value })} placeholder="https://..." /></label>{creativePreviewUrl ? <div className="ads-upload-preview"><img src={creativePreviewUrl} alt="Prévia local do criativo" /><span>Prévia do arquivo selecionado</span></div> : null}<button className="chip active" type="submit" disabled={busy}>{busy ? "Enviando criativo..." : "Salvar criativo e avançar"}</button></form> : <p className="ads-wizard-hint">Selecione pelo menos um posicionamento para preparar o upload.</p>}<div className="ads-wizard-actions"><button className="chip" type="button" onClick={() => goWizardStep("objective")}>Voltar</button><button className="btn-primary" type="button" disabled={busy} onClick={continueFromPlacement}>Continuar para orçamento</button></div></div> : null}
+            {wizardStep === "placement" ? <div className="ads-placement-step"><div><span>ETAPA 2</span><h3>Onde este anúncio aparece?</h3><p>Escolha os posicionamentos antes do upload. Cada espaço usa sua proporção real de exibição.</p></div><div className="ads-slot-carousel">{SLOT_CATALOG.map((slot) => <SlotSurface key={slot.id} slot={slot} selected={selectedSlots.includes(slot.id)} creative={wizardCampaign?.creatives?.find((item) => item.slot === slot.id)} onSelect={toggleSlot} />)}</div><div className="ads-slot-dots">{SLOT_CATALOG.map((slot) => <i key={slot.id} className={selectedSlots.includes(slot.id) ? "active" : ""} />)}</div>{selectedSlotItems.length ? <form className="ads-upload-form" onSubmit={uploadCreative}><div><span>CRIATIVO PARA {labelFor(SLOT_CATALOG.map((item) => [item.id, item.name]), creative.slot)}</span><p>Recomendado: {SLOT_CATALOG.find((item) => item.id === creative.slot)?.dimensions} · máximo 5 MB.</p>{creative.slot === EXPLORE_CAROUSEL_SLOT ? <small className="ads-carousel-series-note">Carrossel compartilhado: {carouselCreativeCount}/3 peças salvas nesta campanha. Salve esta peça e envie as próximas da mesma forma, se desejar.</small> : null}</div><label>Posicionamento<select value={creative.slot} onChange={(event) => setCreative({ ...creative, slot: event.target.value })}>{selectedSlotItems.map((slot) => <option value={slot.id} key={slot.id}>{slot.name}</option>)}</select></label><label>Arquivo<input required type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setCreative({ ...creative, asset: event.target.files?.[0] || null })} /></label><label>Título do anúncio<input value={creative.title} onChange={(event) => setCreative({ ...creative, title: event.target.value })} placeholder="Título visível ou interno" /></label><label>Destino<input type="url" value={creative.destinationUrl} onChange={(event) => setCreative({ ...creative, destinationUrl: event.target.value })} placeholder="https://..." /></label>{creativePreviewUrl ? <div className="ads-upload-preview"><img src={creativePreviewUrl} alt="Prévia local do criativo" /><span>Prévia do arquivo selecionado</span></div> : null}<button className="chip active" type="submit" disabled={busy}>{busy ? "Enviando criativo..." : creative.slot === EXPLORE_CAROUSEL_SLOT && carouselCreativeCount ? "Salvar próxima peça" : "Salvar criativo e avançar"}</button></form> : <p className="ads-wizard-hint">Selecione pelo menos um posicionamento para preparar o upload.</p>}<div className="ads-wizard-actions"><button className="chip" type="button" onClick={() => goWizardStep("objective")}>Voltar</button><button className="btn-primary" type="button" disabled={busy} onClick={continueFromPlacement}>Continuar para orçamento</button></div></div> : null}
             {wizardStep === "budget" ? <div className="ads-budget-step"><div><span>ETAPA 3</span><h3>Orçamento de mídia</h3><p>Patacos confirmados ficam vinculados a esta campanha. O gateway abaixo é uma simulação sem cobrança real.</p></div><div className="ads-wallet-inline"><strong>{wallet.balance}</strong><span>patacos livres na carteira</span>{Number(wallet.experienceBalance || 0) > 0 ? <small>{formatPatacos(wallet.experienceBalance)} de experiência · vence conforme a concessão</small> : null}</div><div className="ads-package-grid">{(wallet.packages?.length ? wallet.packages : [{ code: "test_controlled", name: "Teste controlado", credits: 100 }, { code: "local_boost", name: "Impulso local", credits: 300 }, { code: "presence_campaign", name: "Campanha de presença", credits: 750 }]).map((item) => <article key={item.code}><span>{item.name}</span><strong>{item.credits} patacos</strong><p>Ambiente de simulação. O valor não é cobrado.</p><button className="chip active" disabled={busy || !wallet.runtime?.available || !canBill} type="button" onClick={() => startPayment(item.code)}>{canBill ? "Testar aquisição" : "Sem permissão financeira"}</button></article>)}</div><div className="ads-wizard-actions"><button className="chip" type="button" onClick={() => goWizardStep("placement")}>Voltar</button><button className="btn-primary" type="button" onClick={() => goWizardStep("review")}>Continuar para revisão</button></div></div> : null}
             {wizardStep === "review" ? <div className="ads-review-step"><div><span>ETAPA 4</span><h3>Revise antes de enviar</h3><p>O envio encaminha campanha e criativos para a equipe 77Gira. Não publica automaticamente.</p></div><dl><div><dt>Campanha</dt><dd>{wizardCampaign?.name || campaignForm.name}</dd></div><div><dt>Objetivo</dt><dd>{labelFor(OBJECTIVES, campaignForm.objective)}</dd></div><div><dt>Posições</dt><dd>{selectedSlotItems.map((item) => item.name).join(" · ") || "Nenhuma"}</dd></div><div><dt>Saldo reservado</dt><dd>{formatPatacos(campaignRemainingPatacos(wizardCampaign))} patacos</dd></div></dl><div className="ads-review-note"><strong>Revisão 77Gira</strong><p>A campanha consumirá milipatacos somente por impressões válidas, conforme o custo de cada posicionamento.</p></div><div className="ads-wizard-actions"><button className="chip" type="button" onClick={() => goWizardStep("budget")}>Voltar</button><button className="btn-primary" type="button" disabled={busy} onClick={submitWizardForReview}>{busy ? "Enviando..." : "Enviar para revisão"}</button></div></div> : null}
           </div>
         </section> : null}
 
         {area === "wallet" ? <section className="ads-wallet-v2"><div className="ads-area-heading"><div><span>CARTEIRA DE MÍDIA</span><h2>Patacos e histórico</h2><p>1 Pataco equivale a 1.000 milipatacos. A campanha consome saldo somente por impressões válidas.</p></div></div><div className="ads-wallet-kpis"><article><span>Saldo disponível</span><strong>{formatPatacos(wallet.balance)}</strong><small>Patacos livres para novas campanhas.</small></article><article><span>Experiência disponível</span><strong>{formatPatacos(wallet.experienceBalance)}</strong><small>Usado primeiro e sujeito à validade informada.</small></article><article><span>Em campanhas</span><strong>{formatPatacos(campaigns.reduce((sum, item) => sum + campaignRemainingPatacos(item), 0))}</strong><small>Saldo ainda reservado em campanhas.</small></article><article><span>Operações</span><strong>{wallet.orders?.length || 0}</strong><small>Pedidos recentes nesta conta.</small></article></div><div className="ads-wallet-layout"><section><h3>Comprar patacos</h3><p>Use a simulação para validar ida, processamento e retorno automático.</p><div className="ads-package-grid">{(wallet.packages?.length ? wallet.packages : [{ code: "test_controlled", name: "Teste controlado", credits: 100 }, { code: "local_boost", name: "Impulso local", credits: 300 }, { code: "presence_campaign", name: "Campanha de presença", credits: 750 }]).map((item) => <article key={item.code}><span>{item.name}</span><strong>{item.credits} patacos</strong><button className="chip active" type="button" disabled={busy || !wallet.runtime?.available || !canBill} onClick={() => startPayment(item.code, null)}>Testar aquisição</button></article>)}</div></section><section className="ads-wallet-history"><h3>Histórico</h3>{wallet.entries?.length ? wallet.entries.map((entry) => { const amount = Number(entry.amountMilipatacos ?? Number(entry.delta || 0) * 1000) / 1000; const balance = Number(entry.balanceAfterMilipatacos ?? Number(entry.balanceAfter || 0) * 1000) / 1000; return <div key={entry.id}><b className={amount >= 0 ? "credit" : "debit"}>{amount >= 0 ? "+" : ""}{formatPatacos(amount)}</b><p><strong>{entry.description || entry.type}</strong><small>{entry.campaign?.name || "Carteira geral"} · {formatDate(entry.createdAt)}</small></p><span>Saldo {formatPatacos(balance)}</span></div>; }) : <p>Nenhuma movimentação registrada.</p>}</section></div></section> : null}
+        {area === "agreements" ? <section className="ads-wallet-v2 commercial-agreements-area"><div className="ads-area-heading"><div><span>CONTRATAÇÃO COMERCIAL</span><h2>Acordos e assinaturas</h2><p>Condições negociadas são formalizadas aqui. Elas não adicionam patacos: as campanhas continuam seguindo a carteira e a revisão.</p></div></div>{!agreementFeatureAvailable ? <article className="ads-empty-campaigns"><strong>Contratações diferenciadas ainda não estão disponíveis.</strong><p>A equipe 77Gira habilitará o módulo depois da publicação da minuta e da configuração operacional.</p></article> : !agreements.length ? <article className="ads-empty-campaigns"><strong>Nenhum acordo comercial para esta conta.</strong><p>Quando a equipe 77Gira preparar uma contratação negociada, ela aparecerá aqui.</p></article> : <div className="commercial-agreement-list">{agreements.map((item) => <article key={item.id} className="commercial-agreement-card"><header><div><span>{AGREEMENT_TYPE[item.type] || item.type}</span><h3>{item.title}</h3><p>{item.startsAt ? `${formatDate(item.startsAt)} → ${formatDate(item.endsAt)}` : "Vigência será definida no acordo"}</p></div><b className={`ads-stage ${item.status}`}>{AGREEMENT_STATUS[item.status] || item.status}</b></header><p>{item.conditionsSummary || "Condições comerciais registradas pela equipe responsável."}</p><small>Posições: {item.placements?.map((placement) => placement.slot).join(" · ") || "A definir"}</small>{item.status === "pending_counterpart_details" ? <button type="button" className="btn-primary" disabled={busy} onClick={() => { setCounterpartAgreementId(item.id); setCounterpartDetails({ ...EMPTY_COUNTERPART_DETAILS, legalName: item.envelope?.counterpartLegalName || "", signatoryEmail: user?.email || "" }); }}>Preencher dados para a minuta</button> : null}{item.status === "pending_signature" ? <Link className="chip active" to="/settings/account">Ler e assinar documento</Link> : null}</article>)}</div>}{counterpartAgreementId ? <div className="commercial-agreement-modal-backdrop" role="presentation"><form className="commercial-agreement-modal" onSubmit={submitCounterpartDetails}><div><span>DADOS DA CONTRAPARTE</span><h3>Preencha para gerar a minuta final</h3><p>Esses dados entram no documento antes da assinatura. Confira-os com atenção: depois da assinatura, a versão fica congelada.</p></div><label>Razão social<input required value={counterpartDetails.legalName} onChange={(event) => setCounterpartDetails({ ...counterpartDetails, legalName: event.target.value })} placeholder="Ex.: Tarana Comunicação Ltda." /></label><label>CNPJ<input required inputMode="numeric" value={counterpartDetails.taxId} onChange={(event) => setCounterpartDetails({ ...counterpartDetails, taxId: event.target.value })} placeholder="00.000.000/0001-00" /></label><label>Sede / endereço completo<textarea required rows="3" value={counterpartDetails.registeredAddress} onChange={(event) => setCounterpartDetails({ ...counterpartDetails, registeredAddress: event.target.value })} placeholder="Rua, número, complemento, bairro, cidade, UF e CEP" /></label><label>Representante legal<input required value={counterpartDetails.representativeName} onChange={(event) => setCounterpartDetails({ ...counterpartDetails, representativeName: event.target.value })} placeholder="Nome completo de quem assinará" /></label><label>Qualidade do representante<input required value={counterpartDetails.representativeCapacity} onChange={(event) => setCounterpartDetails({ ...counterpartDetails, representativeCapacity: event.target.value })} placeholder="Ex.: sócio administrador" /></label><label>E-mail do signatário<input required readOnly value={counterpartDetails.signatoryEmail} /><small>Nesta etapa inicial, a assinatura é feita pelo e-mail da conta responsável.</small></label><label className="commercial-agreement-declaration"><input required type="checkbox" checked={counterpartDetails.declarationAccepted} onChange={(event) => setCounterpartDetails({ ...counterpartDetails, declarationAccepted: event.target.checked })} />Declaro que as informações prestadas são verdadeiras e que possuo poderes suficientes para representar a contraparte neste instrumento.</label><footer><button type="button" className="chip" disabled={busy} onClick={() => setCounterpartAgreementId("")}>Cancelar</button><button className="btn-primary" disabled={busy}>{busy ? "Gerando minuta..." : "Gerar minuta para assinatura"}</button></footer></form></div> : null}</section> : null}
       </>}
     </section>
   );

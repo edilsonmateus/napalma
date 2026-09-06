@@ -1,0 +1,12 @@
+afirmacao;fonte_principal;classificacao;efeito_documental
+Cadastro público cria conta comum e papéis operacionais não são autoatribuídos;docs/MANUAL_MESTRE_77GIRA.md;ENCONTRADO EM DOCUMENTAÇÃO;Termos e regras de acesso
+Sessões utilizam token curto e refresh rotativo revogável;docs/governanca/11_SESSOES_E_TRANSPORTE_DE_AUTENTICACAO.md;ENCONTRADO EM DOCUMENTAÇÃO;Política de segurança e privacidade
+Refresh token ainda não usa cookie HttpOnly;docs/governanca/11_SESSOES_E_TRANSPORTE_DE_AUTENTICACAO.md;ENCONTRADO EM DOCUMENTAÇÃO;Risco técnico a mitigar, não prometer proteção absoluta
+Pedidos de privacidade e logs de auditoria possuem modelos próprios;backend/prisma/schema.prisma;CONFIRMADO NO SISTEMA;Política de privacidade, direitos do titular e procedimento
+Exclusão automática de dados está desligada e há somente prévia de retenção;docs/governanca/04_RETENCAO_E_CICLO_DE_VIDA.md;ENCONTRADO EM DOCUMENTAÇÃO;Definir cronograma e critérios antes de prometer descarte
+Pagamento de Ads é simulado e não realiza cobrança real;docs/MANUAL_MESTRE_77GIRA.md;FUNCIONALIDADE FUTURA OU EXPERIMENTAL;Não oferecer contrato financeiro final antes de gateway e fiscal
+Reivindicação de perfil possui declaração legal e registro de decisão;frontend/src/components/ClaimLegalAcknowledgementModal.jsx;CONFIRMADO NO SISTEMA;Termo de reivindicação e licença
+Parceiros estratégicos podem ser exibidos publicamente e em régua institucional autorizada;backend/prisma/schema.prisma;CONFIRMADO NO SISTEMA;Contrato de parceria e autorização de marca
+Comunicações operacionais registram destinatário, conteúdo, status e autor;backend/prisma/schema.prisma;CONFIRMADO NO SISTEMA;Política de comunicações e privacidade
+Rastreamento publicitário de impressão e clique existe para slots;frontend/src/components/ads/AdSlotCard.jsx;CONFIRMADO NO SISTEMA;Contrato de publicidade e metodologia de métricas
+Venda de ingressos própria ou afiliação contratada;Não localizado na auditoria inicial;NÃO LOCALIZADO;Confirmar antes de redigir responsabilidade ou comissão

@@ -49,3 +49,23 @@ export async function setCampaignAdvertiserAccount(campaignId, accountId) {
   const { data } = await api.patch(`/ads/campaigns/${campaignId}/advertiser-account`, { accountId });
   return data.item;
 }
+
+export async function getCommercialAgreements(accountId) {
+  const { data } = await api.get(`/ads/advertiser-accounts/${accountId}/commercial-agreements`);
+  return data.items || [];
+}
+
+export async function createCommercialAgreement(accountId, payload) {
+  const { data } = await api.post(`/ads/advertiser-accounts/${accountId}/commercial-agreements`, payload);
+  return data.item;
+}
+
+export async function issueCommercialAgreement(id) {
+  const { data } = await api.post(`/ads/commercial-agreements/${id}/issue`);
+  return data;
+}
+
+export async function cancelCommercialAgreement(id, reason) {
+  const { data } = await api.post(`/ads/commercial-agreements/${id}/cancel`, { reason });
+  return data;
+}

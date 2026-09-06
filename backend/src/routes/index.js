@@ -37,6 +37,7 @@ import { createPelaHora, createPelaHoraShare, deletePelaHora, getPelaHoraById, g
 import {
   createAdCampaign,
   createAdCreative,
+  getAdCarouselDelivery,
   getAdsActivity,
   getAdDelivery,
   getAdsHealth,
@@ -82,6 +83,7 @@ import { createOperationsCommunicationMessage, listOperationsCommunicationMessag
 import { bootstrapLegalDocumentCatalogue, createLegalDocument, createLegalDocumentVersion, getLegalDocumentVersionImpact, listLegalDocuments, transitionLegalDocumentVersion } from "../controllers/legalDocuments.controller.js";
 import { acceptMyLegalDocuments, getMyLegalDocuments, getMyLegalRequirements } from "../controllers/legalAcceptances.controller.js";
 import { cancelOperationsLegalSignature, confirmMyLegalSignature, createOperationsLegalSignature, declineMyLegalSignature, getMyLegalSignature, listMyLegalSignatures, listOperationsLegalSignatures, requestMyLegalSignatureCode, resendOperationsLegalSignatureInvitation } from "../controllers/legalSignatures.controller.js";
+import { cancelCommercialAgreement, createCommercialAgreement, issueCommercialAgreement, listCommercialAgreements, listMyCommercialAgreements, submitMyCommercialAgreementDetails } from "../controllers/commercialAgreements.controller.js";
 import { uploadImage } from "../controllers/uploads.controller.js";
 import { imageUpload } from "../middlewares/upload.js";
 import { createRateLimiter } from "../middlewares/rateLimit.js";
@@ -113,7 +115,7 @@ import { createMyAdvertiserCampaign, createMyAdvertiserCreative, deleteMyAdverti
 import { decideMyArtistInvitation, inviteArtistTeamMember, listArtistTeam, listMyArtistInvitations, revokeArtistTeamMember, updateArtistTeamMember } from "../controllers/artistTeam.controller.js";
 import { allocateMyWalletCredits, createMyPaymentOrder, getAdsBillingOperations, getMyAdvertiserWallet, getMyPaymentOrder, grantAdminExperienceCredits, processAdminMockPaymentOrder, processMyMockPaymentOrder } from "../controllers/adPayments.controller.js";
 import { requireLegalDocumentAcceptance } from "../middlewares/legalDocumentAcceptance.js";
-import { actOnOperationsPrivacyRequest, createMyDeletionRequest, createMyPrivacyRequest, exportMyPrivacyData, getMyPrivacyOverview, getOperationsPrivacyRequestDetail, getPrivacyRetentionPreviewForAdmin, getSecurityReadinessForAdmin, listAuditLogs, listOperationsPrivacyRequests, listPrivacyRequests, setMyPrivacyConsent, updatePrivacyRequest } from "../controllers/privacy.controller.js";
+import { actOnOperationsPrivacyRequest, createMyDeletionRequest, createMyPrivacyRequest, exportMyPrivacyData, getMyPrivacyOverview, getMyRegionalAdsDecision, getOperationsPrivacyRequestDetail, getPrivacyRetentionPreviewForAdmin, getSecurityReadinessForAdmin, listAuditLogs, listOperationsPrivacyRequests, listPrivacyRequests, setMyPrivacyConsent, setMyRegionalAdsDecision, updatePrivacyRequest } from "../controllers/privacy.controller.js";
 import {
   addVenueMenuInteraction,
   archiveVenueMenuItem,
@@ -152,6 +154,15 @@ const canManageAcquisition = [requireAuth, requireRole(["admin"])];
 const canManageStrategicPartners = [requireAuth, requireOperationScope("partners")];
 const canManageOperationsCommunications = [requireAuth, requireOperationScope("communications")];
 const canManageLegalDocuments = [requireAuth, requireOperationScope("documents")];
+// Contract issue is intentionally distinct from generic document management.
+// A delegated operator may prepare a commercial agreement without receiving
+// permission to choose arbitrary legal documents or inspect claim signatures.
+const canManageCommercialAgreements = [
+  requireAuth,
+  requireOperationScope("commercial_contracts"),
+  requireFeatureFlag("CONTRACTUAL_SIGNATURES_ENABLED"),
+  requireFeatureFlag("CONTRACTUAL_ADVERTISING_SIGNATURES_ENABLED")
+];
 const canUploadImages = [requireAuth, requireRole(["admin", "producer", "venue_manager"])];
 const canManageVenueMenus = [requireAuth, requireRole(["admin", "producer", "venue_manager"]), requireFeatureFlag("VENUE_MENU_ENABLED")];
 const authLimiter = createRateLimiter({
@@ -248,6 +259,7 @@ router.patch("/me/profile/location", requireAuth, updateMyLocation);
 router.patch("/me/profile/password", requireAuth, authLimiter, updateMyPassword);
 router.post("/me/security/revoke-sessions", requireAuth, privacySensitiveActionLimiter, revokeMySessions);
 router.get("/me/privacy", requireAuth, getMyPrivacyOverview);
+router.get("/me/privacy/regional-ads-decision", requireAuth, getMyRegionalAdsDecision);
 router.get("/me/legal-documents", requireAuth, getMyLegalDocuments);
 router.get("/me/legal-documents/requirements", requireAuth, getMyLegalRequirements);
 router.post("/me/legal-documents/acceptances", requireAuth, privacySensitiveActionLimiter, acceptMyLegalDocuments);
@@ -257,6 +269,7 @@ router.post("/me/legal-signatures/:participantId/request-code", requireAuth, pri
 router.post("/me/legal-signatures/:participantId/confirm", requireAuth, privacySensitiveActionLimiter, confirmMyLegalSignature);
 router.post("/me/legal-signatures/:participantId/decline", requireAuth, privacySensitiveActionLimiter, declineMyLegalSignature);
 router.post("/me/privacy/consents/:purpose", requireAuth, privacyRequestLimiter, setMyPrivacyConsent);
+router.post("/me/privacy/regional-ads-decision", requireAuth, privacyRequestLimiter, setMyRegionalAdsDecision);
 router.post("/me/privacy/requests", requireAuth, privacyRequestLimiter, createMyPrivacyRequest);
 router.post("/me/privacy/export", requireAuth, privacySensitiveActionLimiter, exportMyPrivacyData);
 router.post("/me/privacy/deletion-request", requireAuth, privacySensitiveActionLimiter, createMyDeletionRequest);
@@ -301,6 +314,10 @@ router.get("/admin/operations/signatures", ...canManageLegalDocuments, listOpera
 router.post("/admin/operations/signatures", ...canManageLegalDocuments, privacySensitiveActionLimiter, createOperationsLegalSignature);
 router.post("/admin/operations/signatures/:id/cancel", ...canManageLegalDocuments, privacySensitiveActionLimiter, cancelOperationsLegalSignature);
 router.post("/admin/operations/signatures/:id/resend", ...canManageLegalDocuments, privacySensitiveActionLimiter, resendOperationsLegalSignatureInvitation);
+router.get("/ads/advertiser-accounts/:accountId/commercial-agreements", ...canManageCommercialAgreements, listCommercialAgreements);
+router.post("/ads/advertiser-accounts/:accountId/commercial-agreements", ...canManageCommercialAgreements, createCommercialAgreement);
+router.post("/ads/commercial-agreements/:id/issue", ...canManageCommercialAgreements, privacySensitiveActionLimiter, issueCommercialAgreement);
+router.post("/ads/commercial-agreements/:id/cancel", ...canManageCommercialAgreements, privacySensitiveActionLimiter, cancelCommercialAgreement);
 router.get("/admin/operations/access-grants", requireAuth, requireRole(["admin"]), listOperationsAccessGrants);
 router.put("/admin/operations/access-grants", requireAuth, requireRole(["admin"]), setOperationsAccessGrant);
 router.get("/admin/operations/webauthn/status", requireAuth, requireAnyOperationScope, getOperationsWebAuthnStatus);
@@ -341,6 +358,8 @@ router.get("/me/advertiser-accounts", requireAuth, requireFeatureFlag("ADS_ADVER
 router.get("/me/advertiser-access-requests", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), listMyAdvertiserAccessRequests);
 router.post("/me/advertiser-access-requests", requireAuth, requireLegalDocumentAcceptance("advertiser_access"), requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), requestMyAdvertiserAccess);
 router.get("/me/advertiser-accounts/:accountId/campaigns", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), listMyAdvertiserCampaigns);
+router.get("/me/advertiser-accounts/:accountId/commercial-agreements", requireAuth, requireFeatureFlag("CONTRACTUAL_SIGNATURES_ENABLED"), requireFeatureFlag("CONTRACTUAL_ADVERTISING_SIGNATURES_ENABLED"), listMyCommercialAgreements);
+router.post("/me/commercial-agreements/:id/counterpart-details", requireAuth, requireFeatureFlag("CONTRACTUAL_SIGNATURES_ENABLED"), requireFeatureFlag("CONTRACTUAL_ADVERTISING_SIGNATURES_ENABLED"), submitMyCommercialAgreementDetails);
 router.post("/me/advertiser-accounts/:accountId/campaigns", requireAuth, requireLegalDocumentAcceptance("advertiser_campaign"), requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), createMyAdvertiserCampaign);
 router.patch("/me/advertiser-campaigns/:campaignId", requireAuth, requireLegalDocumentAcceptance("advertiser_campaign"), requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), updateMyAdvertiserCampaign);
 router.delete("/me/advertiser-campaigns/:campaignId", requireAuth, requireFeatureFlag("ADS_ADVERTISER_ACCOUNTS_ENABLED"), deleteMyAdvertiserCampaign);
@@ -435,6 +454,7 @@ router.post("/me/artists/:artistId/media", requireAuth, requireFeatureFlag("ARTI
 router.patch("/me/artist-media/:id", requireAuth, requireFeatureFlag("ARTIST_MEDIA_GALLERY_ENABLED"), updateArtistMedia);
 router.delete("/me/artist-media/:id", requireAuth, requireFeatureFlag("ARTIST_MEDIA_GALLERY_ENABLED"), deleteArtistMedia);
 router.get("/me/artists/:artistId/insights", requireAuth, requireFeatureFlag("ARTIST_INSIGHTS_ENABLED"), getArtistInsights);
+router.get("/ads/slots/explore-between-days/carousel-delivery", adsDeliveryLimiter, getAdCarouselDelivery);
 router.get("/ads/slots/:slot/delivery", adsDeliveryLimiter, getAdDelivery);
 router.post("/ads/deliveries/:token/impression", adsTrackLimiter, trackDeliveredImpression);
 router.get("/ads/deliveries/:token/click", adsTrackLimiter, redirectDeliveredClick);

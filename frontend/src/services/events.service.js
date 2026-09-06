@@ -1,4 +1,4 @@
-import { api, publicApi } from "./api";
+import { api, apiBaseUrl, publicApi } from "./api";
 import {
   events as fallbackEvents,
   regions as fallbackRegions,
@@ -322,25 +322,81 @@ export async function updateAdCreative(id, payload) {
 }
 
 const ADS_SESSION_KEY = "77gira:ads-session";
+const ADS_VISIT_SESSION_KEY = "77gira:ads-visit-session-v2";
+const ADS_VISIT_IDLE_MS = 30 * 60 * 1000;
+const ADS_VISIT_MAX_MS = 24 * 60 * 60 * 1000;
+const ADS_CAROUSEL_CACHE_PREFIX = "77gira:ads-carousel-v1:";
+const ADS_CAROUSEL_CACHE_MS = 25 * 60 * 1000;
+
+function createAdsId() {
+  return `${crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
+}
 
 export function getAdsSessionId() {
   const stored = localStorage.getItem(ADS_SESSION_KEY);
   if (stored) return stored;
-  const next = `${crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
+  const next = createAdsId();
   localStorage.setItem(ADS_SESSION_KEY, next);
   return next;
 }
 
+// Mantém a chave histórica como identidade estável para frequência. A visita
+// curta, separada, permite limitar composições como o carrossel entre dias.
+export function getAdsVisitSessionId() {
+  const now = Date.now();
+  try {
+    const raw = sessionStorage.getItem(ADS_VISIT_SESSION_KEY);
+    const current = raw ? JSON.parse(raw) : null;
+    const isValid = current?.id
+      && Number.isFinite(current.createdAt)
+      && Number.isFinite(current.lastSeenAt)
+      && now - current.lastSeenAt < ADS_VISIT_IDLE_MS
+      && now - current.createdAt < ADS_VISIT_MAX_MS;
+    const next = isValid ? { ...current, lastSeenAt: now } : { id: createAdsId(), createdAt: now, lastSeenAt: now };
+    sessionStorage.setItem(ADS_VISIT_SESSION_KEY, JSON.stringify(next));
+    return next.id;
+  } catch (_error) {
+    // Navegadores com armazenamento indisponível continuam usando a identidade
+    // estável; a entrega permanece compatível e sem bloquear a agenda.
+    return getAdsSessionId();
+  }
+}
+
 export async function getAdDelivery(slot, context = {}) {
+  const viewerId = getAdsSessionId();
   const { data } = await api.get(`/ads/slots/${slot}/delivery`, {
-    params: { sessionId: getAdsSessionId(), ...context }
+    params: { sessionId: viewerId, viewerId, visitSessionId: getAdsVisitSessionId(), ...context }
   });
   return data.item || null;
 }
 
+export async function getAdCarouselDelivery(context = {}) {
+  const viewerId = getAdsSessionId();
+  const visitSessionId = getAdsVisitSessionId();
+  const cacheKey = `${ADS_CAROUSEL_CACHE_PREFIX}${visitSessionId}`;
+  try {
+    const cached = JSON.parse(sessionStorage.getItem(cacheKey) || "null");
+    if (cached?.createdAt && Date.now() - cached.createdAt < ADS_CAROUSEL_CACHE_MS && cached.item?.items?.length) return cached.item;
+  } catch (_error) {
+    // O cache preserva a composição ao atualizar a página; sem ele a entrega
+    // ainda funciona normalmente e continua protegida por frequência.
+  }
+  const { data } = await api.get("/ads/slots/explore-between-days/carousel-delivery", {
+    params: { sessionId: viewerId, viewerId, visitSessionId, ...context }
+  });
+  const item = data.item || null;
+  if (item?.items?.length) {
+    try { sessionStorage.setItem(cacheKey, JSON.stringify({ createdAt: Date.now(), item })); } catch (_error) { /* no-op */ }
+  }
+  return item;
+}
+
 export async function trackDeliveredImpression(token, payload) {
+  const viewerId = getAdsSessionId();
   const { data } = await api.post(`/ads/deliveries/${encodeURIComponent(token)}/impression`, {
-    sessionId: getAdsSessionId(),
+    sessionId: viewerId,
+    viewerId,
+    visitSessionId: getAdsVisitSessionId(),
     ...payload
   });
   return data;
@@ -491,6 +547,11 @@ export async function getClaims(status) {
 export async function decideClaim(id, payload) {
   const { data } = await api.patch(`/claims/${id}/decision`, payload);
   return data.item;
+}
+
+export async function decideClaimWithOutcome(id, payload) {
+  const { data } = await api.patch(`/claims/${id}/decision`, payload);
+  return data;
 }
 
 export async function getAcquisitionAnalytics(params = {}) {

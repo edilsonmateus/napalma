@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { AdSlot } from "@prisma/client";
 import { z } from "zod";
 import { AD_PLACEMENTS } from "../config/adPlacements.js";
 import { prisma } from "../lib/prisma.js";
@@ -6,7 +7,7 @@ import { uploadCreativeToR2 } from "../services/r2Storage.service.js";
 
 const uploadSchema = z.object({
   campaignId: z.string().uuid(),
-  slot: z.enum(["explore_feed_large", "venue_detail_inline", "radar_header", "venue_menu_sponsor"])
+  slot: z.nativeEnum(AdSlot)
 });
 const FORMAT_TO_MIME = { jpeg: "image/jpeg", png: "image/png", webp: "image/webp" };
 const FORMAT_TO_EXTENSION = { jpeg: "jpg", png: "png", webp: "webp" };

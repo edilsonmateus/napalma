@@ -7,7 +7,13 @@ export async function checkDatabaseReadiness(timeoutMs = Number(process.env.HEAL
   let timer;
   try {
     await Promise.race([
-      prisma.$queryRaw`SELECT 1`,
+      Promise.all([
+        prisma.$queryRaw`SELECT 1`,
+        // A formal-signature claim reads this field as soon as an eligibility
+        // decision is made. Catch a pending schema migration before exposing
+        // an action that would otherwise fail with a generic server error.
+        prisma.legalSignatureEnvelope.findFirst({ select: { issueContext: true } })
+      ]),
       new Promise((_, reject) => {
         timer = setTimeout(() => reject(new Error("database_readiness_timeout")), effectiveTimeoutMs);
       })

@@ -13,6 +13,34 @@ export const ADS_SLOT_SPECS = {
     imageFit: "cover",
     placementHint: "Cartaz vertical no mesmo formato do feed, com informações patrocinadas nativas abaixo da arte."
   },
+  explore_between_days: {
+    surface: "Explorar",
+    label: "Explorar · entre dias",
+    description: "Aparece entre dois grupos da agenda, como entre Hoje e Amanhã.",
+    cta: "Ver destaque",
+    ratio: "1080:1350",
+    aspectRatio: "4 / 5",
+    cardAspectRatio: "540 / 773",
+    imageDimensions: "1080 × 1350 px",
+    cardDimensions: "Cartaz 1080 × 1350 px + informações nativas",
+    format: "between-days-card",
+    imageFit: "cover",
+    placementHint: "Card vertical nativo, posicionado entre blocos de agenda sem interromper os eventos de um mesmo dia."
+  },
+  explore_between_days_carousel: {
+    surface: "Explorar",
+    label: "Explorar · carrossel entre dias",
+    description: "Peça horizontal em um carrossel compartilhado entre grupos da agenda.",
+    cta: "Conhecer",
+    ratio: "1080:810",
+    aspectRatio: "4 / 3",
+    cardAspectRatio: "4 / 3",
+    imageDimensions: "1080 × 810 px",
+    cardDimensions: "Peça horizontal 1080 × 810 px",
+    format: "between-days-carousel",
+    imageFit: "cover",
+    placementHint: "Cada peça aparece ao lado de outras marcas aprovadas no carrossel compartilhado."
+  },
   venue_detail_inline: {
     surface: "Página da casa",
     label: "Página da casa",

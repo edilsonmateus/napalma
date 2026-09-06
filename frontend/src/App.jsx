@@ -12,6 +12,7 @@ import { setupInstallPromptCapture } from "./utils/installPrompt";
 import { isDefinitiveSessionFailure } from "./utils/authSession";
 import { apiHealthUrl } from "./services/api";
 import { trackClientDiagnostic } from "./services/analytics.service";
+import { getRegionalAdsDecision } from "./services/privacy.service";
 
 const ExplorePage = lazy(() => import("./pages/ExplorePage"));
 const EventDetailPage = lazy(() => import("./pages/EventDetailPage"));
@@ -39,6 +40,7 @@ const VenuesAdminPage = lazy(() => import("./pages/VenuesAdminPage"));
 const ProducerDashboardPage = lazy(() => import("./pages/ProducerDashboardPage"));
 const AdsAdminPage = lazy(() => import("./pages/AdsAdminPage"));
 const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
+const RegionalAdsOnboardingPage = lazy(() => import("./pages/RegionalAdsOnboardingPage"));
 const AdvertiserPortalPage = lazy(() => import("./pages/AdvertiserPortalPage"));
 const MockPaymentPage = lazy(() => import("./pages/MockPaymentPage"));
 const ArtistWorkspacePage = lazy(() => import("./pages/ArtistWorkspacePage"));
@@ -54,6 +56,7 @@ const StrategicPartnersPage = lazy(() => import("./pages/StrategicPartnersPage")
 const PartnerInstitutionalPage = lazy(() => import("./pages/PartnerInstitutionalPage"));
 
 const VISIT_DAY_KEY = "napalma:last-visit-day";
+const REGIONAL_ADS_ONBOARDING_ENABLED = String(import.meta.env.VITE_ADS_REGIONAL_ONBOARDING_ENABLED || "").toLowerCase() === "true";
 // A abertura precisa apresentar a marca sem bloquear a entrada no app.
 // Mantemos apenas o tempo mínimo para a transição visual — não um vídeo em loop.
 // Total de 3 segundos: tempo suficiente para assimilar a marca, sem segurar o app.
@@ -100,12 +103,14 @@ export default function App() {
   const [sessionRetryNonce, setSessionRetryNonce] = useState(0);
   const [allowPublicWhileDegraded, setAllowPublicWhileDegraded] = useState(false);
   const [apiHealth, setApiHealth] = useState("checking");
+  const [regionalAdsDecisionState, setRegionalAdsDecisionState] = useState("idle");
   const { mutate: trackAudienceVisit } = useTrackAudienceVisitMutation();
   const isVenueWorkspaceRoute = location.pathname === "/workspace/casa" || location.pathname.startsWith("/settings/venues");
   const isProducerWorkspaceRoute = location.pathname.startsWith("/workspace/produtor");
   const isArtistWorkspaceRoute = location.pathname.startsWith("/workspace/artista");
   const canAccessOperations = isAdminRole(user?.role) || Boolean(user?.operationScopes?.length);
-  const isOnboardingRoute = location.pathname === "/onboarding";
+  const isRegionalAdsOnboardingRoute = location.pathname === "/onboarding/publicidade-regional";
+  const isOnboardingRoute = location.pathname === "/onboarding" || isRegionalAdsOnboardingRoute;
   const isPublicItineraryRoute = location.pathname.startsWith("/roteiro/");
   const isPublicPartnersRoute = location.pathname === "/parceiros" || location.pathname === "/parcerias/77gira";
   const isExploreRoute = location.pathname === "/explore";
@@ -125,6 +130,12 @@ export default function App() {
     || location.pathname === "/settings/privacy"
   );
   const shouldForceOnboarding = !showSplash && !hasSeenOnboarding && !isOnboardingRoute && !isPublicItineraryRoute && !isPublicPartnersRoute;
+  const regionalAdsDecisionExemptRoute = location.pathname === "/settings/account" || location.pathname === "/settings/privacy";
+  const shouldRequireRegionalAdsDecision = REGIONAL_ADS_ONBOARDING_ENABLED
+    && Boolean(token && user && authReady && sessionStatus === "authenticated")
+    && regionalAdsDecisionState === "undecided"
+    && !isRegionalAdsOnboardingRoute
+    && !regionalAdsDecisionExemptRoute;
 
   function getDefaultRoute() {
     return getRoleHome(user?.role);
@@ -284,6 +295,19 @@ export default function App() {
   }, [clearAuth, isOffline, refreshToken, sessionRetryNonce, setAuth, setSessionStatus, token]);
 
   useEffect(() => {
+    let active = true;
+    if (!REGIONAL_ADS_ONBOARDING_ENABLED || !token || !user || !authReady || sessionStatus !== "authenticated") {
+      setRegionalAdsDecisionState("idle");
+      return () => { active = false; };
+    }
+    setRegionalAdsDecisionState("checking");
+    getRegionalAdsDecision()
+      .then((item) => { if (active) setRegionalAdsDecisionState(item.decided ? "decided" : "undecided"); })
+      .catch(() => { if (active) setRegionalAdsDecisionState("unavailable"); });
+    return () => { active = false; };
+  }, [authReady, sessionStatus, token, user?.id]);
+
+  useEffect(() => {
     if (!isOnboardingRoute) return;
     try {
       if (localStorage.getItem(ONBOARDING_STORAGE_KEY) === "true") {
@@ -354,6 +378,10 @@ export default function App() {
     );
   }
 
+  if (shouldRequireRegionalAdsDecision) {
+    return <Navigate to="/onboarding/publicidade-regional" replace state={{ from: `${location.pathname}${location.search}${location.hash}` }} />;
+  }
+
   return (
     <div className={`app-shell ${isBackofficeMode ? "app-shell-admin" : ""} ${isExploreRoute ? "app-shell-explore" : ""} ${usesUserGlassNav ? "app-shell-user-glass-nav" : ""} ${isAdsRoute ? "app-shell-ads" : ""} ${isOperationsRoute ? "app-shell-operations" : ""} ${isPublicPartnersRoute ? "app-shell-public-partners" : ""}`}>
       {isOffline ? <div className="offline-banner">Você está offline. Algumas ações podem falhar.</div> : null}
@@ -363,6 +391,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Navigate to={getDefaultRoute()} replace />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/onboarding/publicidade-regional" element={<RequireAuth user={user}><RegionalAdsOnboardingPage /></RequireAuth>} />
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/events/:eventId" element={<EventDetailPage />} />
             <Route path="/artists/:artistId" element={<ArtistProfilePage />} />
@@ -391,6 +420,7 @@ export default function App() {
             <Route path="/workspace/anunciante/campanhas" element={<RequireAuth user={user}><AdvertiserPortalPage /></RequireAuth>} />
             <Route path="/workspace/anunciante/novo-anuncio" element={<RequireAuth user={user}><AdvertiserPortalPage /></RequireAuth>} />
             <Route path="/workspace/anunciante/carteira" element={<RequireAuth user={user}><AdvertiserPortalPage /></RequireAuth>} />
+            <Route path="/workspace/anunciante/acordos" element={<RequireAuth user={user}><AdvertiserPortalPage /></RequireAuth>} />
             <Route path="/workspace/anunciante/pagamento/mock/:orderId" element={<RequireAuth user={user}><MockPaymentPage /></RequireAuth>} />
             <Route path="/workspace/artista" element={<RequireAuth user={user}><ArtistWorkspacePage /></RequireAuth>} />
             <Route path="/workspace/artista/contratacoes" element={<RequireAuth user={user}><ArtistBookingsPage /></RequireAuth>} />

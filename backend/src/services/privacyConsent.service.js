@@ -6,7 +6,7 @@ export async function getLatestPrivacyConsent(userId, purpose) {
   return prisma.privacyConsentRecord.findFirst({
     where: { userId, purpose },
     orderBy: { createdAt: "desc" },
-    select: { id: true, isGranted: true, policyVersion: true, createdAt: true }
+    select: { id: true, isGranted: true, policyVersion: true, source: true, createdAt: true }
   });
 }
 

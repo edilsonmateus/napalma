@@ -83,7 +83,7 @@ export default function MyLegalSignaturesCard() {
     try {
       const result = await requestMyLegalSignatureCode(item.id, { password: form.password, acknowledged: form.acknowledged });
       setCodeSent(true);
-      setMessage(`Senha confirmada. Código enviado. Ele expira em ${Math.max(1, Math.round((new Date(result.expiresAt) - Date.now()) / 60000))} minutos.`);
+      setMessage(`Senha confirmada. Enviamos um código para o e-mail da sua conta 77Gira. Ele expira em ${Math.max(1, Math.round((new Date(result.expiresAt) - Date.now()) / 60000))} minutos.`);
     } catch (error) {
       setMessage(error?.response?.data?.message || "Não foi possível enviar o código agora.");
     } finally { setBusy(""); }
@@ -118,17 +118,22 @@ export default function MyLegalSignaturesCard() {
     } finally { setBusy(""); }
   }
 
-  const pending = getPendingLegalSignatures(state.items);
+  // Corporate data is completed in the advertiser Workspace before a frozen
+  // contractual snapshot exists. Do not present that provisional envelope as
+  // signable in this generic signature list.
+  const signatureItems = state.items.filter((entry) => entry.envelopeStatus !== "pending_counterpart_details");
+  const pending = getPendingLegalSignatures(signatureItems);
   const pendingNotice = pending.length ? pendingSignatureNotice(pending) : null;
+  const activeSignatureStep = !form.acknowledged ? 1 : codeSent ? 3 : 2;
   return <section id="assinaturas-formais" className="account-settings-section account-legal-signatures-section" tabIndex="-1">
     <div className="account-settings-section-title"><FileSignature size={18} aria-hidden="true" /><div><strong>Assinaturas formais</strong><small>Documentos que exigem confirmação reforçada de identidade.</small></div></div>
     <p className="account-legal-documents-note">Quando houver assinatura pendente, confirme com sua senha atual e um código enviado ao seu e-mail. O documento, sua versão e a trilha de confirmação ficam registrados.</p>
     {state.loading ? <small className="account-legal-documents-loading">Carregando assinaturas…</small> : null}
     {state.error ? <div className="account-legal-documents-error"><span>{state.error}</span><button type="button" onClick={load}><RefreshCw size={14}/> Tentar novamente</button></div> : null}
-    {!state.loading && !state.error && !state.items.length ? <div className="account-legal-documents-empty"><FileSignature size={17}/><span>Nenhuma assinatura formal pendente ou registrada para esta conta.</span></div> : null}
+    {!state.loading && !state.error && !signatureItems.length ? <div className="account-legal-documents-empty"><FileSignature size={17}/><span>Nenhuma assinatura formal pendente ou registrada para esta conta.</span></div> : null}
     {pendingNotice ? <div className="account-legal-signatures-required" role="status"><strong>{pendingNotice.title}</strong><span>{pendingNotice.detail}</span></div> : null}
-    {state.items.length ? <ul className="account-legal-documents-list account-legal-signatures-list">
-      {state.items.map((entry) => {
+    {signatureItems.length ? <ul className="account-legal-documents-list account-legal-signatures-list">
+      {signatureItems.map((entry) => {
         const actionable = ["pending", "viewed"].includes(entry.status);
         const unavailable = ["expired", "cancelled"].includes(entry.status);
         return <li key={entry.id}><span><strong>{entry.title}</strong><small>{entry.documentTitle} · versão {entry.versionLabel}</small><small>Protocolo {entry.protocol} · prazo {formatDate(entry.expiresAt)}</small></span><div><em className={`legal-signature-status status-${entry.status}`}>{STATUS_LABELS[entry.status] || entry.status}</em><button type="button" className="chip" disabled={busy === `open-${entry.id}` || unavailable} onClick={() => openSignature(entry)}>{busy === `open-${entry.id}` ? "Abrindo…" : actionable ? "Ler e assinar" : entry.status === "signed" ? "Ver registro" : "Indisponível"}</button></div></li>;
@@ -140,15 +145,27 @@ export default function MyLegalSignaturesCard() {
         <span>ASSINATURA FORMAL 77GIRA</span><h3 id="signature-document-title">{item.title}</h3><p>Protocolo {item.protocol} · versão {item.versionLabel} · integridade registrada por hash.</p>
         <article className="account-legal-signature-content"><h4>{item.documentTitle}</h4><div>{item.contentSnapshot || "Conteúdo indisponível."}</div></article>
         {item.status === "signed" ? <div className="account-legal-signature-complete"><ShieldCheck size={18}/><span>Assinado em {formatDate(item.signedAt)}. Este registro preserva a versão exata que foi confirmada.</span></div> : item.status === "declined" ? <div className="account-legal-signature-declined"><ShieldAlert size={18}/><span>Recusa registrada. A equipe poderá entrar em contato para tratar o documento.</span></div> : <>
-          <div className="account-legal-signature-security"><MailCheck size={18}/><span><strong>Confirmação reforçada</strong><small>Para assinar, confirme sua senha atual e o código enviado ao e-mail desta conta.</small></span></div>
-          <label className="account-legal-signature-check"><input type="checkbox" checked={form.acknowledged} onChange={(event) => { const acknowledged = event.target.checked; setForm((current) => ({ ...current, acknowledged, password: acknowledged ? current.password : "", code: "" })); setCodeSent(false); }}/>Li o documento integral e confirmo que estou assinando esta versão de forma consciente.</label>
-          {form.acknowledged ? <>
-            <label>Senha atual<input type="password" autoComplete="current-password" value={form.password} onChange={(event) => { setForm((current) => ({ ...current, password: event.target.value, code: "" })); setCodeSent(false); }}/></label>
-            <button type="button" className="account-legal-signature-code-trigger" disabled={busy === "code" || !form.password} onClick={sendCode}>{busy === "code" ? "Confirmando senha e enviando…" : codeSent ? "Reenviar código para o meu e-mail" : form.password ? "Confirmar senha e disparar código" : "Disparar código para o meu e-mail"}</button>
-            {!form.password ? <small className="account-legal-signature-code-hint">Informe sua senha atual para liberar o envio do código ao seu e-mail.</small> : null}
-          </> : null}
-          {codeSent ? <label>Código recebido por e-mail<input inputMode="numeric" autoComplete="one-time-code" maxLength="6" value={form.code} onChange={(event) => setForm((current) => ({ ...current, code: event.target.value.replace(/\D/g, "").slice(0, 6) }))} placeholder="000000"/></label> : null}
-          <button type="button" className="account-legal-signature-submit" disabled={busy === "sign" || !codeSent || !form.acknowledged || !form.password || !/^\d{6}$/.test(form.code)} onClick={sign}>{busy === "sign" ? "Registrando…" : "Assinar documento"}</button>
+          <div className="account-legal-signature-security"><MailCheck size={18}/><span><strong>Confirme sua identidade em duas etapas</strong><small>Depois de declarar que leu o termo, informe a senha da sua conta 77Gira. Só então enviaremos um código ao e-mail associado à sua conta.</small></span></div>
+          <ol className="account-legal-signature-steps" aria-label="Etapas para assinatura do documento">
+            <li className={activeSignatureStep === 1 ? "is-active" : "is-complete"}><i>1</i><span><strong>Confirme a leitura</strong><small>Declare que leu esta versão do documento.</small></span></li>
+            <li className={activeSignatureStep === 2 ? "is-active" : activeSignatureStep > 2 ? "is-complete" : ""}><i>2</i><span><strong>Confirme a senha da sua conta 77Gira</strong><small>Isso libera o envio seguro do código.</small></span></li>
+            <li className={activeSignatureStep === 3 ? "is-active" : ""}><i>3</i><span><strong>Digite o código enviado por e-mail</strong><small>Depois disso, sua assinatura poderá ser registrada.</small></span></li>
+          </ol>
+          <section className="account-legal-signature-step">
+            <div className="account-legal-signature-step-heading"><span>ETAPA 1 DE 3</span><strong>Confirme que leu o documento</strong></div>
+            <label className="account-legal-signature-check"><input type="checkbox" checked={form.acknowledged} onChange={(event) => { const acknowledged = event.target.checked; setForm((current) => ({ ...current, acknowledged, password: acknowledged ? current.password : "", code: "" })); setCodeSent(false); setMessage(""); }}/>Li o documento integral e confirmo que estou assinando esta versão de forma consciente.</label>
+          </section>
+          {form.acknowledged ? <section className="account-legal-signature-step">
+            <div className="account-legal-signature-step-heading"><span>ETAPA 2 DE 3</span><strong>Confirme sua senha do 77Gira</strong><small>Use a mesma senha que você usa para entrar no 77Gira. Ao confirmá-la, enviaremos um código para o e-mail da sua conta.</small></div>
+            <label>Senha da sua conta 77Gira<input type="password" autoComplete="current-password" value={form.password} onChange={(event) => { setForm((current) => ({ ...current, password: event.target.value, code: "" })); setCodeSent(false); setMessage(""); }}/></label>
+            <button type="button" className="account-legal-signature-code-trigger" disabled={busy === "code" || !form.password} onClick={sendCode}>{busy === "code" ? "Confirmando senha e enviando…" : codeSent ? "Reenviar código para o e-mail da minha conta" : "Confirmar minha senha e enviar código"}</button>
+            {!form.password ? <small className="account-legal-signature-code-hint">O código ainda não foi enviado. Digite sua senha do 77Gira para liberá-lo.</small> : null}
+          </section> : null}
+          {codeSent ? <section className="account-legal-signature-step account-legal-signature-code-step">
+            <div className="account-legal-signature-step-heading"><span>ETAPA 3 DE 3</span><strong>Digite o código que enviamos por e-mail</strong><small>Confira o e-mail da sua conta 77Gira e informe os seis dígitos recebidos.</small></div>
+            <label>Código de confirmação<input inputMode="numeric" autoComplete="one-time-code" maxLength="6" value={form.code} onChange={(event) => setForm((current) => ({ ...current, code: event.target.value.replace(/\D/g, "").slice(0, 6) }))} placeholder="000000"/></label>
+            <button type="button" className="account-legal-signature-submit" disabled={busy === "sign" || !form.acknowledged || !form.password || !/^\d{6}$/.test(form.code)} onClick={sign}>{busy === "sign" ? "Registrando assinatura…" : "Assinar documento"}</button>
+          </section> : null}
           <button type="button" className="account-legal-signature-decline-toggle" onClick={() => setForm((current) => ({ ...current, declining: !current.declining }))}>Não concordo com este documento</button>
           {form.declining ? <div className="account-legal-signature-decline"><label>Motivo da recusa<textarea minLength="10" value={form.declineReason} onChange={(event) => setForm((current) => ({ ...current, declineReason: event.target.value }))} placeholder="Explique o motivo para que a equipe possa analisar."/></label><button type="button" className="account-legal-signature-decline-submit" disabled={busy === "decline" || form.declineReason.trim().length < 10} onClick={decline}>{busy === "decline" ? "Registrando…" : "Registrar recusa"}</button></div> : null}
         </>}

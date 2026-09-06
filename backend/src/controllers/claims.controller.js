@@ -6,9 +6,9 @@ import { activateClaimAccess } from "../services/claimAccess.service.js";
 import {
   claimIsActive,
   claimRequiresFormalSignature,
-  deliverClaimLegalInvitation,
   prepareClaimLegalEnvelope,
-  reconcileSettledClaimLegalStates
+  reconcileSettledClaimLegalStates,
+  scheduleClaimLegalInvitation
 } from "../services/claimLegalWorkflow.service.js";
 
 const CLAIM_LEGAL_VERSION = "CLAIM_RESPONSIBILITY_V1";
@@ -399,7 +399,10 @@ export async function decideClaim(req, res, next) {
       });
     });
 
-    if (updated?.envelope) delivery = await deliverClaimLegalInvitation(updated.envelope);
+    // A aprovação e sua auditoria são concluídas antes do convite. O provedor de
+    // e-mail pode estar lento ou indisponível, mas isso não pode reabrir nem
+    // esconder uma decisão administrativa já registrada.
+    if (updated?.envelope) delivery = "queued";
     const finalClaim = await prisma.claimRequest.findUnique({
       where: { id: existing.id },
       include: { venue: true, artist: true, requestedBy: true, reviewedBy: true, legalEnvelope: true }
@@ -422,6 +425,8 @@ export async function decideClaim(req, res, next) {
     });
 
     res.json({ item: mapClaim(finalClaim), legalDelivery: delivery });
+
+    if (updated?.envelope) scheduleClaimLegalInvitation(updated.envelope);
   } catch (error) {
     next(error);
   }

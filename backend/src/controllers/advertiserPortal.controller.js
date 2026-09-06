@@ -390,6 +390,12 @@ export async function createMyAdvertiserCreative(req, res, next) {
     const payload = creativePayload.parse(req.body);
     const formatIssue = creativeFormatIssue(payload);
     if (formatIssue) return res.status(400).json({ error: "invalid_creative_format", message: formatIssue });
+    if (payload.slot === "explore_between_days_carousel") {
+      const seriesCount = await prisma.adCreative.count({ where: { campaignId, slot: payload.slot } });
+      if (seriesCount >= 3) {
+        return res.status(409).json({ error: "carousel_series_limit_reached", message: "Cada campanha pode enviar até três peças para o carrossel entre dias." });
+      }
+    }
     const item = await prisma.adCreative.create({ data: { campaignId, ...payload, isEnabled: false, reviewStatus: "draft" } });
     return res.status(201).json({ item });
   } catch (error) { return next(error); }

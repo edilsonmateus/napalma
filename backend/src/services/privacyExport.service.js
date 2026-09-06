@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma.js";
  * It intentionally excludes password hashes, refresh tokens, raw IPs, other
  * users' data and internal antifraud signals. */
 export async function buildPrivacyExport(userId) {
-  const [account, consents, requests, radar, history, follows, claims, artistAccesses, advertiserMemberships, toNaPistaSessions] = await Promise.all([
+  const [account, consents, requests, radar, history, follows, claims, artistAccesses, advertiserMemberships, commercialAgreements, toNaPistaSessions] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { id: true, email: true, username: true, firstName: true, lastName: true, phone: true, instagramHandle: true, avatarUrl: true, city: true, neighborhood: true, postalCode: true, role: true, createdAt: true, updatedAt: true } }),
     prisma.privacyConsentRecord.findMany({ where: { userId }, orderBy: { createdAt: "asc" }, select: { purpose: true, isGranted: true, policyVersion: true, source: true, createdAt: true } }),
     prisma.privacyRequest.findMany({ where: { userId }, orderBy: { requestedAt: "asc" }, select: { type: true, status: true, details: true, requestedAt: true, resolvedAt: true, resolutionNote: true } }),
@@ -14,6 +14,20 @@ export async function buildPrivacyExport(userId) {
     prisma.claimRequest.findMany({ where: { requestedById: userId }, orderBy: { createdAt: "asc" }, select: { id: true, targetType: true, requestType: true, status: true, justification: true, requestedChanges: true, legalAcknowledgedAt: true, legalAcknowledgementVersion: true, responsibleName: true, responsiblePhone: true, claimantDocument: true, relationshipRole: true, officialEmail: true, officialInstagram: true, officialWebsite: true, decisionNote: true, createdAt: true, reviewedAt: true, venue: { select: { id: true, name: true } }, artist: { select: { id: true, name: true } } } }),
     prisma.artistAccess.findMany({ where: { userId }, select: { role: true, status: true, acceptedAt: true, artist: { select: { id: true, name: true, slug: true } } } }),
     prisma.advertiserMembership.findMany({ where: { userId }, select: { role: true, status: true, acceptedAt: true, account: { select: { id: true, name: true, type: true, status: true } } } }),
+    // Contractual history belongs in the data export, but we intentionally do
+    // not export raw signature codes, IP hashes or other participants' data.
+    prisma.commercialAgreement.findMany({
+      where: { counterpartUserId: userId }, orderBy: { createdAt: "asc" },
+      select: {
+        id: true, title: true, type: true, status: true, commercialReference: true,
+        conditionsSummary: true, startsAt: true, endsAt: true, issuedAt: true,
+        completedAt: true, cancelledAt: true, cancellationReason: true, createdAt: true,
+        advertiserAccount: { select: { id: true, name: true, type: true } },
+        placements: { select: { slot: true, mode: true } },
+        campaigns: { select: { campaign: { select: { id: true, name: true } } } },
+        envelope: { select: { protocol: true, status: true, documentTitleSnapshot: true, versionLabelSnapshot: true, contentSha256: true, completedAt: true } }
+      }
+    }),
     prisma.toNaPistaSession.findMany({ where: { userId }, orderBy: { createdAt: "asc" }, select: { startsAt: true, expiresAt: true, isActive: true, maxNotifications: true, notificationsSent: true, latitude: true, longitude: true } })
   ]);
 
@@ -25,7 +39,7 @@ export async function buildPrivacyExport(userId) {
     account,
     privacy: { consents, requests },
     activity: { radar, history, followedArtists: follows },
-    professional: { claims, artistAccesses, advertiserMemberships },
+    professional: { claims, artistAccesses, advertiserMemberships, commercialAgreements },
     proximity: { toNaPistaSessions }
   };
 }

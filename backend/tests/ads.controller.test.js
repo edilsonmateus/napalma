@@ -20,6 +20,9 @@ const prismaMock = vi.hoisted(() => ({
     create: vi.fn(),
     groupBy: vi.fn()
   },
+  privacyConsentRecord: {
+    findFirst: vi.fn()
+  },
   venue: {
     findMany: vi.fn()
   }
@@ -28,6 +31,7 @@ const prismaMock = vi.hoisted(() => ({
 vi.mock("../src/lib/prisma.js", () => ({ prisma: prismaMock }));
 
 import {
+  getAdCarouselDelivery,
   getAdDelivery,
   listAdCampaigns,
   trackAdClick,
@@ -85,10 +89,12 @@ function activeCampaign(overrides = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   process.env.ADS_CREDITS_PURCHASE_ENABLED = "true";
+  process.env.ADS_EXPLORE_SHARED_CAROUSEL_ENABLED = "false";
   prismaMock.adEventLog.count.mockResolvedValue(0);
   prismaMock.adEventLog.groupBy.mockResolvedValue([]);
   prismaMock.adDelivery.groupBy.mockResolvedValue([]);
   prismaMock.adDelivery.create.mockResolvedValue({ id: "delivery-1" });
+  prismaMock.privacyConsentRecord.findFirst.mockResolvedValue(null);
 });
 
 describe("Ads controller legacy contracts", () => {
@@ -163,6 +169,59 @@ describe("Ads controller legacy contracts", () => {
     expect(prismaMock.adDelivery.groupBy).toHaveBeenCalledOnce();
     expect(res.json).toHaveBeenCalledWith({ item: null });
     expect(next).not.toHaveBeenCalled();
+  });
+
+  it("builds a shared between-days carousel from different advertisers", async () => {
+    process.env.ADS_EXPLORE_SHARED_CAROUSEL_ENABLED = "true";
+    const first = activeCampaign({
+      advertiserAccountId: "44444444-4444-4444-8444-444444444444",
+      advertiserAccount: { id: "44444444-4444-4444-8444-444444444444", name: "Casa Um", status: "active", commercialCategory: "bebidas" },
+      creatives: [{
+        id: CREATIVE_ID,
+        slot: "explore_between_days_carousel",
+        title: "Casa Um apresenta",
+        imageUrl: "https://cdn.example.com/one.webp",
+        destinationUrl: "https://77gira.com.br/casa-um",
+        altText: "Casa Um",
+        width: 1080,
+        height: 810,
+        isEnabled: true
+      }]
+    });
+    const second = activeCampaign({
+      id: "55555555-5555-4555-8555-555555555555",
+      advertiser: "Casa Dois",
+      advertiserAccountId: "66666666-6666-4666-8666-666666666666",
+      advertiserAccount: { id: "66666666-6666-4666-8666-666666666666", name: "Casa Dois", status: "active", commercialCategory: "comida" },
+      creatives: [{
+        id: "77777777-7777-4777-8777-777777777777",
+        slot: "explore_between_days_carousel",
+        title: "Casa Dois apresenta",
+        imageUrl: "https://cdn.example.com/two.webp",
+        destinationUrl: "https://77gira.com.br/casa-dois",
+        altText: "Casa Dois",
+        width: 1080,
+        height: 810,
+        isEnabled: true
+      }]
+    });
+    prismaMock.adCampaign.findMany.mockResolvedValue([first, second]);
+    const res = createResponse();
+    const next = vi.fn();
+
+    await getAdCarouselDelivery({ query: { sessionId: "carousel-session" }, user: null }, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      item: expect.objectContaining({
+        carouselId: expect.any(String),
+        items: expect.arrayContaining([
+          expect.objectContaining({ slot: "explore_between_days_carousel", campaignId: first.id, deliveryToken: expect.any(String) }),
+          expect.objectContaining({ slot: "explore_between_days_carousel", campaignId: second.id, deliveryToken: expect.any(String) })
+        ])
+      })
+    });
+    expect(prismaMock.adDelivery.create).toHaveBeenCalledTimes(2);
   });
 
   it("keeps the campaign list envelope and mapped creative fields", async () => {

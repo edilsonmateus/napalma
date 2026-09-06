@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma.js";
 import { recordAuditEvent } from "../services/audit.service.js";
 import { sendLegalSignatureCodeEmail, sendLegalSignatureInvitationEmail } from "../services/transactionalEmail.service.js";
 import { reconcileClaimLegalEnvelope } from "../services/claimLegalWorkflow.service.js";
+import { reconcileCommercialAgreementEnvelope } from "../services/commercialAgreementWorkflow.service.js";
 
 const CODE_TTL_MS = 10 * 60 * 1000;
 const INVITATION_TTL_DAYS = 30;
@@ -121,7 +122,7 @@ async function expireEnvelopeIfNeeded(req, item) {
   const now = new Date();
   const changed = await prisma.$transaction(async (tx) => {
     const envelope = await tx.legalSignatureEnvelope.updateMany({
-      where: { id: item.envelopeId, status: "pending_signature" },
+      where: { id: item.envelopeId, status: { in: ["pending_counterpart_details", "pending_signature", "pending_ratification"] } },
       data: { status: "expired" }
     });
     if (!envelope.count) return false;
@@ -135,6 +136,7 @@ async function expireEnvelopeIfNeeded(req, item) {
   if (changed) {
     await event({ req, envelopeId: item.envelopeId, participantId: item.id, action: "expired", metadata: { expiredAt: now } });
     await reconcileClaimLegalEnvelope({ envelopeId: item.envelopeId, actorUserId: req.user?.id || null });
+    await reconcileCommercialAgreementEnvelope({ envelopeId: item.envelopeId, actorUserId: req.user?.id || null });
   }
   return changed;
 }
@@ -163,6 +165,7 @@ export async function getMyLegalSignature(req, res, next) {
     }
     if (item.status === "signed" && item.envelope.status === "completed") {
       await reconcileClaimLegalEnvelope({ envelopeId: item.envelopeId, actorUserId: req.user.id });
+      await reconcileCommercialAgreementEnvelope({ envelopeId: item.envelopeId, actorUserId: req.user.id });
     }
     return res.json({ item: serializeParticipant(item, true) });
   } catch (error) { next(error); }
@@ -223,6 +226,7 @@ export async function confirmMyLegalSignature(req, res, next) {
     if (await expireEnvelopeIfNeeded(req, item)) return res.status(410).json({ message: "O prazo desta assinatura expirou." });
     if (item.status === "signed" && item.envelope.status === "completed") {
       await reconcileClaimLegalEnvelope({ envelopeId: item.envelopeId, actorUserId: req.user.id });
+      await reconcileCommercialAgreementEnvelope({ envelopeId: item.envelopeId, actorUserId: req.user.id });
       return res.json({ signed: true, signedAt: item.signedAt, protocol: item.envelope.protocol });
     }
     if (!["pending", "viewed"].includes(item.status) || item.envelope.status !== "pending_signature") return res.status(409).json({ message: "Esta assinatura não está disponível para confirmação." });
@@ -238,10 +242,17 @@ export async function confirmMyLegalSignature(req, res, next) {
         { participantId: item.id, method: "email_code", contentSha256: item.envelope.contentSha256, userAgent: String(req.headers["user-agent"] || "").slice(0, 512), ipHash: requestIpHash(req), metadata: { verified: true, codeTtlMinutes: CODE_TTL_MS / 60 } }
       ] });
       const remaining = await tx.legalSignatureParticipant.count({ where: { envelopeId: item.envelopeId, status: { not: "signed" } } });
-      if (remaining === 0) await tx.legalSignatureEnvelope.update({ where: { id: item.envelopeId }, data: { status: "completed", completedAt: now } });
+      if (remaining === 0) {
+        const nextStatus = item.envelope.completionMode === "counterpart_then_ratification" ? "pending_ratification" : "completed";
+        await tx.legalSignatureEnvelope.update({
+          where: { id: item.envelopeId },
+          data: nextStatus === "completed" ? { status: nextStatus, completedAt: now } : { status: nextStatus }
+        });
+      }
     });
     await event({ req, envelopeId: item.envelopeId, participantId: item.id, action: "signed", metadata: { methods: ["password", "email_code"], contentSha256: item.envelope.contentSha256 } });
     await reconcileClaimLegalEnvelope({ envelopeId: item.envelopeId, actorUserId: req.user.id });
+    await reconcileCommercialAgreementEnvelope({ envelopeId: item.envelopeId, actorUserId: req.user.id });
     return res.json({ signed: true, signedAt: now, protocol: item.envelope.protocol });
   } catch (error) { next(error); }
 }
@@ -259,6 +270,7 @@ export async function declineMyLegalSignature(req, res, next) {
     ]);
     await event({ req, envelopeId: item.envelopeId, participantId: item.id, action: "declined", metadata: { reason: data.reason } });
     await reconcileClaimLegalEnvelope({ envelopeId: item.envelopeId, actorUserId: req.user.id });
+    await reconcileCommercialAgreementEnvelope({ envelopeId: item.envelopeId, actorUserId: req.user.id });
     return res.json({ declined: true });
   } catch (error) { next(error); }
 }
@@ -310,10 +322,11 @@ export async function cancelOperationsLegalSignature(req, res, next) {
     const reason = z.object({ reason: z.string().trim().min(10).max(600) }).parse(req.body).reason;
     const item = await prisma.legalSignatureEnvelope.findUnique({ where: { id: req.params.id } });
     if (!item) return res.status(404).json({ message: "Envelope de assinatura não encontrado." });
-    if (!["draft", "pending_signature"].includes(item.status)) return res.status(409).json({ message: "Este envelope não pode mais ser cancelado." });
+    if (!["draft", "pending_counterpart_details", "pending_signature", "pending_ratification"].includes(item.status)) return res.status(409).json({ message: "Este envelope não pode mais ser cancelado." });
     await prisma.legalSignatureEnvelope.update({ where: { id: item.id }, data: { status: "cancelled", cancelledAt: new Date(), cancellationReason: reason } });
     await event({ req, envelopeId: item.id, action: "cancelled", metadata: { reason } });
     await reconcileClaimLegalEnvelope({ envelopeId: item.id, actorUserId: req.user.id });
+    await reconcileCommercialAgreementEnvelope({ envelopeId: item.id, actorUserId: req.user.id });
     return res.json({ cancelled: true });
   } catch (error) { next(error); }
 }

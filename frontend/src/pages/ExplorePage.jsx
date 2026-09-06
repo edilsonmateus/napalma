@@ -1,7 +1,9 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { Fragment } from "react";
 import { ArrowUpRight, CalendarClock, Filter, MapPin, X } from "lucide-react";
 import {
+  useAdCarouselDeliveryQuery,
   useAdDeliveryQuery,
   useEventsQuery,
   useMyRadarQuery,
@@ -10,6 +12,7 @@ import {
   useVenuesQuery
 } from "../hooks/useEventsQuery";
 import AdSlotCard from "../components/ads/AdSlotCard";
+import AdSlotCarousel from "../components/ads/AdSlotCarousel";
 import VerifiedBadge from "../components/common/VerifiedBadge";
 import { buildGoogleMapsLink, buildUberLink, buildWazeLink } from "../utils/maps";
 import { getAudienceBadges } from "../utils/eventAudienceBadges";
@@ -33,6 +36,8 @@ const EXPLORE_PREFS_KEY = "napalma:explore:prefs";
 const ON_TRACK_KEY = "77gira:on-track-session";
 const ON_TRACK_NOTIFIED_KEY = "77gira:on-track-notified-event";
 const ON_TRACK_DISMISSED_KEY = "77gira:on-track-dismissed-event";
+const EXPLORE_BETWEEN_DAYS_ENABLED = String(import.meta.env.VITE_ADS_EXPLORE_BETWEEN_DAYS_ENABLED || "").toLowerCase() === "true";
+const EXPLORE_SHARED_CAROUSEL_ENABLED = String(import.meta.env.VITE_ADS_EXPLORE_SHARED_CAROUSEL_ENABLED || "").toLowerCase() === "true";
 const ON_TRACK_DURATION_MS = 60 * 60 * 1000;
 const ON_TRACK_RECOMMENDATION_WINDOW_MS = 12 * 60 * 60 * 1000;
 const ON_TRACK_INITIAL_NOTIFICATION_DELAY_MS = 3 * 60 * 1000;
@@ -451,6 +456,15 @@ export default function ExplorePage() {
     () => grouped.reduce((acc, group) => acc + group.items.length, 0),
     [grouped]
   );
+  const sharedCarousel = useAdCarouselDeliveryQuery(EXPLORE_SHARED_CAROUSEL_ENABLED && grouped.length > 1);
+  const carouselReady = !EXPLORE_SHARED_CAROUSEL_ENABLED || sharedCarousel.isFetched;
+  const { data: betweenDaysAd } = useAdDeliveryQuery(
+    "explore_between_days",
+    EXPLORE_BETWEEN_DAYS_ENABLED && grouped.length > 1 && carouselReady && !sharedCarousel.data?.items?.length
+  );
+  const betweenDaysPlacement = sharedCarousel.data?.items?.length
+    ? <AdSlotCarousel carousel={sharedCarousel.data} />
+    : <AdSlotCard ad={betweenDaysAd || null} slot="explore_between_days" />;
 
   useEffect(() => {
     localStorage.setItem(EXPLORE_PREFS_KEY, JSON.stringify(prefs));
@@ -918,7 +932,9 @@ export default function ExplorePage() {
           </div>
         </section>
       ) : null}
-      <AdSlotCard ad={adToRender} slot="explore_feed_large" />
+      <div className="explore-ad-placement">
+        <AdSlotCard ad={adToRender} slot="explore_feed_large" />
+      </div>
       {!eventsLoading && !catalogError ? (
         <div className="explore-summary-bar">
           <span>{visibleEventsCount} {visibleEventsCount === 1 ? "samba" : "sambas"}</span>
@@ -969,7 +985,8 @@ export default function ExplorePage() {
         </div>
       ) : null}
       {!isLoadingState && !catalogError && grouped.map((group, groupIndex) => (
-        <div key={group.label} className="day-group" style={{ "--reveal-index": groupIndex }}>
+        <Fragment key={group.label}>
+        <div className="day-group" style={{ "--reveal-index": groupIndex }}>
           <h4 className="day-group-title">
             <span>{group.label}</span>
             <small className="day-group-count">{group.items.length} {group.items.length === 1 ? "samba" : "sambas"}</small>
@@ -1086,6 +1103,8 @@ export default function ExplorePage() {
             })}
           </div>
         </div>
+        {groupIndex === 0 && grouped.length > 1 && (sharedCarousel.data?.items?.length || betweenDaysAd) ? <div className="explore-between-days-placement">{betweenDaysPlacement}</div> : null}
+        </Fragment>
       ))}
       {!venuesLoading && !catalogError && canLoadMore ? (
         <button className="chip load-more" onClick={() => setPrefs((prev) => ({ ...prev, limit: prev.limit + 8 }))}>

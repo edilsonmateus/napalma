@@ -35,6 +35,7 @@ enum OperationScope {
   settings
   communications
   documents
+  commercial_contracts
 }
 
 // Legal documents have their own version history. This is intentionally
@@ -99,11 +100,30 @@ enum LegalDocumentAcceptanceContext {
 // confirmations used for each signatory.
 enum LegalSignatureEnvelopeStatus {
   draft
+  pending_counterpart_details
   pending_signature
+  pending_ratification
   completed
   declined
   expired
   cancelled
+}
+
+// A origem determina a minuta no servidor. "generic" preserva os envelopes
+// operacionais e de reivindicação que já existem.
+enum LegalSignatureIssueContext {
+  generic
+  claim
+  advertising_contract
+  partnership_contract
+}
+
+// A manifestação da 77Giramundo é explícita, em vez de ser presumida pelo
+// simples envio do envelope.
+enum LegalSignatureCompletionMode {
+  participant_signature
+  proposal_acceptance
+  counterpart_then_ratification
 }
 
 enum LegalSignatureParticipantStatus {
@@ -157,6 +177,8 @@ enum AdCampaignStatus {
 
 enum AdSlot {
   explore_feed_large
+  explore_between_days
+  explore_between_days_carousel
   venue_detail_inline
   radar_header
   venue_menu_sponsor
@@ -248,6 +270,32 @@ enum AdvertiserMembershipStatus {
   active
   suspended
   revoked
+}
+
+// A negotiated agreement is separate from the self-service campaign flow.
+// It links the commercial commitment to the advertiser, campaigns and
+// placements without changing the meaning of existing campaigns or wallets.
+enum CommercialAgreementType {
+  sponsorship
+  exclusive_placement
+  reserved_placement
+  negotiated_campaign
+}
+
+enum CommercialAgreementStatus {
+  draft
+  pending_counterpart_details
+  pending_signature
+  pending_ratification
+  completed
+  declined
+  expired
+  cancelled
+}
+
+enum CommercialAgreementPlacementMode {
+  standard
+  exclusive
 }
 
 enum AdPaymentProvider {
@@ -425,6 +473,8 @@ model User {
   operationCommunicationMessages OperationCommunicationMessage[] @relation("OperationCommunicationAuthor")
   legalDocumentAcceptances     LegalDocumentAcceptance[]
   signatureEnvelopesCreated    LegalSignatureEnvelope[]       @relation("LegalSignatureEnvelopeCreatedBy")
+  commercialAgreementsCreated  CommercialAgreement[]          @relation("CommercialAgreementCreatedBy")
+  commercialAgreementsAsCounterpart CommercialAgreement[]     @relation("CommercialAgreementCounterpart")
   legalSignatureParticipants   LegalSignatureParticipant[]    @relation("LegalSignatureParticipantUser")
 
   createdAt DateTime @default(now())
@@ -692,6 +742,22 @@ model LegalSignatureEnvelope {
   contentSnapshot       String                       @db.Text
   contentSha256         String                       @db.VarChar(64)
   status                LegalSignatureEnvelopeStatus @default(draft)
+  issueContext          LegalSignatureIssueContext   @default(generic)
+  issueContextReferenceId String?                    @db.VarChar(80)
+  completionMode        LegalSignatureCompletionMode @default(participant_signature)
+  counterpartLegalName  String?                      @db.VarChar(240)
+  counterpartTaxId      String?                      @db.VarChar(32)
+  counterpartRegisteredAddress String?                @db.VarChar(700)
+  counterpartRepresentativeName String?               @db.VarChar(180)
+  counterpartRepresentativeCapacity String?           @db.VarChar(120)
+  counterpartSignatoryEmail String?                   @db.VarChar(320)
+  counterpartSubmittedAt DateTime?
+  counterpartSubmittedByUserId String?
+  commercialAgreementId        String?                       @unique
+  issuerAcceptedAt      DateTime?
+  issuerAcceptedByUserId String?
+  ratifiedAt            DateTime?
+  ratifiedByUserId      String?
   expiresAt             DateTime?
   sentAt                DateTime?
   completedAt           DateTime?
@@ -703,11 +769,14 @@ model LegalSignatureEnvelope {
   participants          LegalSignatureParticipant[]
   events                LegalSignatureEvent[]
   claimRequest          ClaimRequest?
+  commercialAgreement   CommercialAgreement?                @relation(fields: [commercialAgreementId], references: [id], onDelete: SetNull)
   createdAt             DateTime                     @default(now())
   updatedAt             DateTime                     @updatedAt
 
   @@index([status, expiresAt])
   @@index([documentVersionId, createdAt])
+  @@index([issueContext, status, createdAt])
+  @@index([issueContext, issueContextReferenceId, createdAt])
 }
 
 model LegalSignatureParticipant {
@@ -972,6 +1041,7 @@ model AdCampaign {
   paymentOrders     AdPaymentOrder[]
   creditEntries     AdCreditLedgerEntry[]
   creditAllocations AdCampaignCreditAllocation[]
+  commercialAgreements CommercialAgreementCampaign[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1005,12 +1075,66 @@ model AdvertiserAccount {
   paymentOrders AdPaymentOrder[]
   creditEntries AdCreditLedgerEntry[]
   experienceGrants AdExperienceGrant[]
+  commercialAgreements CommercialAgreement[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([status, type])
   @@index([name])
+}
+
+model CommercialAgreement {
+  id                    String                            @id @default(uuid())
+  advertiserAccountId   String
+  title                 String                            @db.VarChar(220)
+  type                  CommercialAgreementType
+  status                CommercialAgreementStatus         @default(draft)
+  commercialReference   String?                           @db.VarChar(120)
+  conditionsSummary     String?                           @db.Text
+  startsAt              DateTime?
+  endsAt                DateTime?
+  counterpartUserId     String
+  createdByUserId       String
+  issuedAt              DateTime?
+  completedAt           DateTime?
+  cancelledAt           DateTime?
+  cancellationReason    String?                           @db.VarChar(600)
+  advertiserAccount     AdvertiserAccount                 @relation(fields: [advertiserAccountId], references: [id], onDelete: Restrict)
+  counterpartUser       User                              @relation("CommercialAgreementCounterpart", fields: [counterpartUserId], references: [id], onDelete: Restrict)
+  createdBy             User                              @relation("CommercialAgreementCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  envelope              LegalSignatureEnvelope?
+  campaigns             CommercialAgreementCampaign[]
+  placements            CommercialAgreementPlacement[]
+  createdAt             DateTime                          @default(now())
+  updatedAt             DateTime                          @updatedAt
+
+  @@index([advertiserAccountId, status, updatedAt])
+  @@index([counterpartUserId, status])
+  @@index([status, startsAt, endsAt])
+}
+
+model CommercialAgreementCampaign {
+  agreementId String
+  campaignId  String
+  agreement   CommercialAgreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  campaign    AdCampaign          @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  createdAt   DateTime            @default(now())
+
+  @@id([agreementId, campaignId])
+  @@index([campaignId])
+}
+
+model CommercialAgreementPlacement {
+  id          String                           @id @default(uuid())
+  agreementId String
+  slot        AdSlot
+  mode        CommercialAgreementPlacementMode @default(standard)
+  agreement   CommercialAgreement              @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  createdAt   DateTime                         @default(now())
+
+  @@unique([agreementId, slot])
+  @@index([slot, mode])
 }
 
 model AdvertiserWallet {

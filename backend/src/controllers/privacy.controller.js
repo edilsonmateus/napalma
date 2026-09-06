@@ -8,6 +8,7 @@ import { buildPrivacyExport } from "../services/privacyExport.service.js";
 import { getSecurityReadiness } from "../config/env.js";
 import { env } from "../config/env.js";
 import { PRIVACY_CONSENT_CATALOG, PRIVACY_POLICY_VERSION } from "../config/privacyConsents.js";
+import { getLatestPrivacyConsent } from "../services/privacyConsent.service.js";
 
 const POLICY_VERSION = PRIVACY_POLICY_VERSION;
 const PRIVACY_REQUEST_SLA_DAYS = Number.parseInt(process.env.PRIVACY_REQUEST_SLA_DAYS || "15", 10) || 15;
@@ -15,6 +16,12 @@ const consentPurposeSchema = z.enum(["cultural_personalization", "ads_personaliz
 const consentSchema = z.object({
   isGranted: z.boolean(),
   policyVersion: z.string().trim().min(1).max(32).default(POLICY_VERSION)
+});
+const regionalAdsDecisionSchema = z.object({
+  isGranted: z.boolean(),
+  // A cidade é opcional para quem opta por anúncios gerais. Para o aceite
+  // regional, ela complementa a cidade-base já existente em uma única ação.
+  city: z.string().trim().min(2).max(120).optional()
 });
 const requestTypeSchema = z.enum(["access", "data_export", "deletion", "anonymization", "correction", "opposition"]);
 const privacyRequestSchema = z.object({
@@ -143,6 +150,72 @@ export async function setMyPrivacyConsent(req, res, next) {
     const record = await prisma.privacyConsentRecord.create({ data: { userId: req.user.id, purpose, ...data, source: "privacy_center" } });
     await recordAuditEvent({ req, action: data.isGranted ? "privacy.consent_granted" : "privacy.consent_revoked", subjectType: "privacy_consent", subjectId: record.id, metadata: { purpose, policyVersion: data.policyVersion } });
     return res.status(201).json({ item: record });
+  } catch (error) { next(error); }
+}
+
+export async function getMyRegionalAdsDecision(req, res, next) {
+  try {
+    const [account, decision] = await Promise.all([
+      prisma.user.findUnique({ where: { id: req.user.id }, select: { city: true } }),
+      getLatestPrivacyConsent(req.user.id, "ads_personalization")
+    ]);
+    return res.json({
+      item: {
+        decided: Boolean(decision),
+        isGranted: decision?.isGranted ?? null,
+        policyVersion: decision?.policyVersion || null,
+        createdAt: decision?.createdAt || null,
+        source: decision?.source || null,
+        city: account?.city || ""
+      }
+    });
+  } catch (error) { next(error); }
+}
+
+export async function setMyRegionalAdsDecision(req, res, next) {
+  try {
+    const data = regionalAdsDecisionSchema.parse(req.body || {});
+    const account = await prisma.user.findUnique({ where: { id: req.user.id }, select: { id: true, city: true } });
+    const city = data.city || account?.city || "";
+    if (data.isGranted && !city) {
+      return res.status(400).json({ error: "home_city_required", message: "Informe sua cidade-base para receber campanhas da sua região." });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // A etapa pode ser reenviada por toque duplo ou reconexão. Não criamos
+      // histórico artificial quando a decisão já é exatamente a mesma.
+      const latest = await tx.privacyConsentRecord.findFirst({
+        where: { userId: req.user.id, purpose: "ads_personalization" },
+        orderBy: { createdAt: "desc" }
+      });
+      const cityWillChange = Boolean(data.isGranted && data.city && data.city !== account?.city);
+      if (latest && latest.isGranted === data.isGranted && latest.policyVersion === POLICY_VERSION && !cityWillChange) {
+        return { record: latest, created: false };
+      }
+      if (data.isGranted && data.city && data.city !== account?.city) {
+        await tx.user.update({ where: { id: req.user.id }, data: { city: data.city } });
+      }
+      const record = await tx.privacyConsentRecord.create({
+        data: {
+          userId: req.user.id,
+          purpose: "ads_personalization",
+          isGranted: data.isGranted,
+          policyVersion: POLICY_VERSION,
+          source: "onboarding"
+        }
+      });
+      return { record, created: true };
+    });
+    if (result.created) {
+      await recordAuditEvent({
+        req,
+        action: data.isGranted ? "privacy.regional_ads_granted" : "privacy.regional_ads_declined",
+        subjectType: "privacy_consent",
+        subjectId: result.record.id,
+        metadata: { purpose: "ads_personalization", policyVersion: POLICY_VERSION, source: "onboarding", cityProvided: Boolean(data.city) }
+      });
+    }
+    return res.status(result.created ? 201 : 200).json({ item: result.record, account: { city }, idempotent: !result.created });
   } catch (error) { next(error); }
 }
 

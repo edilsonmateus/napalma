@@ -10,6 +10,16 @@ export async function setPrivacyConsent(purpose, isGranted) {
   return data.item;
 }
 
+export async function getRegionalAdsDecision() {
+  const { data } = await api.get("/me/privacy/regional-ads-decision");
+  return data.item;
+}
+
+export async function setRegionalAdsDecision(payload) {
+  const { data } = await api.post("/me/privacy/regional-ads-decision", payload);
+  return data;
+}
+
 export async function createPrivacyRequest(payload) {
   const { data } = await api.post("/me/privacy/requests", payload);
   return data.item;

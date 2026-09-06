@@ -1,7 +1,7 @@
 import { AD_PLACEMENTS } from "../config/adPlacements.js";
 
 export const MILIPATACOS_PER_PATACO = 1000n;
-export const AD_PRICING_VERSION = "2026-08-v1";
+export const AD_PRICING_VERSION = "2026-08-v2";
 
 export function milipatacosToPatacos(value) {
   return Number(BigInt(value || 0)) / Number(MILIPATACOS_PER_PATACO);

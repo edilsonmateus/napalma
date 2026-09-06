@@ -57,6 +57,10 @@ const adTrackSchema = z.object({
 });
 const deliveryQuerySchema = z.object({
   sessionId: z.string().min(8).max(160).optional(),
+  // viewerId preserva a identidade estável de frequência; visitSessionId
+  // representa uma visita temporária e será usado por inventários compostos.
+  viewerId: z.string().min(8).max(160).optional(),
+  visitSessionId: z.string().min(8).max(160).optional(),
   venueId: z.string().uuid().optional(),
   city: z.string().trim().min(2).max(100).optional(),
   region: z.string().trim().min(2).max(100).optional(),
@@ -178,7 +182,7 @@ function dailyPacingCap(campaign, _now) {
   const explicitCap = Number(targeting.dailyImpressionCap);
   if (Number.isInteger(explicitCap) && explicitCap > 0) return explicitCap;
   const remaining = BigInt(campaign.reservedMilipatacos || 0);
-  const cheapest = ["explore_feed_large", "venue_detail_inline", "radar_header", "venue_menu_sponsor"].map((slot) => campaignImpressionCost(campaign, slot)).filter((cost) => cost > 0n).sort((a, b) => a < b ? -1 : 1)[0] || 1n;
+  const cheapest = AD_PLACEMENTS.map((placement) => campaignImpressionCost(campaign, placement.key)).filter((cost) => cost > 0n).sort((a, b) => a < b ? -1 : 1)[0] || 1n;
   // Sem prazo obrigatório: este é somente um ritmo operacional, não uma data de expiração.
   return Math.max(1, Math.min(500, Math.ceil(Number(remaining / cheapest))));
 }
@@ -195,6 +199,39 @@ function deliveryPayload(campaign, creative, slot, token = null) {
     destinationAvailable: Boolean(creative.destinationUrl),
     deliveryToken: token
   };
+}
+
+function candidateScore(item, deliveredToday, context) {
+  const campaign = item.campaign;
+  const reserve = BigInt(campaign.reservedMilipatacos || 0);
+  const budget = BigInt(campaign.budgetMilipatacos || 0);
+  const remainingRatio = Number(reserve) / Math.max(1, Number(budget));
+  const deliveryPressure = (deliveredToday.get(campaign.id) || 0) / Math.max(1, Number(budget / 1000n));
+  return (venueCampaignPrecedence(campaign, context.venueId) * 100) + (campaign.priority * 10) + (remainingRatio * 5) - (deliveryPressure * 8) + Math.random();
+}
+
+// A completed exclusive agreement reserves its slot for the linked campaign(s).
+// This is fail-closed: a reserved position is never backfilled by a different
+// advertiser when its approved creative is not ready. The shared carousel is
+// excluded from exclusivity by commercial-agreement validation.
+async function applyExclusiveCommercialReservation({ slot, now, eligible }) {
+  // Keeps old deployments and focused controller tests compatible until the
+  // additive migration has been applied and Prisma Client regenerated.
+  if (!prisma.commercialAgreementPlacement?.findMany) return { eligible, reserved: false };
+  const reservations = await prisma.commercialAgreementPlacement.findMany({
+    where: {
+      slot,
+      mode: "exclusive",
+      agreement: { status: "completed", startsAt: { lte: now }, endsAt: { gte: now } }
+    },
+    select: { agreement: { select: { id: true, campaigns: { select: { campaignId: true } } } } }
+  });
+  if (!reservations.length) return { eligible, reserved: false };
+  // The commercial API prevents an overlap. If manual/legacy data violates
+  // that rule, do not arbitrarily choose a commercial counterparty.
+  if (reservations.length !== 1) return { eligible: [], reserved: true, conflict: true };
+  const campaignIds = new Set(reservations[0].agreement.campaigns.map((item) => item.campaignId));
+  return { eligible: eligible.filter((item) => campaignIds.has(item.campaign.id)), reserved: true };
 }
 
 export async function listAdCampaigns(_req, res, next) {
@@ -317,9 +354,13 @@ export async function getAdDelivery(req, res, next) {
     if (!placement?.isActive) {
       return res.json({ item: null, blockedReason: "slot_not_available" });
     }
+    if (placement.featureFlag && !isFeatureEnabled(placement.featureFlag)) {
+      return res.json({ item: null, blockedReason: "slot_not_enabled" });
+    }
     const now = new Date();
     const userId = req.user?.id || null;
-    const sessionHash = fingerprint(context.sessionId || null);
+    const sessionHash = fingerprint(context.viewerId || context.sessionId || null);
+    const visitSessionHash = fingerprint(context.visitSessionId || null);
     const dayStart = new Date(now);
     dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(now);
@@ -335,7 +376,8 @@ export async function getAdDelivery(req, res, next) {
           ? { OR: [{ reviewStatus: null }, { reviewStatus: "approved" }] }
           : {}),
         AND: [
-          { OR: [{ startsAt: null }, { startsAt: { lte: now } }] }
+          { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+          { OR: [{ endsAt: null }, { endsAt: { gte: now } }] }
         ]
       },
       include: {
@@ -370,7 +412,7 @@ export async function getAdDelivery(req, res, next) {
       return res.json({ item: null, blockedReason: "inventory_exhausted", message: "Este posicionamento atingiu a capacidade planejada hoje." });
     }
 
-    const eligible = campaigns.filter((campaign) => (
+    let eligible = campaigns.filter((campaign) => (
       BigInt(campaign.reservedMilipatacos || 0) >= campaignImpressionCost(campaign, slot)
       && (!campaign.advertiserAccountId || campaign.advertiserAccount?.status === "active")
       && isReviewApproved(campaign.reviewStatus)
@@ -381,7 +423,11 @@ export async function getAdDelivery(req, res, next) {
         .map((creative) => ({ campaign, creative }))
     );
 
+    const reservation = await applyExclusiveCommercialReservation({ slot, now, eligible });
+    eligible = reservation.eligible;
     if (eligible.length === 0) {
+      if (reservation.conflict) return res.json({ item: null, blockedReason: "exclusive_reservation_conflict" });
+      if (reservation.reserved) return res.json({ item: null, blockedReason: "exclusive_reservation_creative_unavailable" });
       return res.json({ item: null });
     }
 
@@ -415,17 +461,7 @@ export async function getAdDelivery(req, res, next) {
     if (filtered.length === 0) {
       return res.json({ item: null, blockedReason: "daily_pacing_reached", message: "As campanhas elegíveis já atingiram o ritmo diário planejado." });
     }
-    const pick = [...filtered].sort((a, b) => {
-      const score = (item) => {
-        const campaign = item.campaign;
-        const reserve = BigInt(campaign.reservedMilipatacos || 0);
-        const budget = BigInt(campaign.budgetMilipatacos || 0);
-        const remainingRatio = Number(reserve) / Math.max(1, Number(budget));
-        const deliveryPressure = (deliveredToday.get(campaign.id) || 0) / Math.max(1, Number(budget / 1000n));
-        return (venueCampaignPrecedence(campaign, context.venueId) * 100) + (campaign.priority * 10) + (remainingRatio * 5) - (deliveryPressure * 8) + Math.random();
-      };
-      return score(b) - score(a);
-    })[0];
+    const pick = [...filtered].sort((a, b) => candidateScore(b, deliveredToday, context) - candidateScore(a, deliveredToday, context))[0];
 
     if (context.preview) {
       return res.json({ item: deliveryPayload(pick.campaign, pick.creative, slot), preview: true });
@@ -445,7 +481,8 @@ export async function getAdDelivery(req, res, next) {
           city: context.city || null,
           region: context.region || null,
           audienceLocationUsed: Boolean(deliveryContext.audience),
-          audienceCity: deliveryContext.audience?.city || null
+          audienceCity: deliveryContext.audience?.city || null,
+          visitSessionHash
         },
         expiresAt: new Date(now.getTime() + 30 * 60 * 1000)
       }
@@ -456,6 +493,135 @@ export async function getAdDelivery(req, res, next) {
   } catch (error) {
     next(error);
   }
+}
+
+// A composição é decidida na entrega. Cada item do carrossel continua tendo
+// token, impressão e cobrança próprios; carregar um carrossel não cobra todas
+// as peças de uma vez.
+export async function getAdCarouselDelivery(req, res, next) {
+  try {
+    const slot = "explore_between_days_carousel";
+    const context = deliveryQuerySchema.parse(req.query || {});
+    if (!isFeatureEnabled("ADS_CREDITS_PURCHASE_ENABLED")) return res.json({ item: null, blockedReason: "credits_not_enabled" });
+    const placement = placementFor(slot);
+    if (!placement?.isActive || (placement.featureFlag && !isFeatureEnabled(placement.featureFlag))) return res.json({ item: null, blockedReason: "slot_not_enabled" });
+
+    const now = new Date();
+    const userId = req.user?.id || null;
+    const sessionHash = fingerprint(context.viewerId || context.sessionId || null);
+    const visitSessionHash = fingerprint(context.visitSessionId || null);
+    const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(now); dayEnd.setHours(23, 59, 59, 999);
+    const [usedInventory, campaigns, canUseRegionalAudience] = await Promise.all([
+      prisma.adEventLog.count({ where: { slot, type: "impression", createdAt: { gte: dayStart, lte: dayEnd } } }),
+      prisma.adCampaign.findMany({
+        where: {
+          isEnabled: true,
+          status: "active",
+          reservedMilipatacos: { gt: 0n },
+          ...(isFeatureEnabled("ADS_REVIEW_WORKFLOW_ENABLED") ? { OR: [{ reviewStatus: null }, { reviewStatus: "approved" }] } : {}),
+          AND: [
+            { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+            { OR: [{ endsAt: null }, { endsAt: { gte: now } }] }
+          ]
+        },
+        include: {
+          advertiserAccount: { select: { id: true, name: true, status: true, commercialCategory: true } },
+          creatives: {
+            where: {
+              isEnabled: true,
+              AND: [{ slot }, ...(isFeatureEnabled("ADS_REVIEW_WORKFLOW_ENABLED") ? [{ OR: [{ reviewStatus: null }, { reviewStatus: "approved" }] }] : [])]
+            }
+          }
+        },
+        orderBy: [{ priority: "desc" }, { updatedAt: "desc" }]
+      }),
+      hasActivePrivacyConsent(userId, "ads_personalization")
+    ]);
+    const capacity = Number(placement.inventory?.dailyImpressionCap || 0);
+    if (capacity > 0 && usedInventory >= capacity) return res.json({ item: null, blockedReason: "inventory_exhausted" });
+
+    const deliveryContext = { ...context, audience: canUseRegionalAudience && req.user?.city ? { city: req.user.city, region: null } : null };
+    let eligible = campaigns.filter((campaign) => (
+      BigInt(campaign.reservedMilipatacos || 0) >= campaignImpressionCost(campaign, slot)
+      && (!campaign.advertiserAccountId || campaign.advertiserAccount?.status === "active")
+      && isReviewApproved(campaign.reviewStatus)
+      && isCampaignContextEligible(campaign, deliveryContext)
+    )).flatMap((campaign) => campaign.creatives
+      .filter((creative) => isReviewApproved(creative.reviewStatus) && !creativeFormatIssue(creative))
+      .map((creative) => ({ campaign, creative })));
+    if (!eligible.length) return res.json({ item: null });
+
+    const dailyCounts = new Map();
+    if (userId || sessionHash) {
+      const stats = await prisma.adDelivery.groupBy({
+        by: ["campaignId"],
+        where: { ...(userId ? { userId } : { sessionHash }), impressionRecordedAt: { gte: dayStart, lte: dayEnd } },
+        _count: { _all: true }
+      });
+      for (const item of stats) dailyCounts.set(item.campaignId, item._count._all);
+      eligible = eligible.filter((item) => (dailyCounts.get(item.campaign.id) || 0) < item.campaign.frequencyCapDaily);
+    }
+    if (!eligible.length) return res.json({ item: null });
+
+    const stats = await prisma.adEventLog.groupBy({
+      by: ["campaignId"],
+      where: { type: "impression", createdAt: { gte: dayStart, lte: dayEnd }, campaignId: { in: eligible.map((item) => item.campaign.id) } },
+      _count: { _all: true }
+    });
+    const deliveredToday = new Map(stats.map((item) => [item.campaignId, item._count._all]));
+    eligible = eligible.filter((item) => (deliveredToday.get(item.campaign.id) || 0) < dailyPacingCap(item.campaign, now));
+    if (!eligible.length) return res.json({ item: null });
+
+    const byAdvertiser = new Map();
+    for (const item of eligible.sort((a, b) => candidateScore(b, deliveredToday, context) - candidateScore(a, deliveredToday, context))) {
+      const key = item.campaign.advertiserAccountId || `legacy:${item.campaign.advertiser}`;
+      const group = byAdvertiser.get(key) || { key, items: [] };
+      group.items.push(item);
+      byAdvertiser.set(key, group);
+    }
+    const rules = placement.sharedInventory || {};
+    if (byAdvertiser.size < Number(rules.minAdvertisersWhenAvailable || 2)) {
+      return res.json({ item: null, blockedReason: "insufficient_shared_inventory" });
+    }
+
+    const groups = [...byAdvertiser.values()];
+    const picks = [];
+    const plannedByCampaign = new Map();
+    const takenByAdvertiser = new Map();
+    const maxItems = Number(rules.maxItems || 21);
+    const maxPerAdvertiser = Number(rules.maxItemsPerAdvertiser || 3);
+    let cursor = 0;
+    let attempts = 0;
+    while (picks.length < maxItems && groups.some((group) => group.items.length) && attempts < maxItems * groups.length * 3) {
+      const group = groups[cursor % groups.length];
+      cursor += 1; attempts += 1;
+      if (!group.items.length || (takenByAdvertiser.get(group.key) || 0) >= maxPerAdvertiser) continue;
+      const item = group.items.shift();
+      const planned = plannedByCampaign.get(item.campaign.id) || 0;
+      const shown = dailyCounts.get(item.campaign.id) || 0;
+      const paced = deliveredToday.get(item.campaign.id) || 0;
+      if (shown + planned >= item.campaign.frequencyCapDaily || paced + planned >= dailyPacingCap(item.campaign, now)) continue;
+      picks.push(item);
+      plannedByCampaign.set(item.campaign.id, planned + 1);
+      takenByAdvertiser.set(group.key, (takenByAdvertiser.get(group.key) || 0) + 1);
+    }
+    if (picks.length < Number(rules.minItems || 2)) return res.json({ item: null, blockedReason: "insufficient_shared_inventory" });
+
+    const carouselId = randomBytes(12).toString("base64url");
+    const items = await Promise.all(picks.map(async ({ campaign, creative }, carouselPosition) => {
+      const token = randomBytes(24).toString("base64url");
+      await prisma.adDelivery.create({
+        data: {
+          token, slot, campaignId: campaign.id, creativeId: creative.id, userId, sessionHash,
+          context: { carouselId, carouselPosition, visitSessionHash, audienceLocationUsed: Boolean(deliveryContext.audience), audienceCity: deliveryContext.audience?.city || null },
+          expiresAt: new Date(now.getTime() + 30 * 60 * 1000)
+        }
+      });
+      return { ...deliveryPayload(campaign, creative, slot, token), carouselId, carouselPosition };
+    }));
+    return res.json({ item: { carouselId, items } });
+  } catch (error) { next(error); }
 }
 
 export async function trackDeliveredImpression(req, res, next) {
