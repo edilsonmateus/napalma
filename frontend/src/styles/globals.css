@@ -7140,6 +7140,14 @@ a.pending-signature-badge:focus-visible {
 .venue-claim-list .artist-directory-row { grid-template-columns: auto minmax(0, 1fr) auto; }
 .venue-claim-list button.artist-directory-action { background: transparent; font: inherit; font-size: 11px; cursor: pointer; }
 .venue-claim-list button.artist-directory-action:disabled { border-color: rgba(255,255,255,.12); color: var(--text-muted); cursor: default; }
+.venue-inclusion-entry { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.venue-inclusion-entry > span { display: grid; gap: 5px; min-width: 0; }
+.venue-inclusion-entry small { color: var(--text-secondary); line-height: 1.5; }
+.venue-inclusion-entry .chip { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: 0 0 auto; }
+.venue-inclusion-pending { display: grid; gap: 10px; }
+.venue-inclusion-pending > div { display: grid; gap: 3px; padding-top: 9px; border-top: 1px solid rgba(255,255,255,.08); }
+.venue-inclusion-pending small { color: var(--text-secondary); }
+.venue-inclusion-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .claim-form-backdrop { align-items: start; overflow-y: auto; }
 .claim-form { display: grid; gap: 12px; width: min(560px, calc(100vw - 28px)); max-height: calc(100dvh - 32px); margin: auto; overflow-y: auto; }
 .claim-form h3, .claim-form > p { margin: 0; }
@@ -7196,6 +7204,9 @@ a.pending-signature-badge:focus-visible {
 .claim-form .form-actions-inline > .chip:hover { background: #302d35; }
 @media (max-width: 480px) {
   .claim-form .form-actions-inline > :is(.btn-primary, .chip) { flex: 1 1 0; }
+  .venue-inclusion-entry { align-items: stretch; flex-direction: column; }
+  .venue-inclusion-entry .chip { width: 100%; }
+  .venue-inclusion-form-grid { grid-template-columns: 1fr; }
 }
 .artist-inclusion-grid { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 8px; }
 .artist-team-invite { display: grid; gap: 10px; }
@@ -15289,6 +15300,21 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
 }
 
 /* Decisões de reivindicação: justificativa legível e ações equivalentes. */
+.operations-venue-inclusion-review { display: grid; gap: 14px; }
+.operations-venue-inclusion-requested,
+.operations-venue-account-context { display: grid; gap: 5px; padding: 14px; border: 1px solid #d7e0eb; border-radius: 10px; background: #f7f9fc; }
+.operations-venue-inclusion-requested span,
+.operations-venue-account-context small { color: #5e7086; line-height: 1.45; }
+.operations-venue-inclusion-requested a { width: fit-content; color: #135fb4; font-size: 12px; }
+.operations-venue-account-context ul { display: grid; gap: 5px; margin: 5px 0 0; padding-left: 18px; color: #31465e; font-size: 12px; }
+.operations-venue-inclusion-review fieldset { display: grid; gap: 10px; margin: 0; padding: 14px; border: 1px solid #d7e0eb; border-radius: 10px; }
+.operations-venue-inclusion-review legend { padding: 0 5px; color: #20344d; font-size: 12px; font-weight: 800; }
+.operations-venue-inclusion-review fieldset label { display: flex; align-items: flex-start; gap: 9px; cursor: pointer; }
+.operations-venue-inclusion-review fieldset label > span { display: grid; gap: 3px; }
+.operations-venue-inclusion-review fieldset small,
+.operations-venue-candidate-select small { color: #65778d; font-size: 11px; font-weight: 400; line-height: 1.4; }
+.operations-venue-candidate-select { display: grid; gap: 6px; color: #20344d; font-size: 12px; font-weight: 700; }
+.operations-venue-candidate-select select { width: 100%; min-height: 42px; padding: 8px 10px; border: 1px solid #c8d4e2; border-radius: 8px; background: #fff; color: #12263f; }
 .operations-claim-detail .operations-detail-actions {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;

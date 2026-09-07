@@ -24,7 +24,7 @@ describe("artist claim directory and collaborative team", () => {
   });
 
   it("separates ownership claims from access requests", () => {
-    expect(claims).toContain('z.enum(["ownership", "team_access", "artist_inclusion", "venue_update"])');
+    expect(claims).toContain('z.enum(["ownership", "team_access", "artist_inclusion", "venue_inclusion", "venue_update"])');
     const claimAccess = fs.readFileSync(path.join(process.cwd(), "src/services/claimAccess.service.js"), "utf8");
     expect(claimAccess).toContain('claim.requestType === "team_access"');
     expect(claimAccess).toContain('claim.requestType === "artist_inclusion"');

@@ -46,7 +46,7 @@ export async function activateClaimAccess({ tx, claim, actorUserId }) {
     if (Object.keys(safePatch).length) await tx.venue.update({ where: { id: claim.venueId }, data: safePatch });
   }
 
-  if (["ownership", "team_access"].includes(claim.requestType) && claim.targetType === "venue" && claim.venueId) {
+  if (["ownership", "team_access", "venue_inclusion"].includes(claim.requestType) && claim.targetType === "venue" && claim.venueId) {
     const requester = await tx.user.findUnique({ where: { id: claim.requestedById }, select: { role: true } });
     const requested = claim.requestedChanges && typeof claim.requestedChanges === "object" ? claim.requestedChanges : {};
     const accessProfile = ["producer", "venue_manager"].includes(requested.requestedAccessProfile)

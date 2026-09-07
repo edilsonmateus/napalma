@@ -25,3 +25,8 @@ Thumbs.db
 # Logs
 logs/
 *.log
+
+# Local Word and document review artifacts
+~$*.docx
+docs/manuais/qa_render*/
+docs/manuais/*_backup.docx

@@ -25,7 +25,7 @@ describe("formal legal gate for professional claims", () => {
   });
 
   it("turns approval into eligibility approval when a formal signature is required", () => {
-    expect(claimsController).toContain("claimRequiresFormalSignature(existing)");
+    expect(claimsController).toContain("claimRequiresFormalSignature(claimForDecision)");
     expect(claimsController).toContain("prepareClaimLegalEnvelope");
     expect(workflow).toContain('status: "pending_legal_acceptance"');
     expect(workflow).toContain("deliverClaimLegalInvitation");

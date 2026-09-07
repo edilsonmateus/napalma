@@ -7,6 +7,7 @@ export const VENUE_VISIBILITY_STATUS = Object.freeze({
 export const VENUE_CREATION_ORIGIN = Object.freeze({
   ADMIN_MANUAL: "admin_manual",
   ACQUISITION: "acquisition",
+  USER_INCLUSION: "user_inclusion",
   SEED: "seed"
 });
 
@@ -37,7 +38,7 @@ export function canTransitionVenueVisibility(currentStatus, nextStatus) {
 }
 
 export function initialVenueVisibilityFor(origin) {
-  return origin === VENUE_CREATION_ORIGIN.ACQUISITION
+  return [VENUE_CREATION_ORIGIN.ACQUISITION, VENUE_CREATION_ORIGIN.USER_INCLUSION].includes(origin)
     ? VENUE_VISIBILITY_STATUS.DRAFT
     : VENUE_VISIBILITY_STATUS.PUBLISHED;
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Building2, Search } from "lucide-react";
+import { Building2, Plus, Search } from "lucide-react";
 import BackLink from "../components/common/BackLink";
 import { useCreateClaimMutation, useMyClaimsQuery, useVenuesQuery } from "../hooks/useEventsQuery";
 import useClaimLegalAcknowledgement from "../hooks/useClaimLegalAcknowledgement";
@@ -15,13 +15,30 @@ const initialForm = {
   justification: ""
 };
 
+const initialInclusionForm = {
+  venueName: "",
+  address: "",
+  neighborhood: "",
+  region: "",
+  city: "São Paulo",
+  state: "SP",
+  instagramUrl: "",
+  responsibleName: "",
+  responsiblePhone: "",
+  claimantDocument: "",
+  relationshipRole: "",
+  justification: ""
+};
+
 export default function VenueClaimDirectoryPage() {
   const [searchParams] = useSearchParams();
   const requestedProfile = searchParams.get("perfil") === "produtor" ? "producer" : "venue_manager";
   const isProducer = requestedProfile === "producer";
   const [query, setQuery] = useState("");
   const [selectedVenue, setSelectedVenue] = useState(null);
+  const [showInclusion, setShowInclusion] = useState(false);
   const [form, setForm] = useState(initialForm);
+  const [inclusionForm, setInclusionForm] = useState(initialInclusionForm);
   const [message, setMessage] = useState("");
   const venuesQuery = useVenuesQuery({ scope: "public" });
   const claimsQuery = useMyClaimsQuery(true);
@@ -51,9 +68,19 @@ export default function VenueClaimDirectoryPage() {
 
     return claimsByVenue;
   }, [claimsQuery.data]);
+  const activeInclusionClaims = useMemo(() => (claimsQuery.data || [])
+    .filter((claim) => claim.targetType === "venue" && claim.requestType === "venue_inclusion" && claimIsActive(claim)), [claimsQuery.data]);
 
   function updateField(event) {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+  }
+
+  function updateInclusionField(event) {
+    const { name, value } = event.target;
+    setInclusionForm((current) => ({
+      ...current,
+      [name]: name === "state" ? value.toUpperCase().slice(0, 2) : value
+    }));
   }
 
   async function submitClaim(event) {
@@ -83,6 +110,42 @@ export default function VenueClaimDirectoryPage() {
     }
   }
 
+
+  async function submitInclusion(event) {
+    event.preventDefault();
+    const legalAcknowledgement = await requestAcknowledgement();
+    if (!legalAcknowledgement) return;
+    setMessage("");
+    try {
+      const claim = await createClaim.mutateAsync({
+        targetType: "venue",
+        requestType: "venue_inclusion",
+        responsibleName: inclusionForm.responsibleName,
+        responsiblePhone: inclusionForm.responsiblePhone,
+        claimantDocument: inclusionForm.claimantDocument,
+        relationshipRole: inclusionForm.relationshipRole,
+        justification: inclusionForm.justification,
+        requestedChanges: {
+          venueName: inclusionForm.venueName,
+          address: inclusionForm.address,
+          neighborhood: inclusionForm.neighborhood,
+          region: inclusionForm.region,
+          city: inclusionForm.city,
+          state: inclusionForm.state,
+          instagramUrl: inclusionForm.instagramUrl || undefined,
+          requestedAccessProfile: requestedProfile
+        },
+        legalAcknowledgement
+      });
+      setShowInclusion(false);
+      setInclusionForm(initialInclusionForm);
+      setMessage(`Solicitação enviada com o protocolo RA-${claim.id.slice(0, 8).toUpperCase()}. A casa não foi publicada nem o acesso liberado: a equipe 77Gira fará a conferência primeiro.`);
+    } catch (error) {
+      if (error?.message === "legal_acceptance_cancelled") return;
+      setMessage(error?.response?.data?.message || "Não foi possível solicitar a inclusão da casa.");
+    }
+  }
+
   return <section className="screen artist-directory-screen venue-claim-screen">
     {claimLegalModal}
     <BackLink to="/settings/account">Voltar para Conta e preferências</BackLink>
@@ -99,7 +162,7 @@ export default function VenueClaimDirectoryPage() {
     {message ? <p className="clean-card artist-directory-message" role="status">{message}</p> : null}
     {venuesQuery.isLoading ? <p className="empty">Carregando casas...</p> : null}
     {venuesQuery.isError ? <p className="clean-card artist-directory-message">Não foi possível carregar as casas. Tente novamente.</p> : null}
-    {!venuesQuery.isLoading && !filtered.length ? <div className="clean-card artist-directory-empty"><strong>Casa não encontrada</strong><p>Antes de pedir acesso, solicite a inclusão do estabelecimento à equipe 77Gira para evitarmos duplicidades.</p><a className="chip" href="mailto:77giramundo@gmail.com?subject=Solicitação de inclusão de casa">Solicitar inclusão</a></div> : null}
+    {!venuesQuery.isLoading && !filtered.length ? <div className="clean-card artist-directory-empty"><strong>Casa não encontrada</strong><p>Confira a busca e, se o estabelecimento realmente não estiver cadastrado, use a solicitação de inclusão abaixo.</p></div> : null}
     <div className="artist-directory-list venue-claim-list">
       {filtered.map((venue) => {
         const activeClaim = activeClaimsByVenue.get(venue.id);
@@ -112,6 +175,14 @@ export default function VenueClaimDirectoryPage() {
         </article>;
       })}
     </div>
+    <section className="clean-card venue-inclusion-entry">
+      <span><strong>Não encontrou a casa?</strong><small>Envie os dados para conferência. A equipe poderá vincular sua solicitação a uma casa já existente ou criar um novo rascunho interno, sem publicação automática.</small></span>
+      <button className="chip" type="button" onClick={() => { setShowInclusion(true); setMessage(""); }}><Plus size={15}/>Solicitar inclusão de casa</button>
+    </section>
+    {activeInclusionClaims.length ? <section className="clean-card venue-inclusion-pending" aria-label="Solicitações de inclusão em andamento">
+      <strong>Inclusões em andamento</strong>
+      {activeInclusionClaims.map((claim) => <div key={claim.id}><span>{claim.requestedChanges?.venueName || "Casa em inclusão"}</span><small>{claim.status === "pending_legal_acceptance" ? "Aguardando sua assinatura" : "Em análise pela equipe"} · RA-{claim.id.slice(0, 8).toUpperCase()}</small></div>)}
+    </section> : null}
     {selectedVenue ? <div className="modal-backdrop claim-form-backdrop"><form className="modal-card claim-form venue-claim-form" onSubmit={submitClaim}>
       <h3>Solicitar acesso a {selectedVenue.name}</h3>
       <p>Informe dados verdadeiros. A equipe poderá pedir documentos antes de decidir.</p>
@@ -122,6 +193,25 @@ export default function VenueClaimDirectoryPage() {
       <label>Função ou relação com a casa<input required minLength={3} name="relationshipRole" placeholder={isProducer ? "Ex.: produtor responsável" : "Ex.: proprietário, sócio, gerente"} value={form.relationshipRole} onChange={updateField}/></label>
       <label>Como podemos confirmar o vínculo?<textarea required minLength={5} maxLength={500} name="justification" value={form.justification} onChange={updateField}/></label>
       <div className="form-actions-inline"><button className="btn-primary" disabled={createClaim.isPending}>{createClaim.isPending ? "Enviando..." : "Enviar para análise"}</button><button className="chip" type="button" onClick={() => setSelectedVenue(null)}>Cancelar</button></div>
+    </form></div> : null}
+    {showInclusion ? <div className="modal-backdrop claim-form-backdrop"><form className="modal-card claim-form venue-inclusion-form" onSubmit={submitInclusion}>
+      <h3>Solicitar inclusão de casa</h3>
+      <p>Preencha os dados do estabelecimento. Este pedido não publica a casa e não concede acesso: a equipe 77Gira verificará duplicidade, legitimidade e cadastro antes de encaminhar a assinatura.</p>
+      <label>Nome de exibição da casa<span>Ex.: Tarana Casa de Samba. Use o nome pelo qual o público encontra o local.</span><input required minLength={3} maxLength={160} name="venueName" value={inclusionForm.venueName} onChange={updateInclusionField}/></label>
+      <label>Endereço completo<span>Inclua rua, número e complemento, quando houver.</span><input required minLength={5} maxLength={255} name="address" value={inclusionForm.address} onChange={updateInclusionField}/></label>
+      <div className="venue-inclusion-form-grid">
+        <label>Bairro<input required minLength={2} name="neighborhood" value={inclusionForm.neighborhood} onChange={updateInclusionField}/></label>
+        <label>Região<span>Ex.: Centro, Zona Norte.</span><input required minLength={2} name="region" value={inclusionForm.region} onChange={updateInclusionField}/></label>
+        <label>Cidade<input required minLength={2} name="city" value={inclusionForm.city} onChange={updateInclusionField}/></label>
+        <label>UF<input required minLength={2} maxLength={2} name="state" value={inclusionForm.state} onChange={updateInclusionField}/></label>
+      </div>
+      <label>Instagram oficial (opcional)<span>Informe a URL completa do perfil oficial.</span><input type="url" name="instagramUrl" placeholder="https://instagram.com/casa" value={inclusionForm.instagramUrl} onChange={updateInclusionField}/></label>
+      <label>Nome do responsável<input required minLength={3} name="responsibleName" value={inclusionForm.responsibleName} onChange={updateInclusionField}/></label>
+      <label>Telefone ou WhatsApp<input required minLength={8} name="responsiblePhone" value={inclusionForm.responsiblePhone} onChange={updateInclusionField}/></label>
+      <label>CPF ou CNPJ do solicitante<input required minLength={5} name="claimantDocument" value={inclusionForm.claimantDocument} onChange={updateInclusionField}/></label>
+      <label>Função ou relação com a casa<input required minLength={3} name="relationshipRole" placeholder={isProducer ? "Ex.: produtor responsável" : "Ex.: proprietário, sócio, gerente"} value={inclusionForm.relationshipRole} onChange={updateInclusionField}/></label>
+      <label>Como podemos confirmar o vínculo?<textarea required minLength={5} maxLength={500} name="justification" value={inclusionForm.justification} onChange={updateInclusionField}/></label>
+      <div className="form-actions-inline"><button className="btn-primary" disabled={createClaim.isPending}>{createClaim.isPending ? "Enviando..." : "Enviar para conferência"}</button><button className="chip" type="button" onClick={() => setShowInclusion(false)}>Cancelar</button></div>
     </form></div> : null}
   </section>;
 }

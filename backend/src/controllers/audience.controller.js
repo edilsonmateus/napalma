@@ -139,7 +139,15 @@ export async function getAudienceSummary(req, res) {
 
   const user = req.user;
   const role = user?.role || "attendee";
-  const scopedVenueIds = await getScopedVenueIds(user);
+  const allowedVenueIds = await getScopedVenueIds(user);
+  const requestedVenueId = req.query.venueId ? String(req.query.venueId) : null;
+  if (requestedVenueId && !z.string().uuid().safeParse(requestedVenueId).success) {
+    return res.status(400).json({ error: "validation_error", message: "Casa inválida para este relatório." });
+  }
+  if (requestedVenueId && !allowedVenueIds.includes(requestedVenueId)) {
+    return res.status(403).json({ error: "forbidden", message: "Você não pode consultar a audiência desta casa." });
+  }
+  const scopedVenueIds = requestedVenueId ? [requestedVenueId] : allowedVenueIds;
 
   const [
     registeredUsers,
@@ -188,6 +196,7 @@ export async function getAudienceSummary(req, res) {
 
   let scoped = {
     scope: role,
+    venueId: requestedVenueId,
     venueCount: scopedVenueIds.length,
     radarUsers: 0,
     attendeesUsers: 0,

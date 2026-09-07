@@ -33,6 +33,7 @@ describe("venue visibility eligibility", () => {
     expect(initialVenueVisibilityFor(VENUE_CREATION_ORIGIN.ADMIN_MANUAL)).toBe("published");
     expect(initialVenueVisibilityFor(VENUE_CREATION_ORIGIN.SEED)).toBe("published");
     expect(initialVenueVisibilityFor(VENUE_CREATION_ORIGIN.ACQUISITION)).toBe("draft");
+    expect(initialVenueVisibilityFor(VENUE_CREATION_ORIGIN.USER_INCLUSION)).toBe("draft");
   });
 
   it("builds filters that cannot accidentally include a hidden venue", () => {

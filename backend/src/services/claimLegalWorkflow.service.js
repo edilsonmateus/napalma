@@ -4,7 +4,7 @@ import { env } from "../config/env.js";
 import { activateClaimAccess } from "./claimAccess.service.js";
 import { sendLegalSignatureInvitationEmail } from "./transactionalEmail.service.js";
 
-const FORMAL_ACCESS_REQUESTS = new Set(["ownership", "team_access", "artist_inclusion"]);
+const FORMAL_ACCESS_REQUESTS = new Set(["ownership", "team_access", "artist_inclusion", "venue_inclusion"]);
 const SIGNATURE_TTL_DAYS = 30;
 const ACTIVE_LEGAL_ENVELOPE_STATUSES = new Set(["draft", "pending_signature"]);
 const SETTLED_LEGAL_ENVELOPE_STATUSES = new Set([

@@ -228,9 +228,9 @@ export default function AccountSettingsPage() {
       </section>
 
       {remindersFeatureEnabled ? <section className="account-settings-section account-notifications-section">
-        <div className="account-settings-section-title"><div><strong>Notifica\u00e7\u00f5es</strong><small>Escolhas de lembretes para eventos salvos.</small></div></div>
+        <div className="account-settings-section-title"><div><strong>Notificações</strong><small>Escolhas de lembretes para eventos salvos.</small></div></div>
         <label className="account-notification-toggle">
-          <span><strong>Lembretes do Radar</strong><small>Avisaremos 3h antes de eventos que voc\u00ea salvou.</small></span>
+          <span><strong>Lembretes do Radar</strong><small>Avisaremos 3h antes de eventos que você salvou.</small></span>
           <input type="checkbox" checked={radarRemindersEnabled} disabled={radarRemindersBusy} onChange={(event) => handleRadarReminderPreference(event.target.checked)} />
         </label>
         {radarRemindersMessage ? <small className="account-form-message" role="status">{radarRemindersMessage}</small> : null}

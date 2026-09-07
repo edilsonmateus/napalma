@@ -10,13 +10,18 @@ import {
   reconcileSettledClaimLegalStates,
   scheduleClaimLegalInvitation
 } from "../services/claimLegalWorkflow.service.js";
+import {
+  resolveVenueInclusion,
+  venueInclusionIdentity,
+  venueInclusionRequestedChangesSchema
+} from "../services/venueInclusion.service.js";
 
 const CLAIM_LEGAL_VERSION = "CLAIM_RESPONSIBILITY_V1";
 
 const createClaimSchema = z
   .object({
     targetType: z.enum(["venue", "artist"]),
-    requestType: z.enum(["ownership", "team_access", "artist_inclusion", "venue_update"]).optional().default("ownership"),
+    requestType: z.enum(["ownership", "team_access", "artist_inclusion", "venue_inclusion", "venue_update"]).optional().default("ownership"),
     venueId: z.string().uuid().optional(),
     artistId: z.string().uuid().optional(),
     responsibleName: z.string().trim().min(3).max(120).optional(),
@@ -34,7 +39,7 @@ const createClaimSchema = z
     })
   })
   .superRefine((data, ctx) => {
-    if (data.targetType === "venue" && !data.venueId) {
+    if (data.targetType === "venue" && data.requestType !== "venue_inclusion" && !data.venueId) {
       ctx.addIssue({ code: "custom", path: ["venueId"], message: "Informe a casa para reivindicacao." });
     }
     if (data.targetType === "artist" && data.requestType !== "artist_inclusion" && !data.artistId) {
@@ -46,7 +51,19 @@ const createClaimSchema = z
         ctx.addIssue({ code: "custom", path: ["requestedChanges", "artistName"], message: "Informe o nome artistico." });
       }
     }
-    if (["ownership", "team_access", "artist_inclusion"].includes(data.requestType)) {
+    if (data.requestType === "venue_inclusion") {
+      const parsed = venueInclusionRequestedChangesSchema.safeParse(data.requestedChanges || {});
+      if (!parsed.success) {
+        for (const issue of parsed.error.issues) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["requestedChanges", ...issue.path],
+            message: issue.message
+          });
+        }
+      }
+    }
+    if (["ownership", "team_access", "artist_inclusion", "venue_inclusion"].includes(data.requestType)) {
       if (!data.responsibleName) {
         ctx.addIssue({ code: "custom", path: ["responsibleName"], message: "Informe o nome do responsavel." });
       }
@@ -64,7 +81,11 @@ const createClaimSchema = z
 
 const claimDecisionSchema = z.object({
   status: z.enum(["approved", "rejected"]),
-  decisionNote: z.string().trim().max(400).optional()
+  decisionNote: z.string().trim().max(400).optional(),
+  venueResolution: z.discriminatedUnion("mode", [
+    z.object({ mode: z.literal("existing"), venueId: z.string().uuid() }),
+    z.object({ mode: z.literal("create_draft") })
+  ]).optional()
 });
 
 const claimIdSchema = z.object({
@@ -143,13 +164,14 @@ function mapClaim(claim) {
 }
 
 function operationalClaimRisk(claim) {
-  if (claim.requestType === "ownership" || claim.requestType === "artist_inclusion") return "high";
+  if (["ownership", "artist_inclusion", "venue_inclusion"].includes(claim.requestType)) return "high";
   if (claim.requestType === "team_access") return "medium";
   return "low";
 }
 
 function mapOperationsClaim(claim) {
-  const target = claim.artist?.name || claim.venue?.name || "Perfil em inclusão";
+  const requested = claim.requestedChanges && typeof claim.requestedChanges === "object" ? claim.requestedChanges : {};
+  const target = claim.artist?.name || claim.venue?.name || requested.venueName || "Perfil em inclusão";
   const requesterName = [claim.requestedBy?.firstName, claim.requestedBy?.lastName].filter(Boolean).join(" ") || "Pessoa solicitante";
   return {
     id: claim.id,
@@ -188,7 +210,7 @@ export async function createClaimRequest(req, res, next) {
     // concedido depois da decisao administrativa; por isso a conta comum pode
     // solicitar tanto um artista quanto uma casa, sem receber acesso imediato.
 
-    if (data.targetType === ClaimTargetType.venue) {
+    if (data.targetType === ClaimTargetType.venue && data.requestType !== "venue_inclusion") {
       const venue = await prisma.venue.findUnique({ where: { id: data.venueId }, select: { id: true } });
       if (!venue) return res.status(404).json({ error: "venue_not_found", message: "Casa nao encontrada." });
     }
@@ -212,12 +234,20 @@ export async function createClaimRequest(req, res, next) {
     const pendingCandidates = await prisma.claimRequest.findMany({
       where: {
         ...claimIdentity,
+        ...(data.requestType === "venue_inclusion" ? { requestType: "venue_inclusion" } : {}),
         status: { in: [ClaimStatus.pending, ClaimStatus.pending_legal_acceptance] }
       },
       include: { legalEnvelope: true },
       orderBy: { createdAt: "desc" }
     });
-    const existingPending = pendingCandidates.find(claimIsActive);
+    const requestedVenueIdentity = data.requestType === "venue_inclusion"
+      ? venueInclusionIdentity(data.requestedChanges)
+      : null;
+    const existingPending = pendingCandidates.find((claim) =>
+      claimIsActive(claim) && (
+        !requestedVenueIdentity || venueInclusionIdentity(claim.requestedChanges) === requestedVenueIdentity
+      )
+    );
 
     if (existingPending) {
       return res.status(409).json({
@@ -324,6 +354,7 @@ export async function listOperationsClaims(req, res, next) {
       take: limit,
       select: {
         id: true, targetType: true, requestType: true, status: true, createdAt: true,
+        requestedChanges: true,
         artist: { select: { name: true } }, venue: { select: { name: true } },
         requestedBy: { select: { firstName: true, lastName: true } },
         reviewedBy: { select: { firstName: true, lastName: true } }
@@ -348,8 +379,35 @@ export async function getOperationsClaimDetail(req, res, next) {
       }
     });
     if (!claim) return res.status(404).json({ error: "claim_not_found", message: "Reivindicação não encontrada." });
+    const requestedVenue = claim.requestedChanges && typeof claim.requestedChanges === "object" ? claim.requestedChanges : {};
+    const managedVenues = claim.requestType === "venue_inclusion"
+      ? await prisma.venue.findMany({
+          where: {
+            OR: [
+              { managerUserId: claim.requestedById },
+              { managerAccesses: { some: { userId: claim.requestedById } } },
+              { producerAccesses: { some: { producerId: claim.requestedById } } }
+            ]
+          },
+          select: { id: true, name: true, region: true, city: true, visibilityStatus: true },
+          orderBy: { name: "asc" }
+        })
+      : [];
+    const venueCandidates = claim.requestType === "venue_inclusion"
+      ? await prisma.venue.findMany({
+          where: {
+            OR: [
+              ...(requestedVenue.venueName ? [{ name: { contains: String(requestedVenue.venueName), mode: "insensitive" } }] : []),
+              ...(requestedVenue.city ? [{ city: { equals: String(requestedVenue.city), mode: "insensitive" } }] : [])
+            ]
+          },
+          select: { id: true, name: true, region: true, city: true, visibilityStatus: true },
+          orderBy: [{ name: "asc" }],
+          take: 50
+        })
+      : [];
     await recordAuditEvent({ req, action: "claim.operations_detail_opened", subjectType: "claim", subjectId: claim.id, metadata: { purpose: "operations_center", sensitiveFields: ["contact", "document", "evidence"] } });
-    return res.json({ item: { ...mapOperationsClaim(claim), claim: mapClaim(claim) } });
+    return res.json({ item: { ...mapOperationsClaim(claim), claim: mapClaim(claim), managedVenues, venueCandidates } });
   } catch (error) { next(error); }
 }
 
@@ -371,6 +429,7 @@ export async function decideClaim(req, res, next) {
 
     let delivery = null;
     let auditAction = "claim.decided";
+    let venueResolutionAudit = null;
     const updated = await prisma.$transaction(async (tx) => {
       if (data.status === ClaimStatus.rejected) {
         return tx.claimRequest.update({
@@ -379,19 +438,34 @@ export async function decideClaim(req, res, next) {
         });
       }
 
-      if (claimRequiresFormalSignature(existing)) {
-        const envelope = await prepareClaimLegalEnvelope({ tx, claim: existing, actorUserId: req.user.id });
+      let claimForDecision = existing;
+      if (existing.requestType === "venue_inclusion") {
+        const resolution = await resolveVenueInclusion({
+          tx,
+          claim: existing,
+          resolution: data.venueResolution,
+          actorUserId: req.user.id
+        });
+        venueResolutionAudit = resolution;
+        claimForDecision = await tx.claimRequest.update({
+          where: { id: existing.id },
+          data: { venueId: resolution.venueId }
+        });
+      }
+
+      if (claimRequiresFormalSignature(claimForDecision)) {
+        const envelope = await prepareClaimLegalEnvelope({ tx, claim: claimForDecision, actorUserId: req.user.id });
         auditAction = "claim.eligibility_approved";
         return { envelope };
       }
 
-      const activation = await activateClaimAccess({ tx, claim: existing, actorUserId: req.user.id });
+      const activation = await activateClaimAccess({ tx, claim: claimForDecision, actorUserId: req.user.id });
       return tx.claimRequest.update({
         where: { id: existing.id },
         data: {
           status: ClaimStatus.approved,
           ...(activation.artistId ? { artistId: activation.artistId } : {}),
-          ...(existing.requestType !== "venue_update" ? { accessActivatedAt: new Date() } : {}),
+          ...(claimForDecision.requestType !== "venue_update" ? { accessActivatedAt: new Date() } : {}),
           decisionNote: data.decisionNote,
           reviewedById: req.user.id,
           reviewedAt: new Date()
@@ -420,7 +494,11 @@ export async function decideClaim(req, res, next) {
         venueId: finalClaim.venueId || null,
         artistId: finalClaim.artistId || null,
         legalEnvelopeId: finalClaim.legalEnvelopeId || null,
-        delivery
+        delivery,
+        ...(venueResolutionAudit ? {
+          venueResolution: venueResolutionAudit.mode,
+          venueCreated: venueResolutionAudit.venueCreated
+        } : {})
       }
     });
 

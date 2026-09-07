@@ -565,8 +565,6 @@ export default function VenuesAdminPage() {
     [regionFilter, user]
   );
   const { data: events = [], isLoading: eventsLoading } = useEventsQuery(eventsQueryFilters);
-  const { data: houseAdsSummary, isLoading: houseAdsLoading } = useVenueAdsSummaryQuery({ days: 30 }, isHouseRole);
-  const { data: audienceSummary } = useAudienceSummaryQuery({ days: 30 }, Boolean(user));
   const { data: venueManagers = [], isLoading: managersLoading } = useVenueManagersQuery(selectedVenueForManagers);
   const { data: managerCandidates = [], isLoading: managerCandidatesLoading } = useVenueManagerUsersQuery(managerSearch);
 
@@ -605,6 +603,14 @@ export default function VenuesAdminPage() {
     if (!isHouseRole) return null;
     return houseVenues.find((venue) => venue.id === houseActiveVenueId) || houseVenues[0] || null;
   }, [isHouseRole, houseVenues, houseActiveVenueId]);
+  const { data: houseAdsSummary, isLoading: houseAdsLoading } = useVenueAdsSummaryQuery(
+    { days: 30, venueId: houseActiveVenue?.id },
+    isHouseRole && Boolean(houseActiveVenue?.id)
+  );
+  const { data: audienceSummary } = useAudienceSummaryQuery(
+    { days: 30, ...(isHouseRole && houseActiveVenue?.id ? { venueId: houseActiveVenue.id } : {}) },
+    Boolean(user) && (!isHouseRole || Boolean(houseActiveVenue?.id))
+  );
   const { data: houseMenuData } = useManagedVenueMenuQuery(houseActiveVenue?.id, isHouseRole && Boolean(houseActiveVenue?.id));
   const houseMenuActiveCount = (houseMenuData?.item?.items || []).filter((item) => item.status !== "archived").length;
   const filteredVenues = useMemo(() => {
@@ -626,7 +632,7 @@ export default function VenuesAdminPage() {
       ?events.filter((item) => `${item.title} ${item.artist} ${item.venue}`.toLowerCase().includes(q))
       : events;
     const baseByHouse = isHouseRole && houseActiveVenue
-      ?base.filter((item) => item.venue === houseActiveVenue.name)
+      ?base.filter((item) => item.venueId === houseActiveVenue.id)
       : base;
     const scoped = isHouseRole ?baseByHouse : base;
     if (eventTimeFilter === "all") return scoped;
@@ -737,7 +743,7 @@ export default function VenuesAdminPage() {
   const houseEvents = useMemo(() => {
     if (!isHouseRole || !houseActiveVenue) return [];
     return events
-      .filter((item) => item.venue === houseActiveVenue.name)
+      .filter((item) => item.venueId === houseActiveVenue.id)
       .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
   }, [isHouseRole, houseActiveVenue, events]);
   const houseTodayEventsCount = useMemo(() => {
