@@ -8,6 +8,9 @@ import {
   publicVenueWhere,
   VENUE_CREATION_ORIGIN
 } from "../services/venueVisibility.service.js";
+import { hasVenueAdminOnlyFields } from "../policies/venueFields.policy.js";
+import { attachVenueImageAsset } from "../services/venueImageAssets.service.js";
+import { recordAuditEvent } from "../services/audit.service.js";
 
 const querySchema = z.object({
   region: z.string().trim().min(1).optional(),
@@ -66,6 +69,7 @@ const createVenueSchema = z.object({
   city: z.string().trim().min(2),
   state: z.string().trim().length(2),
   imageUrl: z.string().url().optional(),
+  venueImageAssetId: z.string().uuid().optional(),
   openDays: z.array(z.string().trim().min(2)).default([])
 });
 
@@ -233,6 +237,19 @@ function mapVenuePayload(venue) {
     city: venue.city,
     state: venue.state,
     imageUrl: venue.imageUrl,
+    bannerImageUrl: venue.bannerImageUrl || "",
+    bannerImageMediumUrl: venue.bannerImageMediumUrl || "",
+    bannerImageSmallUrl: venue.bannerImageSmallUrl || "",
+    thumbnailImageUrl: venue.thumbnailImageUrl || "",
+    thumbnailImageSmallUrl: venue.thumbnailImageSmallUrl || "",
+    images: {
+      legacy: venue.imageUrl || "",
+      banner: venue.bannerImageUrl || venue.imageUrl || "",
+      bannerMedium: venue.bannerImageMediumUrl || venue.bannerImageUrl || venue.imageUrl || "",
+      bannerSmall: venue.bannerImageSmallUrl || venue.bannerImageMediumUrl || venue.bannerImageUrl || venue.imageUrl || "",
+      thumbnail: venue.thumbnailImageUrl || venue.imageUrl || "",
+      thumbnailSmall: venue.thumbnailImageSmallUrl || venue.thumbnailImageUrl || venue.imageUrl || ""
+    },
     openDays: venue.openDays ?? [],
     visibilityStatus: venue.visibilityStatus,
     eventsCount: venue._count?.events ?? 0,
@@ -316,6 +333,9 @@ function mapAdminVenueOverview(venue, impact, lastVisibilityChange) {
       nickname: venue.nickname || "",
       description: venue.description || "",
       imageUrl: venue.imageUrl || "",
+      bannerImageUrl: venue.bannerImageUrl || venue.imageUrl || "",
+      thumbnailImageUrl: venue.thumbnailImageUrl || venue.imageUrl || "",
+      thumbnailImageSmallUrl: venue.thumbnailImageSmallUrl || venue.thumbnailImageUrl || venue.imageUrl || "",
       address: venue.address,
       latitude: venue.latitude,
       longitude: venue.longitude,
@@ -675,6 +695,8 @@ export async function listOperationsVenues(req, res, next) {
         neighborhood: true,
         region: true,
         imageUrl: true,
+        bannerImageUrl: true,
+        thumbnailImageUrl: true,
         updatedAt: true,
         menu: { select: { status: true } },
         events: {
@@ -692,13 +714,13 @@ export async function listOperationsVenues(req, res, next) {
         name: venue.name,
         location: [venue.neighborhood, venue.city, venue.state].filter(Boolean).join(" · "),
         region: venue.region,
-        hasImage: Boolean(venue.imageUrl),
+        hasImage: Boolean(venue.bannerImageUrl || venue.thumbnailImageUrl || venue.imageUrl),
         menuStatus: venue.menu?.status || "not_configured",
         totalEvents: venue._count.events,
         accessCount: venue._count.managerAccesses + venue._count.producerAccesses,
         nextEvent: venue.events[0] || null,
         updatedAt: venue.updatedAt,
-        attention: !venue.imageUrl || !venue.events.length || !venue.menu || venue.menu.status !== "published"
+        attention: !(venue.bannerImageUrl || venue.thumbnailImageUrl || venue.imageUrl) || !venue.events.length || !venue.menu || venue.menu.status !== "published"
       }))
     });
   } catch (error) {
@@ -715,6 +737,7 @@ export async function createVenue(req, res, next) {
       });
     }
     const data = createVenueSchema.parse(req.body);
+    const { venueImageAssetId, ...venueData } = data;
     const baseSlug = slugify(data.name);
 
     const existing = await prisma.venue.findFirst({
@@ -731,24 +754,33 @@ export async function createVenue(req, res, next) {
       });
     }
 
-    const venue = await prisma.venue.create({
-      data: {
-        ...data,
-        ...buildVenueGrammarData(data),
-        ...buildVenueAnalyticsData(data),
-        slug: baseSlug,
-        visibilityStatus: initialVenueVisibilityFor(VENUE_CREATION_ORIGIN.ADMIN_MANUAL),
-        createdByUserId: req.user.id
-      },
-      include: {
-        _count: {
-          select: { events: true }
+    const venue = await prisma.$transaction(async (tx) => {
+      const created = await tx.venue.create({
+        data: {
+          ...venueData,
+          ...buildVenueGrammarData(venueData),
+          ...buildVenueAnalyticsData(venueData),
+          slug: baseSlug,
+          visibilityStatus: initialVenueVisibilityFor(VENUE_CREATION_ORIGIN.ADMIN_MANUAL),
+          createdByUserId: req.user.id
         }
+      });
+      if (venueImageAssetId) {
+        await attachVenueImageAsset({ tx, assetId: venueImageAssetId, venueId: created.id, ownerUserId: req.user.id });
       }
+      return tx.venue.findUnique({
+        where: { id: created.id },
+        include: { _count: { select: { events: true } } }
+      });
     });
+
+    if (venueImageAssetId) {
+      await recordAuditEvent({ req, action: "venue.image_attached", subjectType: "venue", subjectId: venue.id, metadata: { source: "admin_create" } });
+    }
 
     res.status(201).json({ item: mapVenuePayload(venue) });
   } catch (error) {
+    if (error?.publicMessage) return res.status(error.status || 400).json({ error: error.code, message: error.publicMessage });
     next(error);
   }
 }
@@ -756,7 +788,14 @@ export async function createVenue(req, res, next) {
 export async function updateVenue(req, res, next) {
   try {
     const { id } = idSchema.parse(req.params);
+    if (req.user?.role !== "admin" && hasVenueAdminOnlyFields(req.body)) {
+      return res.status(403).json({
+        error: "gold_partner_admin_only",
+        message: "Somente administradores da 77Gira podem alterar a condição Gold Partner."
+      });
+    }
     const data = updateVenueSchema.parse(req.body);
+    const { venueImageAssetId, ...venueData } = data;
 
     const existing = await prisma.venue.findUnique({
       where: { id },
@@ -783,18 +822,18 @@ export async function updateVenue(req, res, next) {
         message: "Voce nao pode editar esta casa."
       });
     }
-    if (req.user?.role === "producer") {
+    if (req.user?.role !== "admin") {
       return res.status(403).json({
         error: "admin_approval_required",
         message: "Edicoes de casa por este perfil exigem aprovacao do admin."
       });
     }
 
-    if (data.name) {
+    if (venueData.name) {
       const duplicate = await prisma.venue.findFirst({
         where: {
           id: { not: id },
-          OR: [{ name: data.name }, { slug: slugify(data.name) }]
+          OR: [{ name: venueData.name }, { slug: slugify(venueData.name) }]
         },
         select: { id: true }
       });
@@ -806,35 +845,33 @@ export async function updateVenue(req, res, next) {
       }
     }
 
-    const venue = await prisma.venue.update({
-      where: { id },
-      data: {
-        ...(() => {
-          const {
-            analyticsTier,
-            analyticsAccessSource,
-            analyticsAccessUntil,
-            ...safeData
-          } = data;
-          return {
-            ...safeData,
-            ...buildVenueGrammarData(safeData),
-            ...(req.user?.role === "admin"
-              ? buildVenueAnalyticsData({ analyticsTier, analyticsAccessSource, analyticsAccessUntil })
-              : {})
-          };
-        })(),
-        ...(data.name ? { slug: slugify(data.name) } : {})
-      },
-      include: {
-        _count: {
-          select: { events: true }
+    const venue = await prisma.$transaction(async (tx) => {
+      const { analyticsTier, analyticsAccessSource, analyticsAccessUntil, ...safeData } = venueData;
+      await tx.venue.update({
+        where: { id },
+        data: {
+          ...safeData,
+          ...buildVenueGrammarData(safeData),
+          ...buildVenueAnalyticsData({ analyticsTier, analyticsAccessSource, analyticsAccessUntil }),
+          ...(venueData.name ? { slug: slugify(venueData.name) } : {})
         }
+      });
+      if (venueImageAssetId) {
+        await attachVenueImageAsset({ tx, assetId: venueImageAssetId, venueId: id, ownerUserId: req.user.id });
       }
+      return tx.venue.findUnique({
+        where: { id },
+        include: { _count: { select: { events: true } } }
+      });
     });
+
+    if (venueImageAssetId) {
+      await recordAuditEvent({ req, action: "venue.image_attached", subjectType: "venue", subjectId: venue.id, metadata: { source: "admin_update" } });
+    }
 
     res.json({ item: mapVenuePayload(venue) });
   } catch (error) {
+    if (error?.publicMessage) return res.status(error.status || 400).json({ error: error.code, message: error.publicMessage });
     next(error);
   }
 }

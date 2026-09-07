@@ -90,6 +90,7 @@ import { acceptMyLegalDocuments, getMyLegalDocuments, getMyLegalRequirements } f
 import { cancelOperationsLegalSignature, confirmMyLegalSignature, createOperationsLegalSignature, declineMyLegalSignature, getMyLegalSignature, listMyLegalSignatures, listOperationsLegalSignatures, requestMyLegalSignatureCode, resendOperationsLegalSignatureInvitation } from "../controllers/legalSignatures.controller.js";
 import { cancelCommercialAgreement, createCommercialAgreement, issueCommercialAgreement, listCommercialAgreements, listMyCommercialAgreements, submitMyCommercialAgreementDetails } from "../controllers/commercialAgreements.controller.js";
 import { uploadImage } from "../controllers/uploads.controller.js";
+import { createVenueImageAsset } from "../controllers/venueImageAssets.controller.js";
 import { imageUpload } from "../middlewares/upload.js";
 import { createRateLimiter } from "../middlewares/rateLimit.js";
 import { requireFeatureFlag } from "../middlewares/featureFlags.js";
@@ -441,6 +442,7 @@ router.post("/artist-bookings", requireFeatureFlag("ARTIST_BOOKING_REQUESTS_ENAB
 router.post("/artists/:id/follow", requireAuth, followArtist);
 router.delete("/artists/:id/follow", requireAuth, unfollowArtist);
 router.post("/uploads/image", ...canUploadImages, uploadLimiter, imageUpload.single("file"), uploadImage);
+router.post("/venues/image-assets", ...canUploadImages, requireFeatureFlag("VENUE_IMAGE_EDITOR_ENABLED", { defaultEnabled: true }), uploadLimiter, imageUpload.single("file"), createVenueImageAsset);
 router.get("/strategic-partners", listPublicStrategicPartners);
 router.post("/ads/uploads/creative", ...canUploadAdCreativeToR2, uploadLimiter, imageUpload.single("file"), uploadAdCreativeAsset);
 router.post("/me/advertiser-uploads/creative", requireAuth, requireFeatureFlag("ADS_R2_CREATIVE_UPLOAD_ENABLED"), uploadLimiter, imageUpload.single("file"), requireAdvertiserCampaignWrite, uploadAdCreativeAsset);

@@ -169,7 +169,7 @@ export default function VenueClaimDirectoryPage() {
         const pending = Boolean(activeClaim);
         const pendingLabel = activeClaim?.status === "pending_legal_acceptance" ? "Aguardando assinatura" : "Em análise";
         return <article className="artist-directory-row" key={venue.id}>
-          <div className="artist-directory-avatar venue-claim-avatar">{venue.imageUrl ? <img src={venue.imageUrl} alt="" loading="lazy"/> : <Building2 size={18}/>}</div>
+          <div className="artist-directory-avatar venue-claim-avatar">{venue.images?.thumbnail || venue.thumbnailImageUrl || venue.imageUrl ? <img src={venue.images?.thumbnail || venue.thumbnailImageUrl || venue.imageUrl} srcSet={venue.images?.thumbnailSmall && venue.images?.thumbnail ? `${venue.images.thumbnailSmall} 256w, ${venue.images.thumbnail} 640w` : undefined} sizes="48px" alt="" loading="lazy"/> : <Building2 size={18}/>}</div>
           <div className="artist-directory-identity"><strong>{venue.name}</strong><small>{[venue.neighborhood, venue.region, venue.city].filter(Boolean).join(" · ") || "Casa cadastrada"}</small></div>
           <button className="artist-directory-action" type="button" disabled={pending} onClick={() => { setSelectedVenue(venue); setMessage(""); }}>{pending ? pendingLabel : "Solicitar acesso"}</button>
         </article>;

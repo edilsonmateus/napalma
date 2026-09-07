@@ -15,6 +15,11 @@ import {
   venueInclusionIdentity,
   venueInclusionRequestedChangesSchema
 } from "../services/venueInclusion.service.js";
+import { findVenueAdminOnlyFields } from "../policies/venueFields.policy.js";
+import {
+  rejectVenueImageAsset,
+  validateVenueImageAssetForAttachment
+} from "../services/venueImageAssets.service.js";
 
 const CLAIM_LEGAL_VERSION = "CLAIM_RESPONSIBILITY_V1";
 
@@ -39,6 +44,14 @@ const createClaimSchema = z
     })
   })
   .superRefine((data, ctx) => {
+    const adminOnlyFields = findVenueAdminOnlyFields(data.requestedChanges);
+    if (adminOnlyFields.length > 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["requestedChanges", adminOnlyFields[0]],
+        message: "A condição Gold Partner só pode ser alterada pela administração da 77Gira."
+      });
+    }
     if (data.targetType === "venue" && data.requestType !== "venue_inclusion" && !data.venueId) {
       ctx.addIssue({ code: "custom", path: ["venueId"], message: "Informe a casa para reivindicacao." });
     }
@@ -139,6 +152,8 @@ function mapClaim(claim) {
           id: claim.venue.id,
           name: claim.venue.name,
           region: claim.venue.region,
+          imageUrl: claim.venue.imageUrl ?? "",
+          bannerImageSmallUrl: claim.venue.bannerImageSmallUrl ?? "",
           contactName: claim.venue.contactName ?? "",
           contactPhone: claim.venue.contactPhone ?? ""
         }
@@ -214,6 +229,23 @@ export async function createClaimRequest(req, res, next) {
       const venue = await prisma.venue.findUnique({ where: { id: data.venueId }, select: { id: true } });
       if (!venue) return res.status(404).json({ error: "venue_not_found", message: "Casa nao encontrada." });
     }
+    const requestedImageAssetId = data.requestType === "venue_update"
+      ? data.requestedChanges?.venueImageAssetId
+      : null;
+    if (requestedImageAssetId) {
+      try {
+        await validateVenueImageAssetForAttachment(prisma, {
+          assetId: requestedImageAssetId,
+          venueId: data.venueId,
+          ownerUserId: req.user.id
+        });
+      } catch (error) {
+        if (error?.publicMessage) {
+          return res.status(error.status || 400).json({ error: error.code, message: error.publicMessage });
+        }
+        throw error;
+      }
+    }
     if (data.targetType === ClaimTargetType.artist && data.requestType !== "artist_inclusion") {
       const artist = await prisma.artist.findUnique({ where: { id: data.artistId }, select: { id: true, _count: { select: { accesses: { where: { status: "active" } }, producerAccesses: true } } } });
       if (!artist) return res.status(404).json({ error: "artist_not_found", message: "Artista nao encontrado." });
@@ -288,6 +320,7 @@ export async function createClaimRequest(req, res, next) {
 
     return res.status(201).json({ item: mapClaim(claim) });
   } catch (error) {
+    if (error?.publicMessage) return res.status(error.status || 400).json({ error: error.code, message: error.publicMessage });
     next(error);
   }
 }
@@ -371,7 +404,7 @@ export async function getOperationsClaimDetail(req, res, next) {
     const claim = await prisma.claimRequest.findUnique({
       where: { id },
       include: {
-        venue: { select: { id: true, name: true, region: true, city: true } },
+        venue: { select: { id: true, name: true, region: true, city: true, imageUrl: true, bannerImageSmallUrl: true } },
         artist: { select: { id: true, name: true, isVerified: true } },
         requestedBy: { select: { id: true, firstName: true, lastName: true, email: true, username: true, role: true } },
         reviewedBy: { select: { id: true, firstName: true, lastName: true } },
@@ -380,6 +413,22 @@ export async function getOperationsClaimDetail(req, res, next) {
     });
     if (!claim) return res.status(404).json({ error: "claim_not_found", message: "Reivindicação não encontrada." });
     const requestedVenue = claim.requestedChanges && typeof claim.requestedChanges === "object" ? claim.requestedChanges : {};
+    const proposedVenueImage = requestedVenue.venueImageAssetId
+      ? await prisma.venueImageAsset.findUnique({
+          where: { id: requestedVenue.venueImageAssetId },
+          select: {
+            id: true,
+            status: true,
+            bannerUrl: true,
+            bannerMediumUrl: true,
+            bannerSmallUrl: true,
+            thumbnailUrl: true,
+            thumbnailSmallUrl: true,
+            sourceWidth: true,
+            sourceHeight: true
+          }
+        })
+      : null;
     const managedVenues = claim.requestType === "venue_inclusion"
       ? await prisma.venue.findMany({
           where: {
@@ -407,7 +456,7 @@ export async function getOperationsClaimDetail(req, res, next) {
         })
       : [];
     await recordAuditEvent({ req, action: "claim.operations_detail_opened", subjectType: "claim", subjectId: claim.id, metadata: { purpose: "operations_center", sensitiveFields: ["contact", "document", "evidence"] } });
-    return res.json({ item: { ...mapOperationsClaim(claim), claim: mapClaim(claim), managedVenues, venueCandidates } });
+    return res.json({ item: { ...mapOperationsClaim(claim), claim: mapClaim(claim), managedVenues, venueCandidates, proposedVenueImage } });
   } catch (error) { next(error); }
 }
 
@@ -432,6 +481,16 @@ export async function decideClaim(req, res, next) {
     let venueResolutionAudit = null;
     const updated = await prisma.$transaction(async (tx) => {
       if (data.status === ClaimStatus.rejected) {
+        const requested = existing.requestedChanges && typeof existing.requestedChanges === "object"
+          ? existing.requestedChanges
+          : {};
+        if (requested.venueImageAssetId) {
+          await rejectVenueImageAsset({
+            tx,
+            assetId: requested.venueImageAssetId,
+            ownerUserId: existing.requestedById
+          });
+        }
         return tx.claimRequest.update({
           where: { id: existing.id },
           data: { status: data.status, decisionNote: data.decisionNote, reviewedById: req.user.id, reviewedAt: new Date() }
@@ -495,6 +554,7 @@ export async function decideClaim(req, res, next) {
         artistId: finalClaim.artistId || null,
         legalEnvelopeId: finalClaim.legalEnvelopeId || null,
         delivery,
+        venueImageChanged: Boolean(finalClaim.requestedChanges?.venueImageAssetId && finalClaim.status === ClaimStatus.approved),
         ...(venueResolutionAudit ? {
           venueResolution: venueResolutionAudit.mode,
           venueCreated: venueResolutionAudit.venueCreated
@@ -506,6 +566,7 @@ export async function decideClaim(req, res, next) {
 
     if (updated?.envelope) scheduleClaimLegalInvitation(updated.envelope);
   } catch (error) {
+    if (error?.publicMessage) return res.status(error.status || 400).json({ error: error.code, message: error.publicMessage });
     next(error);
   }
 }

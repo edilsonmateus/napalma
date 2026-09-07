@@ -196,6 +196,18 @@ enum VenueVisibilityStatus {
   paused
 }
 
+enum VenueImageAssetStatus {
+  draft
+  attached
+  rejected
+  expired
+}
+
+enum VenueImageBannerMode {
+  cover
+  contain_blur
+}
+
 enum VenueMenuItemStatus {
   draft
   published
@@ -424,64 +436,65 @@ model User {
   reservedUsernameGrantedByUserId String?
   reservedUsernameGrantedAt       DateTime?
 
-  markedEvents                 MarkedEvent[]
-  historyEntries               UserEventHistory[]
-  achievements                 UserAchievement[]
-  createdVenues                Venue[]                       @relation("VenueCreatedBy")
-  managedVenues                Venue[]                       @relation("VenueManagedBy")
-  venueAccesses                VenueManagerAccess[]
-  createdArtists               Artist[]                      @relation("ArtistCreatedBy")
-  createdEvents                Event[]                       @relation("EventCreatedBy")
-  refreshTokens                RefreshToken[]
-  passwordResetTokens          PasswordResetToken[]
-  adCampaigns                  AdCampaign[]
-  adEvents                     AdEventLog[]
-  itineraries                  Itinerary[]
-  audienceVisits               AudienceVisitor[]
-  pushSubscriptions            PushSubscription[]
-  eventReminders               EventReminder[]
-  radarEventRemindersEnabled   Boolean                    @default(false)
-  toNaPistaSessions            ToNaPistaSession[]
-  producerVenueAccesses        ProducerVenueAccess[]
-  producerArtistAccesses       ProducerArtistAccess[]
-  artistFollows                ArtistFollow[]
-  claims                       ClaimRequest[]                @relation("ClaimRequestedBy")
-  claimsReviewed               ClaimRequest[]                @relation("ClaimReviewedBy")
-  createdRegions               Region[]                      @relation("RegionCreatedBy")
-  acquisitionLeads             AcquisitionLead[]             @relation("AcquisitionLeadCreatedBy")
-  acquisitionInteractions      AcquisitionInteraction[]      @relation("AcquisitionInteractionCreatedBy")
-  acquisitionStatusChanges     AcquisitionStatusHistory[]    @relation("AcquisitionStatusChangedBy")
-  advertiserAccountsCreated    AdvertiserAccount[]           @relation("AdvertiserAccountCreatedBy")
-  advertiserAccountsApproved   AdvertiserAccount[]           @relation("AdvertiserAccountApprovedBy")
-  advertiserMemberships        AdvertiserMembership[]        @relation("AdvertiserMembershipUser")
-  advertiserMembershipInvites  AdvertiserMembership[]        @relation("AdvertiserMembershipInvitedBy")
-  adCampaignReviews            AdCampaign[]                  @relation("AdCampaignReviewedBy")
-  adCreativeReviews            AdCreative[]                  @relation("AdCreativeReviewedBy")
-  adReviewActions              AdReviewLog[]                 @relation("AdReviewLogActor")
-  adPaymentOrdersCreated       AdPaymentOrder[]              @relation("AdPaymentOrderCreatedBy")
-  adCreditEntriesCreated       AdCreditLedgerEntry[]         @relation("AdCreditLedgerEntryCreatedBy")
-  adExperienceGrantsCreated    AdExperienceGrant[]           @relation("AdExperienceGrantCreatedBy")
-  artistAccesses               ArtistAccess[]                @relation("ArtistAccessUser")
-  artistAccessInvites          ArtistAccess[]                @relation("ArtistAccessInvitedBy")
-  artistsVerified              Artist[]                      @relation("ArtistVerifiedBy")
-  artistBookingRequests        ArtistBookingRequest[]        @relation("ArtistBookingRequester")
-  privacyConsentRecords        PrivacyConsentRecord[]
-  privacyRequests              PrivacyRequest[]              @relation("PrivacyRequestRequester")
-  privacyRequestsHandled       PrivacyRequest[]              @relation("PrivacyRequestHandledBy")
-  auditLogs                    AuditLog[]                    @relation("AuditLogActor")
-  venueMenuInteractions        VenueMenuInteraction[]
-  menuReviews                  VenueMenu[]                   @relation("VenueMenuReviewedBy")
-  menuAdInventoryAcceptances   VenueMenu[]                   @relation("VenueMenuAdInventoryAcceptedBy")
-  operationAccessGrants        OperationAccessGrant[]        @relation("OperationAccessGrantUser")
-  operationAccessGrantsIssued  OperationAccessGrant[]        @relation("OperationAccessGrantIssuer")
-  operationWebAuthnCredentials OperationWebAuthnCredential[]
-  operationWebAuthnChallenges  OperationWebAuthnChallenge[]
-  operationCommunicationMessages OperationCommunicationMessage[] @relation("OperationCommunicationAuthor")
-  legalDocumentAcceptances     LegalDocumentAcceptance[]
-  signatureEnvelopesCreated    LegalSignatureEnvelope[]       @relation("LegalSignatureEnvelopeCreatedBy")
-  commercialAgreementsCreated  CommercialAgreement[]          @relation("CommercialAgreementCreatedBy")
-  commercialAgreementsAsCounterpart CommercialAgreement[]     @relation("CommercialAgreementCounterpart")
-  legalSignatureParticipants   LegalSignatureParticipant[]    @relation("LegalSignatureParticipantUser")
+  markedEvents                      MarkedEvent[]
+  historyEntries                    UserEventHistory[]
+  achievements                      UserAchievement[]
+  createdVenues                     Venue[]                         @relation("VenueCreatedBy")
+  managedVenues                     Venue[]                         @relation("VenueManagedBy")
+  venueAccesses                     VenueManagerAccess[]
+  createdArtists                    Artist[]                        @relation("ArtistCreatedBy")
+  createdEvents                     Event[]                         @relation("EventCreatedBy")
+  refreshTokens                     RefreshToken[]
+  passwordResetTokens               PasswordResetToken[]
+  adCampaigns                       AdCampaign[]
+  adEvents                          AdEventLog[]
+  itineraries                       Itinerary[]
+  audienceVisits                    AudienceVisitor[]
+  pushSubscriptions                 PushSubscription[]
+  eventReminders                    EventReminder[]
+  radarEventRemindersEnabled        Boolean                         @default(false)
+  toNaPistaSessions                 ToNaPistaSession[]
+  producerVenueAccesses             ProducerVenueAccess[]
+  producerArtistAccesses            ProducerArtistAccess[]
+  artistFollows                     ArtistFollow[]
+  claims                            ClaimRequest[]                  @relation("ClaimRequestedBy")
+  claimsReviewed                    ClaimRequest[]                  @relation("ClaimReviewedBy")
+  createdRegions                    Region[]                        @relation("RegionCreatedBy")
+  acquisitionLeads                  AcquisitionLead[]               @relation("AcquisitionLeadCreatedBy")
+  acquisitionInteractions           AcquisitionInteraction[]        @relation("AcquisitionInteractionCreatedBy")
+  acquisitionStatusChanges          AcquisitionStatusHistory[]      @relation("AcquisitionStatusChangedBy")
+  advertiserAccountsCreated         AdvertiserAccount[]             @relation("AdvertiserAccountCreatedBy")
+  advertiserAccountsApproved        AdvertiserAccount[]             @relation("AdvertiserAccountApprovedBy")
+  advertiserMemberships             AdvertiserMembership[]          @relation("AdvertiserMembershipUser")
+  advertiserMembershipInvites       AdvertiserMembership[]          @relation("AdvertiserMembershipInvitedBy")
+  adCampaignReviews                 AdCampaign[]                    @relation("AdCampaignReviewedBy")
+  adCreativeReviews                 AdCreative[]                    @relation("AdCreativeReviewedBy")
+  adReviewActions                   AdReviewLog[]                   @relation("AdReviewLogActor")
+  adPaymentOrdersCreated            AdPaymentOrder[]                @relation("AdPaymentOrderCreatedBy")
+  adCreditEntriesCreated            AdCreditLedgerEntry[]           @relation("AdCreditLedgerEntryCreatedBy")
+  adExperienceGrantsCreated         AdExperienceGrant[]             @relation("AdExperienceGrantCreatedBy")
+  artistAccesses                    ArtistAccess[]                  @relation("ArtistAccessUser")
+  artistAccessInvites               ArtistAccess[]                  @relation("ArtistAccessInvitedBy")
+  artistsVerified                   Artist[]                        @relation("ArtistVerifiedBy")
+  artistBookingRequests             ArtistBookingRequest[]          @relation("ArtistBookingRequester")
+  privacyConsentRecords             PrivacyConsentRecord[]
+  privacyRequests                   PrivacyRequest[]                @relation("PrivacyRequestRequester")
+  privacyRequestsHandled            PrivacyRequest[]                @relation("PrivacyRequestHandledBy")
+  auditLogs                         AuditLog[]                      @relation("AuditLogActor")
+  venueMenuInteractions             VenueMenuInteraction[]
+  menuReviews                       VenueMenu[]                     @relation("VenueMenuReviewedBy")
+  menuAdInventoryAcceptances        VenueMenu[]                     @relation("VenueMenuAdInventoryAcceptedBy")
+  operationAccessGrants             OperationAccessGrant[]          @relation("OperationAccessGrantUser")
+  operationAccessGrantsIssued       OperationAccessGrant[]          @relation("OperationAccessGrantIssuer")
+  operationWebAuthnCredentials      OperationWebAuthnCredential[]
+  operationWebAuthnChallenges       OperationWebAuthnChallenge[]
+  operationCommunicationMessages    OperationCommunicationMessage[] @relation("OperationCommunicationAuthor")
+  legalDocumentAcceptances          LegalDocumentAcceptance[]
+  signatureEnvelopesCreated         LegalSignatureEnvelope[]        @relation("LegalSignatureEnvelopeCreatedBy")
+  commercialAgreementsCreated       CommercialAgreement[]           @relation("CommercialAgreementCreatedBy")
+  commercialAgreementsAsCounterpart CommercialAgreement[]           @relation("CommercialAgreementCounterpart")
+  legalSignatureParticipants        LegalSignatureParticipant[]     @relation("LegalSignatureParticipantUser")
+  venueImageAssets                  VenueImageAsset[]               @relation("VenueImageAssetOwner")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -590,29 +603,29 @@ model AuditLog {
 // concerns. Only an active, public and currently valid partner is exposed by
 // the public endpoint.
 model StrategicPartner {
-  id                      String                 @id @default(uuid())
-  name                    String
-  logoUrl                 String?
-  publicDescription       String?                @db.VarChar(600)
-  internalNotes           String?                @db.Text
-  contactName             String?
-  contactEmail            String?
-  contactPhone            String?
-  partnershipType         StrategicPartnerType   @default(other)
-  counterpartAgreements   String?                @db.Text
-  status                  StrategicPartnerStatus @default(prospect)
-  startsAt                DateTime?
-  endsAt                  DateTime?
-  isPermanent             Boolean                @default(false)
-  publicVisible           Boolean                @default(false)
-  displayOrder            Int                    @default(0)
-  initiativeName          String?
-  destinationUrl          String?
-  activationStartsAt      DateTime?
-  activationEndsAt        DateTime?
-  canAppearAsSupporter    Boolean                @default(false)
-  createdAt               DateTime               @default(now())
-  updatedAt               DateTime               @updatedAt
+  id                    String                 @id @default(uuid())
+  name                  String
+  logoUrl               String?
+  publicDescription     String?                @db.VarChar(600)
+  internalNotes         String?                @db.Text
+  contactName           String?
+  contactEmail          String?
+  contactPhone          String?
+  partnershipType       StrategicPartnerType   @default(other)
+  counterpartAgreements String?                @db.Text
+  status                StrategicPartnerStatus @default(prospect)
+  startsAt              DateTime?
+  endsAt                DateTime?
+  isPermanent           Boolean                @default(false)
+  publicVisible         Boolean                @default(false)
+  displayOrder          Int                    @default(0)
+  initiativeName        String?
+  destinationUrl        String?
+  activationStartsAt    DateTime?
+  activationEndsAt      DateTime?
+  canAppearAsSupporter  Boolean                @default(false)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
 
   @@index([status, publicVisible, displayOrder])
   @@index([endsAt])
@@ -622,23 +635,23 @@ model StrategicPartner {
 // record. Recipient data is kept as a snapshot so the communication history
 // remains useful even when a public profile later changes or is removed.
 model OperationCommunicationMessage {
-  id                    String                              @id @default(uuid())
-  recipientName         String?
-  recipientEmail        String?
-  recipientType         OperationCommunicationRecipientType?
-  recipientReferenceId  String?
-  subject               String                              @default("") @db.VarChar(220)
-  contentHtml           String                              @default("") @db.Text
-  contentText           String                              @default("") @db.Text
-  templateKey           String?                             @db.VarChar(80)
-  includePartnerRail    Boolean                             @default(false)
-  status                OperationCommunicationStatus       @default(draft)
-  failureReason         String?                             @db.VarChar(500)
-  sentAt                DateTime?
-  authorUserId          String
-  author                User                                @relation("OperationCommunicationAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
-  createdAt             DateTime                            @default(now())
-  updatedAt             DateTime                            @updatedAt
+  id                   String                               @id @default(uuid())
+  recipientName        String?
+  recipientEmail       String?
+  recipientType        OperationCommunicationRecipientType?
+  recipientReferenceId String?
+  subject              String                               @default("") @db.VarChar(220)
+  contentHtml          String                               @default("") @db.Text
+  contentText          String                               @default("") @db.Text
+  templateKey          String?                              @db.VarChar(80)
+  includePartnerRail   Boolean                              @default(false)
+  status               OperationCommunicationStatus         @default(draft)
+  failureReason        String?                              @db.VarChar(500)
+  sentAt               DateTime?
+  authorUserId         String
+  author               User                                 @relation("OperationCommunicationAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+  createdAt            DateTime                             @default(now())
+  updatedAt            DateTime                             @updatedAt
 
   @@index([status, updatedAt])
   @@index([recipientEmail, createdAt])
@@ -649,47 +662,47 @@ model OperationCommunicationMessage {
 // eventually, but no version is exposed or used for acceptance until it is
 // explicitly made active in a later rollout.
 model LegalDocument {
-  id        String                @id @default(uuid())
-  key       String                @unique @db.VarChar(80)
-  title     String                @db.VarChar(180)
-  category  LegalDocumentCategory
-  summary   String?               @db.VarChar(500)
-  isPublic  Boolean               @default(false)
-  versions  LegalDocumentVersion[]
+  id          String                    @id @default(uuid())
+  key         String                    @unique @db.VarChar(80)
+  title       String                    @db.VarChar(180)
+  category    LegalDocumentCategory
+  summary     String?                   @db.VarChar(500)
+  isPublic    Boolean                   @default(false)
+  versions    LegalDocumentVersion[]
   acceptances LegalDocumentAcceptance[]
-  createdAt DateTime              @default(now())
-  updatedAt DateTime              @updatedAt
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
 
   @@index([category, isPublic])
 }
 
 model LegalDocumentVersion {
-  id                       String                     @id @default(uuid())
-  documentId               String
-  versionLabel             String                     @db.VarChar(32)
-  status                   LegalDocumentVersionStatus @default(draft)
-  contentText              String                     @default("") @db.Text
-  contentSha256            String                     @db.VarChar(64)
-  sourceDocumentUrl        String?                    @db.VarChar(1000)
-  sourceDocumentSha256     String?                    @db.VarChar(64)
-  changeType               LegalDocumentChangeType    @default(material)
-  changeSummary            String?                    @db.VarChar(1000)
-  requiresReacceptance     Boolean                    @default(false)
-  effectiveAt              DateTime?
-  reviewedAt               DateTime?
-  reviewedByUserId         String?
-  approvedAt               DateTime?
-  approvedByUserId         String?
-  publishedAt              DateTime?
-  publishedByUserId        String?
-  replacedAt               DateTime?
-  createdByUserId          String
-  audiences                LegalDocumentVersionAudience[]
-  acceptances              LegalDocumentAcceptance[]
-  signatureEnvelopes       LegalSignatureEnvelope[]
-  document                 LegalDocument              @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  createdAt                DateTime                   @default(now())
-  updatedAt                DateTime                   @updatedAt
+  id                   String                         @id @default(uuid())
+  documentId           String
+  versionLabel         String                         @db.VarChar(32)
+  status               LegalDocumentVersionStatus     @default(draft)
+  contentText          String                         @default("") @db.Text
+  contentSha256        String                         @db.VarChar(64)
+  sourceDocumentUrl    String?                        @db.VarChar(1000)
+  sourceDocumentSha256 String?                        @db.VarChar(64)
+  changeType           LegalDocumentChangeType        @default(material)
+  changeSummary        String?                        @db.VarChar(1000)
+  requiresReacceptance Boolean                        @default(false)
+  effectiveAt          DateTime?
+  reviewedAt           DateTime?
+  reviewedByUserId     String?
+  approvedAt           DateTime?
+  approvedByUserId     String?
+  publishedAt          DateTime?
+  publishedByUserId    String?
+  replacedAt           DateTime?
+  createdByUserId      String
+  audiences            LegalDocumentVersionAudience[]
+  acceptances          LegalDocumentAcceptance[]
+  signatureEnvelopes   LegalSignatureEnvelope[]
+  document             LegalDocument                  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdAt            DateTime                       @default(now())
+  updatedAt            DateTime                       @updatedAt
 
   @@unique([documentId, versionLabel])
   @@index([documentId, status])
@@ -710,20 +723,20 @@ model LegalDocumentVersionAudience {
 // content hash. New document versions create new evidence; historic records
 // are never overwritten when a policy changes.
 model LegalDocumentAcceptance {
-  id              String                         @id @default(uuid())
-  userId          String
-  documentId      String
-  versionId       String
-  audience        LegalDocumentAudience
-  context         LegalDocumentAcceptanceContext
-  action          LegalDocumentAcceptanceAction  @default(accepted)
-  versionLabel    String                         @db.VarChar(32)
-  contentSha256   String                         @db.VarChar(64)
-  source          String                         @default("in_app") @db.VarChar(60)
-  userAgent       String?                        @db.VarChar(512)
-  ipHash          String?                        @db.VarChar(64)
-  metadata        Json?
-  acceptedAt      DateTime                       @default(now())
+  id            String                         @id @default(uuid())
+  userId        String
+  documentId    String
+  versionId     String
+  audience      LegalDocumentAudience
+  context       LegalDocumentAcceptanceContext
+  action        LegalDocumentAcceptanceAction  @default(accepted)
+  versionLabel  String                         @db.VarChar(32)
+  contentSha256 String                         @db.VarChar(64)
+  source        String                         @default("in_app") @db.VarChar(60)
+  userAgent     String?                        @db.VarChar(512)
+  ipHash        String?                        @db.VarChar(64)
+  metadata      Json?
+  acceptedAt    DateTime                       @default(now())
 
   user     User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   document LegalDocument        @relation(fields: [documentId], references: [id], onDelete: Restrict)
@@ -739,45 +752,45 @@ model LegalDocumentAcceptance {
 // document receives a later version. A participant can sign only their own
 // authenticated envelope; raw passwords and one-time codes are never stored.
 model LegalSignatureEnvelope {
-  id                    String                       @id @default(uuid())
-  protocol              String                       @unique @db.VarChar(40)
-  title                 String                       @db.VarChar(220)
-  documentVersionId     String
-  documentTitleSnapshot String                       @db.VarChar(220)
-  versionLabelSnapshot  String                       @db.VarChar(32)
-  contentSnapshot       String                       @db.Text
-  contentSha256         String                       @db.VarChar(64)
-  status                LegalSignatureEnvelopeStatus @default(draft)
-  issueContext          LegalSignatureIssueContext   @default(generic)
-  issueContextReferenceId String?                    @db.VarChar(80)
-  completionMode        LegalSignatureCompletionMode @default(participant_signature)
-  counterpartLegalName  String?                      @db.VarChar(240)
-  counterpartTaxId      String?                      @db.VarChar(32)
-  counterpartRegisteredAddress String?                @db.VarChar(700)
-  counterpartRepresentativeName String?               @db.VarChar(180)
-  counterpartRepresentativeCapacity String?           @db.VarChar(120)
-  counterpartSignatoryEmail String?                   @db.VarChar(320)
-  counterpartSubmittedAt DateTime?
-  counterpartSubmittedByUserId String?
-  commercialAgreementId        String?                       @unique
-  issuerAcceptedAt      DateTime?
-  issuerAcceptedByUserId String?
-  ratifiedAt            DateTime?
-  ratifiedByUserId      String?
-  expiresAt             DateTime?
-  sentAt                DateTime?
-  completedAt           DateTime?
-  cancelledAt           DateTime?
-  cancellationReason    String?                      @db.VarChar(600)
-  createdByUserId       String
-  documentVersion       LegalDocumentVersion         @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
-  createdBy             User                         @relation("LegalSignatureEnvelopeCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  participants          LegalSignatureParticipant[]
-  events                LegalSignatureEvent[]
-  claimRequest          ClaimRequest?
-  commercialAgreement   CommercialAgreement?                @relation(fields: [commercialAgreementId], references: [id], onDelete: SetNull)
-  createdAt             DateTime                     @default(now())
-  updatedAt             DateTime                     @updatedAt
+  id                                String                       @id @default(uuid())
+  protocol                          String                       @unique @db.VarChar(40)
+  title                             String                       @db.VarChar(220)
+  documentVersionId                 String
+  documentTitleSnapshot             String                       @db.VarChar(220)
+  versionLabelSnapshot              String                       @db.VarChar(32)
+  contentSnapshot                   String                       @db.Text
+  contentSha256                     String                       @db.VarChar(64)
+  status                            LegalSignatureEnvelopeStatus @default(draft)
+  issueContext                      LegalSignatureIssueContext   @default(generic)
+  issueContextReferenceId           String?                      @db.VarChar(80)
+  completionMode                    LegalSignatureCompletionMode @default(participant_signature)
+  counterpartLegalName              String?                      @db.VarChar(240)
+  counterpartTaxId                  String?                      @db.VarChar(32)
+  counterpartRegisteredAddress      String?                      @db.VarChar(700)
+  counterpartRepresentativeName     String?                      @db.VarChar(180)
+  counterpartRepresentativeCapacity String?                      @db.VarChar(120)
+  counterpartSignatoryEmail         String?                      @db.VarChar(320)
+  counterpartSubmittedAt            DateTime?
+  counterpartSubmittedByUserId      String?
+  commercialAgreementId             String?                      @unique
+  issuerAcceptedAt                  DateTime?
+  issuerAcceptedByUserId            String?
+  ratifiedAt                        DateTime?
+  ratifiedByUserId                  String?
+  expiresAt                         DateTime?
+  sentAt                            DateTime?
+  completedAt                       DateTime?
+  cancelledAt                       DateTime?
+  cancellationReason                String?                      @db.VarChar(600)
+  createdByUserId                   String
+  documentVersion                   LegalDocumentVersion         @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+  createdBy                         User                         @relation("LegalSignatureEnvelopeCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  participants                      LegalSignatureParticipant[]
+  events                            LegalSignatureEvent[]
+  claimRequest                      ClaimRequest?
+  commercialAgreement               CommercialAgreement?         @relation(fields: [commercialAgreementId], references: [id], onDelete: SetNull)
+  createdAt                         DateTime                     @default(now())
+  updatedAt                         DateTime                     @updatedAt
 
   @@index([status, expiresAt])
   @@index([documentVersionId, createdAt])
@@ -786,30 +799,30 @@ model LegalSignatureEnvelope {
 }
 
 model LegalSignatureParticipant {
-  id                    String                         @id @default(uuid())
-  envelopeId            String
-  userId                String?
-  nameSnapshot          String                         @db.VarChar(180)
-  emailSnapshot         String                         @db.VarChar(320)
-  roleLabel             String?                        @db.VarChar(120)
-  signingOrder          Int                            @default(1)
-  status                LegalSignatureParticipantStatus @default(pending)
-  invitationTokenHash   String                         @unique @db.VarChar(64)
-  invitationExpiresAt   DateTime
-  invitationSentAt      DateTime?
-  viewedAt              DateTime?
-  signedAt              DateTime?
-  declinedAt            DateTime?
-  declineReason         String?                        @db.VarChar(600)
-  emailCodeHash         String?                        @db.VarChar(64)
-  emailCodeExpiresAt    DateTime?
-  emailCodeUsedAt       DateTime?
-  envelope              LegalSignatureEnvelope        @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
-  user                  User?                          @relation("LegalSignatureParticipantUser", fields: [userId], references: [id], onDelete: SetNull)
-  evidences             LegalSignatureEvidence[]
-  events                LegalSignatureEvent[]
-  createdAt             DateTime                       @default(now())
-  updatedAt             DateTime                       @updatedAt
+  id                  String                          @id @default(uuid())
+  envelopeId          String
+  userId              String?
+  nameSnapshot        String                          @db.VarChar(180)
+  emailSnapshot       String                          @db.VarChar(320)
+  roleLabel           String?                         @db.VarChar(120)
+  signingOrder        Int                             @default(1)
+  status              LegalSignatureParticipantStatus @default(pending)
+  invitationTokenHash String                          @unique @db.VarChar(64)
+  invitationExpiresAt DateTime
+  invitationSentAt    DateTime?
+  viewedAt            DateTime?
+  signedAt            DateTime?
+  declinedAt          DateTime?
+  declineReason       String?                         @db.VarChar(600)
+  emailCodeHash       String?                         @db.VarChar(64)
+  emailCodeExpiresAt  DateTime?
+  emailCodeUsedAt     DateTime?
+  envelope            LegalSignatureEnvelope          @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+  user                User?                           @relation("LegalSignatureParticipantUser", fields: [userId], references: [id], onDelete: SetNull)
+  evidences           LegalSignatureEvidence[]
+  events              LegalSignatureEvent[]
+  createdAt           DateTime                        @default(now())
+  updatedAt           DateTime                        @updatedAt
 
   @@unique([envelopeId, emailSnapshot])
   @@index([userId, status])
@@ -831,15 +844,15 @@ model LegalSignatureEvidence {
 }
 
 model LegalSignatureEvent {
-  id            String                  @id @default(uuid())
+  id            String                     @id @default(uuid())
   envelopeId    String
   participantId String?
   actorUserId   String?
-  action        String                  @db.VarChar(80)
+  action        String                     @db.VarChar(80)
   metadata      Json?
-  ipHash        String?                 @db.VarChar(64)
-  createdAt     DateTime                @default(now())
-  envelope      LegalSignatureEnvelope  @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+  ipHash        String?                    @db.VarChar(64)
+  createdAt     DateTime                   @default(now())
+  envelope      LegalSignatureEnvelope     @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
   participant   LegalSignatureParticipant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
 
   @@index([envelopeId, createdAt])
@@ -883,22 +896,22 @@ model AudienceVisitor {
 }
 
 model PushSubscription {
-  id        String   @id @default(uuid())
-  endpoint  String   @unique
-  p256dh    String
-  authKey   String
-  userId    String?
-  visitorId String?
-  platform  String?
-  userAgent String?
-  isActive  Boolean  @default(true)
+  id          String    @id @default(uuid())
+  endpoint    String    @unique
+  p256dh      String
+  authKey     String
+  userId      String?
+  visitorId   String?
+  platform    String?
+  userAgent   String?
+  isActive    Boolean   @default(true)
   deviceLabel String?
-  lastSeenAt DateTime @default(now())
-  disabledAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  lastSeenAt  DateTime  @default(now())
+  disabledAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  user User? @relation(fields: [userId], references: [id])
+  user               User?                   @relation(fields: [userId], references: [id])
   reminderDeliveries EventReminderDelivery[]
 
   @@index([userId])
@@ -967,15 +980,15 @@ model AnalyticsEvent {
 }
 
 model Itinerary {
-  id                  String   @id @default(uuid())
+  id                  String    @id @default(uuid())
   userId              String
   title               String
   date                DateTime
-  mode                String   @default("manual") // manual | automatic
-  status              String   @default("draft") // draft | active | completed
-  totalTransitMinutes Int      @default(0)
-  riskScore           Int      @default(0)
-  shareToken          String?  @unique
+  mode                String    @default("manual") // manual | automatic
+  status              String    @default("draft") // draft | active | completed
+  totalTransitMinutes Int       @default(0)
+  riskScore           Int       @default(0)
+  shareToken          String?   @unique
   shareEnabledAt      DateTime?
   shareExpiresAt      DateTime?
   shareRevokedAt      DateTime?
@@ -1038,15 +1051,15 @@ model AdCampaign {
   pricingSnapshot         Json?
   pricingVersion          String?
 
-  createdBy         User?                 @relation(fields: [createdByUserId], references: [id])
-  advertiserAccount AdvertiserAccount?    @relation(fields: [advertiserAccountId], references: [id], onDelete: SetNull)
-  reviewedBy        User?                 @relation("AdCampaignReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
-  creatives         AdCreative[]
-  events            AdEventLog[]
-  deliveries        AdDelivery[]
-  paymentOrders     AdPaymentOrder[]
-  creditEntries     AdCreditLedgerEntry[]
-  creditAllocations AdCampaignCreditAllocation[]
+  createdBy            User?                         @relation(fields: [createdByUserId], references: [id])
+  advertiserAccount    AdvertiserAccount?            @relation(fields: [advertiserAccountId], references: [id], onDelete: SetNull)
+  reviewedBy           User?                         @relation("AdCampaignReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  creatives            AdCreative[]
+  events               AdEventLog[]
+  deliveries           AdDelivery[]
+  paymentOrders        AdPaymentOrder[]
+  creditEntries        AdCreditLedgerEntry[]
+  creditAllocations    AdCampaignCreditAllocation[]
   commercialAgreements CommercialAgreementCampaign[]
 
   createdAt DateTime @default(now())
@@ -1073,14 +1086,14 @@ model AdvertiserAccount {
   approvedByUserId   String?
   approvedAt         DateTime?
 
-  createdBy     User?                  @relation("AdvertiserAccountCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  approvedBy    User?                  @relation("AdvertiserAccountApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
-  memberships   AdvertiserMembership[]
-  campaigns     AdCampaign[]
-  wallet        AdvertiserWallet?
-  paymentOrders AdPaymentOrder[]
-  creditEntries AdCreditLedgerEntry[]
-  experienceGrants AdExperienceGrant[]
+  createdBy            User?                  @relation("AdvertiserAccountCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  approvedBy           User?                  @relation("AdvertiserAccountApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  memberships          AdvertiserMembership[]
+  campaigns            AdCampaign[]
+  wallet               AdvertiserWallet?
+  paymentOrders        AdPaymentOrder[]
+  creditEntries        AdCreditLedgerEntry[]
+  experienceGrants     AdExperienceGrant[]
   commercialAgreements CommercialAgreement[]
 
   createdAt DateTime @default(now())
@@ -1091,29 +1104,29 @@ model AdvertiserAccount {
 }
 
 model CommercialAgreement {
-  id                    String                            @id @default(uuid())
-  advertiserAccountId   String
-  title                 String                            @db.VarChar(220)
-  type                  CommercialAgreementType
-  status                CommercialAgreementStatus         @default(draft)
-  commercialReference   String?                           @db.VarChar(120)
-  conditionsSummary     String?                           @db.Text
-  startsAt              DateTime?
-  endsAt                DateTime?
-  counterpartUserId     String
-  createdByUserId       String
-  issuedAt              DateTime?
-  completedAt           DateTime?
-  cancelledAt           DateTime?
-  cancellationReason    String?                           @db.VarChar(600)
-  advertiserAccount     AdvertiserAccount                 @relation(fields: [advertiserAccountId], references: [id], onDelete: Restrict)
-  counterpartUser       User                              @relation("CommercialAgreementCounterpart", fields: [counterpartUserId], references: [id], onDelete: Restrict)
-  createdBy             User                              @relation("CommercialAgreementCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  envelope              LegalSignatureEnvelope?
-  campaigns             CommercialAgreementCampaign[]
-  placements            CommercialAgreementPlacement[]
-  createdAt             DateTime                          @default(now())
-  updatedAt             DateTime                          @updatedAt
+  id                  String                         @id @default(uuid())
+  advertiserAccountId String
+  title               String                         @db.VarChar(220)
+  type                CommercialAgreementType
+  status              CommercialAgreementStatus      @default(draft)
+  commercialReference String?                        @db.VarChar(120)
+  conditionsSummary   String?                        @db.Text
+  startsAt            DateTime?
+  endsAt              DateTime?
+  counterpartUserId   String
+  createdByUserId     String
+  issuedAt            DateTime?
+  completedAt         DateTime?
+  cancelledAt         DateTime?
+  cancellationReason  String?                        @db.VarChar(600)
+  advertiserAccount   AdvertiserAccount              @relation(fields: [advertiserAccountId], references: [id], onDelete: Restrict)
+  counterpartUser     User                           @relation("CommercialAgreementCounterpart", fields: [counterpartUserId], references: [id], onDelete: Restrict)
+  createdBy           User                           @relation("CommercialAgreementCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  envelope            LegalSignatureEnvelope?
+  campaigns           CommercialAgreementCampaign[]
+  placements          CommercialAgreementPlacement[]
+  createdAt           DateTime                       @default(now())
+  updatedAt           DateTime                       @updatedAt
 
   @@index([advertiserAccountId, status, updatedAt])
   @@index([counterpartUserId, status])
@@ -1144,12 +1157,12 @@ model CommercialAgreementPlacement {
 }
 
 model AdvertiserWallet {
-  id        String   @id @default(uuid())
-  accountId String   @unique
-  balance   Int      @default(0)
-  balanceMilipatacos BigInt @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  accountId          String   @unique
+  balance            Int      @default(0)
+  balanceMilipatacos BigInt   @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   account AdvertiserAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
 }
@@ -1171,8 +1184,8 @@ model AdExperienceGrant {
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
 
-  account     AdvertiserAccount             @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  grantedBy   User                          @relation("AdExperienceGrantCreatedBy", fields: [grantedByUserId], references: [id], onDelete: Restrict)
+  account     AdvertiserAccount            @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  grantedBy   User                         @relation("AdExperienceGrantCreatedBy", fields: [grantedByUserId], references: [id], onDelete: Restrict)
   allocations AdCampaignCreditAllocation[]
 
   @@index([accountId, status, expiresAt])
@@ -1182,20 +1195,20 @@ model AdExperienceGrant {
 // A reserva da campanha sabe de qual fonte veio. Assim, crédito promocional
 // pode expirar ou voltar ao lote sem alterar a verba adquirida.
 model AdCampaignCreditAllocation {
-  id                   String                   @id @default(uuid())
-  campaignId           String
-  experienceGrantId    String?
-  source               AdCampaignCreditSource
-  originalMilipatacos  BigInt
-  reservedMilipatacos  BigInt                   @default(0)
-  spentMilipatacos     BigInt                   @default(0)
-  expiredMilipatacos   BigInt                   @default(0)
-  expiresAt            DateTime?
-  createdAt            DateTime                 @default(now())
-  updatedAt            DateTime                 @updatedAt
+  id                  String                 @id @default(uuid())
+  campaignId          String
+  experienceGrantId   String?
+  source              AdCampaignCreditSource
+  originalMilipatacos BigInt
+  reservedMilipatacos BigInt                 @default(0)
+  spentMilipatacos    BigInt                 @default(0)
+  expiredMilipatacos  BigInt                 @default(0)
+  expiresAt           DateTime?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
 
-  campaign        AdCampaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  experienceGrant AdExperienceGrant?  @relation(fields: [experienceGrantId], references: [id], onDelete: SetNull)
+  campaign        AdCampaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  experienceGrant AdExperienceGrant? @relation(fields: [experienceGrantId], references: [id], onDelete: SetNull)
 
   @@index([campaignId, source])
   @@index([experienceGrantId])
@@ -1203,29 +1216,29 @@ model AdCampaignCreditAllocation {
 }
 
 model AdPaymentOrder {
-  id                String            @id @default(uuid())
-  accountId         String
-  campaignId        String?
-  provider          AdPaymentProvider @default(mock)
-  status            AdPaymentStatus   @default(created)
-  packageCode       String
-  amountCents       Int
-  creditAmount      Int
-  creditAmountMilipatacos BigInt @default(0)
-  currency          String            @default("BRL")
-  externalReference String            @unique
-  providerPaymentId String?           @unique
-  idempotencyKey    String            @unique
-  returnPath        String            @default("/workspace/anunciante")
-  createdByUserId   String
-  metadata          Json?
-  approvedAt        DateTime?
-  rejectedAt        DateTime?
-  cancelledAt       DateTime?
-  refundedAt        DateTime?
-  expiresAt         DateTime?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  id                      String            @id @default(uuid())
+  accountId               String
+  campaignId              String?
+  provider                AdPaymentProvider @default(mock)
+  status                  AdPaymentStatus   @default(created)
+  packageCode             String
+  amountCents             Int
+  creditAmount            Int
+  creditAmountMilipatacos BigInt            @default(0)
+  currency                String            @default("BRL")
+  externalReference       String            @unique
+  providerPaymentId       String?           @unique
+  idempotencyKey          String            @unique
+  returnPath              String            @default("/workspace/anunciante")
+  createdByUserId         String
+  metadata                Json?
+  approvedAt              DateTime?
+  rejectedAt              DateTime?
+  cancelledAt             DateTime?
+  refundedAt              DateTime?
+  expiresAt               DateTime?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
 
   account   AdvertiserAccount     @relation(fields: [accountId], references: [id], onDelete: Cascade)
   campaign  AdCampaign?           @relation(fields: [campaignId], references: [id], onDelete: SetNull)
@@ -1238,20 +1251,20 @@ model AdPaymentOrder {
 }
 
 model AdCreditLedgerEntry {
-  id              String             @id @default(uuid())
-  accountId       String
-  campaignId      String?
-  paymentOrderId  String?
-  type            AdCreditLedgerType
-  delta           Int
-  balanceAfter    Int
-  amountMilipatacos BigInt @default(0)
-  balanceAfterMilipatacos BigInt @default(0)
-  idempotencyKey  String             @unique
-  description     String?
-  metadata        Json?
-  createdByUserId String?
-  createdAt       DateTime           @default(now())
+  id                      String             @id @default(uuid())
+  accountId               String
+  campaignId              String?
+  paymentOrderId          String?
+  type                    AdCreditLedgerType
+  delta                   Int
+  balanceAfter            Int
+  amountMilipatacos       BigInt             @default(0)
+  balanceAfterMilipatacos BigInt             @default(0)
+  idempotencyKey          String             @unique
+  description             String?
+  metadata                Json?
+  createdByUserId         String?
+  createdAt               DateTime           @default(now())
 
   account      AdvertiserAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
   campaign     AdCampaign?       @relation(fields: [campaignId], references: [id], onDelete: SetNull)
@@ -1423,11 +1436,11 @@ model PasswordResetToken {
 }
 
 model Venue {
-  id                                     String    @id @default(uuid())
+  id                                     String                @id @default(uuid())
   name                                   String
-  slug                                   String    @unique
-  goldPartner                            Boolean   @default(false)
-  analyticsTier                          String    @default("basic")
+  slug                                   String                @unique
+  goldPartner                            Boolean               @default(false)
+  analyticsTier                          String                @default("basic")
   analyticsAccessSource                  String?
   analyticsAccessUntil                   DateTime?
   description                            String?
@@ -1440,21 +1453,27 @@ model Venue {
   neighborhood                           String
   nickname                               String?
   grammarArticle                         String?
-  grammarPreposition                     String?   @default("em")
+  grammarPreposition                     String?               @default("em")
   displayNameWithArticle                 String?
   displayNameWithPreposition             String?
   nicknameGrammarArticle                 String?
-  nicknameGrammarPreposition             String?   @default("em")
+  nicknameGrammarPreposition             String?               @default("em")
   nicknameDisplayNameWithArticle         String?
   nicknameDisplayNameWithPreposition     String?
   neighborhoodGrammarArticle             String?
-  neighborhoodGrammarPreposition         String?   @default("em")
+  neighborhoodGrammarPreposition         String?               @default("em")
   neighborhoodDisplayNameWithArticle     String?
   neighborhoodDisplayNameWithPreposition String?
   region                                 String
   city                                   String
   state                                  String
   imageUrl                               String?
+  bannerImageUrl                         String?
+  bannerImageMediumUrl                   String?
+  bannerImageSmallUrl                    String?
+  thumbnailImageUrl                      String?
+  thumbnailImageSmallUrl                 String?
+  activeImageAssetId                     String?               @unique
   openDays                               String[]
   visibilityStatus                       VenueVisibilityStatus @default(published)
   visibilityChangedAt                    DateTime?
@@ -1469,12 +1488,54 @@ model Venue {
   claimRequests    ClaimRequest[]        @relation("ClaimVenue")
   adEvents         AdEventLog[]
   menu             VenueMenu?
-  acquisitionLead  AcquisitionLead? @relation("AcquisitionLeadConvertedVenue")
+  acquisitionLead  AcquisitionLead?      @relation("AcquisitionLeadConvertedVenue")
+  activeImageAsset VenueImageAsset?      @relation("VenueActiveImageAsset", fields: [activeImageAssetId], references: [id], onDelete: SetNull)
+  imageAssets      VenueImageAsset[]     @relation("VenueImageAssetTarget")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([visibilityStatus, region, name])
+}
+
+model VenueImageAsset {
+  id                       String                @id @default(uuid())
+  ownerUserId              String
+  venueId                  String?
+  status                   VenueImageAssetStatus @default(draft)
+  bannerMode               VenueImageBannerMode  @default(cover)
+  originalUrl              String
+  originalStorageKey       String
+  bannerUrl                String
+  bannerStorageKey         String
+  bannerMediumUrl          String
+  bannerMediumStorageKey   String
+  bannerSmallUrl           String
+  bannerSmallStorageKey    String
+  thumbnailUrl             String
+  thumbnailStorageKey      String
+  thumbnailSmallUrl        String
+  thumbnailSmallStorageKey String
+  sourceMimeType           String
+  sourceWidth              Int
+  sourceHeight             Int
+  sourceSizeBytes          Int
+  checksum                 String
+  bannerCrop               Json?
+  thumbnailCrop            Json?
+  expiresAt                DateTime?
+  attachedAt               DateTime?
+  rejectedAt               DateTime?
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
+
+  owner          User   @relation("VenueImageAssetOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  targetVenue    Venue? @relation("VenueImageAssetTarget", fields: [venueId], references: [id], onDelete: SetNull)
+  activeForVenue Venue? @relation("VenueActiveImageAsset")
+
+  @@index([ownerUserId, status, createdAt])
+  @@index([venueId, status, createdAt])
+  @@index([status, expiresAt])
 }
 
 model VenueMenu {
@@ -1601,7 +1662,7 @@ model Event {
   historyBy           UserEventHistory[]
   itineraryItems      ItineraryItem[]
   toNaPistaDeliveries ToNaPistaDelivery[]
-  reminders          EventReminder[]
+  reminders           EventReminder[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1819,8 +1880,8 @@ model EventReminder {
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 
-  user       User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event      Event                        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event      Event                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
   deliveries EventReminderDelivery[]
 
   @@unique([userId, eventId, type])
@@ -1829,18 +1890,18 @@ model EventReminder {
 }
 
 model EventReminderDelivery {
-  id             String   @id @default(uuid())
+  id             String    @id @default(uuid())
   reminderId     String
   subscriptionId String
   providerStatus String
   sentAt         DateTime?
   clickedAt      DateTime?
   failureReason  String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  reminder     EventReminder     @relation(fields: [reminderId], references: [id], onDelete: Cascade)
-  subscription PushSubscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  reminder     EventReminder    @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  subscription PushSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
   @@unique([reminderId, subscriptionId])
   @@index([reminderId, createdAt])
@@ -1911,10 +1972,10 @@ model ClaimRequest {
   createdAt                   DateTime        @default(now())
   updatedAt                   DateTime        @updatedAt
 
-  requestedBy User    @relation("ClaimRequestedBy", fields: [requestedById], references: [id])
-  reviewedBy  User?   @relation("ClaimReviewedBy", fields: [reviewedById], references: [id])
-  venue       Venue?  @relation("ClaimVenue", fields: [venueId], references: [id])
-  artist      Artist? @relation("ClaimArtist", fields: [artistId], references: [id])
+  requestedBy   User                    @relation("ClaimRequestedBy", fields: [requestedById], references: [id])
+  reviewedBy    User?                   @relation("ClaimReviewedBy", fields: [reviewedById], references: [id])
+  venue         Venue?                  @relation("ClaimVenue", fields: [venueId], references: [id])
+  artist        Artist?                 @relation("ClaimArtist", fields: [artistId], references: [id])
   legalEnvelope LegalSignatureEnvelope? @relation(fields: [legalEnvelopeId], references: [id], onDelete: SetNull)
 
   @@index([requestedById, status])

@@ -6240,6 +6240,23 @@ a.pending-signature-badge:focus-visible {
   height: 330px;
 }
 
+.venue-detail-banner {
+  display: block;
+  width: 100%;
+  margin: 12px 0;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #171719;
+  aspect-ratio: 16 / 9;
+}
+
+.venue-detail-banner img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .event-region {
   position: absolute;
   bottom: 10px;
@@ -6568,6 +6585,54 @@ a.pending-signature-badge:focus-visible {
 .artist-workspace-inline { display: grid; grid-template-columns: 1fr 100px; gap: 8px; }
 .artist-workspace-avatar { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; }
 .artist-workspace-cover { width: 100%; max-height: 190px; border-radius: 10px; object-fit: cover; }
+
+.venue-image-upload-field { display: grid; gap: 10px; padding: 14px; border: 1px solid rgba(148,163,184,.28); border-radius: 10px; background: rgba(15,23,42,.28); }
+.venue-image-upload-copy { display: grid; gap: 4px; }
+.venue-image-upload-copy strong { color: inherit; font-size: 14px; }
+.venue-image-upload-copy p,.venue-image-upload-copy small { margin: 0; color: var(--text-secondary); font-size: 12px; line-height: 1.45; }
+.venue-image-upload-copy b { color: inherit; }
+.venue-image-file-control { display: inline-flex; width: fit-content; align-items: center; border: 1px solid rgba(148,163,184,.45); border-radius: 8px; padding: 9px 12px; color: inherit; background: rgba(255,255,255,.04); cursor: pointer; font-size: 12px; font-weight: 750; }
+.venue-image-file-control:focus-within { outline: 2px solid var(--primary-yellow); outline-offset: 2px; }
+.venue-image-file-control input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+.venue-image-file-control:has(input:disabled) { opacity: .6; cursor: wait; }
+.venue-image-file-info { display: grid; gap: 2px; border-left: 3px solid #22c55e; padding: 8px 10px; background: rgba(34,197,94,.08); font-size: 11px; }
+.venue-image-file-info span,.venue-image-file-info small { color: var(--text-secondary); }
+.venue-image-file-info.is-warning { border-left-color: #f59e0b; background: rgba(245,158,11,.09); }
+.venue-image-upload-error { margin: 0; }
+.venue-image-asset-ready { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid rgba(36,195,118,.42); border-radius: 12px; background: rgba(36,195,118,.08); }
+.venue-image-asset-ready img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; }
+.venue-image-asset-ready span { display: grid; gap: 3px; }
+.venue-image-editor-backdrop { z-index: 1200; padding: 20px; overflow-y: auto; }
+.venue-image-editor-modal { width: min(900px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; }
+.venue-image-editor-heading,.venue-image-editor-source,.venue-image-editor-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.venue-image-editor-heading h3,.venue-image-editor-heading p { margin: 0; }
+.venue-image-editor-source { margin: 14px 0; padding: 10px 12px; border: 1px solid rgba(148,163,184,.28); border-radius: 10px; }
+.venue-image-editor-mode { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin: 0 0 18px; padding: 0; border: 0; }
+.venue-image-editor-mode legend { grid-column: 1 / -1; margin-bottom: 8px; font-weight: 700; }
+.venue-image-editor-mode label { display: flex; gap: 9px; align-items: flex-start; padding: 12px; border: 1px solid rgba(148,163,184,.28); border-radius: 12px; cursor: pointer; }
+.venue-image-editor-mode label.is-selected { border-color: #2d6cf6; box-shadow: 0 0 0 2px rgba(45,108,246,.12); }
+.venue-image-editor-mode label span,.venue-image-editor-mode label small { display: block; }
+.venue-image-editor-mode label small { margin-top: 4px; opacity: .72; }
+.venue-image-editor-previews { display: grid; grid-template-columns: minmax(0,1.6fr) minmax(220px,.8fr); gap: 18px; align-items: start; }
+.venue-image-editor-preview-group { display: grid; gap: 8px; }
+.venue-image-crop-preview { position: relative; width: 100%; overflow: hidden; border-radius: 14px; background: #0b1020; cursor: grab; touch-action: none; user-select: none; }
+.venue-image-crop-preview:active { cursor: grabbing; }
+.venue-image-preview-cover,.venue-image-preview-blur,.venue-image-preview-contain { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.venue-image-preview-cover,.venue-image-preview-blur { object-fit: cover; }
+.venue-image-preview-cover { transform-origin: center; }
+.venue-image-preview-blur { inset: -8%; width: 116%; height: 116%; filter: blur(18px) brightness(.72); transform: scale(1.08); }
+.venue-image-preview-contain { object-fit: contain; }
+.venue-image-editor-controls,.venue-image-editor-controls label { display: flex; align-items: center; gap: 10px; }
+.venue-image-editor-controls { justify-content: space-between; }
+.venue-image-editor-controls input[type="range"] { min-width: 120px; }
+.operations-venue-image-review > div { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.operations-venue-image-review figure { margin: 0; display: grid; gap: 6px; }
+.operations-venue-image-review img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; border: 1px solid rgba(148,163,184,.28); background: #0b1020; }
+.operations-venue-image-review figcaption { font-size: 11px; color: var(--text-secondary); }
+@media (max-width: 720px) {
+  .venue-image-editor-mode,.venue-image-editor-previews { grid-template-columns: 1fr; }
+  .venue-image-editor-heading,.venue-image-editor-source,.venue-image-editor-actions { align-items: stretch; flex-direction: column; }
+}
 .artist-workspace-save { position: sticky; bottom: 78px; display: flex; justify-content: flex-end; padding: 10px; background: rgba(13,13,13,.9); border-radius: 12px; backdrop-filter: blur(8px); }
 @media (min-width: 900px) { .artist-workspace-form { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } .artist-workspace-save { grid-column: 1 / -1; bottom: 12px; } }
 .artist-booking-form { width: min(580px, calc(100% - 28px)); display: grid; gap: 10px; }

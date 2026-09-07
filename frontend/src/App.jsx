@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useAuthStore } from "./store/authStore";
 import BottomNav from "./components/layout/BottomNav";
@@ -65,18 +65,14 @@ const SPLASH_MS = 2800;
 const SPLASH_EXIT_MS = 200;
 
 function RequireRole({ user, allowedRoles, children }) {
-  const sessionStatus = useAuthStore((state) => state.sessionStatus);
   if (!user) return <Navigate to="/settings" replace />;
-  if (sessionStatus === "degraded") return <Navigate to="/explore" replace />;
   if (!allowedRoles.includes(user.role)) return <Navigate to={getRoleHome(user.role)} replace />;
   return children;
 }
 
 function RequireAuth({ user, children }) {
   const location = useLocation();
-  const sessionStatus = useAuthStore((state) => state.sessionStatus);
   if (!user) return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />;
-  if (sessionStatus === "degraded") return <Navigate to="/explore" replace />;
   return children;
 }
 
@@ -101,6 +97,7 @@ export default function App() {
   const sessionMessage = useAuthStore((state) => state.sessionMessage);
   const setSessionStatus = useAuthStore((state) => state.setSessionStatus);
   const [authReady, setAuthReady] = useState(() => !useAuthStore.getState().token);
+  const hasValidatedSessionRef = useRef(!useAuthStore.getState().token);
   const [sessionRetryNonce, setSessionRetryNonce] = useState(0);
   const [allowPublicWhileDegraded, setAllowPublicWhileDegraded] = useState(false);
   const [apiHealth, setApiHealth] = useState("checking");
@@ -260,8 +257,11 @@ export default function App() {
         return;
       }
 
-      setSessionStatus("checking", "Validando sua sessão...");
-      if (active) setAuthReady(false);
+      const shouldBlockCurrentScreen = !hasValidatedSessionRef.current;
+      if (shouldBlockCurrentScreen) {
+        setSessionStatus("checking", "Validando sua sessão...");
+        if (active) setAuthReady(false);
+      }
       try {
         const currentUser = await fetchCurrentUser();
         if (!active) return;
@@ -282,11 +282,14 @@ export default function App() {
           }
         }
       } finally {
-        if (active) setAuthReady(true);
+        if (active) {
+          hasValidatedSessionRef.current = true;
+          setAuthReady(true);
+        }
       }
     }
 
-    setAuthReady(!token);
+    if (!hasValidatedSessionRef.current) setAuthReady(!token);
     syncSession();
 
     return () => {
@@ -362,11 +365,11 @@ export default function App() {
     return <Navigate to="/onboarding" replace />;
   }
 
-  if (token && (!authReady || sessionStatus === "checking") && !isPublicItineraryRoute && !isPublicPartnersRoute) {
+  if (token && !authReady && !isPublicItineraryRoute && !isPublicPartnersRoute) {
     return <div className="session-validation-screen"><img src="/assets/brand/icon_mono_77Gira.svg" alt="" aria-hidden="true" className="session-validation-spinner"/><strong>Validando sua sessão...</strong></div>;
   }
 
-  if (token && sessionStatus === "degraded" && !allowPublicWhileDegraded && !isPublicItineraryRoute && !isPublicPartnersRoute) {
+  if (token && !user && sessionStatus === "degraded" && !allowPublicWhileDegraded && !isPublicItineraryRoute && !isPublicPartnersRoute) {
     return (
       <div className="session-validation-screen session-validation-degraded">
         <strong>Sua conta continua conectada</strong>
@@ -386,6 +389,7 @@ export default function App() {
   return (
     <div className={`app-shell ${isBackofficeMode ? "app-shell-admin" : ""} ${isExploreRoute ? "app-shell-explore" : ""} ${usesUserGlassNav ? "app-shell-user-glass-nav" : ""} ${isAdsRoute ? "app-shell-ads" : ""} ${isOperationsRoute ? "app-shell-operations" : ""} ${isPublicPartnersRoute ? "app-shell-public-partners" : ""}`}>
       {isOffline ? <div className="offline-banner">Você está offline. Algumas ações podem falhar.</div> : null}
+      {!isOffline && sessionStatus === "degraded" ? <div className="offline-banner">{sessionMessage || "A conexão com sua sessão está instável. Seus dados preenchidos foram preservados."}</div> : null}
       {!isOffline && apiHealth === "unavailable" ? <div className="offline-banner api-health-banner">Estamos reconectando aos serviços. Você pode continuar navegando.</div> : null}
       <main className="app-content">
         <Suspense fallback={<div className="empty">Carregando pagina...</div>}>

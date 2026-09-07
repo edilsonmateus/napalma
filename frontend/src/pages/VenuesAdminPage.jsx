@@ -34,6 +34,7 @@ import {
   useUpdateEventMutation,
   useUpdateRegionMutation,
   useUploadImageMutation,
+  useUploadVenueImageAssetMutation,
   useUpdateVenueMutation,
   useVenueAdsSummaryQuery,
   useVenueManagersQuery,
@@ -42,6 +43,9 @@ import {
 import { getArtistById, getEventById, getVenueById, request77FirstKit } from "../services/events.service";
 import { useAuthStore } from "../store/authStore";
 import { isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
+import VenueImageUploadField from "../components/venues/VenueImageUploadField";
+import VenueImageEditorModal from "../components/venues/VenueImageEditorModal";
+import { inspectVenueImageFile } from "../utils/venueImage";
 import { useManagedVenueMenuQuery } from "../hooks/useVenueMenu";
 
 const initialVenueForm = {
@@ -64,6 +68,7 @@ const initialVenueForm = {
   contactPhone: "",
   instagramUrl: "",
   address: "",
+  coordinates: "",
   latitude: "",
   longitude: "",
   neighborhood: "",
@@ -135,6 +140,7 @@ const initialManagerForm = {
   password: ""
 };
 const PAGE_SIZE = 6;
+const VENUE_IMAGE_EDITOR_ENABLED = import.meta.env.VITE_VENUE_IMAGE_EDITOR_ENABLED !== "false";
 const ADMIN_PREFS_KEY = "napalma:admin:prefs";
 const RECURRENCE_DAYS = [
   { value: "seg", label: "Seg" },
@@ -184,6 +190,29 @@ function previewPreposition(preposition, name) {
   if (!cleanName) return "";
   const cleanPreposition = String(preposition || "em").trim() || "em";
   return cleanPreposition + " " + cleanName;
+}
+
+function parseCoordinatePair(value) {
+  const parts = String(value || "")
+    .trim()
+    .split(",")
+    .map((part) => part.trim());
+
+  if (parts.length !== 2 || parts.some((part) => part === "")) return null;
+
+  const latitude = Number(parts[0]);
+  const longitude = Number(parts[1]);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
+  if (Math.abs(latitude) < 0.000001 && Math.abs(longitude) < 0.000001) return null;
+
+  return { latitude, longitude };
+}
+
+function formatCoordinatePair(latitude, longitude) {
+  if (latitude === undefined || latitude === null || latitude === "") return "";
+  if (longitude === undefined || longitude === null || longitude === "") return "";
+  return `${latitude}, ${longitude}`;
 }
 
 function formatDateTimeForKit(value) {
@@ -523,6 +552,10 @@ export default function VenuesAdminPage() {
   const [regionForm, setRegionForm] = useState(initialRegionForm);
   const [editingRegionId, setEditingRegionId] = useState("");
   const [uploadingTarget, setUploadingTarget] = useState("");
+  const [venueImageInfo, setVenueImageInfo] = useState(null);
+  const [venueImageError, setVenueImageError] = useState("");
+  const [pendingVenueImageFile, setPendingVenueImageFile] = useState(null);
+  const [venueImageAsset, setVenueImageAsset] = useState(null);
   const [publishReviewOpen, setPublishReviewOpen] = useState(false);
   const [firstKitEvent, setFirstKitEvent] = useState(null);
   const [firstKitData, setFirstKitData] = useState(null);
@@ -588,6 +621,7 @@ export default function VenuesAdminPage() {
   const updateRegionMutation = useUpdateRegionMutation();
   const deleteRegionMutation = useDeleteRegionMutation();
   const uploadImageMutation = useUploadImageMutation();
+  const uploadVenueImageAssetMutation = useUploadVenueImageAssetMutation();
   const { data: claims = [], isLoading: claimsLoading } = useClaimsQuery(undefined, user?.role === "admin");
   const { data: myClaims = [], isLoading: myClaimsLoading } = useMyClaimsQuery(Boolean(user));
 
@@ -990,7 +1024,21 @@ export default function VenuesAdminPage() {
 
   function handleVenueChange(event) {
     const { name, value, type, checked } = event.target;
+    if (name === "goldPartner" && !isAdmin) return;
     const nextValue = type === "checkbox" ?checked : value;
+    if (name === "coordinates") {
+      const coordinatePair = parseCoordinatePair(value);
+      setVenueForm((prev) => ({
+        ...prev,
+        coordinates: value,
+        ...(coordinatePair ? {
+          latitude: String(coordinatePair.latitude),
+          longitude: String(coordinatePair.longitude)
+        } : value.trim() === "" ? { latitude: "", longitude: "" } : {})
+      }));
+      setVenueErrors((prev) => ({ ...prev, coordinates: undefined }));
+      return;
+    }
     setVenueForm((prev) => ({ ...prev, [name]: nextValue }));
     setVenueErrors((prev) => ({ ...prev, [name]: undefined }));
   }
@@ -1081,6 +1129,10 @@ export default function VenuesAdminPage() {
     setVenueForm(initialVenueForm);
     setVenueEditJustification("");
     setVenueErrors({});
+    setVenueImageInfo(null);
+    setVenueImageError("");
+    setPendingVenueImageFile(null);
+    setVenueImageAsset(null);
     if (searchParams.has("edit")) {
       const nextParams = new URLSearchParams(searchParams);
       nextParams.delete("edit");
@@ -1139,8 +1191,21 @@ export default function VenuesAdminPage() {
     showToast("");
     setVenueErrors({});
 
+    const coordinateText = String(venueForm.coordinates || "").trim();
+    const coordinatePair = parseCoordinatePair(coordinateText);
+    if (coordinateText && !coordinatePair) {
+      setVenueErrors({
+        coordinates: ["Informe latitude e longitude válidas, separadas por vírgula."]
+      });
+      showToast("Revise as coordenadas do pin antes de salvar.", "error");
+      return;
+    }
+
+    const { coordinates: _coordinates, ...venueFields } = venueForm;
+
     const payload = {
-      ...venueForm,
+      ...venueFields,
+      ...(venueImageAsset?.id ? { venueImageAssetId: venueImageAsset.id } : {}),
       displayNameWithArticle: previewArticle(venueForm.grammarArticle, venueForm.name),
       displayNameWithPreposition: previewPreposition(venueForm.grammarPreposition, venueForm.name),
       nicknameDisplayNameWithArticle: venueForm.nickname
@@ -1154,10 +1219,11 @@ export default function VenuesAdminPage() {
       contactName: venueForm.contactName || undefined,
       contactPhone: venueForm.contactPhone || undefined,
       instagramUrl: venueForm.instagramUrl || undefined,
-      latitude: venueForm.latitude === "" ? null : Number(venueForm.latitude),
-      longitude: venueForm.longitude === "" ? null : Number(venueForm.longitude),
+      latitude: coordinatePair?.latitude ?? null,
+      longitude: coordinatePair?.longitude ?? null,
       state: venueForm.state.toUpperCase()
     };
+    if (!isAdmin) delete payload.goldPartner;
     payload.openDays = venueForm.openDays
       .split(",")
       .map((item) => item.trim())
@@ -1185,7 +1251,6 @@ export default function VenuesAdminPage() {
           "region",
           "city",
           "state",
-          "imageUrl",
           "openDays"
         ];
         for (const key of trackKeys) {
@@ -1195,6 +1260,7 @@ export default function VenuesAdminPage() {
             diff[key] = nextValue;
           }
         }
+        if (venueImageAsset?.id) diff.venueImageAssetId = venueImageAsset.id;
         if (Object.keys(diff).length === 0) {
           showToast("Nenhuma alteração detectada para enviar ao admin.", "info");
           return;
@@ -1301,6 +1367,7 @@ export default function VenuesAdminPage() {
         contactPhone: detail.contactPhone || "",
         instagramUrl: detail.instagramUrl || "",
         address: detail.address || "",
+        coordinates: formatCoordinatePair(detail.latitude, detail.longitude),
         latitude: detail.latitude ?? "",
         longitude: detail.longitude ?? "",
         neighborhood: detail.neighborhood || "",
@@ -1746,6 +1813,24 @@ export default function VenuesAdminPage() {
     if (!file) return;
     event.target.value = "";
     showToast("");
+    if (target === "venue") {
+      setVenueImageError("");
+      try {
+        const info = await inspectVenueImageFile(file);
+        setVenueImageInfo(info);
+        setVenueImageAsset(null);
+        if (VENUE_IMAGE_EDITOR_ENABLED) setPendingVenueImageFile(file);
+      } catch (error) {
+        setVenueImageInfo(null);
+        setVenueImageError(error?.message || "Não foi possível ler a imagem selecionada.");
+        return;
+      }
+      if (VENUE_IMAGE_EDITOR_ENABLED) return;
+      if (!isAdmin) {
+        setVenueImageError("O envio de uma nova imagem está temporariamente indisponível. Seus outros dados foram preservados.");
+        return;
+      }
+    }
     setUploadingTarget(target);
     try {
       const folder = target === "venue" ?"venues" : target === "artist" ?"artists" : "events";
@@ -1764,7 +1849,28 @@ export default function VenuesAdminPage() {
       }
       showToast("Imagem enviada com sucesso.");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Não foi possível enviar a imagem.");
+      const message = error?.response?.data?.message || "Não foi possível enviar a imagem.";
+      if (target === "venue") setVenueImageError(message);
+      showToast(message);
+    } finally {
+      setUploadingTarget("");
+    }
+  }
+
+  async function handleVenueImageEditorConfirm(config) {
+    setVenueImageError("");
+    setUploadingTarget("venue");
+    try {
+      const uploaded = await uploadVenueImageAssetMutation.mutateAsync({
+        ...config,
+        venueId: editingVenueId || houseActiveVenue?.id || undefined
+      });
+      setVenueImageAsset(uploaded);
+      setPendingVenueImageFile(null);
+      showToast("Enquadramento preparado. Salve a casa para concluir a alteração.");
+    } catch (error) {
+      const message = error?.response?.data?.message || "Não foi possível preparar a imagem.";
+      setVenueImageError(message);
     } finally {
       setUploadingTarget("");
     }
@@ -1842,6 +1948,9 @@ export default function VenuesAdminPage() {
       contactPhone: houseActiveVenue.contactPhone || "",
       instagramUrl: houseActiveVenue.instagramUrl || "",
       address: houseActiveVenue.address || "",
+      coordinates: formatCoordinatePair(houseActiveVenue.latitude, houseActiveVenue.longitude),
+      latitude: houseActiveVenue.latitude ?? "",
+      longitude: houseActiveVenue.longitude ?? "",
       neighborhood: houseActiveVenue.neighborhood || "",
       region: houseActiveVenue.region || "",
       city: houseActiveVenue.city || "São Paulo",
@@ -2083,10 +2192,18 @@ export default function VenuesAdminPage() {
         <input name="contactPhone" value={venueForm.contactPhone} onChange={handleVenueChange} placeholder="Telefone da casa (opcional)" />
         <input name="instagramUrl" value={venueForm.instagramUrl} onChange={handleVenueChange} placeholder="Instagram da casa (URL, opcional)" />
         <input name="address" value={venueForm.address} onChange={handleVenueChange} placeholder="Endereço" required />
-        <div className="form-actions-inline">
-          <input name="latitude" type="number" step="any" value={venueForm.latitude} onChange={handleVenueChange} placeholder="Latitude (Tô na Pista)" />
-          <input name="longitude" type="number" step="any" value={venueForm.longitude} onChange={handleVenueChange} placeholder="Longitude (Tô na Pista)" />
-        </div>
+        <label className="field-with-helper">
+          <span>Coordenadas do pin</span>
+          <input
+            name="coordinates"
+            value={venueForm.coordinates || ""}
+            onChange={handleVenueChange}
+            placeholder="-23.55785686465512, -46.69008834914753"
+            inputMode="decimal"
+          />
+          <small>Cole latitude e longitude como o Google Maps entrega, separadas por vírgula.</small>
+        </label>
+        {venueErrors.coordinates?.[0] ?<p className="field-error">{venueErrors.coordinates[0]}</p> : null}
         <input name="neighborhood" value={venueForm.neighborhood} onChange={handleVenueChange} placeholder="Bairro" required />
         <div className="clean-card grammar-preview-card">
           <strong>Tratamento textual do bairro</strong>
@@ -2115,15 +2232,17 @@ export default function VenuesAdminPage() {
         <input name="city" value={venueForm.city} onChange={handleVenueChange} placeholder="Cidade" required />
         <input name="state" value={venueForm.state} onChange={handleVenueChange} placeholder="UF" maxLength={2} required />
         <input name="imageUrl" value={venueForm.imageUrl} onChange={handleVenueChange} placeholder="URL da imagem" />
-        <label className="checkbox-inline">
-          <input
-            type="checkbox"
-            name="goldPartner"
-            checked={Boolean(venueForm.goldPartner)}
-            onChange={handleVenueChange}
-          />
-          Casa Gold Partner
-        </label>
+        {isAdmin ? (
+          <label className="checkbox-inline">
+            <input
+              type="checkbox"
+              name="goldPartner"
+              checked={Boolean(venueForm.goldPartner)}
+              onChange={handleVenueChange}
+            />
+            Casa Gold Partner
+          </label>
+        ) : null}
         {isAdmin ? (
           <div className="clean-card analytics-access-card">
             <strong>Impacto 77Gira</strong>
@@ -2155,16 +2274,13 @@ export default function VenuesAdminPage() {
             </div>
           </div>
         ) : null}
-        <label className="meta-line">
-          Upload da imagem da casa (JPG, PNG ou WebP, ate 5MB)
-          <input
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            onChange={(event) => handleImageUpload(event, "venue")}
-            disabled={uploadingTarget === "venue"}
-          />
-        </label>
-        {uploadingTarget === "venue" ?<p className="meta-line">Enviando imagem...</p> : null}
+        <VenueImageUploadField
+          asset={venueImageAsset}
+          disabled={uploadingTarget === "venue"}
+          error={venueImageError}
+          info={venueImageInfo}
+          onSelect={(event) => handleImageUpload(event, "venue")}
+        />
         <input
           name="openDays"
           value={venueForm.openDays}
@@ -2659,10 +2775,18 @@ export default function VenuesAdminPage() {
               <input name="contactPhone" value={venueForm.contactPhone} onChange={handleVenueChange} placeholder="Telefone da casa" />
               <input name="instagramUrl" value={venueForm.instagramUrl} onChange={handleVenueChange} placeholder="Instagram (URL)" />
               <input name="address" value={venueForm.address} onChange={handleVenueChange} placeholder="Endereço" required />
-              <div className="form-actions-inline">
-                <input name="latitude" type="number" step="any" value={venueForm.latitude} onChange={handleVenueChange} placeholder="Latitude (Tô na Pista)" />
-                <input name="longitude" type="number" step="any" value={venueForm.longitude} onChange={handleVenueChange} placeholder="Longitude (Tô na Pista)" />
-              </div>
+              <label className="field-with-helper">
+                <span>Coordenadas do pin</span>
+                <input
+                  name="coordinates"
+                  value={venueForm.coordinates || ""}
+                  onChange={handleVenueChange}
+                  placeholder="-23.55785686465512, -46.69008834914753"
+                  inputMode="decimal"
+                />
+                <small>Cole latitude e longitude como o Google Maps entrega, separadas por vírgula.</small>
+              </label>
+              {venueErrors.coordinates?.[0] ?<p className="field-error">{venueErrors.coordinates[0]}</p> : null}
               <input name="neighborhood" value={venueForm.neighborhood} onChange={handleVenueChange} placeholder="Bairro" required />
         <div className="clean-card grammar-preview-card">
           <strong>Tratamento textual do bairro</strong>
@@ -2691,25 +2815,24 @@ export default function VenuesAdminPage() {
               <input name="city" value={venueForm.city} onChange={handleVenueChange} placeholder="Cidade" required />
               <input name="state" value={venueForm.state} onChange={handleVenueChange} placeholder="UF" maxLength={2} required />
               <input name="imageUrl" value={venueForm.imageUrl} onChange={handleVenueChange} placeholder="URL da imagem" />
-              <label className="checkbox-inline">
-                <input
-                  type="checkbox"
-                  name="goldPartner"
-                  checked={Boolean(venueForm.goldPartner)}
-                  onChange={handleVenueChange}
-                />
-                Casa Gold Partner
-              </label>
-              <label className="meta-line">
-                Upload da imagem da casa (JPG, PNG ou WebP, ate 5MB)
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={(event) => handleImageUpload(event, "venue")}
-                  disabled={uploadingTarget === "venue"}
-                />
-              </label>
-              {uploadingTarget === "venue" ?<p className="meta-line">Enviando imagem...</p> : null}
+              {isAdmin ? (
+                <label className="checkbox-inline">
+                  <input
+                    type="checkbox"
+                    name="goldPartner"
+                    checked={Boolean(venueForm.goldPartner)}
+                    onChange={handleVenueChange}
+                  />
+                  Casa Gold Partner
+                </label>
+              ) : null}
+              <VenueImageUploadField
+                asset={venueImageAsset}
+                disabled={uploadingTarget === "venue"}
+                error={venueImageError}
+                info={venueImageInfo}
+                onSelect={(event) => handleImageUpload(event, "venue")}
+              />
               <input name="openDays" value={venueForm.openDays} onChange={handleVenueChange} placeholder="Dias de funcionamento (ex: Seg, Qua, Sex, Sab)" />
               <textarea
                 value={venueEditJustification}
@@ -3326,6 +3449,19 @@ export default function VenuesAdminPage() {
         </div>
       ) : null}
       {claimLegalModal}
+      {pendingVenueImageFile ? (
+        <VenueImageEditorModal
+          busy={uploadVenueImageAssetMutation.isPending}
+          error={venueImageError}
+          file={pendingVenueImageFile}
+          info={venueImageInfo}
+          onCancel={() => {
+            if (uploadVenueImageAssetMutation.isPending) return;
+            setPendingVenueImageFile(null);
+          }}
+          onConfirm={handleVenueImageEditorConfirm}
+        />
+      ) : null}
     </section>
   );
 }

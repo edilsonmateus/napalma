@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectsCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 function clean(value) {
   return String(value || "").trim();
@@ -72,4 +72,24 @@ export function uploadCreativeToR2({ campaignId, ...options }) {
     keyPrefix: `ads/creatives/${campaignId}`,
     metadata: { ...(options.metadata || {}), campaignid: campaignId }
   });
+}
+
+export async function deleteObjectsFromR2(storageKeys, { client, config = getR2Config() } = {}) {
+  const keys = [...new Set((storageKeys || []).map((value) => String(value || "").trim()).filter(Boolean))];
+  if (!keys.length) return { deleted: 0 };
+  if (!isR2Configured(config)) {
+    const error = new Error("Cloudflare R2 nao configurado.");
+    error.code = "r2_not_configured";
+    throw error;
+  }
+  const r2Client = client || new S3Client({
+    region: "auto",
+    endpoint: config.endpoint,
+    credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey }
+  });
+  await r2Client.send(new DeleteObjectsCommand({
+    Bucket: config.bucket,
+    Delete: { Objects: keys.map((Key) => ({ Key })), Quiet: true }
+  }));
+  return { deleted: keys.length };
 }

@@ -124,8 +124,19 @@ export default function VenueDetailFlowPage() {
     <section className="screen screen-radar">
       <BackLink to="/explore">Voltar para Explorar</BackLink>
 
-      {venue.imageUrl ? (
-        <div className="event-detail-cover" style={{ backgroundImage: `url(${venue.imageUrl})` }} />
+      {(venue.images?.banner || venue.bannerImageUrl || venue.imageUrl) ? (
+        <picture className="venue-detail-banner">
+          <source
+            srcSet={[
+              venue.images?.bannerSmall || venue.bannerImageSmallUrl,
+              venue.images?.bannerMedium || venue.bannerImageMediumUrl,
+              venue.images?.banner || venue.bannerImageUrl
+            ].map((url, index) => [url, [800, 1200, 1600][index]]).filter(([url]) => Boolean(url)).map(([url, width]) => `${resolveMediaUrl(url)} ${width}w`).join(", ")}
+            sizes="(max-width: 760px) 100vw, 960px"
+            type="image/webp"
+          />
+          <img src={resolveMediaUrl(venue.images?.banner || venue.bannerImageUrl || venue.imageUrl)} alt={`Ambiente de ${venue.name}`} />
+        </picture>
       ) : null}
 
       <div className="decision-card">

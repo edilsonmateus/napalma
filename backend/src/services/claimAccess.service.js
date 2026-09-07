@@ -1,3 +1,5 @@
+import { attachVenueImageAsset } from "./venueImageAssets.service.js";
+
 function slugify(value) {
   return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
@@ -40,10 +42,18 @@ export async function activateClaimAccess({ tx, claim, actorUserId }) {
   }
 
   if (claim.requestType === "venue_update" && claim.targetType === "venue" && claim.venueId) {
-    const allowed = ["name", "description", "contactName", "contactPhone", "instagramUrl", "address", "neighborhood", "region", "city", "state", "imageUrl", "openDays"];
+    const allowed = ["name", "description", "contactName", "contactPhone", "instagramUrl", "address", "neighborhood", "region", "city", "state", "openDays"];
     const incoming = claim.requestedChanges && typeof claim.requestedChanges === "object" ? claim.requestedChanges : {};
     const safePatch = Object.fromEntries(Object.entries(incoming).filter(([key]) => allowed.includes(key)));
     if (Object.keys(safePatch).length) await tx.venue.update({ where: { id: claim.venueId }, data: safePatch });
+    if (incoming.venueImageAssetId) {
+      await attachVenueImageAsset({
+        tx,
+        assetId: incoming.venueImageAssetId,
+        venueId: claim.venueId,
+        ownerUserId: claim.requestedById
+      });
+    }
   }
 
   if (["ownership", "team_access", "venue_inclusion"].includes(claim.requestType) && claim.targetType === "venue" && claim.venueId) {

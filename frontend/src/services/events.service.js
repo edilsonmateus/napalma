@@ -112,6 +112,19 @@ export async function getVenueById(id) {
   return data.item;
 }
 
+export async function uploadVenueImageAsset({ file, venueId, bannerMode, bannerCrop, thumbnailCrop }) {
+  const body = new FormData();
+  body.append("file", file);
+  if (venueId) body.append("venueId", venueId);
+  body.append("bannerMode", bannerMode || "cover");
+  body.append("bannerCrop", JSON.stringify(bannerCrop || { x: 0.5, y: 0.5, zoom: 1 }));
+  body.append("thumbnailCrop", JSON.stringify(thumbnailCrop || { x: 0.5, y: 0.5, zoom: 1 }));
+  const { data } = await api.post("/venues/image-assets", body, {
+    headers: { "Content-Type": "multipart/form-data" }
+  });
+  return data.item;
+}
+
 export async function getAdminVenueOverview(id) {
   const { data } = await api.get(`/admin/venues/${id}/overview`);
   return data.item;

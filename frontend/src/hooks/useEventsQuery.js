@@ -86,6 +86,7 @@ import {
   updateVenue,
   updateAdminVenueVisibility,
   updateRegion,
+  uploadVenueImageAsset,
   uploadImageFile
 } from "../services/events.service";
 
@@ -608,6 +609,10 @@ export function useUpdateAcquisitionLeadMutation() {
       queryClient.invalidateQueries({ queryKey: ["acquisition-lead-timeline"] });
     }
   });
+}
+
+export function useUploadVenueImageAssetMutation() {
+  return useMutation({ mutationFn: uploadVenueImageAsset });
 }
 
 export function useConvertAcquisitionLeadToVenueMutation() {

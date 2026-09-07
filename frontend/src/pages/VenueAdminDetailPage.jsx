@@ -211,7 +211,7 @@ export default function VenueAdminDetailPage() {
 
       <header className="venue-admin-detail__header">
         <div className="venue-admin-detail__identity">
-          {venue.presentation.imageUrl ? <img src={venue.presentation.imageUrl} alt="" className="venue-admin-detail__image" /> : <div className="venue-admin-detail__image venue-admin-detail__image--fallback" aria-hidden="true">77</div>}
+          {venue.presentation.thumbnailImageUrl || venue.presentation.imageUrl ? <img src={venue.presentation.thumbnailImageUrl || venue.presentation.imageUrl} srcSet={venue.presentation.thumbnailImageSmallUrl && venue.presentation.thumbnailImageUrl ? `${venue.presentation.thumbnailImageSmallUrl} 256w, ${venue.presentation.thumbnailImageUrl} 640w` : undefined} sizes="82px" alt="" className="venue-admin-detail__image" /> : <div className="venue-admin-detail__image venue-admin-detail__image--fallback" aria-hidden="true">77</div>}
           <div>
             <p className="venue-admin-detail__eyebrow">FICHA ADMINISTRATIVA</p>
             <h1>{venue.name}</h1>

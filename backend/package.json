@@ -26,6 +26,7 @@
     "events:posters:replace": "node scripts/import-event-posters.js --apply --force",
     "reminders:radar:worker": "node scripts/run-radar-event-reminder-worker.js",
     "privacy:retention:preview": "node scripts/privacy-retention-preview.js",
+    "venues:images:cleanup": "node scripts/cleanup-venue-image-assets.js",
     "admin:bootstrap": "node prisma/bootstrap-admin.js",
     "push:vapid:generate": "web-push generate-vapid-keys"
   },
