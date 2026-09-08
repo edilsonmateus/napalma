@@ -7392,6 +7392,41 @@ a.pending-signature-badge:focus-visible {
   margin: 14px 0 18px;
 }
 
+.manager-create-field {
+  display: grid;
+  gap: 4px;
+}
+
+.manager-create-field input {
+  width: 100%;
+}
+
+.manager-create-field input[aria-invalid="true"] {
+  border-color: #ff7b7b;
+  box-shadow: 0 0 0 1px rgba(255, 123, 123, 0.24);
+}
+
+.manager-create-feedback {
+  margin: 2px 0 0;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.manager-create-feedback--error {
+  border-color: rgba(255, 123, 123, 0.42);
+  background: rgba(255, 123, 123, 0.1);
+  color: #ffb0b0;
+}
+
+.manager-create-feedback--success {
+  border-color: rgba(83, 200, 138, 0.38);
+  background: rgba(83, 200, 138, 0.1);
+  color: #9ce3bd;
+}
+
 .auth-screen {
   max-width: 520px;
   margin: 0 auto;

@@ -518,6 +518,8 @@ export default function VenuesAdminPage() {
   const [eventForm, setEventForm] = useState(initialEventForm);
   const [selectedVenueForManagers, setSelectedVenueForManagers] = useState("");
   const [managerForm, setManagerForm] = useState(initialManagerForm);
+  const [managerCreateErrors, setManagerCreateErrors] = useState({});
+  const [managerCreateFeedback, setManagerCreateFeedback] = useState(null);
   const [managerSearch, setManagerSearch] = useState("");
   const [selectedManagerUserId, setSelectedManagerUserId] = useState("");
   const [venueEditJustification, setVenueEditJustification] = useState("");
@@ -1691,12 +1693,16 @@ export default function VenuesAdminPage() {
   function handleManagerFormChange(event) {
     const { name, value } = event.target;
     setManagerForm((prev) => ({ ...prev, [name]: value }));
+    setManagerCreateErrors((prev) => ({ ...prev, [name]: undefined }));
+    setManagerCreateFeedback(null);
   }
 
   async function handleCreateManager(event) {
     event.preventDefault();
+    setManagerCreateErrors({});
+    setManagerCreateFeedback(null);
     try {
-      await createVenueManagerUserMutation.mutateAsync({
+      const createdProducer = await createVenueManagerUserMutation.mutateAsync({
         firstName: managerForm.firstName,
         lastName: managerForm.lastName,
         username: managerForm.username,
@@ -1705,11 +1711,19 @@ export default function VenuesAdminPage() {
         password: managerForm.password
       });
       setManagerForm(initialManagerForm);
-      setManagerSearch("");
-      setSelectedManagerUserId("");
-      showToast("Produtor criado com sucesso.");
+      setManagerSearch(createdProducer.email);
+      setSelectedManagerUserId(createdProducer.id);
+      setManagerCreateFeedback({
+        type: "success",
+        text: "Produtor criado e já selecionado abaixo. Confira a casa e conclua em Vincular produtor."
+      });
+      showToast("Produtor criado com sucesso.", "success");
     } catch (error) {
-      showToast(error?.response?.data?.message || "Não foi possível criar produtor.");
+      const responseData = error?.response?.data;
+      const message = responseData?.message || "Não foi possível criar produtor. Revise os dados e tente novamente.";
+      setManagerCreateErrors(responseData?.fieldErrors || {});
+      setManagerCreateFeedback({ type: "error", text: message });
+      showToast(message, "error");
     }
   }
 
@@ -2389,21 +2403,35 @@ export default function VenuesAdminPage() {
           placeholder="Sobrenome do produtor"
           required
         />
-        <input
-          name="username"
-          value={managerForm.username}
-          onChange={handleManagerFormChange}
-          placeholder="Usuário de acesso"
-          required
-        />
-        <input
-          name="email"
-          type="email"
-          value={managerForm.email}
-          onChange={handleManagerFormChange}
-          placeholder="Email do produtor"
-          required
-        />
+        <div className="manager-create-field">
+          <input
+            name="username"
+            value={managerForm.username}
+            onChange={handleManagerFormChange}
+            placeholder="Usuário de acesso"
+            aria-invalid={Boolean(managerCreateErrors.username?.[0])}
+            aria-describedby={managerCreateErrors.username?.[0] ? "manager-create-username-error" : undefined}
+            required
+          />
+          {managerCreateErrors.username?.[0] ?(
+            <p id="manager-create-username-error" className="field-error" role="alert">{managerCreateErrors.username[0]}</p>
+          ) : null}
+        </div>
+        <div className="manager-create-field">
+          <input
+            name="email"
+            type="email"
+            value={managerForm.email}
+            onChange={handleManagerFormChange}
+            placeholder="Email do produtor"
+            aria-invalid={Boolean(managerCreateErrors.email?.[0])}
+            aria-describedby={managerCreateErrors.email?.[0] ? "manager-create-email-error" : undefined}
+            required
+          />
+          {managerCreateErrors.email?.[0] ?(
+            <p id="manager-create-email-error" className="field-error" role="alert">{managerCreateErrors.email[0]}</p>
+          ) : null}
+        </div>
         <input
           name="phone"
           value={managerForm.phone}
@@ -2423,6 +2451,14 @@ export default function VenuesAdminPage() {
             {createVenueManagerUserMutation.isPending ?"Criando..." : "Criar produtor"}
           </button>
         </div>
+        {managerCreateFeedback ?(
+          <p
+            className={`manager-create-feedback manager-create-feedback--${managerCreateFeedback.type}`}
+            role={managerCreateFeedback.type === "error" ? "alert" : "status"}
+          >
+            {managerCreateFeedback.text}
+          </p>
+        ) : null}
       </form> : null}
       {showManagers && canManageProducers ?<form className="venue-form" onSubmit={handleAddManager}>
         {!isHouseRole ?(

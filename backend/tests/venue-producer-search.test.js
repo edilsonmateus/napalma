@@ -2,16 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-const mocks = vi.hoisted(() => ({ findMany: vi.fn() }));
+const mocks = vi.hoisted(() => ({ findMany: vi.fn(), create: vi.fn() }));
 
 vi.mock("../src/lib/prisma.js", () => ({
-  prisma: { user: { findMany: mocks.findMany } }
+  prisma: { user: { findMany: mocks.findMany, create: mocks.create } }
 }));
 
-import { buildProducerSearchWhere, listProducerUsers } from "../src/controllers/users.controller.js";
+import { buildProducerSearchWhere, createProducerUser, listProducerUsers } from "../src/controllers/users.controller.js";
 
 function response() {
-  return { json: vi.fn().mockReturnThis() };
+  return {
+    status: vi.fn().mockReturnThis(),
+    json: vi.fn().mockReturnThis()
+  };
 }
 
 describe("venue producer search", () => {
@@ -56,5 +59,46 @@ describe("venue producer search", () => {
     expect(source).toContain("Nenhum produtor elegível foi encontrado com esses dados.");
     expect(source).toContain("Não foi possível buscar produtores. Tente novamente.");
     expect(source).toContain("somente contas que já concluíram o cadastro como produtor");
+  });
+
+  it("identifies the conflicting producer field without creating a duplicate account", async () => {
+    mocks.findMany.mockResolvedValue([{
+      email: "edilsonmateus@gmail.com",
+      username: "admin.77gira"
+    }]);
+    const res = response();
+    const next = vi.fn();
+
+    await createProducerUser({
+      body: {
+        firstName: "Edilson",
+        lastName: "Oliveira",
+        username: "edilsonoliveira",
+        email: "EDILSONMATEUS@gmail.com",
+        password: "segredo"
+      }
+    }, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      error: "user_already_exists",
+      fieldErrors: {
+        email: [expect.stringContaining("já está vinculado")]
+      }
+    }));
+  });
+
+  it("keeps producer creation feedback beside the form and selects a successful result", () => {
+    const source = fs.readFileSync(
+      path.resolve(process.cwd(), "../frontend/src/pages/VenuesAdminPage.jsx"),
+      "utf8"
+    );
+
+    expect(source).toContain("setManagerCreateFeedback({ type: \"error\", text: message })");
+    expect(source).toContain("setSelectedManagerUserId(createdProducer.id)");
+    expect(source).toContain("Produtor criado e já selecionado abaixo");
+    expect(source).toContain("aria-invalid={Boolean(managerCreateErrors.email?.[0])}");
   });
 });

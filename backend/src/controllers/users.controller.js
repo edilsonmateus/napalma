@@ -146,17 +146,41 @@ export async function createProducerUser(req, res, next) {
     const data = createProducerSchema.parse(req.body);
     const email = data.email.toLowerCase();
 
-    const existing = await prisma.user.findFirst({
+    const conflicts = await prisma.user.findMany({
       where: {
-        OR: [{ email }, { username: data.username }]
+        OR: [
+          { email: { equals: email, mode: "insensitive" } },
+          { username: { equals: data.username, mode: "insensitive" } }
+        ]
       },
-      select: { id: true }
+      select: { email: true, username: true },
+      take: 2
     });
 
-    if (existing) {
+    const emailConflict = conflicts.some((item) => item.email.toLowerCase() === email);
+    const usernameConflict = conflicts.some(
+      (item) => item.username.toLowerCase() === data.username.toLowerCase()
+    );
+
+    if (emailConflict || usernameConflict) {
+      const fieldErrors = {
+        ...(emailConflict ? {
+          email: ["Este e-mail já está vinculado a uma conta. Use outro e-mail ou localize a conta existente na busca abaixo."]
+        } : {}),
+        ...(usernameConflict ? {
+          username: ["Este usuário de acesso já está em uso. Escolha outro usuário."]
+        } : {})
+      };
+      const message = emailConflict && usernameConflict
+        ? "O e-mail e o usuário informados já estão em uso. Revise os campos destacados."
+        : emailConflict
+          ? "Este e-mail já está em uso. Não foi criado um novo produtor."
+          : "Este usuário de acesso já está em uso. Não foi criado um novo produtor.";
+
       return res.status(409).json({
         error: "user_already_exists",
-        message: "Ja existe usuario com esse email ou username."
+        message,
+        fieldErrors
       });
     }
 
