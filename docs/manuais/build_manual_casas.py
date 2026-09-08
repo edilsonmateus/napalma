@@ -459,7 +459,7 @@ def build():
     add_body(doc, "Cada produtor deve ter conta própria. A casa pode vincular uma conta existente ou criar uma conta inicial e, em seguida, vinculá-la. A forma recomendada é a pessoa criar a própria conta e informar o e-mail usado.")
     add_heading(doc, "Opção A  Vincular um produtor que já tem conta", 2)
     add_numbered_step(doc, 1, "Abra Produtores", "Na Gestão de casas, confirme a unidade ativa e toque em Produtores.")
-    add_numbered_step(doc, 2, "Pesquise a pessoa", "No campo Buscar produtor por nome, email ou usuário, digite uma informação exata. Selecione a pessoa correta na lista, conferindo nome e e-mail.")
+    add_numbered_step(doc, 2, "Pesquise a pessoa", "No campo Buscar produtor por nome, email ou usuário, digite pelo menos dois caracteres. Você pode informar o nome completo, uma parte do nome, o e-mail ou o usuário. A busca mostra somente contas que já concluíram o cadastro como produtor. Selecione a pessoa correta na lista, conferindo nome, usuário e e-mail.")
     add_numbered_step(doc, 3, "Crie o vínculo", "Toque em Vincular produtor e aguarde a mensagem Produtor vinculado com sucesso. Confira se ele aparece na lista da casa.")
     add_image_placeholder(doc, 18, "Vincular produtor existente", "Área Produtores com a unidade, campo de busca, lista de resultado e botão “Vincular produtor”.", "Oculte o e-mail real na versão pública do manual.")
 
@@ -578,7 +578,7 @@ def build():
         ("Aparece Aguardando assinatura", "Abra Configurações → Conta e preferências → Assinaturas formais e conclua as três etapas."),
         ("O código não chegou", "Confirme primeiro a senha da conta, verifique spam e se o e-mail exibido pertence à conta. Use Reenviar código quando disponível."),
         ("Gestão de casas não aparece", "Atualize a tela e entre novamente. Confirme se a assinatura ficou com status Assinado. Se você administra várias casas, confira o seletor de unidade."),
-        ("Não encontro o produtor", "Confirme se ele já tem conta e pesquise por e-mail exato ou usuário. Se acabou de ser criado, atualize a busca antes de vincular."),
+        ("Não encontro o produtor", "Confirme se a pessoa já concluiu o cadastro como produtor. Contas comuns e administradores de casa não aparecem nessa busca. Pesquise pelo nome completo, por parte do nome, pelo e-mail ou pelo usuário. Se o cadastro acabou de ser concluído, faça uma nova busca antes de vincular."),
         ("Evento não publica", "Revise campos destacados, término depois do início, política de preço e todos os seis itens da revisão obrigatória."),
         ("Cardápio não publica", "Confirme a condição exibida, revise os itens e verifique se o botão Publicar e marcar revisado foi liberado."),
         ("Imagem não envia", "Use JPG, PNG ou WebP com até 5 MB. Para cartaz de evento, prefira 1080 × 1350 px."),

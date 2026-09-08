@@ -4,8 +4,27 @@ import { isReservedUsername, isUsernameSyntaxValid, RESERVED_USERNAME_MESSAGE } 
 import { hashPassword } from "../utils/passwordSecurity.js";
 
 const querySchema = z.object({
-  q: z.string().trim().min(1).optional()
+  q: z.string().trim().min(1).max(120).optional()
 });
+
+function producerSearchTerm(term) {
+  return {
+    OR: [
+      { email: { contains: term, mode: "insensitive" } },
+      { username: { contains: term, mode: "insensitive" } },
+      { firstName: { contains: term, mode: "insensitive" } },
+      { lastName: { contains: term, mode: "insensitive" } }
+    ]
+  };
+}
+
+export function buildProducerSearchWhere(query) {
+  const terms = [...new Set(String(query || "").trim().split(/\s+/).filter(Boolean))].slice(0, 6);
+  return {
+    role: "producer",
+    ...(terms.length ? { AND: terms.map(producerSearchTerm) } : {})
+  };
+}
 
 const createProducerSchema = z.object({
   firstName: z.string().trim().min(2),
@@ -102,19 +121,7 @@ export async function listProducerUsers(req, res, next) {
   try {
     const { q } = querySchema.parse(req.query);
     const items = await prisma.user.findMany({
-      where: {
-        role: "producer",
-        ...(q
-          ? {
-              OR: [
-                { email: { contains: q, mode: "insensitive" } },
-                { username: { contains: q, mode: "insensitive" } },
-                { firstName: { contains: q, mode: "insensitive" } },
-                { lastName: { contains: q, mode: "insensitive" } }
-              ]
-            }
-          : {})
-      },
+      where: buildProducerSearchWhere(q),
       select: {
         id: true,
         email: true,

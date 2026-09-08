@@ -599,7 +599,11 @@ export default function VenuesAdminPage() {
   );
   const { data: events = [], isLoading: eventsLoading } = useEventsQuery(eventsQueryFilters);
   const { data: venueManagers = [], isLoading: managersLoading } = useVenueManagersQuery(selectedVenueForManagers);
-  const { data: managerCandidates = [], isLoading: managerCandidatesLoading } = useVenueManagerUsersQuery(managerSearch);
+  const {
+    data: managerCandidates = [],
+    isLoading: managerCandidatesLoading,
+    isError: managerCandidatesError
+  } = useVenueManagerUsersQuery(managerSearch);
 
   const createVenueMutation = useCreateVenueMutation();
   const updateVenueMutation = useUpdateVenueMutation();
@@ -2438,23 +2442,37 @@ export default function VenuesAdminPage() {
             setSelectedManagerUserId("");
           }}
           placeholder="Buscar produtor por nome, email ou usuário"
+          aria-describedby="producer-search-help producer-search-status"
+          minLength={2}
+          maxLength={120}
           required
         />
         <select
           value={selectedManagerUserId}
           onChange={(e) => setSelectedManagerUserId(e.target.value)}
+          disabled={managerCandidatesLoading || managerCandidatesError || managerCandidates.length === 0}
           required
         >
           <option value="">Selecione o produtor</option>
           {managerCandidates.map((user) => (
             <option key={user.id} value={user.id}>
-              {user.firstName} {user.lastName} - {user.email}
+              {user.firstName} {user.lastName} - @{user.username} · {user.email}
             </option>
           ))}
         </select>
-        {managerCandidatesLoading ?<p className="empty">Buscando produtores...</p> : null}
+        <p id="producer-search-help" className="meta-line">
+          A busca mostra somente contas que já concluíram o cadastro como produtor. Você pode informar nome completo, email ou usuário.
+        </p>
+        <div id="producer-search-status" aria-live="polite">
+          {managerSearch.trim().length < 2 ?<p className="empty">Digite pelo menos 2 caracteres para pesquisar.</p> : null}
+          {managerCandidatesLoading ?<p className="empty">Buscando produtores...</p> : null}
+          {managerCandidatesError ?<p className="empty" role="alert">Não foi possível buscar produtores. Tente novamente.</p> : null}
+          {managerSearch.trim().length >= 2 && !managerCandidatesLoading && !managerCandidatesError && managerCandidates.length === 0 ?(
+            <p className="empty">Nenhum produtor elegível foi encontrado com esses dados.</p>
+          ) : null}
+        </div>
         <div className="form-actions-inline">
-          <button className="btn-primary" type="submit" disabled={addVenueManagerMutation.isPending}>
+          <button className="btn-primary" type="submit" disabled={addVenueManagerMutation.isPending || !selectedManagerUserId}>
             Vincular produtor
           </button>
         </div>
