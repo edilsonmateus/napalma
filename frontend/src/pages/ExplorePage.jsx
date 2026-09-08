@@ -31,6 +31,15 @@ import { useAuthStore } from "../store/authStore";
 import { resolveMediaUrl } from "../services/api";
 import RadarStarIcon from "../components/events/RadarStarIcon";
 import { getPendingLegalSignatures, useMyLegalSignaturesQuery } from "../hooks/useLegalSignaturesQuery";
+import {
+  addCalendarDays,
+  EXPLORE_TIME_ZONE,
+  exploreScopeLabel,
+  groupExploreEventRows,
+  isEventInExploreScope,
+  saoPauloDateKey,
+  saoPauloHour
+} from "../utils/exploreDateScope";
 
 const EXPLORE_PREFS_KEY = "napalma:explore:prefs";
 const ON_TRACK_KEY = "77gira:on-track-session";
@@ -47,7 +56,13 @@ const ON_TRACK_INITIAL_NOTIFICATION_DELAY_MS = 3 * 60 * 1000;
 // immediately when the user returns to the app.
 const LIVE_CLOCK_INTERVAL_MS = 60 * 1000;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-const DEFAULT_PREFS = { city: "São Paulo", region: "Todas", query: "", limit: 8, filterDate: "", filterHour: "", liveOnly: false, timeScope: "semana" };
+const EVENTS_PER_DAY = 8;
+const DEFAULT_PREFS = { city: "São Paulo", region: "Todas", query: "", filterDate: "", filterHour: "", liveOnly: false, timeScope: "semana" };
+const TIME_SCOPE_OPTIONS = [
+  { value: "hoje", label: "Hoje" },
+  { value: "semana", label: "Semana" },
+  { value: "fim_de_semana", label: "Fim de semana" }
+];
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, "0")}:00`);
 const CITY_OPTIONS = [
   { label: "São Paulo", state: "SP", available: true },
@@ -68,11 +83,10 @@ function loadPrefs() {
       city: parsed.city || "São Paulo",
       region: parsed.region || "Todas",
       query: parsed.query || "",
-      limit: Number(parsed.limit || 8),
       filterDate: parsed.filterDate || "",
       filterHour: parsed.filterHour || "",
       liveOnly: Boolean(parsed.liveOnly),
-      timeScope: ["hoje", "semana"].includes(parsed.timeScope) ? parsed.timeScope : "semana"
+      timeScope: ["hoje", "semana", "fim_de_semana"].includes(parsed.timeScope) ? parsed.timeScope : "semana"
     };
   } catch (_error) {
     return DEFAULT_PREFS;
@@ -82,33 +96,25 @@ function loadPrefs() {
 function formatGroupLabel(dateValue) {
   const date = new Date(dateValue);
   if (Number.isNaN(date.getTime())) return "Sem data";
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-  const diffDays = Math.round((target - today) / 86400000);
-  if (diffDays === 0) return "Hoje";
-  if (diffDays === 1) return "Amanhã";
-  const weekdayShort = date.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
-  const dayMonth = date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  const todayKey = saoPauloDateKey(Date.now());
+  const targetKey = saoPauloDateKey(date);
+  if (targetKey === todayKey) return "Hoje";
+  if (targetKey === addCalendarDays(todayKey, 1)) return "Amanhã";
+  const weekdayShort = date.toLocaleDateString("pt-BR", { timeZone: EXPLORE_TIME_ZONE, weekday: "short" }).replace(".", "");
+  const dayMonth = date.toLocaleDateString("pt-BR", { timeZone: EXPLORE_TIME_ZONE, day: "2-digit", month: "2-digit" });
   return `${weekdayShort}, ${dayMonth}`;
 }
 
 function formatHour(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "--:--";
-  return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleTimeString("pt-BR", { timeZone: EXPLORE_TIME_ZONE, hour: "2-digit", minute: "2-digit" });
 }
 
 function formatDayMonth(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "--/--";
-  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-}
-
-function isSameDay(dateA, dateB) {
-  return dateA.getFullYear() === dateB.getFullYear()
-    && dateA.getMonth() === dateB.getMonth()
-    && dateA.getDate() === dateB.getDate();
+  return date.toLocaleDateString("pt-BR", { timeZone: EXPLORE_TIME_ZONE, day: "2-digit", month: "2-digit" });
 }
 
 function loadOnTrackSession() {
@@ -231,8 +237,9 @@ export default function ExplorePage() {
     }
   });
   const [dismissedOnTrackSuggestionId, setDismissedOnTrackSuggestionId] = useState(() => sessionStorage.getItem(ON_TRACK_DISMISSED_KEY) || "");
+  const [expandedDayKeys, setExpandedDayKeys] = useState(() => new Set());
   const [debouncedQuery, setDebouncedQuery] = useState(prefs.query);
-  const { city, region, query, limit, filterDate, filterHour, liveOnly, timeScope } = prefs;
+  const { city, region, query, filterDate, filterHour, liveOnly, timeScope } = prefs;
   const selectedRegion = region === "Todas" ? undefined : region;
   const publicCatalogFilters = useMemo(
     () => ({ scope: "public", ...(selectedRegion ? { region: selectedRegion } : {}) }),
@@ -345,7 +352,6 @@ export default function ExplorePage() {
     }
     return map;
   }, [venues]);
-  const canLoadMore = false;
   const isLoadingState = venuesLoading || eventsLoading;
   const isRefreshingProgramming = !isLoadingState && (eventsFetching || venuesFetching);
   const isProgrammingLoading = isLoadingState || isRefreshingProgramming;
@@ -355,13 +361,12 @@ export default function ExplorePage() {
     if (!hasTimeFilter) return "";
     if (filterDate && filterHour) return `${filterDate.split("-").reverse().join("/")} • ${filterHour}`;
     if (filterDate) return `${filterDate.split("-").reverse().join("/")} • qualquer hora`;
-    return `Todos os dias • ${filterHour}`;
-  }, [filterDate, filterHour, hasTimeFilter]);
-  const eventRows = useMemo(() => {
+    return `${exploreScopeLabel(timeScope)} • ${filterHour}`;
+  }, [filterDate, filterHour, hasTimeFilter, timeScope]);
+  const baseEventRows = useMemo(() => {
     const q = debouncedQuery.trim().toLowerCase();
     const rows = [];
     for (const event of events) {
-      const eventDate = new Date(event.startsAt);
       const interval = getEventInterval(event.startsAt, event.endsAt);
       if (!interval) continue;
       const { start: time, end: endTime } = interval;
@@ -374,28 +379,20 @@ export default function ExplorePage() {
         if (!haystack.includes(q)) continue;
       }
       const isLiveNow = time <= nowMs && nowMs < endTime;
-      if (liveOnly && !isLiveNow) continue;
-      if (!filterDate && timeScope === "hoje" && !isSameDay(eventDate, new Date(nowMs))) continue;
-      if (!filterDate && timeScope === "semana") {
-        const weekLimit = nowMs + (7 * ONE_DAY_MS);
-        if (time > weekLimit) continue;
-      }
-      if (filterDate) {
-        const day = String(eventDate.getDate()).padStart(2, "0");
-        const month = String(eventDate.getMonth() + 1).padStart(2, "0");
-        const year = String(eventDate.getFullYear());
-        const formatted = `${year}-${month}-${day}`;
-        if (formatted !== filterDate) continue;
-      }
-      if (filterHour) {
-        const eventHour = String(eventDate.getHours()).padStart(2, "0");
-        const selectedHour = filterHour.slice(0, 2);
-        if (eventHour !== selectedHour) continue;
-      }
       rows.push({ key: event.id, venue, event, nextEvent: event, isLiveNow });
     }
     return rows.sort((a, b) => new Date(a.nextEvent.startsAt).getTime() - new Date(b.nextEvent.startsAt).getTime());
-  }, [events, venueByName, selectedRegion, debouncedQuery, filterDate, filterHour, liveOnly, timeScope, nowMs]);
+  }, [events, venueByName, selectedRegion, debouncedQuery, nowMs]);
+  const eventRows = useMemo(() => baseEventRows.filter((row) => {
+    if (liveOnly && !row.isLiveNow) return false;
+    if (filterDate) {
+      if (saoPauloDateKey(row.event.startsAt) !== filterDate) return false;
+    } else if (!isEventInExploreScope(row.event.startsAt, timeScope, nowMs)) {
+      return false;
+    }
+    if (filterHour && saoPauloHour(row.event.startsAt) !== filterHour.slice(0, 2)) return false;
+    return true;
+  }), [baseEventRows, filterDate, filterHour, liveOnly, timeScope, nowMs]);
   const liveEventsCount = useMemo(() => eventRows.filter((row) => row.isLiveNow).length, [eventRows]);
   const onTrackActive = Boolean(
     onTrackSession?.id
@@ -410,7 +407,7 @@ export default function ExplorePage() {
   const userInitial = userDisplayName?.trim()?.[0]?.toUpperCase() || "7";
   const onTrackRecommendations = useMemo(() => {
     if (!onTrackActive) return [];
-    return eventRows
+    return baseEventRows
       .map((row) => {
         const startsAt = new Date(row.nextEvent.startsAt).getTime();
         const distance = distanceKm(onTrackLocation, row.venue);
@@ -426,36 +423,24 @@ export default function ExplorePage() {
         return a.startsAt - b.startsAt;
       })
       .slice(0, 2);
-  }, [eventRows, onTrackActive, onTrackLocation, nowMs]);
+  }, [baseEventRows, onTrackActive, onTrackLocation, nowMs]);
   const onTrackSuggestion = onTrackRecommendations[0] || null;
-  const scopeLabel = timeScope === "hoje" ? "Hoje" : "Semana";
+  const scopeLabel = filterDate ? "Data específica" : exploreScopeLabel(timeScope);
   const activeFilterCount = [
     Boolean(query.trim()),
     region !== "Todas",
     Boolean(filterDate),
     Boolean(filterHour),
-    timeScope !== "semana"
+    !filterDate && timeScope !== "semana"
   ].filter(Boolean).length;
   const cityShortLabel = CITY_OPTIONS.find((item) => item.label === city)?.state || city;
   const grouped = useMemo(() => {
-    const rows = eventRows.slice(0, limit);
-
-    const out = [];
-    for (const row of rows) {
-      const key = formatGroupLabel(row.event.startsAt);
-      let bucket = out.find((item) => item.label === key);
-      if (!bucket) {
-        bucket = { label: key, items: [] };
-        out.push(bucket);
-      }
-      bucket.items.push(row);
-    }
-    return out;
-  }, [eventRows, limit]);
-  const visibleEventsCount = useMemo(
-    () => grouped.reduce((acc, group) => acc + group.items.length, 0),
-    [grouped]
-  );
+    return groupExploreEventRows(eventRows, expandedDayKeys, EVENTS_PER_DAY).map((group) => ({
+      ...group,
+      label: formatGroupLabel(group.items[0]?.event?.startsAt)
+    }));
+  }, [eventRows, expandedDayKeys]);
+  const visibleEventsCount = eventRows.length;
   const sharedCarousel = useAdCarouselDeliveryQuery(EXPLORE_SHARED_CAROUSEL_ENABLED && grouped.length > 1);
   const carouselReady = !EXPLORE_SHARED_CAROUSEL_ENABLED || sharedCarousel.isFetched;
   const { data: betweenDaysAd } = useAdDeliveryQuery(
@@ -672,15 +657,15 @@ export default function ExplorePage() {
         <button
           className={`explore-top-pill live-filter-chip ${liveEventsCount > 0 ? "has-live" : "no-live"} ${liveOnly ? "active" : ""}`}
           onClick={() => {
-            const nextLiveOnly = liveEventsCount > 0 ? !liveOnly : false;
-            setPrefs((prev) => ({ ...prev, liveOnly: nextLiveOnly, limit: 8 }));
+            const nextLiveOnly = liveOnly ? false : liveEventsCount > 0;
+            setPrefs((prev) => ({ ...prev, liveOnly: nextLiveOnly }));
             trackAnalyticsEvent("live_filter", {
               source: "explore",
               metadata: { enabled: nextLiveOnly, liveEventsCount }
             });
           }}
-          disabled={liveEventsCount === 0}
-          title={liveEventsCount > 0 ? "Mostrar apenas eventos ao vivo" : "Nenhum evento ao vivo agora"}
+          disabled={liveEventsCount === 0 && !liveOnly}
+          title={liveOnly ? "Voltar a mostrar todos os eventos" : liveEventsCount > 0 ? "Mostrar apenas eventos ao vivo" : "Nenhum evento ao vivo neste período"}
         >
           <span className="live-chip-dot" />
           <span>Ao vivo</span>
@@ -715,7 +700,7 @@ export default function ExplorePage() {
                 disabled={!item.available}
                 onClick={() => {
                   if (!item.available) return;
-                  setPrefs((prev) => ({ ...prev, city: item.label, region: "Todas", limit: 8 }));
+                  setPrefs((prev) => ({ ...prev, city: item.label, region: "Todas" }));
                   trackAnalyticsEvent("region_filter", {
                     source: "explore_city",
                     city: item.label,
@@ -741,7 +726,7 @@ export default function ExplorePage() {
               placeholder="Buscar casa, bairro, região ou samba..."
               value={query}
               onChange={(e) => {
-                setPrefs((prev) => ({ ...prev, query: e.target.value, limit: 8 }));
+                setPrefs((prev) => ({ ...prev, query: e.target.value }));
                 if (e.target.value.trim().length >= 3) {
                   trackAnalyticsEvent("search", {
                     source: "explore_filter_sheet",
@@ -754,13 +739,22 @@ export default function ExplorePage() {
           <div className="explore-sheet-section">
             <h4>Período</h4>
             <div className="explore-sheet-chips">
-              {["hoje", "semana"].map((scope) => (
+              {TIME_SCOPE_OPTIONS.map((option) => (
                 <button
-                  key={scope}
-                  className={`chip ${timeScope === scope ? "active" : ""}`}
-                  onClick={() => setPrefs((prev) => ({ ...prev, timeScope: scope, limit: 8 }))}
+                  key={option.value}
+                  type="button"
+                  className={`chip ${!filterDate && timeScope === option.value ? "active" : ""}`}
+                  aria-pressed={!filterDate && timeScope === option.value}
+                  onClick={() => {
+                    setPrefs((prev) => ({ ...prev, timeScope: option.value, filterDate: "" }));
+                    setExpandedDayKeys(new Set());
+                    trackAnalyticsEvent("time_scope_filter", {
+                      source: "explore_filter_sheet",
+                      metadata: { scope: option.value }
+                    });
+                  }}
                 >
-                  {scope === "hoje" ? "Hoje" : "Semana"}
+                  {option.label}
                 </button>
               ))}
             </div>
@@ -774,7 +768,8 @@ export default function ExplorePage() {
                 type="date"
                 value={filterDate}
                 onChange={(e) => {
-                  setPrefs((prev) => ({ ...prev, filterDate: e.target.value, limit: 8 }));
+                  setPrefs((prev) => ({ ...prev, filterDate: e.target.value, timeScope: "semana" }));
+                  setExpandedDayKeys(new Set());
                   trackAnalyticsEvent("date_filter", {
                     source: "explore_filter_sheet",
                     metadata: { filterDate: e.target.value }
@@ -785,7 +780,7 @@ export default function ExplorePage() {
                 className="search-input"
                 value={filterHour}
                 onChange={(e) => {
-                  setPrefs((prev) => ({ ...prev, filterHour: e.target.value, limit: 8 }));
+                  setPrefs((prev) => ({ ...prev, filterHour: e.target.value }));
                   trackAnalyticsEvent("hour_filter", {
                     source: "explore_filter_sheet",
                     metadata: { filterHour: e.target.value }
@@ -804,7 +799,7 @@ export default function ExplorePage() {
             <div className="explore-sheet-chips">
               <button
                 className={`chip ${region === "Todas" ? "active" : ""}`}
-                onClick={() => setPrefs((prev) => ({ ...prev, region: "Todas", limit: 8 }))}
+                onClick={() => setPrefs((prev) => ({ ...prev, region: "Todas" }))}
               >
                 Todas
               </button>
@@ -813,7 +808,7 @@ export default function ExplorePage() {
                   key={item}
                   className={`chip ${region === item ? "active" : ""}`}
                   onClick={() => {
-                    setPrefs((prev) => ({ ...prev, region: item, limit: 8 }));
+                    setPrefs((prev) => ({ ...prev, region: item }));
                     trackAnalyticsEvent("region_filter", {
                       source: "explore",
                       region: item,
@@ -977,7 +972,7 @@ export default function ExplorePage() {
             </button>
             <button
               className="chip"
-              onClick={() => setPrefs((prev) => ({ ...prev, filterDate: "", filterHour: "", liveOnly: false, limit: 8 }))}
+              onClick={() => setPrefs((prev) => ({ ...prev, filterDate: "", filterHour: "", liveOnly: false }))}
             >
               Limpar dia e hora
             </button>
@@ -985,14 +980,14 @@ export default function ExplorePage() {
         </div>
       ) : null}
       {!isLoadingState && !catalogError && grouped.map((group, groupIndex) => (
-        <Fragment key={group.label}>
+        <Fragment key={group.key}>
         <div className="day-group" style={{ "--reveal-index": groupIndex }}>
           <h4 className="day-group-title">
             <span>{group.label}</span>
             <small className="day-group-count">{group.items.length} {group.items.length === 1 ? "samba" : "sambas"}</small>
           </h4>
           <div className="venue-list explore-venue-grid">
-            {group.items.map(({ venue, event: eventItem, isLiveNow }, itemIndex) => {
+            {group.visibleItems.map(({ venue, event: eventItem, isLiveNow }, itemIndex) => {
               const radarEventId = eventItem.baseEventId || eventItem.id;
               const isInRadar = radarEventIds.has(radarEventId);
               const isUpdatingThisEvent = toggleRadar.isPending
@@ -1102,15 +1097,23 @@ export default function ExplorePage() {
               );
             })}
           </div>
+          {group.hiddenCount > 0 ? (
+            <button
+              className="chip explore-day-expand"
+              type="button"
+              onClick={() => setExpandedDayKeys((current) => {
+                const next = new Set(current);
+                next.add(group.key);
+                return next;
+              })}
+            >
+              Ver mais neste dia ({group.hiddenCount})
+            </button>
+          ) : null}
         </div>
         {groupIndex === 0 && grouped.length > 1 && (sharedCarousel.data?.items?.length || betweenDaysAd) ? <div className="explore-between-days-placement">{betweenDaysPlacement}</div> : null}
         </Fragment>
       ))}
-      {!venuesLoading && !catalogError && canLoadMore ? (
-        <button className="chip load-more" onClick={() => setPrefs((prev) => ({ ...prev, limit: prev.limit + 8 }))}>
-          Carregar mais eventos
-        </button>
-      ) : null}
     </section>
   );
 }

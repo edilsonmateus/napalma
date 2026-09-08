@@ -8432,6 +8432,10 @@ a.pending-signature-badge:focus-visible {
   font-weight: var(--weight-meta);
 }
 
+.explore-day-expand {
+  margin-top: 10px;
+}
+
 .venue-flow-placeholder {
   background: #121212;
   animation: none;
