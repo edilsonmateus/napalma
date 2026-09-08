@@ -7392,6 +7392,22 @@ a.pending-signature-badge:focus-visible {
   margin: 14px 0 18px;
 }
 
+.event-datetime-field {
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.event-datetime-field > span {
+  font-weight: var(--weight-action);
+}
+
+.event-datetime-field > input {
+  width: 100%;
+}
+
 .manager-create-field {
   display: grid;
   gap: 4px;

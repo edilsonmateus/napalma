@@ -3105,10 +3105,30 @@ export default function VenuesAdminPage() {
           ))}
         </select>
         {eventErrors.venueId?.[0] ?<p className="field-error">{eventErrors.venueId[0]}</p> : null}
-        <input name="startDate" type="datetime-local" value={eventForm.startDate} onChange={handleEventChange} required />
-        {eventErrors.startDate?.[0] ?<p className="field-error">{eventErrors.startDate[0]}</p> : null}
-        <input name="endDate" type="datetime-local" value={eventForm.endDate} onChange={handleEventChange} required />
-        {eventErrors.endDate?.[0] ?<p className="field-error">{eventErrors.endDate[0]}</p> : null}
+        <label className="event-datetime-field">
+          <span>Dia e hora do começo do evento</span>
+          <input
+            name="startDate"
+            type="datetime-local"
+            value={eventForm.startDate}
+            onChange={handleEventChange}
+            aria-describedby={eventErrors.startDate?.[0] ? "event-start-date-error" : undefined}
+            required
+          />
+        </label>
+        {eventErrors.startDate?.[0] ?<p id="event-start-date-error" className="field-error">{eventErrors.startDate[0]}</p> : null}
+        <label className="event-datetime-field">
+          <span>Dia e hora do fim do evento</span>
+          <input
+            name="endDate"
+            type="datetime-local"
+            value={eventForm.endDate}
+            onChange={handleEventChange}
+            aria-describedby={eventErrors.endDate?.[0] ? "event-end-date-error" : undefined}
+            required
+          />
+        </label>
+        {eventErrors.endDate?.[0] ?<p id="event-end-date-error" className="field-error">{eventErrors.endDate[0]}</p> : null}
         <label className="meta-line form-checkbox-inline">
           <input
             type="checkbox"
