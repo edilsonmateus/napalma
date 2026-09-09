@@ -14747,6 +14747,9 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
 .venue-menu-form :is(input, select, textarea) { width: 100%; box-sizing: border-box; }
 .venue-menu-form :is(input:not([type="checkbox"]), select) { min-height: 40px; padding: 9px 11px; }
 .venue-menu-form textarea { min-height: 100px; padding: 10px 11px; }
+.venue-menu-price-help { color: var(--admin-text-muted, #8c9cab); font-size: 11px; font-weight: 400; line-height: 1.45; }
+.venue-menu-form-feedback { min-height: 18px; margin: 0; color: #ff9b9b; font-size: 12px; line-height: 1.45; }
+.venue-menu-form-feedback.is-success { color: #75d7a3; }
 .venue-menu-tags { margin: 0; padding: 0; border: 0; }
 .venue-menu-tags legend { margin-bottom: 7px; color: var(--admin-text-muted, #8c9cab); font-size: 12px; font-weight: 600; }
 .venue-menu-tags legend small { color: var(--admin-text-muted, #8c9cab); font-weight: 400; }

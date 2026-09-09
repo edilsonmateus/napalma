@@ -8,6 +8,11 @@ import {
   useReorderVenueMenuItemsMutation, useRestoreVenueMenuItemMutation, useUpdateVenueMenuItemMutation, useUpdateVenueMenuMutation
 } from "../hooks/useVenueMenu";
 import { downloadVenueMenuCsv, parseVenueMenuCsv, VENUE_MENU_TEMPLATE_ITEM } from "../utils/venueMenuCsv";
+import {
+  normalizeVenueMenuPriceInput,
+  parseVenueMenuPriceToCents,
+  venueMenuPriceError
+} from "../utils/venueMenuPrice";
 
 const EMPTY_ITEM = { category: "petiscos", name: "", description: "", price: "", priceMode: "exact", servingLabel: "", status: "published", tags: [], isHighlight: false };
 const LABELS = { petiscos: "Petiscos", porcoes: "Porcoes", pratos: "Pratos", lanches: "Lanches", sobremesas: "Sobremesas", cervejas: "Cervejas", drinks: "Drinks", doses: "Doses", vinhos_espumantes: "Vinhos e espumantes", sem_alcool: "Sem alcool" };
@@ -28,6 +33,8 @@ export default function VenueMenuManagePage() {
   const [editingId, setEditingId] = useState(null);
   const [acceptanceChecked, setAcceptanceChecked] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [itemFeedback, setItemFeedback] = useState("");
+  const [itemErrors, setItemErrors] = useState({});
   const [listView, setListView] = useState("active");
   const [importPreview, setImportPreview] = useState(null);
   const [importFileName, setImportFileName] = useState("");
@@ -37,22 +44,46 @@ export default function VenueMenuManagePage() {
   const archivedItems = (menu?.items || []).filter((item) => item.status === "archived");
   const visibleItems = listView === "archived" ? archivedItems : activeItems;
   const adInventoryAccepted = Boolean(menu?.adInventoryAcceptedAt);
+  const isSavingItem = createItem.isPending || updateItem.isPending;
 
-  useEffect(() => { if (!editingId) setForm(EMPTY_ITEM); }, [editingId]);
+  useEffect(() => {
+    if (!editingId) setForm(EMPTY_ITEM);
+  }, [editingId]);
   function payloadFromForm() {
-    return { ...form, priceCents: form.price === "" ? null : Math.round(Number(String(form.price).replace(",", ".")) * 100), servingLabel: form.servingLabel || null };
+    const priceCents = ["hidden", "consultation"].includes(form.priceMode)
+      ? null
+      : parseVenueMenuPriceToCents(form.price);
+    return { ...form, priceCents, servingLabel: form.servingLabel || null };
   }
   async function submitItem(event) {
-    event.preventDefault(); setFeedback("");
+    event.preventDefault();
+    setFeedback("");
+    setItemFeedback("");
+    const priceError = venueMenuPriceError(form.price, form.priceMode);
+    if (priceError) {
+      setItemErrors({ price: priceError });
+      setItemFeedback("Revise o campo de preço antes de adicionar o item.");
+      return;
+    }
+    setItemErrors({});
     try {
       const payload = payloadFromForm(); delete payload.price;
       if (editingId) await updateItem.mutateAsync({ venueId, itemId: editingId, payload });
       else await createItem.mutateAsync({ venueId, payload });
-      setEditingId(null); setForm(EMPTY_ITEM); setFeedback("Item salvo.");
-    } catch (error) { setFeedback(error?.response?.data?.message || error?.response?.data?.issues?.[0]?.message || "Nao foi possivel salvar o item."); }
+      setEditingId(null); setForm(EMPTY_ITEM); setFeedback("Item salvo."); setItemFeedback("Item salvo e incluído no cardápio.");
+    } catch (error) {
+      const response = error?.response?.data;
+      const serverPriceError = response?.details?.fieldErrors?.priceCents?.[0];
+      const message = serverPriceError || response?.message || response?.issues?.[0]?.message || "Não foi possível salvar o item.";
+      if (serverPriceError) setItemErrors({ price: serverPriceError });
+      setFeedback(message);
+      setItemFeedback(message);
+    }
   }
   function edit(item) {
     setEditingId(item.id);
+    setItemErrors({});
+    setItemFeedback("");
     setForm({ ...item, price: item.priceCents == null ? "" : (item.priceCents / 100).toFixed(2).replace(".", ","), servingLabel: item.servingLabel || "" });
   }
   function toggleTag(tag) {
@@ -143,11 +174,12 @@ export default function VenueMenuManagePage() {
           <label>Nome<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required maxLength={100} /></label>
           <label>Categoria<select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>{options.categories.map((value) => <option key={value} value={value}>{LABELS[value] || value}</option>)}</select></label>
           <label>Descricao<textarea value={form.description || ""} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={240} /></label>
-          <div className="form-grid-2"><label>Preco<input inputMode="decimal" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="0,00" /></label><label>Modalidade<select value={form.priceMode} onChange={(e) => setForm({ ...form, priceMode: e.target.value })}><option value="exact">Preco exato</option><option value="from">A partir de</option><option value="hidden">Oculto</option><option value="consultation">Sob consulta</option></select></label></div>
+          <div className="form-grid-2"><label>Preco<input inputMode="decimal" value={form.price} onChange={(e) => { setForm({ ...form, price: e.target.value }); setItemErrors((current) => ({ ...current, price: "" })); setItemFeedback(""); }} onBlur={() => { if (!venueMenuPriceError(form.price, form.priceMode)) setForm((current) => ({ ...current, price: normalizeVenueMenuPriceInput(current.price) })); }} placeholder="Ex.: 29" aria-invalid={Boolean(itemErrors.price)} aria-describedby={itemErrors.price ? "venue-menu-price-help venue-menu-price-error" : "venue-menu-price-help"} /><small id="venue-menu-price-help" className="venue-menu-price-help">Digite o valor como 29 ou 29,50. Se colar R$ 29,00, nós ajustamos.</small>{itemErrors.price ? <small id="venue-menu-price-error" className="field-error" role="alert">{itemErrors.price}</small> : null}</label><label>Modalidade<select value={form.priceMode} onChange={(e) => { setForm({ ...form, priceMode: e.target.value }); setItemErrors((current) => ({ ...current, price: "" })); setItemFeedback(""); }}><option value="exact">Preco exato</option><option value="from">A partir de</option><option value="hidden">Oculto</option><option value="consultation">Sob consulta</option></select></label></div>
           <div className="form-grid-2"><label>Apresentação<select value={form.servingLabel || ""} onChange={(e) => setForm({ ...form, servingLabel: e.target.value })}><option value="">Não informar</option>{options.servings.map((value) => <option key={value} value={value}>{SERVING_LABELS[value] || value.replaceAll("_", " ")}</option>)}</select></label><label>Status<select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="published">Disponível</option><option value="unavailable">Indisponível</option><option value="draft">Rascunho</option></select></label></div>
           <fieldset className="venue-menu-tags"><legend>Características <small>até 4</small></legend><div>{options.tags.map((tag) => <label key={tag} className={form.tags.includes(tag) ? "active" : ""}><input type="checkbox" checked={form.tags.includes(tag)} onChange={() => toggleTag(tag)} disabled={!form.tags.includes(tag) && form.tags.length >= 4} />{TAG_LABELS[tag] || tag}</label>)}</div></fieldset>
           <label className="venue-menu-highlight"><input type="checkbox" checked={form.isHighlight} onChange={(e) => setForm({ ...form, isHighlight: e.target.checked })} /> Destacar este item no cardápio</label>
-          <button type="submit" className="btn-primary">{editingId ? "Salvar alteracoes" : "Adicionar item"}</button>{editingId ? <button type="button" className="btn-secondary" onClick={() => setEditingId(null)}>Cancelar edicao</button> : null}
+          <p className={`venue-menu-form-feedback ${itemFeedback === "Item salvo e incluído no cardápio." ? "is-success" : ""}`} role="status" aria-live="polite">{itemFeedback || " "}</p>
+          <button type="submit" className="btn-primary" disabled={isSavingItem}>{isSavingItem ? "Salvando..." : editingId ? "Salvar alteracoes" : "Adicionar item"}</button>{editingId ? <button type="button" className="btn-secondary" disabled={isSavingItem} onClick={() => { setEditingId(null); setItemErrors({}); setItemFeedback(""); }}>Cancelar edicao</button> : null}
         </form>
         <section className="admin-card venue-menu-manage-list">
           <div className="venue-menu-list-heading">
