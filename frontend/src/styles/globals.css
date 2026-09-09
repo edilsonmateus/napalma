@@ -14737,7 +14737,13 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
 .venue-menu-prices-control { display: grid; gap: 5px; padding-inline: 22px; color: var(--admin-text, #cfd9e4); font-size: 12px; }
 .venue-menu-prices-control span { display: inline-flex; align-items: center; gap: 7px; }
 .venue-menu-prices-control input { margin: 0; }
-.venue-menu-manage-bar > .btn-primary { min-width: 196px; }
+.venue-menu-publish-actions { display: grid; justify-items: stretch; gap: 7px; min-width: 212px; }
+.venue-menu-publish-actions > :is(.btn-primary, .btn-secondary) { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 212px; }
+.venue-menu-publish-actions > .btn-primary.is-published:disabled { border-color: rgba(101,214,154,.38); background: rgba(42,178,108,.14); color: #75d7a3; opacity: 1; cursor: default; }
+.venue-menu-public-link { text-decoration: none; }
+.venue-menu-publish-feedback { min-height: 17px; max-width: 250px; margin: 0; color: var(--admin-text-muted, #8c9cab); font-size: 11px; line-height: 1.4; }
+.venue-menu-publish-feedback.is-success { color: #75d7a3; }
+.venue-menu-publish-feedback.is-error { color: #ff9b9b; }
 .venue-menu-manage-grid { display: grid; grid-template-columns: minmax(300px, .78fr) minmax(420px, 1.22fr); gap: 16px; margin-top: 16px; }
 .venue-menu-form { display: grid; align-content: start; gap: 12px; padding: 20px; }
 .venue-menu-section-heading { display: flex; align-items: center; gap: 10px; min-height: 34px; }
@@ -14801,7 +14807,8 @@ body :where(.artist-workspace-screen, .artist-epk-screen) :where(.btn-primary, .
   .venue-menu-manage-bar { grid-template-columns: 1fr; align-items: stretch; gap: 14px; }
   .venue-menu-summary-status { padding: 13px 0; border-inline: 0; border-block: 1px solid rgba(164,184,204,.14); }
   .venue-menu-prices-control { padding-inline: 0; }
-  .venue-menu-manage-bar > .btn-primary { width: 100%; min-width: 0; }
+  .venue-menu-publish-actions { width: 100%; min-width: 0; }
+  .venue-menu-publish-actions > :is(.btn-primary, .btn-secondary) { width: 100%; min-width: 0; }
   .venue-menu-ad-inventory-notice { grid-template-columns: 1fr; }
   .venue-menu-ad-inventory-copy { align-items: flex-start; }
   .venue-menu-ad-inventory-consent { padding: 16px 0 0; border-left: 0; border-top: 1px solid rgba(164,184,204,.14); }

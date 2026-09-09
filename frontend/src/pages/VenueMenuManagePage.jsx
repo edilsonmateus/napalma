@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { ClipboardList, FileSpreadsheet, List, Megaphone, SquarePlus } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
+import { CheckCircle2, ClipboardList, ExternalLink, FileSpreadsheet, List, Megaphone, SquarePlus } from "lucide-react";
 import BackLink from "../components/common/BackLink";
 import {
   useArchiveVenueMenuItemMutation, useCreateVenueMenuItemMutation,
@@ -33,6 +33,7 @@ export default function VenueMenuManagePage() {
   const [editingId, setEditingId] = useState(null);
   const [acceptanceChecked, setAcceptanceChecked] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [publishFeedback, setPublishFeedback] = useState({ type: "", message: "" });
   const [itemFeedback, setItemFeedback] = useState("");
   const [itemErrors, setItemErrors] = useState({});
   const [listView, setListView] = useState("active");
@@ -45,6 +46,15 @@ export default function VenueMenuManagePage() {
   const visibleItems = listView === "archived" ? archivedItems : activeItems;
   const adInventoryAccepted = Boolean(menu?.adInventoryAcceptedAt);
   const isSavingItem = createItem.isPending || updateItem.isPending;
+  const isPublished = menu?.status === "published";
+  const reviewedAt = menu?.reviewedAt ? new Date(menu.reviewedAt).getTime() : 0;
+  const menuChangedAfterReview = Boolean(
+    isPublished && reviewedAt && menu?.updatedAt && new Date(menu.updatedAt).getTime() > reviewedAt + 1000
+  );
+  const itemChangedAfterReview = Boolean(
+    isPublished && reviewedAt && (menu?.items || []).some((item) => new Date(item.updatedAt).getTime() > reviewedAt)
+  );
+  const reviewPending = Boolean(isPublished && (!reviewedAt || menuChangedAfterReview || itemChangedAfterReview));
 
   useEffect(() => {
     if (!editingId) setForm(EMPTY_ITEM);
@@ -144,10 +154,14 @@ export default function VenueMenuManagePage() {
     } catch (error) { setFeedback(error?.response?.data?.message || "Nao foi possivel registrar a confirmação."); }
   }
   async function publishMenu() {
+    if (isPublished && !reviewPending) return;
+    setPublishFeedback({ type: "", message: "" });
     try {
       await saveMenu.mutateAsync({ venueId, payload: { status: "published", markReviewed: true } });
-      setFeedback("Cardápio publicado e marcado como revisado.");
-    } catch (error) { setFeedback(error?.response?.data?.message || "Nao foi possivel publicar o cardapio."); }
+      setPublishFeedback({ type: "success", message: isPublished ? "Publicação atualizada com sucesso." : "Cardápio publicado com sucesso." });
+    } catch (error) {
+      setPublishFeedback({ type: "error", message: error?.response?.data?.message || "Não foi possível publicar o cardápio. Tente novamente." });
+    }
   }
   if (isLoading) return <p className="empty">Carregando gestao do cardapio...</p>;
   return (
@@ -163,10 +177,20 @@ export default function VenueMenuManagePage() {
         {adInventoryAccepted ? <div className="venue-menu-ad-inventory-accepted"><strong>Condição aceita</strong><small>Versão {menu.adInventoryPolicyVersion} · {new Date(menu.adInventoryAcceptedAt).toLocaleDateString("pt-BR")}</small></div> : <div className="venue-menu-ad-inventory-consent"><label><input type="checkbox" checked={acceptanceChecked} onChange={(event) => setAcceptanceChecked(event.target.checked)} /> Li e aceito as condições de publicidade do Cardápio Essencial.</label><button type="button" className="btn-primary" disabled={!acceptanceChecked || saveMenu.isPending} onClick={acceptAdInventoryTerms}>Confirmar condição</button></div>}
       </section>
       <section className="venue-menu-manage-bar">
-        <div className="venue-menu-summary-count"><span className="venue-menu-panel-icon" aria-hidden="true"><ClipboardList size={19} /></span><div><strong>{activeItems.length}/30 itens</strong><small>{menu?.status === "published" ? "Cardapio publicado" : "Cardapio em rascunho"}</small></div></div>
-        <div className="venue-menu-summary-status"><List size={19} aria-hidden="true" /><div><small>Status do cardápio</small><strong>{menu?.status === "published" ? "Publicado" : "Rascunho"}</strong></div></div>
+        <div className="venue-menu-summary-count"><span className="venue-menu-panel-icon" aria-hidden="true"><ClipboardList size={19} /></span><div><strong>{activeItems.length}/30 itens</strong><small>{isPublished ? reviewPending ? "Alterações aguardando revisão" : "Cardápio publicado" : "Cardápio em rascunho"}</small></div></div>
+        <div className="venue-menu-summary-status"><List size={19} aria-hidden="true" /><div><small>Status do cardápio</small><strong>{isPublished ? reviewPending ? "Revisão pendente" : "Publicado" : "Rascunho"}</strong></div></div>
         <label className="venue-menu-prices-control"><small>Exibir preços</small><span><input type="checkbox" checked={menu?.pricesVisible ?? true} onChange={(event) => saveMenu.mutate({ venueId, payload: { pricesVisible: event.target.checked } })} /> Sim</span></label>
-        <button type="button" className="btn-primary" disabled={!adInventoryAccepted || saveMenu.isPending} onClick={publishMenu}>Publicar e marcar revisado</button>
+        <div className="venue-menu-publish-actions">
+          {isPublished && !reviewPending ? (
+            <button type="button" className="btn-primary is-published" disabled><CheckCircle2 size={16} aria-hidden="true" /> Cardápio publicado</button>
+          ) : (
+            <button type="button" className="btn-primary" disabled={!adInventoryAccepted || saveMenu.isPending} onClick={publishMenu}>
+              {saveMenu.isPending ? "Publicando..." : isPublished ? "Atualizar publicação" : "Publicar e marcar revisado"}
+            </button>
+          )}
+          {isPublished ? <Link className="btn-secondary venue-menu-public-link" to={`/venues/${venueId}/menu`} target="_blank" rel="noreferrer"><ExternalLink size={15} aria-hidden="true" /> Ver cardápio público</Link> : null}
+          <p className={`venue-menu-publish-feedback ${publishFeedback.type ? `is-${publishFeedback.type}` : ""}`} role={publishFeedback.type === "error" ? "alert" : "status"} aria-live="polite">{publishFeedback.message || " "}</p>
+        </div>
       </section>
       <div className="venue-menu-manage-grid">
         <form className="admin-card venue-menu-form" onSubmit={submitItem}>

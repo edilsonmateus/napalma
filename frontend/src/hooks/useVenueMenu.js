@@ -18,7 +18,27 @@ function useMenuMutation(mutationFn) {
     client.invalidateQueries({ queryKey: ["venue-menu-manage", variables.venueId] });
   } });
 }
-export function useUpdateVenueMenuMutation() { return useMenuMutation(({ venueId, payload }) => updateVenueMenu(venueId, payload)); }
+export function useUpdateVenueMenuMutation() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ venueId, payload }) => updateVenueMenu(venueId, payload),
+    onSuccess: (updatedMenu, variables) => {
+      client.setQueryData(["venue-menu-manage", variables.venueId], (current) => {
+        if (!current?.item) return current;
+        return {
+          ...current,
+          item: {
+            ...current.item,
+            ...updatedMenu,
+            items: current.item.items
+          }
+        };
+      });
+      client.invalidateQueries({ queryKey: ["venue-menu", variables.venueId] });
+      client.invalidateQueries({ queryKey: ["venue-menu-manage", variables.venueId] });
+    }
+  });
+}
 export function useCreateVenueMenuItemMutation() { return useMenuMutation(({ venueId, payload }) => createVenueMenuItem(venueId, payload)); }
 export function useUpdateVenueMenuItemMutation() { return useMenuMutation(({ venueId, itemId, payload }) => updateVenueMenuItem(venueId, itemId, payload)); }
 export function useReorderVenueMenuItemsMutation() { return useMenuMutation(({ venueId, items }) => reorderVenueMenuItems(venueId, items)); }
