@@ -6702,7 +6702,7 @@ a.pending-signature-badge:focus-visible {
   border-radius: inherit;
   background: rgba(255, 255, 255, 0.94);
   box-shadow: none;
-  transition: width 320ms ease;
+  transition: width var(--live-progress-duration, 320ms) cubic-bezier(0.22, 0.8, 0.3, 1);
 }
 
 .live-progress-attention .live-progress-fill {

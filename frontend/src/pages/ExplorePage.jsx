@@ -50,6 +50,9 @@ const EXPLORE_SHARED_CAROUSEL_ENABLED = String(import.meta.env.VITE_ADS_EXPLORE_
 const ON_TRACK_DURATION_MS = 60 * 60 * 1000;
 const ON_TRACK_RECOMMENDATION_WINDOW_MS = 12 * 60 * 60 * 1000;
 const ON_TRACK_INITIAL_NOTIFICATION_DELAY_MS = 3 * 60 * 1000;
+const LIVE_PROGRESS_STORAGE_KEY = "77gira:live-progress-positions";
+const LIVE_PROGRESS_STORAGE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+const LIVE_PROGRESS_STORAGE_MAX_ENTRIES = 48;
 // The feed only needs minute-level precision for status/progress. A slower
 // clock avoids rebuilding the complete Explore timeline every few seconds on
 // lower-powered devices while focus/visibility listeners still refresh it
@@ -200,13 +203,101 @@ function getLiveProgress(startsAt, endsAt, nowMs) {
   return { percent, tone };
 }
 
+function getLiveProgressKey(event) {
+  return [event.id || event.baseEventId || event.title || "event", event.startsAt || "", event.endsAt || ""].join("|");
+}
+
+function readLiveProgressPosition(key) {
+  try {
+    const raw = sessionStorage.getItem(LIVE_PROGRESS_STORAGE_KEY);
+    if (!raw) return null;
+    const entries = JSON.parse(raw);
+    const saved = entries?.[key];
+    if (!saved || Date.now() - Number(saved.updatedAt) > LIVE_PROGRESS_STORAGE_MAX_AGE_MS) return null;
+    const percent = Number(saved.percent);
+    return Number.isFinite(percent) && percent >= 0 && percent <= 100 ? percent : null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function saveLiveProgressPosition(key, percent) {
+  try {
+    const raw = sessionStorage.getItem(LIVE_PROGRESS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    const now = Date.now();
+    const activeEntries = Object.entries(parsed || {})
+      .filter(([, value]) => now - Number(value?.updatedAt) <= LIVE_PROGRESS_STORAGE_MAX_AGE_MS)
+      .slice(-LIVE_PROGRESS_STORAGE_MAX_ENTRIES + 1);
+    sessionStorage.setItem(LIVE_PROGRESS_STORAGE_KEY, JSON.stringify({
+      ...Object.fromEntries(activeEntries),
+      [key]: { percent, updatedAt: now }
+    }));
+  } catch (_error) {
+    // O progresso visual continua funcionando quando o navegador bloqueia o armazenamento da sessão.
+  }
+}
+
+function liveProgressTransitionDuration(from, to) {
+  const distance = Math.abs(to - from);
+  return Math.min(1450, Math.max(520, 520 + distance * 12));
+}
+
 function LiveProgressBar({ event, nowMs }) {
   const progress = getLiveProgress(event.startsAt, event.endsAt, nowMs);
+  const hasProgress = Boolean(progress);
+  const storageKey = getLiveProgressKey(event);
+  const targetPercent = progress?.percent ?? 0;
+  const [visualPercent, setVisualPercent] = useState(() => {
+    const saved = readLiveProgressPosition(storageKey);
+    return saved !== null && saved <= targetPercent ? saved : targetPercent;
+  });
+  const [transitionDuration, setTransitionDuration] = useState(0);
+  const visualPercentRef = useRef(visualPercent);
+
+  useEffect(() => {
+    visualPercentRef.current = visualPercent;
+  }, [visualPercent]);
+
+  useEffect(() => {
+    if (!hasProgress) return undefined;
+    const previousPercent = visualPercentRef.current;
+    const nextPercent = targetPercent;
+    const distance = Math.abs(nextPercent - previousPercent);
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
+    if (distance < 0.08 || reducedMotion) {
+      setTransitionDuration(0);
+      setVisualPercent(nextPercent);
+      saveLiveProgressPosition(storageKey, nextPercent);
+      return undefined;
+    }
+
+    const duration = liveProgressTransitionDuration(previousPercent, nextPercent);
+    setTransitionDuration(duration);
+    const frame = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => setVisualPercent(nextPercent));
+    });
+    const saveTimer = window.setTimeout(() => saveLiveProgressPosition(storageKey, nextPercent), duration + 80);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(saveTimer);
+    };
+  }, [hasProgress, storageKey, targetPercent]);
+
   if (!progress) return null;
+
   return (
     <div className={`live-progress live-progress-${progress.tone}`}>
       <div className="live-progress-track" aria-hidden="true">
-        <span className="live-progress-fill" style={{ width: `${progress.percent}%` }} />
+        <span
+          className="live-progress-fill"
+          style={{
+            width: `${visualPercent}%`,
+            "--live-progress-duration": `${transitionDuration}ms`
+          }}
+        />
       </div>
     </div>
   );
@@ -1017,7 +1108,7 @@ export default function ExplorePage() {
                     <span className="event-region"><MapPin size={12} /> {venue.region}</span>
                   </div>
                 </Link>
-                {routeModeEventId !== eventItem.id && isLiveNow ? <LiveProgressBar event={eventItem} nowMs={nowMs} /> : null}
+                {routeModeEventId !== eventItem.id && isLiveNow ? <LiveProgressBar key={`${eventItem.id}-${eventItem.startsAt}-${eventItem.endsAt}`} event={eventItem} nowMs={nowMs} /> : null}
                 {routeModeEventId !== eventItem.id ? (
                   <div className="venue-flow-body event-flow-body">
                     <div className="venue-flow-head">
