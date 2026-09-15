@@ -1,0 +1,22 @@
+.admin-page-header .house-active-name {
+  margin: 10px 0 6px;
+  color: #f4f7fb;
+  font-size: clamp(1.35rem, 3.5vw, 1.65rem);
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.admin-page-header-main:has(.house-active-name) {
+  min-width: 0;
+}
+
+.admin-page-header-main .house-selector-wrap {
+  width: 100%;
+  max-width: 340px;
+}
+
+.house-management-screen .publish-warning-btn {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

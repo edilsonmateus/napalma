@@ -2,6 +2,7 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useRef } from "react";
 import VerifiedBadge from "../components/common/VerifiedBadge";
+import "../styles/house-active-context.css";
 import ImpactSummaryPanel from "../components/admin/ImpactSummaryPanel";
 import AcquisitionAdminPanel from "./admin/AcquisitionAdminPanel";
 import BackLink from "../components/common/BackLink";
@@ -830,7 +831,7 @@ export default function VenuesAdminPage() {
     return {
       title: "Gestão de Agenda da Casa",
       subtitle: houseDisplayName
-        ?`Unidade ativa: ${houseDisplayName}. Aqui você cuida da agenda, produtores e dados da sua casa.`
+        ?"Unidade ativa · Aqui você cuida da agenda, produtores e dados desta casa."
         : "Para operar a agenda, primeiro solicite acesso a uma filial cadastrada.",
       badge: "Perfil ativo: CASA"
     };
@@ -1980,20 +1981,20 @@ export default function VenuesAdminPage() {
   }
 
   return (
-    <section>
+    <section className={isHouseRole ? "house-management-screen" : undefined}>
       <BackLink onClick={() => navigate(-1)}>Voltar</BackLink>
       <header className="page-header admin-page-header">
         <div className="admin-page-header-main">
           <h2>{roleHeader.title}</h2>
+          {isHouseRole && houseActiveVenue ? <h3 className="house-active-name" aria-live="polite" aria-atomic="true">{houseDisplayName}</h3> : null}
           <p>{roleHeader.subtitle}</p>
           <div className="role-session-wrap">
             <div className="role-session-badge">{roleHeader.badge}</div>
             <span className="role-live-indicator" aria-label="Perfil ativo ao vivo">LIVE</span>
           </div>
-          {isHouseRole ?<p className="meta-line"><strong>Casa:</strong> {houseDisplayName}</p> : null}
           {isHouseRole && houseVenues.length > 1 ?(
             <div className="house-selector-wrap">
-              <label htmlFor="house-active-select" className="meta-line"><strong>Unidade ativa</strong></label>
+              <label htmlFor="house-active-select" className="meta-line"><strong>Trocar unidade ativa</strong></label>
               <select
                 id="house-active-select"
                 value={houseActiveVenueId}
@@ -3264,7 +3265,7 @@ export default function VenuesAdminPage() {
             onClick={openPublishReview}
             disabled={createEventMutation.isPending || updateEventMutation.isPending}
           >
-            Publicar evento
+            {isHouseRole && previewVenue ? `Publicar evento em ${previewVenue.name}` : "Publicar evento"}
           </button>
           {isEditingEvent ?<button type="button" className="chip" onClick={resetEventForm}>Cancelar</button> : null}
         </div>
@@ -3305,7 +3306,7 @@ export default function VenuesAdminPage() {
                 disabled={!publishChecklistDone || createEventMutation.isPending || updateEventMutation.isPending}
                 onClick={confirmPublishEvent}
               >
-                Publicar agora
+                {isHouseRole && previewVenue ? `Publicar agora em ${previewVenue.name}` : "Publicar agora"}
               </button>
             </div>
           </div>
