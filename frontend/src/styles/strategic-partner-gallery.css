@@ -1,0 +1,25 @@
+.strategic-partners-page .strategic-partners-hero { margin: 36px auto 0; text-align: center; }
+.strategic-partners-page .strategic-partners-hero h1 { font-size: clamp(30px, 4vw, 44px); line-height: 1.12; }
+.strategic-partners-page .strategic-partners-hero p { margin-inline: auto; }
+.partner-group { margin-top: 38px; }
+.partner-group > h2 { margin: 0 0 22px; padding-bottom: 14px; border-bottom: 1px solid #cbd5e1; color: #172033; font-size: 21px; text-align: center; }
+.partner-logo-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; align-items: flex-start; }
+.partner-tile { box-sizing: border-box; flex: 0 1 calc((100% - 36px) / 3); min-width: 0; min-height: 214px; border: 1px solid #dbe3ed; border-radius: 10px; background: #fff; color: #172033; overflow-wrap: anywhere; }
+.partner-tile-toggle { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; width: 100%; min-height: 212px; padding: 24px; border: 0; border-radius: 10px; background: transparent; color: #172033; cursor: pointer; font: inherit; }
+.partner-tile-logo { display: grid; place-items: center; width: 100%; height: 130px; font-size: 22px; font-weight: 700; }
+.partner-tile-logo img { width: 100%; height: 100%; object-fit: contain; filter: none; }
+.partner-tile-action { color: #93420c; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
+.partner-tile:not(.is-expanded) .partner-tile-action { color: #dbe3ed; }
+.partner-tile:not(.is-expanded) .partner-tile-toggle:is(:hover, :focus-visible) .partner-tile-action { color: #46556b; }
+.partner-tile.is-expanded .partner-tile-toggle { min-height: 0; padding: 18px 20px 8px; }
+.partner-tile-details { padding: 10px 24px 24px; animation: partner-reveal 180ms ease-out; }
+.partner-tile-details[hidden] { display: none; }
+.partner-tile-details h3 { margin: 0 0 8px; font-size: 21px; color: #172033; }
+.partner-tile-details p { font-size: 14px; line-height: 1.6; color: #46556b; white-space: pre-line; }
+.partner-tile-details a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: #93420c; }
+.partner-tile :focus-visible { outline: 3px solid #b54708; outline-offset: 3px; }
+.partner-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+@keyframes partner-reveal { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (max-width: 760px) { .partner-tile { flex-basis: calc((100% - 18px) / 2); } }
+@media (max-width: 480px) { .partner-tile { flex-basis: 100%; max-width: 360px; } }
+@media (prefers-reduced-motion: reduce) { .partner-tile-details { animation: none; } }

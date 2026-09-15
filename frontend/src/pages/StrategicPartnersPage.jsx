@@ -1,8 +1,44 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { ArrowLeft, ExternalLink, Handshake } from "lucide-react";
 import { Link } from "react-router-dom";
 import { resolveMediaUrl } from "../services/api";
 import { listPublicStrategicPartners } from "../services/strategicPartners.service";
+import "../styles/strategic-partner-gallery.css";
+
+const GROUPS = [
+  ["operation", "Parceiros de operação", "Parceria de operação"],
+  ["project", "Parceiros de projeto", "Parceria de projeto"],
+  ["activation", "Parceiros de ativação", "Parceria de ativação"],
+  ["institutional", "Parceiros institucionais", "Parceria institucional"],
+  ["other", "Outras parcerias", "Outra parceria"]
+];
+
+function PartnerTile({ partner }) {
+  const [expanded, setExpanded] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+  const detailsId = useId();
+  useEffect(() => setImageFailed(false), [partner.logoUrl]);
+  let destination = null;
+  try {
+    const url = new URL(partner.destinationUrl);
+    if (["https:", "http:"].includes(url.protocol)) destination = url.href;
+  } catch { /* No external action without a valid public web URL. */ }
+  return <article className={`partner-tile${expanded ? " is-expanded" : ""}`}>
+    <button type="button" className="partner-tile-toggle" aria-expanded={expanded}
+      aria-controls={detailsId} aria-label={expanded ? `Voltar ao logo de ${partner.name}` : `Conheça a parceria com ${partner.name}`}
+      onClick={() => setExpanded((value) => !value)}>
+      {!expanded ? <span className="partner-tile-logo">
+        {partner.logoUrl && !imageFailed ? <img src={resolveMediaUrl(partner.logoUrl)} alt={partner.name} onError={() => setImageFailed(true)}/> : <span>{partner.name}</span>}
+      </span> : null}
+      <span className="partner-tile-action">{expanded ? "Voltar ao logo" : "Conheça a parceria"}</span>
+    </button>
+    <div id={detailsId} className="partner-tile-details" hidden={!expanded}>
+      <h3>{partner.name}</h3>
+      <p>{partner.publicDescription?.trim() || "Mais informações sobre esta parceria serão apresentadas em breve."}</p>
+      {destination ? <a href={destination} target="_blank" rel="noopener noreferrer">Visitar parceiro <ExternalLink size={15} aria-hidden="true"/><span className="partner-sr-only"> (abre em outra aba)</span></a> : null}
+    </div>
+  </article>;
+}
 
 export default function StrategicPartnersPage() {
   const [partners, setPartners] = useState([]);
@@ -20,26 +56,20 @@ export default function StrategicPartnersPage() {
       <header className="strategic-partners-hero">
         <span><Handshake size={16}/> PARCERIAS ESTRATÉGICAS</span>
         <h1>Parceiros que fazem o samba girar.</h1>
-        <p>Relações que ampliam a cultura, fortalecem a cena e respeitam a autonomia de cada roda.</p>
+        <p>Se quer ir rápido, vá sozinho. Se quer ir longe, vá acompanhado.</p>
       </header>
-      <section className="strategic-partners-principles" aria-label="Princípios das parcerias">
-        <p>Parcerias não interferem na curadoria cultural do 77Gira.</p>
-        <p>Não promovemos apostas, jogos de azar ou práticas incompatíveis com a comunidade.</p>
-        <p>Quando houver relação comercial ou apoio institucional, isso é tratado com transparência.</p>
-      </section>
       {status === "loading" ? <p className="strategic-partners-status">Carregando parceiros…</p> : null}
       {status === "error" ? <p className="strategic-partners-status">Não foi possível carregar parceiros agora. Tente novamente mais tarde.</p> : null}
       {status === "ready" && !partners.length ? <p className="strategic-partners-status">Novas parcerias serão apresentadas aqui em breve.</p> : null}
-      <section className="strategic-partners-grid" aria-label="Parceiros ativos">
-        {partners.map((partner) => {
-          const content = <>
-            <div className="strategic-partner-logo">{partner.logoUrl ? <img src={resolveMediaUrl(partner.logoUrl)} alt={`Logo ${partner.name}`}/> : <span>{partner.name.slice(0, 2).toUpperCase()}</span>}</div>
-            <div><h2>{partner.name}</h2>{partner.publicDescription ? <p>{partner.publicDescription}</p> : null}</div>
-            {partner.destinationUrl ? <ExternalLink size={16} aria-hidden="true"/> : null}
-          </>;
-          return partner.destinationUrl ? <a className="strategic-partner-card" href={partner.destinationUrl} target="_blank" rel="noreferrer" key={partner.id}>{content}</a> : <article className="strategic-partner-card" key={partner.id}>{content}</article>;
-        })}
-      </section>
+      {GROUPS.map(([type, title]) => {
+        const items = partners.filter((partner) => type === "other"
+          ? !GROUPS.slice(0, 4).some(([known]) => known === partner.partnershipType)
+          : partner.partnershipType === type);
+        return items.length ? <section className="partner-group" key={type} aria-labelledby={`partner-group-${type}`}>
+          <h2 id={`partner-group-${type}`}>{title}</h2>
+          <div className="partner-logo-grid">{items.map((partner) => <PartnerTile key={partner.id} partner={partner}/>)}</div>
+        </section> : null;
+      })}
     </div>
   </main>;
 }
