@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
+import "../../styles/acquisition-map-interactions.css";
 import { Link } from "react-router-dom";
 import AcquisitionConversionDialog from "../../components/common/AcquisitionConversionDialog";
 import { missingAcquisitionVenueFields } from "../../utils/acquisitionConversion";
@@ -446,7 +447,45 @@ function TerritoryMapBounds({ points }) {
   return null;
 }
 
-function TerritoryMap({ leads }) {
+function TerritoryMarker({ lead, coords, pathOptions, onEdit, pinned }) {
+  const marker = useRef(null);
+  const timer = useRef(null);
+  const cancel = () => clearTimeout(timer.current);
+  const leave = () => {
+    cancel();
+    timer.current = setTimeout(() => {
+      if (pinned.current !== lead.id) marker.current?.closePopup();
+    }, 300);
+  };
+  useEffect(() => () => clearTimeout(timer.current), []);
+  return <CircleMarker ref={marker} center={coords} radius={7} pathOptions={pathOptions}
+    className="territory-circle-marker" eventHandlers={{
+      mouseover: () => { cancel(); if (!pinned.current) marker.current?.openPopup(); },
+      mouseout: leave,
+      click: () => {
+        cancel(); pinned.current = lead.id;
+        // Leaflet also toggles a bound popup on click; reopen after that handler.
+        queueMicrotask(() => { if (marker.current) { pinned.current = lead.id; marker.current.openPopup(); } });
+      },
+      popupclose: () => { if (pinned.current === lead.id) pinned.current = null; }
+    }}>
+    <Popup className="territory-popup" autoPan={false}>
+      <div className="territory-popup-card" onMouseEnter={cancel} onMouseLeave={leave} onFocus={cancel}>
+        <div className="territory-popup-head">
+          <button type="button" className="territory-edit-name" onClick={() => { if (onEdit(lead) !== false) marker.current?.closePopup(); }}>{lead.venueName}</button>
+          <span className={`acquisition-temp temp-${lead.temperature}`}>{temperatureLabelMap[lead.temperature] || lead.temperature}</span>
+        </div>
+        <p>{getLeadAddressLine(lead) || [lead.neighborhood, lead.region, lead.city].filter(Boolean).join(" - ") || "Local a completar"}</p>
+        <p>{[lead.region, lead.city].filter(Boolean).join(" - ")}</p>
+        <small>{statusLabelMap[lead.status] || lead.status} {hasPreciseCoordinates(lead) ? "- ponto preciso" : "- ponto aproximado"}</small>
+        <p>Clique no nome para editar.</p>
+      </div>
+    </Popup>
+  </CircleMarker>;
+}
+
+function TerritoryMap({ leads, onEdit }) {
+  const pinned = useRef(null);
   const points = useMemo(
     () => leads.map((lead, index) => ({
       lead,
@@ -473,13 +512,14 @@ function TerritoryMap({ leads }) {
         </div>
       </div>
 
+      <p className="meta-line">Passe o mouse para visualizar e clique no ponto para fixar. Use a roda do mouse sobre o mapa para dar zoom.</p>
       <div className="territory-map-shell">
         {points.length ? (
           <MapContainer
             key={`territory-${points.length}-${points.map(({ lead }) => lead.id).join("-")}`}
             center={DEFAULT_MAP_CENTER}
             zoom={11}
-            scrollWheelZoom={false}
+            scrollWheelZoom
             className="territory-map"
           >
             <TileLayer
@@ -488,27 +528,14 @@ function TerritoryMap({ leads }) {
             />
             <TerritoryMapBounds points={points} />
             {points.map(({ lead, coords, pathOptions }) => (
-              <CircleMarker
+              <TerritoryMarker
                 key={lead.id}
-                center={coords}
-                radius={7}
+                lead={lead}
+                coords={coords}
                 pathOptions={pathOptions}
-                className="territory-circle-marker"
-              >
-                <Popup className="territory-popup">
-                  <div className="territory-popup-card">
-                    <div className="territory-popup-head">
-                      <strong>{lead.venueName}</strong>
-                      <span className={`acquisition-temp temp-${lead.temperature}`}>
-                        {temperatureLabelMap[lead.temperature] || lead.temperature}
-                      </span>
-                    </div>
-                    <p>{getLeadAddressLine(lead) || [lead.neighborhood, lead.region, lead.city].filter(Boolean).join(" - ") || "Local a completar"}</p>
-                    <p>{[lead.region, lead.city].filter(Boolean).join(" - ")}</p>
-                    <small>{statusLabelMap[lead.status] || lead.status} {hasPreciseCoordinates(lead) ? "- ponto preciso" : "- ponto aproximado"}</small>
-                  </div>
-                </Popup>
-              </CircleMarker>
+                onEdit={onEdit}
+                pinned={pinned}
+              />
             ))}
           </MapContainer>
         ) : (
@@ -526,6 +553,7 @@ export default function AcquisitionAdminPanel({ onToast }) {
   const [conversionLead, setConversionLead] = useState(null);
   const [filters, setFilters] = useState({ q: "", status: "all", temperature: "all", followUp: "all" });
   const [leadForm, setLeadForm] = useState(initialLeadForm);
+  const leadFormDirty = useRef(false);
   const [editingLeadId, setEditingLeadId] = useState("");
   const [expandedLeadId, setExpandedLeadId] = useState("");
   const [interactionLeadId, setInteractionLeadId] = useState("");
@@ -553,6 +581,7 @@ export default function AcquisitionAdminPanel({ onToast }) {
   const summary = data?.summary || {};
 
   function handleLeadChange(event) {
+    leadFormDirty.current = true;
     const { name, value } = event.target;
     if (name === "coordinates") {
       const coordinatePair = parseCoordinatePair(value);
@@ -580,6 +609,7 @@ export default function AcquisitionAdminPanel({ onToast }) {
   }
 
   function resetLeadForm() {
+    leadFormDirty.current = false;
     setLeadForm(initialLeadForm);
     setEditingLeadId("");
   }
@@ -610,6 +640,9 @@ export default function AcquisitionAdminPanel({ onToast }) {
   }
 
   function handleEditLead(lead) {
+    if (createLead.isPending || updateLead.isPending) return false;
+    if (leadFormDirty.current && !window.confirm("Há alterações não salvas no formulário. Deseja descartá-las e abrir esta oportunidade?")) return false;
+    leadFormDirty.current = false;
     setEditingLeadId(lead.id);
     setExpandedLeadId(lead.id);
     setLeadForm({
@@ -641,6 +674,7 @@ export default function AcquisitionAdminPanel({ onToast }) {
     });
     window.requestAnimationFrame(() => {
       leadFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      leadFormRef.current?.querySelector("input")?.focus({ preventScroll: true });
     });
   }
 
@@ -698,7 +732,7 @@ export default function AcquisitionAdminPanel({ onToast }) {
 
       <div className="admin-content-divider" />
 
-      <TerritoryMap leads={leads} />
+      <TerritoryMap leads={leads} onEdit={handleEditLead} />
 
       <div className="acquisition-grid">
         <form ref={leadFormRef} className="venue-form acquisition-form" onSubmit={handleLeadSubmit}>
