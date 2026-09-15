@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
+import { Link } from "react-router-dom";
+import AcquisitionConversionDialog from "../../components/common/AcquisitionConversionDialog";
+import { missingAcquisitionVenueFields } from "../../utils/acquisitionConversion";
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
 import {
   CartesianGrid,
@@ -520,6 +523,7 @@ function TerritoryMap({ leads }) {
 
 export default function AcquisitionAdminPanel({ onToast }) {
   const leadFormRef = useRef(null);
+  const [conversionLead, setConversionLead] = useState(null);
   const [filters, setFilters] = useState({ q: "", status: "all", temperature: "all", followUp: "all" });
   const [leadForm, setLeadForm] = useState(initialLeadForm);
   const [editingLeadId, setEditingLeadId] = useState("");
@@ -584,14 +588,22 @@ export default function AcquisitionAdminPanel({ onToast }) {
     event.preventDefault();
     try {
       const payload = buildPayload(leadForm);
+      let savedId = editingLeadId;
       if (editingLeadId) {
         await updateLead.mutateAsync({ id: editingLeadId, payload });
-        onToast?.("Oportunidade atualizada.");
+        setExpandedLeadId(editingLeadId);
+        onToast?.(payload.status === "closed" ? "Oportunidade fechada. A ação Criar casa interna está disponível no cartão." : "Oportunidade atualizada.");
       } else {
-        await createLead.mutateAsync(payload);
+        const created = await createLead.mutateAsync(payload);
+        savedId = created.id;
+        setExpandedLeadId(created.id);
         onToast?.("Oportunidade cadastrada.");
       }
       resetLeadForm();
+      if (payload.status === "closed") {
+        setFilters({ q: "", status: "closed", temperature: "all", followUp: "all" });
+        window.requestAnimationFrame(() => document.getElementById(`acquisition-lead-${savedId}`)?.scrollIntoView({ behavior: "smooth", block: "center" }));
+      }
     } catch (error) {
       onToast?.(error?.response?.data?.message || "Não foi possível salvar a oportunidade.", "error");
     }
@@ -670,6 +682,7 @@ export default function AcquisitionAdminPanel({ onToast }) {
 
   return (
     <section className="acquisition-panel">
+      {conversionLead ? <AcquisitionConversionDialog key={conversionLead.id} lead={conversionLead} onClose={() => setConversionLead(null)} onConverted={() => onToast?.("Casa interna criada. Ela ainda não está publicada.")} /> : null}
       <div className="admin-kpis acquisition-kpis">
         <article className="clean-card"><h4>Total mapeado</h4><p>{summary.total ?? 0}</p></article>
         <article className="clean-card"><h4>Em andamento</h4><p>{summary.active ?? 0}</p></article>
@@ -833,6 +846,15 @@ export default function AcquisitionAdminPanel({ onToast }) {
                       </button>
                     </div>
                   </div>
+
+                  {lead.convertedVenueId ? <div className="acquisition-conversion-entry"><strong>Casa interna criada</strong><Link className="chip" to={`/settings/venues/${lead.convertedVenueId}`}>Abrir ficha da casa</Link></div> : lead.status === "closed" ? <div className="acquisition-conversion-entry">
+                    <button type="button" className="chip" onClick={() => {
+                      const missing = missingAcquisitionVenueFields(lead);
+                      if (missing.length) { handleEditLead(lead); onToast?.(`Complete ${missing.join(", ")} antes de criar a casa.`, "error"); }
+                      else setConversionLead(lead);
+                    }}>Criar casa interna</button>
+                    <p className="meta-line">{missingAcquisitionVenueFields(lead).length ? `Complete: ${missingAcquisitionVenueFields(lead).join(", ")}. Clique para editar.` : "A casa será criada em rascunho, ainda sem publicação."}</p>
+                  </div> : null}
 
                   {expanded ? (
                     <div className="acquisition-lead-details">
