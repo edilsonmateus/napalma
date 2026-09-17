@@ -7,6 +7,7 @@ import { isAdminRole, isProducerRole, isVenueRole } from "../utils/roles";
 import { promptInstallApp, subscribeInstallPrompt } from "../utils/installPrompt";
 import ManagementHub from "../components/settings/ManagementHub";
 import InstitutionalFooter from "../components/layout/InstitutionalFooter";
+import "../styles/settings-partners-invitation.css";
 import { getPendingLegalSignatures, useMyLegalSignaturesQuery } from "../hooks/useLegalSignaturesQuery";
 
 export default function SettingsPage() {
@@ -196,7 +197,14 @@ export default function SettingsPage() {
         </div>
       ) : null}
 
-      <InstitutionalFooter className="settings-institutional-footer" />
+      <section className="settings-partners-invitation" aria-labelledby="settings-partners-title">
+        <div>
+          <h2 id="settings-partners-title">Quem faz o samba girar com a gente</h2>
+          <p>Conheça as marcas e instituições que caminham ao lado da 77Gira.</p>
+        </div>
+        <Link to="/parceiros">Conhecer nossos parceiros <span aria-hidden="true">→</span></Link>
+      </section>
+      <InstitutionalFooter className="settings-institutional-footer" showPartnersLink={false} />
     </section>
   );
 }
