@@ -435,6 +435,12 @@ function TerritoryMapBounds({ points }) {
   const map = useMap();
 
   useEffect(() => {
+    const observer = new ResizeObserver(() => map.invalidateSize({ pan: false }));
+    observer.observe(map.getContainer());
+    return () => observer.disconnect();
+  }, [map]);
+
+  useEffect(() => {
     if (!points.length) return;
     const bounds = points.map(({ coords }) => coords);
     map.invalidateSize();
@@ -450,6 +456,8 @@ function TerritoryMapBounds({ points }) {
 function TerritoryMarker({ lead, coords, pathOptions, onEdit, pinned }) {
   const marker = useRef(null);
   const timer = useRef(null);
+  const address = getLeadAddressLine(lead);
+  const location = [lead.region, lead.city].filter(Boolean).join(" · ");
   const cancel = () => clearTimeout(timer.current);
   const leave = () => {
     cancel();
@@ -469,22 +477,25 @@ function TerritoryMarker({ lead, coords, pathOptions, onEdit, pinned }) {
       },
       popupclose: () => { if (pinned.current === lead.id) pinned.current = null; }
     }}>
-    <Popup className="territory-popup" autoPan={false}>
+    <Popup className="territory-popup" autoPan={false} minWidth={180} maxWidth={240}>
       <div className="territory-popup-card" onMouseEnter={cancel} onMouseLeave={leave} onFocus={cancel}>
         <div className="territory-popup-head">
           <button type="button" className="territory-edit-name" onClick={() => { if (onEdit(lead) !== false) marker.current?.closePopup(); }}>{lead.venueName}</button>
           <span className={`acquisition-temp temp-${lead.temperature}`}>{temperatureLabelMap[lead.temperature] || lead.temperature}</span>
         </div>
-        <p>{getLeadAddressLine(lead) || [lead.neighborhood, lead.region, lead.city].filter(Boolean).join(" - ") || "Local a completar"}</p>
-        <p>{[lead.region, lead.city].filter(Boolean).join(" - ")}</p>
+        <div className="territory-popup-location">
+          {address && <p>{address}</p>}
+          {location && <p>{location}</p>}
+          {!address && !location && <p>Local a completar</p>}
+        </div>
         <small>{statusLabelMap[lead.status] || lead.status} {hasPreciseCoordinates(lead) ? "- ponto preciso" : "- ponto aproximado"}</small>
-        <p>Clique no nome para editar.</p>
+        <p className="territory-popup-hint">Toque no nome para editar.</p>
       </div>
     </Popup>
   </CircleMarker>;
 }
 
-function TerritoryMap({ leads, onEdit }) {
+export function TerritoryMap({ leads, onEdit }) {
   const pinned = useRef(null);
   const points = useMemo(
     () => leads.map((lead, index) => ({
