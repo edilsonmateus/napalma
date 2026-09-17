@@ -5190,6 +5190,8 @@ a.strategic-partner-card:hover { border-color: #b8c7da; background: #fff; }
 .acquisition-toolbar input,
 .acquisition-toolbar select {
   min-height: 38px;
+  padding-inline: 14px;
+  box-sizing: border-box;
 }
 
 .acquisition-toolbar input {
